@@ -3,9 +3,12 @@ import type {
   CapabilityTransportRequest,
 } from "../contracts/capability.ts";
 import type {
+  AgentApprovalDecision,
+  AgentRequiredApproval,
   AgentCapabilityDescriptor,
   AgentContextBudget,
   AgentContextItem,
+  AgentProvidedUserInput,
   AgentRequiredUserInput,
   AgentRunState,
   AgentTaskIntent,
@@ -16,6 +19,8 @@ import type {
   ValidatedAction,
   ValidatedActions,
 } from "./agent-contracts.ts";
+import { isAgentApprovalPreview } from "./agent-contracts.ts";
+import { evaluateCapabilityApproval } from "./approval-policy.ts";
 import { AgentCapabilityPortError } from "./capability-port.ts";
 import type { AgentCapabilityPort } from "./capability-port.ts";
 import type {
@@ -34,6 +39,16 @@ import type {
 } from "./invocation-state.ts";
 import type { AgentProviderPort } from "./provider.ts";
 import type { AgentRunStorePort } from "./agent-store.ts";
+import {
+  AgentPreparedMutationError,
+  FirstPartyPreparedMutationCoordinator,
+  capabilityRequestForInvocation,
+  normalizeCapabilityResultForInvocation,
+} from "./prepared-mutation.ts";
+import type {
+  AgentPreparedExecution,
+  AgentPreparedMutationPort,
+} from "./prepared-mutation.ts";
 import { publishAgentRunProgress } from "./run-progress.ts";
 import type { AgentProgressActivityKind, AgentRunProgressObserver } from "./run-progress.ts";
 import { reduceAgentRunState } from "./run-state.ts";
@@ -72,6 +87,7 @@ export interface AgentInvocationRecord {
   readonly capabilityId: string;
   readonly contractVersion: number;
   readonly input: unknown;
+  readonly preparedExecution?: AgentPreparedExecution | null;
   readonly baseDocumentVersion: number | null;
   readonly state: AgentInvocationState;
   readonly result: CapabilityResult<unknown> | null;
@@ -105,12 +121,31 @@ export function getAgentRunRequiredInput(run: AgentRunRecord): AgentRequiredUser
     if (event?.type === "user-input.required") {
       return event.input;
     }
-    if (event?.type === "run.resumed") return null;
+    if (event?.type === "user-input.provided" || event?.type === "run.resumed") return null;
   }
   return null;
 }
 
-export type AgentRunResumeErrorCode = "run-mismatch" | "run-not-plannable" | "workspace-mismatch";
+export function getAgentRunRequiredApproval(run: AgentRunRecord): AgentRequiredApproval | null {
+  if (run.state.lifecycle !== "waiting" || run.state.waitReason !== "approval") return null;
+  for (let index = run.events.length - 1; index >= 0; index -= 1) {
+    const event = run.events[index]?.event;
+    if (event?.type === "approval.required") return event.approval;
+    if (event?.type === "approval.approved"
+      || event?.type === "approval.denied"
+      || event?.type === "run.resumed"
+      || event?.type === "run.failed") return null;
+  }
+  return null;
+}
+
+export type AgentRunResumeErrorCode =
+  | "run-mismatch"
+  | "run-not-plannable"
+  | "workspace-mismatch"
+  | "provided-input-mismatch"
+  | "approval-decision-mismatch"
+  | "retry-mismatch";
 
 export class AgentRunResumeError extends Error {
   readonly code: AgentRunResumeErrorCode;
@@ -126,6 +161,7 @@ export interface AgentRunControllerDependencies {
   readonly capabilities: AgentCapabilityPort;
   readonly catalog: readonly AgentCapabilityDescriptor[];
   readonly completionVerifier: AgentCompletionVerifier;
+  readonly preparedMutations?: AgentPreparedMutationPort;
   readonly store?: AgentRunStorePort;
   readonly now?: () => number;
   readonly nextId?: (kind: "event" | "turn" | "invocation" | "user-input") => string;
@@ -151,6 +187,86 @@ function documentIdentity(data: unknown): { documentId: string | null; documentV
     documentVersion: typeof record.documentVersion === "number"
       && Number.isSafeInteger(record.documentVersion) && record.documentVersion >= 0
       ? record.documentVersion : null,
+  };
+}
+
+function documentPrecondition(workspace: AgentWorkspaceScope): CapabilityTransportRequest["documentPrecondition"] {
+  return workspace.documentId === null || workspace.documentVersion === null
+    ? null
+    : {
+        documentId: workspace.documentId,
+        documentVersion: workspace.documentVersion,
+      };
+}
+
+function sameMeasureSelection(
+  left: AgentWorkspaceScope["selection"],
+  right: AgentWorkspaceScope["selection"],
+): boolean {
+  return left !== null
+    && right !== null
+    && left.kind === right.kind
+    && left.documentId === right.documentId
+    && left.documentVersion === right.documentVersion
+    && left.startMeasureId === right.startMeasureId
+    && left.endMeasureId === right.endMeasureId;
+}
+
+function createRequiredApproval(
+  approvalId: string,
+  invocations: readonly AgentInvocationRecord[],
+  catalog: readonly AgentCapabilityDescriptor[],
+  workspace: AgentWorkspaceScope,
+  runPolicy: RunPolicySnapshot,
+): AgentRequiredApproval {
+  if (invocations.length === 0) {
+    throw new Error("Approval request requires at least one pending Invocation");
+  }
+  const items = invocations.map((invocation) => {
+    const descriptor = catalog.find((item) => item.id === invocation.capabilityId);
+    if (descriptor === undefined) throw new Error("Approval Capability descriptor is missing");
+    const approval = evaluateCapabilityApproval(descriptor, runPolicy);
+    if (approval.decision !== "require-approval") {
+      throw new Error("Approval Invocation does not match the effective approval policy");
+    }
+    const preview = descriptor.previewApproval?.(invocation.input) ?? null;
+    const prepared = invocation.preparedExecution ?? null;
+    const effectivePreview = prepared?.approvalPreview ?? preview;
+    if (effectivePreview !== null && !isAgentApprovalPreview(effectivePreview)) {
+      throw new Error("Approval Capability preview is invalid");
+    }
+    return {
+      invocationId: invocation.invocationId,
+      capabilityId: invocation.capabilityId,
+      capabilityName: descriptor.name,
+      contractVersion: invocation.contractVersion,
+      summary: prepared?.approvalSummary
+        ?? descriptor.summarizeApproval?.(invocation.input)
+        ?? `将执行“${descriptor.name}”`,
+      preview: effectivePreview,
+      ...(prepared === null ? {} : { changeSetId: prepared.changeSetId }),
+      riskLevel: approval.riskLevel,
+      riskReasons: approval.riskReasons,
+      policy: {
+        policyVersion: approval.policyVersion,
+        mode: approval.mode,
+        capabilityRequirement: approval.capabilityRequirement,
+        decision: approval.decision,
+      },
+      scope: {
+        workspaceId: workspace.workspaceId,
+        documentId: workspace.documentId,
+        documentVersion: workspace.documentVersion,
+        limit: descriptor.scopeLimit,
+      },
+      sideEffects: descriptor.sideEffects,
+    };
+  });
+  return {
+    approvalId,
+    kind: "capability-execution",
+    prompt: items.length === 1 ? "Agent 请求执行以下能力" : `Agent 请求执行 ${items.length} 项能力`,
+    items,
   };
 }
 
@@ -181,6 +297,7 @@ export class AgentRunController {
   private readonly capabilities: AgentCapabilityPort;
   private readonly catalog: readonly AgentCapabilityDescriptor[];
   private readonly completionVerifier: AgentCompletionVerifier;
+  private readonly preparedMutations: AgentPreparedMutationPort;
   private readonly store: AgentRunStorePort | null;
   private readonly now: () => number;
   private readonly nextId: (kind: "event" | "turn" | "invocation" | "user-input") => string;
@@ -193,6 +310,8 @@ export class AgentRunController {
     this.capabilities = dependencies.capabilities;
     this.catalog = dependencies.catalog;
     this.completionVerifier = dependencies.completionVerifier;
+    this.preparedMutations = dependencies.preparedMutations
+      ?? new FirstPartyPreparedMutationCoordinator(dependencies.capabilities);
     this.store = dependencies.store ?? null;
     this.now = dependencies.now ?? (() => Date.now());
     this.nextId = dependencies.nextId ?? (() => crypto.randomUUID());
@@ -204,13 +323,14 @@ export class AgentRunController {
     signal: AbortSignal | null = null,
     observer: AgentRunProgressObserver | null = null,
   ): Promise<AgentRunOutcome> {
-    return this.execute(request, signal, null, observer);
+    return this.execute(request, signal, null, null, observer);
   }
 
   private async execute(
     request: AgentRunRequest,
     signal: AbortSignal | null = null,
     resumeFrom: AgentRunRecord | null = null,
+    providedInput: AgentProvidedUserInput | null = null,
     observer: AgentRunProgressObserver | null = null,
   ): Promise<AgentRunOutcome> {
     if (resumeFrom !== null && resumeFrom.runId !== request.runId) {
@@ -219,12 +339,25 @@ export class AgentRunController {
         "Agent Run request does not match the persisted Run",
       );
     }
-    const resumesRequiredInput = resumeFrom !== null
-      && resumeFrom.state.lifecycle === "waiting"
-      && resumeFrom.state.phase === "planning"
-      && getAgentRunRequiredInput(resumeFrom) !== null;
+    const requiredInput = resumeFrom === null ? null : getAgentRunRequiredInput(resumeFrom);
+    const continuesRequiredInput = providedInput !== null;
+    if (continuesRequiredInput) {
+      const selection = request.workspace.selection;
+      if (resumeFrom === null
+        || requiredInput === null
+        || providedInput.requestId !== requiredInput.requestId
+        || providedInput.kind !== requiredInput.kind
+        || selection === null
+        || !sameMeasureSelection(providedInput.selection, selection)
+        || providedInput.selection.documentId !== requiredInput.constraints.documentId) {
+        throw new AgentRunResumeError(
+          "provided-input-mismatch",
+          "Provided user input does not match the persisted input request",
+        );
+      }
+    }
     if (resumeFrom !== null
-      && !resumesRequiredInput
+      && !continuesRequiredInput
       && (resumeFrom.state.lifecycle !== "active" || resumeFrom.state.phase !== "planning")) {
       throw new AgentRunResumeError(
         "run-not-plannable",
@@ -249,7 +382,7 @@ export class AgentRunController {
     ];
     let workspace = resumeFrom === null
       ? request.workspace
-      : resumesRequiredInput
+      : continuesRequiredInput
         ? request.workspace
         : resumeFrom.workspace;
     let state: AgentRunState | null = resumeFrom?.state ?? null;
@@ -288,7 +421,7 @@ export class AgentRunController {
         });
       }
       const identity = documentIdentity(invocation.result.data);
-      if (!resumesRequiredInput
+      if (!continuesRequiredInput
         && identity.documentId !== null
         && identity.documentVersion !== null) {
         workspace = {
@@ -366,8 +499,8 @@ export class AgentRunController {
     if (resumeFrom === null) {
       await applyRunEvent({ type: "run.created" });
       await applyRunEvent({ type: "run.prepared" });
-    } else if (resumesRequiredInput) {
-      await applyRunEvent({ type: "run.resumed" });
+    } else if (providedInput !== null) {
+      await applyRunEvent({ type: "user-input.provided", input: providedInput });
     }
 
     const completedTurnCount = events.filter(
@@ -597,6 +730,106 @@ export class AgentRunController {
         turnId,
         content: streamedText,
       });
+      if (validation.approvalRequirements.length > 0) {
+        const pendingInvocations: AgentInvocationRecord[] = [];
+        try {
+          for (const action of toolActions) {
+            const descriptor = this.catalog.find((item) => item.id === action.capabilityId);
+            let preparedExecution: AgentPreparedExecution | null = null;
+            if (descriptor?.executionMode === "prepared-change-set") {
+              const preparationInvocationId = this.nextId("invocation");
+              const preparationActivityId = `preparation:${preparationInvocationId}`;
+              publish({
+                type: "activity.started",
+                runId: request.runId,
+                turnId,
+                activityId: preparationActivityId,
+                kind: "validating",
+                label: "正在准备精确变更",
+              });
+              try {
+                preparedExecution = await waitForEffect(this.preparedMutations.prepare({
+                  preparationInvocationId,
+                  capabilityId: action.capabilityId,
+                  contractVersion: action.contractVersion,
+                  input: action.input,
+                  workspace,
+                  rangeBudget: request.budget.rangeBudget,
+                }), signal);
+                publish({
+                  type: "activity.completed",
+                  runId: request.runId,
+                  turnId,
+                  activityId: preparationActivityId,
+                });
+              } catch (error) {
+                publish(error instanceof AgentRunCancelled
+                  ? {
+                      type: "activity.cancelled",
+                      runId: request.runId,
+                      turnId,
+                      activityId: preparationActivityId,
+                    }
+                  : {
+                      type: "activity.failed",
+                      runId: request.runId,
+                      turnId,
+                      activityId: preparationActivityId,
+                      code: "capability-failed",
+                    });
+                throw error;
+              }
+            }
+            pendingInvocations.push(this.createPendingInvocation(
+              request,
+              turnId,
+              workspace,
+              action,
+              preparedExecution,
+            ));
+          }
+        } catch (error) {
+          upsertTurn({
+            turnId,
+            status: "failed",
+            context,
+            toolset: toolset.snapshot,
+            decision,
+            validation,
+          });
+          const cancelled = error instanceof AgentRunCancelled;
+          const preparationFailure = error instanceof AgentPreparedMutationError
+            || error instanceof AgentCapabilityPortError;
+          if (cancelled) await applyRunEvent({ type: "cancellation.requested" });
+          else if (preparationFailure) await applyRunEvent({ type: "run.failed", code: "capability-failed" });
+          else await applyRunEvent({ type: "run.failed", code: "internal-error" });
+          return outcome(null, null);
+        }
+        invocations.push(...pendingInvocations);
+        upsertTurn({
+          turnId,
+          status: "waiting",
+          context,
+          toolset: toolset.snapshot,
+          decision,
+          validation,
+        });
+        const approvalInvocations = pendingInvocations.filter(
+          (invocation) => invocation.state.status === "awaiting-approval",
+        );
+        await applyRunEvent({
+          type: "approval.required",
+          approval: createRequiredApproval(
+            `approval:${request.runId}:${turnId}`,
+            approvalInvocations,
+            this.catalog,
+            workspace,
+            policy,
+          ),
+        });
+        return outcome(null, null);
+      }
+
       upsertTurn({
         turnId,
         status: "waiting",
@@ -606,14 +839,6 @@ export class AgentRunController {
         validation,
       });
       await applyRunEvent({ type: "turn.tools-accepted" });
-
-      if (validation.requiredUserInput.length > 0) {
-        for (const action of toolActions) {
-          invocations.push(this.createPendingInvocation(request, turnId, workspace, action));
-        }
-        await applyRunEvent({ type: "approval.required" });
-        return outcome(null, null);
-      }
 
       for (const action of toolActions) {
         if (signal?.aborted) {
@@ -682,6 +907,7 @@ export class AgentRunController {
           capabilityId: action.capabilityId,
           contractVersion: action.contractVersion,
           workspaceId: workspace.workspaceId,
+          documentPrecondition: documentPrecondition(workspace),
           input: action.input,
         };
         try {
@@ -796,18 +1022,7 @@ export class AgentRunController {
         }
 
         applyInvocationEvent({ type: "invocation.succeeded" });
-        publish({
-          type: "activity.completed",
-          runId: request.runId,
-          turnId,
-          activityId: `capability:${invocationId}`,
-        });
         upsertInvocation(invocationRecord());
-        await applyRunEvent({
-          type: "invocation.outcome-recorded",
-          invocationId,
-          status: "completed",
-        });
         const identity = documentIdentity(result.data);
         contextItems.push({
           contextItemId: `capability-result:${invocationId}`,
@@ -831,6 +1046,17 @@ export class AgentRunController {
             documentVersion: identity.documentVersion,
           };
         }
+        publish({
+          type: "activity.completed",
+          runId: request.runId,
+          turnId,
+          activityId: `capability:${invocationId}`,
+        });
+        await applyRunEvent({
+          type: "invocation.outcome-recorded",
+          invocationId,
+          status: "completed",
+        });
       }
 
       upsertTurn({
@@ -855,7 +1081,606 @@ export class AgentRunController {
     signal: AbortSignal | null = null,
     observer: AgentRunProgressObserver | null = null,
   ): Promise<AgentRunOutcome> {
-    return this.execute(request, signal, storedRun, observer);
+    return this.execute(request, signal, storedRun, null, observer);
+  }
+
+  async continueWithApproval(
+    request: AgentRunRequest,
+    storedRun: AgentRunRecord,
+    decision: AgentApprovalDecision,
+    signal: AbortSignal | null = null,
+    observer: AgentRunProgressObserver | null = null,
+  ): Promise<AgentRunOutcome> {
+    if (storedRun.runId !== request.runId) {
+      throw new AgentRunResumeError("run-mismatch", "Agent Run request does not match the persisted Run");
+    }
+    if (storedRun.workspace.workspaceId !== request.workspace.workspaceId
+      || storedRun.workspace.documentId !== request.workspace.documentId) {
+      throw new AgentRunResumeError(
+        "workspace-mismatch",
+        "Agent Run cannot continue in a different workspace or document",
+      );
+    }
+    const approval = getAgentRunRequiredApproval(storedRun);
+    if (approval === null
+      || approval.approvalId !== decision.approvalId
+      || approval.kind !== decision.kind
+      || approval.items.some((item) => {
+        const invocation = storedRun.invocations.find(
+          (candidate) => candidate.invocationId === item.invocationId,
+        );
+        return invocation === undefined
+          || invocation.state.status !== "awaiting-approval"
+          || invocation.capabilityId !== item.capabilityId
+          || invocation.contractVersion !== item.contractVersion
+          || (invocation.preparedExecution?.changeSetId ?? null) !== (item.changeSetId ?? null);
+      })) {
+      throw new AgentRunResumeError(
+        "approval-decision-mismatch",
+        "Approval decision does not match the persisted approval request",
+      );
+    }
+    if (decision.outcome === "approved" && approval.items.some((item) => (
+      item.scope.workspaceId !== request.workspace.workspaceId
+      || item.scope.documentId !== request.workspace.documentId
+      || item.scope.documentVersion !== request.workspace.documentVersion
+    ))) {
+      throw new AgentRunResumeError(
+        "approval-decision-mismatch",
+        "Approval scope no longer matches the current workspace version",
+      );
+    }
+
+    const events: AgentRunEventRecord[] = [...storedRun.events];
+    const turns: AgentTurnRecord[] = [...storedRun.turns];
+    const invocations: AgentInvocationRecord[] = [...storedRun.invocations];
+    const contextItems: AgentContextItem[] = [...storedRun.contextItems];
+    let workspace = storedRun.workspace;
+    let state: AgentRunState | null = storedRun.state;
+    let persistedSequence = storedRun.events.at(-1)?.sequence ?? 0;
+    const publish = (event: Parameters<AgentRunProgressObserver>[0]): void => {
+      publishAgentRunProgress(observer, event, this.reportProgressError);
+    };
+    const currentState = (): AgentRunState => {
+      if (state === null) throw new Error("Agent Run has not been created");
+      return state;
+    };
+    const currentRun = (): AgentRunRecord => ({
+      ...storedRun,
+      workspace,
+      state: currentState(),
+      events: [...events],
+      turns: [...turns],
+      invocations: [...invocations],
+      contextItems: [...contextItems],
+    });
+    const upsertInvocation = (invocation: AgentInvocationRecord): void => {
+      const index = invocations.findIndex((item) => item.invocationId === invocation.invocationId);
+      if (index < 0) throw new Error("Approval Invocation is missing from the persisted Run");
+      invocations[index] = invocation;
+    };
+    const updateTurnStatus = (turnId: string, status: AgentTurnRecord["status"]): void => {
+      const index = turns.findIndex((turn) => turn.turnId === turnId);
+      const turn = turns[index];
+      if (index >= 0 && turn !== undefined) turns[index] = { ...turn, status };
+    };
+    const applyInvocationEvent = (
+      invocation: AgentInvocationRecord,
+      event: AgentInvocationEvent,
+      result: CapabilityResult<unknown> | null = invocation.result,
+    ): AgentInvocationRecord => {
+      const transition = reduceAgentInvocationState(invocation.state, event);
+      if (!transition.accepted) throw new Error(transition.message);
+      return {
+        ...invocation,
+        state: transition.state,
+        result,
+        events: [...invocation.events, {
+          eventId: this.nextId("event"),
+          invocationId: invocation.invocationId,
+          sequence: invocation.events.length + 1,
+          occurredAt: this.now(),
+          event,
+        }],
+      };
+    };
+    const applyRunEvent = async (event: AgentRunEvent): Promise<void> => {
+      const transition = reduceAgentRunState(state, event);
+      if (!transition.accepted) throw new Error(transition.message);
+      state = transition.state;
+      const eventRecord: AgentRunEventRecord = {
+        eventId: this.nextId("event"),
+        runId: request.runId,
+        sequence: events.length + 1,
+        occurredAt: this.now(),
+        event,
+      };
+      events.push(eventRecord);
+      if (this.store === null) return;
+      const result = await this.store.commit({
+        runId: request.runId,
+        expectedSequence: persistedSequence,
+        event: eventRecord,
+        nextRun: currentRun(),
+      });
+      if (result.status === "committed") {
+        persistedSequence = result.entry.lastSequence;
+        return;
+      }
+      if (result.status === "sequence-conflict") {
+        throw new Error(`Agent Run store sequence conflict at ${result.currentSequence}`);
+      }
+      throw new Error(`Agent Run store rejected event: ${result.code}`);
+    };
+    const outcome = (): AgentRunOutcome => ({ run: currentRun(), response: null, verification: null });
+    const approvalTurnIds = new Set(approval.items.map((item) => {
+      const invocation = invocations.find((candidate) => candidate.invocationId === item.invocationId);
+      if (invocation === undefined) throw new Error("Approval Invocation is missing");
+      return invocation.turnId;
+    }));
+    const batchInvocationIds = invocations
+      .filter((invocation) => approvalTurnIds.has(invocation.turnId)
+        && (invocation.state.status === "awaiting-approval" || invocation.state.status === "validated"))
+      .map((invocation) => invocation.invocationId);
+
+    if (decision.outcome === "denied") {
+      for (const invocationId of batchInvocationIds) {
+        const invocation = invocations.find((candidate) => candidate.invocationId === invocationId);
+        if (invocation === undefined) throw new Error("Approval Invocation is missing");
+        upsertInvocation(applyInvocationEvent(invocation, invocation.state.status === "awaiting-approval"
+          ? { type: "approval.denied" }
+          : { type: "invocation.rejected" }));
+        updateTurnStatus(invocation.turnId, "completed");
+      }
+      contextItems.push({
+        contextItemId: `approval-decision:${approval.approvalId}`,
+        kind: "user-preference",
+        content: {
+          outcome: "denied",
+          deniedCapabilityIds: approval.items.map((item) => item.capabilityId),
+          abortedCapabilityIds: batchInvocationIds.map((invocationId) => invocations.find(
+            (invocation) => invocation.invocationId === invocationId,
+          )?.capabilityId).filter((capabilityId): capabilityId is string => capabilityId !== undefined),
+        },
+        sourceType: "approval-decision",
+        sourceId: approval.approvalId,
+        documentId: workspace.documentId,
+        documentVersion: workspace.documentVersion,
+        scope: "run",
+        trustLevel: "user-provided",
+        priority: "required",
+        createdAt: this.now(),
+        expiresAt: null,
+        estimatedTokens: 16 + approval.items.length * 4,
+      });
+      await applyRunEvent({ type: "approval.denied", decision });
+      await applyRunEvent({ type: "invocations.completed" });
+      await applyRunEvent({ type: "verification.continue" });
+      return this.execute(request, signal, currentRun(), null, observer);
+    }
+
+    const dispatchInvocation = (invocationId: string): AgentInvocationRecord => {
+      const invocation = invocations.find((candidate) => candidate.invocationId === invocationId);
+      if (invocation === undefined) throw new Error("Approval Invocation is missing");
+      const dispatched = applyInvocationEvent(
+        applyInvocationEvent(invocation, { type: "invocation.dispatched" }),
+        { type: "invocation.started" },
+      );
+      upsertInvocation(dispatched);
+      return dispatched;
+    };
+    for (const invocationId of batchInvocationIds) {
+      const invocation = invocations.find((candidate) => candidate.invocationId === invocationId);
+      if (invocation === undefined) throw new Error("Approval Invocation is missing");
+      if (invocation.state.status === "awaiting-approval") {
+        upsertInvocation(applyInvocationEvent(invocation, { type: "approval.granted" }));
+      }
+    }
+    const firstInvocationId = batchInvocationIds[0];
+    if (firstInvocationId === undefined) throw new Error("Approval Invocation batch is empty");
+    dispatchInvocation(firstInvocationId);
+    await applyRunEvent({ type: "approval.approved", decision });
+
+    for (const [index, invocationId] of batchInvocationIds.entries()) {
+      let invocation = invocations.find((candidate) => candidate.invocationId === invocationId);
+      if (invocation === undefined) throw new Error("Approval Invocation is missing");
+      const capabilityId = invocation.capabilityId;
+      const descriptor = this.catalog.find((candidate) => candidate.id === capabilityId);
+      const activityKind: AgentProgressActivityKind = descriptor?.kind === "query" ? "reading" : "executing";
+      publish({
+        type: "activity.started",
+        runId: request.runId,
+        turnId: invocation.turnId,
+        activityId: `capability:${invocation.invocationId}`,
+        kind: activityKind,
+        label: descriptor?.name ?? invocation.capabilityId,
+      });
+      const capabilityRequest = capabilityRequestForInvocation(invocation, workspace);
+      let result: CapabilityResult<unknown>;
+      try {
+        const executionResult = await waitForEffect(this.capabilities.invoke(capabilityRequest, {
+          workspace,
+          rangeBudget: request.budget.rangeBudget,
+        }), signal);
+        result = normalizeCapabilityResultForInvocation(invocation, executionResult);
+      } catch (error) {
+        const cancelled = error instanceof AgentRunCancelled;
+        const definiteFailure = error instanceof AgentCapabilityPortError
+          && error.outcome === "definite-failure";
+        publish(cancelled
+          ? {
+              type: "activity.cancelled",
+              runId: request.runId,
+              turnId: invocation.turnId,
+              activityId: `capability:${invocation.invocationId}`,
+            }
+          : {
+              type: "activity.failed",
+              runId: request.runId,
+              turnId: invocation.turnId,
+              activityId: `capability:${invocation.invocationId}`,
+              code: definiteFailure ? "capability-failed" : "capability-outcome-unknown",
+            });
+        invocation = applyInvocationEvent(invocation, {
+          type: definiteFailure ? "invocation.failed" : "invocation.outcome-unknown",
+        });
+        upsertInvocation(invocation);
+        updateTurnStatus(invocation.turnId, definiteFailure ? "failed" : "waiting");
+        await applyRunEvent({
+          type: "invocation.outcome-recorded",
+          invocationId: invocation.invocationId,
+          status: definiteFailure ? "failed" : "outcome-unknown",
+        });
+        if (cancelled) await applyRunEvent({ type: "cancellation.requested" });
+        else if (definiteFailure) await applyRunEvent({ type: "run.failed", code: "capability-failed" });
+        else await applyRunEvent({
+          type: "run.recovery-required",
+          reason: "capability-outcome-unknown",
+        });
+        return outcome();
+      }
+
+      if (result.status !== "completed") {
+        publish({
+          type: "activity.failed",
+          runId: request.runId,
+          turnId: invocation.turnId,
+          activityId: `capability:${invocation.invocationId}`,
+          code: result.status === "rejected" ? "capability-rejected" : "capability-failed",
+        });
+        invocation = applyInvocationEvent(invocation, {
+          type: result.status === "rejected" ? "invocation.rejected" : "invocation.failed",
+        }, result);
+        upsertInvocation(invocation);
+        updateTurnStatus(invocation.turnId, "failed");
+        await applyRunEvent({
+          type: "invocation.outcome-recorded",
+          invocationId: invocation.invocationId,
+          status: result.status === "rejected" ? "rejected" : "failed",
+        });
+        await applyRunEvent({ type: "run.failed", code: "capability-failed" });
+        return outcome();
+      }
+
+      invocation = applyInvocationEvent(invocation, { type: "invocation.succeeded" }, result);
+      upsertInvocation(invocation);
+      updateTurnStatus(invocation.turnId, "completed");
+      const identity = documentIdentity(result.data);
+      contextItems.push({
+        contextItemId: `capability-result:${invocation.invocationId}`,
+        kind: "capability-result",
+        content: result.data,
+        sourceType: "capability-result",
+        sourceId: invocation.capabilityId,
+        documentId: identity.documentId,
+        documentVersion: identity.documentVersion,
+        scope: descriptor?.scopeLimit ?? "none",
+        trustLevel: "authoritative",
+        priority: "high",
+        createdAt: this.now(),
+        expiresAt: null,
+        estimatedTokens: estimateTokens(result.data),
+      });
+      if (identity.documentId !== null && identity.documentVersion !== null) {
+        workspace = { ...workspace, documentId: identity.documentId, documentVersion: identity.documentVersion };
+      }
+      const nextInvocationId = batchInvocationIds[index + 1];
+      if (nextInvocationId !== undefined) dispatchInvocation(nextInvocationId);
+      publish({
+        type: "activity.completed",
+        runId: request.runId,
+        turnId: invocation.turnId,
+        activityId: `capability:${invocation.invocationId}`,
+      });
+      await applyRunEvent({
+        type: "invocation.outcome-recorded",
+        invocationId: invocation.invocationId,
+        status: "completed",
+      });
+    }
+
+    await applyRunEvent({ type: "invocations.completed" });
+    await applyRunEvent({ type: "verification.continue" });
+    return this.execute(request, signal, currentRun(), null, observer);
+  }
+
+  async retryInvocation(
+    request: AgentRunRequest,
+    storedRun: AgentRunRecord,
+    invocationId: string,
+    signal: AbortSignal | null = null,
+    observer: AgentRunProgressObserver | null = null,
+  ): Promise<AgentRunOutcome> {
+    if (storedRun.runId !== request.runId) {
+      throw new AgentRunResumeError("run-mismatch", "Agent Run request does not match the persisted Run");
+    }
+    if (storedRun.workspace.workspaceId !== request.workspace.workspaceId
+      || storedRun.workspace.documentId !== request.workspace.documentId) {
+      throw new AgentRunResumeError(
+        "workspace-mismatch",
+        "Agent Run cannot retry in a different workspace or document",
+      );
+    }
+    if (storedRun.workspace.documentVersion !== request.workspace.documentVersion
+      || storedRun.state.lifecycle !== "recovering"
+      || storedRun.state.phase !== "executing") {
+      throw new AgentRunResumeError(
+        "retry-mismatch",
+        "Capability retry no longer matches the persisted Run or document version",
+      );
+    }
+    const retryInvocation = storedRun.invocations.find(
+      (invocation) => invocation.invocationId === invocationId,
+    );
+    if (retryInvocation === undefined
+      || !["dispatched", "running", "outcome-unknown"].includes(retryInvocation.state.status)
+      || storedRun.invocations.some((invocation) => invocation.invocationId !== invocationId
+        && ["dispatched", "running", "outcome-unknown"].includes(invocation.state.status))) {
+      throw new AgentRunResumeError(
+        "retry-mismatch",
+        "Capability retry does not match the single outstanding Invocation",
+      );
+    }
+
+    const events: AgentRunEventRecord[] = [...storedRun.events];
+    const turns: AgentTurnRecord[] = [...storedRun.turns];
+    const invocations: AgentInvocationRecord[] = [...storedRun.invocations];
+    const contextItems: AgentContextItem[] = [...storedRun.contextItems];
+    let workspace = storedRun.workspace;
+    let state: AgentRunState | null = storedRun.state;
+    let persistedSequence = storedRun.events.at(-1)?.sequence ?? 0;
+    const publish = (event: Parameters<AgentRunProgressObserver>[0]): void => {
+      publishAgentRunProgress(observer, event, this.reportProgressError);
+    };
+    const currentState = (): AgentRunState => {
+      if (state === null) throw new Error("Agent Run has not been created");
+      return state;
+    };
+    const currentRun = (): AgentRunRecord => ({
+      ...storedRun,
+      workspace,
+      state: currentState(),
+      events: [...events],
+      turns: [...turns],
+      invocations: [...invocations],
+      contextItems: [...contextItems],
+    });
+    const upsertInvocation = (invocation: AgentInvocationRecord): void => {
+      const index = invocations.findIndex((item) => item.invocationId === invocation.invocationId);
+      if (index < 0) throw new Error("Retry Invocation is missing from the persisted Run");
+      invocations[index] = invocation;
+    };
+    const updateTurnStatus = (turnId: string, status: AgentTurnRecord["status"]): void => {
+      const index = turns.findIndex((turn) => turn.turnId === turnId);
+      const turn = turns[index];
+      if (index >= 0 && turn !== undefined) turns[index] = { ...turn, status };
+    };
+    const applyInvocationEvent = (
+      invocation: AgentInvocationRecord,
+      event: AgentInvocationEvent,
+      result: CapabilityResult<unknown> | null = invocation.result,
+    ): AgentInvocationRecord => {
+      const transition = reduceAgentInvocationState(invocation.state, event);
+      if (!transition.accepted) throw new Error(transition.message);
+      return {
+        ...invocation,
+        state: transition.state,
+        result,
+        events: [...invocation.events, {
+          eventId: this.nextId("event"),
+          invocationId: invocation.invocationId,
+          sequence: invocation.events.length + 1,
+          occurredAt: this.now(),
+          event,
+        }],
+      };
+    };
+    const applyRunEvent = async (event: AgentRunEvent): Promise<void> => {
+      const transition = reduceAgentRunState(state, event);
+      if (!transition.accepted) throw new Error(transition.message);
+      state = transition.state;
+      const eventRecord: AgentRunEventRecord = {
+        eventId: this.nextId("event"),
+        runId: request.runId,
+        sequence: events.length + 1,
+        occurredAt: this.now(),
+        event,
+      };
+      events.push(eventRecord);
+      if (this.store === null) return;
+      const result = await this.store.commit({
+        runId: request.runId,
+        expectedSequence: persistedSequence,
+        event: eventRecord,
+        nextRun: currentRun(),
+      });
+      if (result.status === "committed") {
+        persistedSequence = result.entry.lastSequence;
+        return;
+      }
+      if (result.status === "sequence-conflict") {
+        throw new Error(`Agent Run store sequence conflict at ${result.currentSequence}`);
+      }
+      throw new Error(`Agent Run store rejected event: ${result.code}`);
+    };
+    const outcome = (): AgentRunOutcome => ({ run: currentRun(), response: null, verification: null });
+    const retryIndex = invocations.findIndex((invocation) => invocation.invocationId === invocationId);
+    const batchInvocationIds = invocations
+      .slice(retryIndex)
+      .filter((invocation) => invocation.turnId === retryInvocation.turnId
+        && (invocation.invocationId === invocationId || invocation.state.status === "validated"))
+      .map((invocation) => invocation.invocationId);
+    const dispatchInvocation = (targetInvocationId: string): AgentInvocationRecord => {
+      const invocation = invocations.find((candidate) => candidate.invocationId === targetInvocationId);
+      if (invocation === undefined) throw new Error("Retry Invocation batch is incomplete");
+      const dispatched = applyInvocationEvent(
+        applyInvocationEvent(invocation, { type: "invocation.dispatched" }),
+        { type: "invocation.started" },
+      );
+      upsertInvocation(dispatched);
+      return dispatched;
+    };
+
+    const authorized = applyInvocationEvent(retryInvocation, { type: "invocation.retry-authorized" });
+    upsertInvocation(authorized);
+    dispatchInvocation(invocationId);
+    await applyRunEvent({
+      type: "invocation.retry-authorized",
+      invocationId,
+      authorizedBy: "local-user",
+    });
+
+    for (const [index, batchInvocationId] of batchInvocationIds.entries()) {
+      let invocation = invocations.find((candidate) => candidate.invocationId === batchInvocationId);
+      if (invocation === undefined) throw new Error("Retry Invocation batch is incomplete");
+      const capabilityId = invocation.capabilityId;
+      const descriptor = this.catalog.find((candidate) => candidate.id === capabilityId);
+      const activityKind: AgentProgressActivityKind = descriptor?.kind === "query" ? "reading" : "executing";
+      publish({
+        type: "activity.started",
+        runId: request.runId,
+        turnId: invocation.turnId,
+        activityId: `capability:${invocation.invocationId}`,
+        kind: activityKind,
+        label: descriptor?.name ?? invocation.capabilityId,
+      });
+      const capabilityRequest = capabilityRequestForInvocation(invocation, workspace);
+      let result: CapabilityResult<unknown>;
+      try {
+        const executionResult = await waitForEffect(this.capabilities.invoke(capabilityRequest, {
+          workspace,
+          rangeBudget: request.budget.rangeBudget,
+        }), signal);
+        result = normalizeCapabilityResultForInvocation(invocation, executionResult);
+      } catch (error) {
+        const cancelled = error instanceof AgentRunCancelled;
+        const definiteFailure = error instanceof AgentCapabilityPortError
+          && error.outcome === "definite-failure";
+        publish(cancelled
+          ? {
+              type: "activity.cancelled",
+              runId: request.runId,
+              turnId: invocation.turnId,
+              activityId: `capability:${invocation.invocationId}`,
+            }
+          : {
+              type: "activity.failed",
+              runId: request.runId,
+              turnId: invocation.turnId,
+              activityId: `capability:${invocation.invocationId}`,
+              code: definiteFailure ? "capability-failed" : "capability-outcome-unknown",
+            });
+        invocation = applyInvocationEvent(invocation, {
+          type: definiteFailure ? "invocation.failed" : "invocation.outcome-unknown",
+        });
+        upsertInvocation(invocation);
+        updateTurnStatus(invocation.turnId, definiteFailure ? "failed" : "waiting");
+        await applyRunEvent({
+          type: "invocation.outcome-recorded",
+          invocationId: invocation.invocationId,
+          status: definiteFailure ? "failed" : "outcome-unknown",
+        });
+        if (cancelled) await applyRunEvent({ type: "cancellation.requested" });
+        else if (definiteFailure) await applyRunEvent({ type: "run.failed", code: "capability-failed" });
+        else await applyRunEvent({
+          type: "run.recovery-required",
+          reason: "capability-outcome-unknown",
+        });
+        return outcome();
+      }
+
+      if (result.status !== "completed") {
+        publish({
+          type: "activity.failed",
+          runId: request.runId,
+          turnId: invocation.turnId,
+          activityId: `capability:${invocation.invocationId}`,
+          code: result.status === "rejected" ? "capability-rejected" : "capability-failed",
+        });
+        invocation = applyInvocationEvent(invocation, {
+          type: result.status === "rejected" ? "invocation.rejected" : "invocation.failed",
+        }, result);
+        upsertInvocation(invocation);
+        updateTurnStatus(invocation.turnId, "failed");
+        await applyRunEvent({
+          type: "invocation.outcome-recorded",
+          invocationId: invocation.invocationId,
+          status: result.status === "rejected" ? "rejected" : "failed",
+        });
+        await applyRunEvent({ type: "run.failed", code: "capability-failed" });
+        return outcome();
+      }
+
+      invocation = applyInvocationEvent(invocation, { type: "invocation.succeeded" }, result);
+      upsertInvocation(invocation);
+      updateTurnStatus(invocation.turnId, "completed");
+      const identity = documentIdentity(result.data);
+      contextItems.push({
+        contextItemId: `capability-result:${invocation.invocationId}`,
+        kind: "capability-result",
+        content: result.data,
+        sourceType: "capability-result",
+        sourceId: invocation.capabilityId,
+        documentId: identity.documentId,
+        documentVersion: identity.documentVersion,
+        scope: descriptor?.scopeLimit ?? "none",
+        trustLevel: "authoritative",
+        priority: "high",
+        createdAt: this.now(),
+        expiresAt: null,
+        estimatedTokens: estimateTokens(result.data),
+      });
+      if (identity.documentId !== null && identity.documentVersion !== null) {
+        workspace = { ...workspace, documentId: identity.documentId, documentVersion: identity.documentVersion };
+      }
+      const nextInvocationId = batchInvocationIds[index + 1];
+      if (nextInvocationId !== undefined) dispatchInvocation(nextInvocationId);
+      publish({
+        type: "activity.completed",
+        runId: request.runId,
+        turnId: invocation.turnId,
+        activityId: `capability:${invocation.invocationId}`,
+      });
+      await applyRunEvent({
+        type: "invocation.outcome-recorded",
+        invocationId: invocation.invocationId,
+        status: "completed",
+      });
+    }
+
+    await applyRunEvent({ type: "invocations.completed" });
+    await applyRunEvent({ type: "verification.continue" });
+    return this.execute(request, signal, currentRun(), null, observer);
+  }
+
+  async continueWithInput(
+    request: AgentRunRequest,
+    storedRun: AgentRunRecord,
+    input: AgentProvidedUserInput,
+    signal: AbortSignal | null = null,
+    observer: AgentRunProgressObserver | null = null,
+  ): Promise<AgentRunOutcome> {
+    return this.execute(request, signal, storedRun, input, observer);
   }
 
   private createPendingInvocation(
@@ -863,6 +1688,7 @@ export class AgentRunController {
     turnId: string,
     workspace: AgentWorkspaceScope,
     action: ToolCallAction,
+    preparedExecution: AgentPreparedExecution | null = null,
   ): AgentInvocationRecord {
     const invocationId = this.nextId("invocation");
     const events: AgentInvocationEventRecord[] = [];
@@ -890,6 +1716,7 @@ export class AgentRunController {
       capabilityId: action.capabilityId,
       contractVersion: action.contractVersion,
       input: action.input,
+      preparedExecution,
       baseDocumentVersion: workspace.documentVersion,
       state,
       result: null,

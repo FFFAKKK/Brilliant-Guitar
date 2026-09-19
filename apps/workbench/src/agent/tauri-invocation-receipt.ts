@@ -2,6 +2,10 @@ import { invoke } from "@tauri-apps/api/core";
 
 import { isCapabilityResult } from "../contracts/capability.ts";
 import type { AgentInvocationReceiptLookup, AgentInvocationReceiptPort } from "./recovery-coordinator.ts";
+import {
+  capabilityRequestForInvocation,
+  normalizeCapabilityResultForInvocation,
+} from "./prepared-mutation.ts";
 
 type Invoke = <T>(command: string, args?: Record<string, unknown>) => Promise<T>;
 
@@ -50,19 +54,24 @@ export class TauriAgentInvocationReceiptPort implements AgentInvocationReceiptPo
 
   async lookup(input: Parameters<AgentInvocationReceiptPort["lookup"]>[0]): Promise<AgentInvocationReceiptLookup> {
     try {
+      const request = capabilityRequestForInvocation(input.invocation, input.workspace);
       const value = await this.invokeCommand<unknown>(
         "workbench_agent_invocation_receipt_v1",
-        {
-          request: {
-            invocationId: input.invocation.invocationId,
-            capabilityId: input.invocation.capabilityId,
-            contractVersion: input.invocation.contractVersion,
-            workspaceId: input.workspaceId,
-            input: input.invocation.input,
-          },
-        },
+        { request },
       );
-      return decodeLookup(value);
+      const decoded = decodeLookup(value);
+      if (decoded.status !== "resolved") return decoded;
+      if (decoded.result.invocationId !== request.invocationId
+        || decoded.result.capabilityId !== request.capabilityId
+        || decoded.result.contractVersion !== request.contractVersion) {
+        throw new AgentInvocationReceiptProtocolError(
+          "Capability receipt identity does not match the prepared execution",
+        );
+      }
+      return {
+        status: "resolved",
+        result: normalizeCapabilityResultForInvocation(input.invocation, decoded.result),
+      };
     } catch (error) {
       if (error instanceof AgentInvocationReceiptProtocolError) throw error;
       if (hostIssueCode(error) === "capability-receipt.identity-conflict") {

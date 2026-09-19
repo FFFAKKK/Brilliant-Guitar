@@ -283,8 +283,8 @@ pub fn workbench_invoke_capability_v1(
     request: CapabilityTransportRequest,
 ) -> Result<CapabilityResult, HostError> {
     let invocation = CapabilityInvocation::from_transport(request, CapabilityCaller::Ui);
-    let service = locked(state.inner())?;
-    Ok(crate::capability::invoke(&service, invocation))
+    let mut service = locked(state.inner())?;
+    Ok(crate::capability::invoke(&mut service, invocation))
 }
 
 #[tauri::command]
@@ -319,8 +319,8 @@ pub fn workbench_agent_invoke_capability_v1(
         }
         CapabilityReceiptBeginV1::Started => {}
     }
-    let service = locked(state.inner())?;
-    let result = crate::capability::invoke(&service, invocation.clone());
+    let mut service = locked(state.inner())?;
+    let result = crate::capability::invoke(&mut service, invocation.clone());
     drop(service);
     state
         .capability_receipts

@@ -6,7 +6,7 @@ import { PluginStartupController } from "../src/plugins/plugin-startup-controlle
 import { PluginManifestDiscovery } from "../src/plugins/plugin-discovery.ts";
 import type { InternalUiPluginModule, UiCommandContribution } from "../src/ui/plugin-manager.ts";
 import type { UiComponentDefinition } from "../src/ui/plugin-contract.ts";
-import { WORKBENCH_PLUGIN_API_VERSION, WorkbenchCapabilityRegistry } from "../src/ui/plugin-manifest.ts";
+import { WORKBENCH_PLUGIN_API_VERSION, WorkbenchFeatureRegistry } from "../src/ui/plugin-manifest.ts";
 import { bindUiProjection, defineUiProjection } from "../src/ui/projection-registry.ts";
 import type { PluginInstrumentContribution, PluginPlaybackOutputContribution } from "../src/plugins/plugin-sdk.ts";
 import { definePlugin } from "../src/plugins/plugin-sdk.ts";
@@ -46,7 +46,7 @@ function plugin(input: Readonly<{
       apiVersion: WORKBENCH_PLUGIN_API_VERSION,
       runtime: "internal-module",
       activation: input.activation ?? "always",
-      requires: { capabilities: [], projections: [state.id] },
+      requires: { hostFeatures: [], projections: [state.id] },
       contributes: {
         views: [component.id],
         commands: commands.map((command) => command.id),
@@ -91,7 +91,7 @@ function playbackOutput(id: string): PluginPlaybackOutputContribution {
 
 function platform() {
   return new PluginPlatform({
-    capabilities: new WorkbenchCapabilityRegistry([]),
+    hostFeatures: new WorkbenchFeatureRegistry([]),
     projections: [state],
   });
 }
@@ -567,7 +567,7 @@ test("an incomplete first startup falls back to safe mode when no stable baselin
 test("manifest discovery preflights contracts without loading plugin modules", () => {
   const owner = plugin({ id: "test.discovered", componentId: "test.discovered.view" });
   const discovery = new PluginManifestDiscovery({
-    capabilities: new WorkbenchCapabilityRegistry([]),
+    hostFeatures: new WorkbenchFeatureRegistry([]),
     projections: [state.id],
   });
 
@@ -576,12 +576,12 @@ test("manifest discovery preflights contracts without loading plugin modules", (
   assert.equal(discovery.failures().at(-1)?.code, "manifest.duplicate");
 
   const missingCapability = { ...owner.manifest, id: "test.missing-capability",
-    requires: { capabilities: ["workbench.missing"], projections: [state.id] } };
+    requires: { hostFeatures: ["workbench.missing"], projections: [state.id] } };
   assert.equal(discovery.inspect(missingCapability).accepted, false);
   assert.equal(discovery.failures().at(-1)?.code, "manifest.capability-unavailable");
 
   const missingProjection = { ...owner.manifest, id: "test.missing-projection",
-    requires: { capabilities: [], projections: ["test.missing-projection.state"] } };
+    requires: { hostFeatures: [], projections: ["test.missing-projection.state"] } };
   assert.equal(discovery.inspect(missingProjection).accepted, false);
   assert.equal(discovery.failures().at(-1)?.code, "manifest.projection-unavailable");
 
@@ -604,13 +604,13 @@ test("manifest discovery preflights contracts without loading plugin modules", (
   assert.deepEqual(discovery.list().map((manifest) => manifest.id), ["test.discovered"]);
 
   const detachedDiscovery = new PluginManifestDiscovery({
-    capabilities: new WorkbenchCapabilityRegistry([]),
+    hostFeatures: new WorkbenchFeatureRegistry([]),
     projections: [state.id],
   });
   const mutableManifest = {
     ...owner.manifest,
     id: "test.detached",
-    requires: { capabilities: [], projections: [state.id] },
+    requires: { hostFeatures: [], projections: [state.id] },
     contributes: {
       ...owner.manifest.contributes,
       views: [...owner.manifest.contributes.views],
@@ -635,6 +635,6 @@ test("manifest discovery preflights contracts without loading plugin modules", (
   assert.equal(accessorReads, 0);
   assert.equal(detachedDiscovery.inspect({ ...mutableManifest, unexpected: true }).accepted, false);
   const sparse = { ...mutableManifest, id: "test.sparse",
-    requires: { capabilities: [], projections: new Array(1) } };
+    requires: { hostFeatures: [], projections: new Array(1) } };
   assert.equal(detachedDiscovery.inspect(sparse).accepted, false);
 });

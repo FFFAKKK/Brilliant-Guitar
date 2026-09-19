@@ -7,8 +7,12 @@ import { InMemoryAgentRunStore } from "../src/agent/agent-store.ts";
 import type { AgentRunStorePort } from "../src/agent/agent-store.ts";
 import type { AgentPluginRunLease, AgentPluginRuntimeSnapshot } from "../src/agent/agent-plugin-runtime.ts";
 import { WorkbenchAgentCapabilityPort } from "../src/agent/capability-port.ts";
+import { verifyScoreSummaryCompletion } from "../src/agent/completion-verifier.ts";
+import { FIRST_PARTY_CAPABILITY_CATALOG } from "../src/agent/first-party-capabilities.ts";
 import { FakeAgentProvider } from "../src/agent/provider.ts";
 import type { AgentProviderPort } from "../src/agent/provider.ts";
+import { AgentRunController, getAgentRunRequiredApproval } from "../src/agent/run-controller.ts";
+import type { WorkflowDirectory } from "../src/contracts/workflow.ts";
 
 const readyRuntimeSnapshot: AgentPluginRuntimeSnapshot = {
   enabled: true,
@@ -25,6 +29,8 @@ class FakeRuntime implements AgentAssistantRuntimePort {
   refreshCalls = 0;
   beginCalls = 0;
   continuationCalls = 0;
+  approvalContinuationCalls = 0;
+  retryContinuationCalls = 0;
   releaseCalls = 0;
   cancelCalls = 0;
 
@@ -58,6 +64,28 @@ class FakeRuntime implements AgentAssistantRuntimePort {
     };
   };
 
+  beginApprovalContinuation = (): AgentPluginRunLease | null => {
+    this.approvalContinuationCalls += 1;
+    const controller = new AbortController();
+    return {
+      provider: this.provider,
+      signal: controller.signal,
+      cancel: () => { this.cancelCalls += 1; controller.abort(); },
+      release: () => { this.releaseCalls += 1; },
+    };
+  };
+
+  beginRetryContinuation = (): AgentPluginRunLease | null => {
+    this.retryContinuationCalls += 1;
+    const controller = new AbortController();
+    return {
+      provider: this.provider,
+      signal: controller.signal,
+      cancel: () => { this.cancelCalls += 1; controller.abort(); },
+      release: () => { this.releaseCalls += 1; },
+    };
+  };
+
   async refresh(): Promise<void> { this.refreshCalls += 1; }
 }
 
@@ -66,6 +94,22 @@ const workspace = {
   documentId: "score-1",
   documentVersion: 7,
   selection: null,
+};
+
+const summaryWorkflowDirectory: WorkflowDirectory = {
+  get: (id) => id === "score.inspect" ? {
+    id: "score.inspect",
+    contractVersion: 1,
+    name: "检查乐谱",
+    description: "读取乐谱信息",
+    runtime: "agent-orchestration-v1",
+    operationIds: ["score.read-summary"],
+    entryOperationIds: ["score.read-summary"],
+    ownerPluginId: "brilliant.score",
+    ownerPluginVersion: "1.0.0",
+  } : undefined,
+  list: () => [summaryWorkflowDirectory.get("score.inspect")!],
+  listByPlugin: (pluginId) => pluginId === "brilliant.score" ? summaryWorkflowDirectory.list() : [],
 };
 
 test("assistant session composes Provider, controller, capability and durable store", async () => {
@@ -99,8 +143,9 @@ test("assistant session composes Provider, controller, capability and durable st
     store,
     createRunId: () => "run-ui-summary",
     createConversationId: () => "conversation-ui-summary",
+    workflows: summaryWorkflowDirectory,
     capabilities: new WorkbenchAgentCapabilityPort({
-      async invokeAgentCapability(request) {
+      async invokeCapability(request) {
         return {
           status: "completed",
           invocationId: request.invocationId,
@@ -131,7 +176,14 @@ test("assistant session composes Provider, controller, capability and durable st
   assert.equal(runtime.beginCalls, 1);
   assert.equal(runtime.releaseCalls, 1);
   assert.equal(provider.exhausted, true);
-  assert.equal((await store.load("run-ui-summary"))?.run.state.lifecycle, "terminal");
+  const stored = await store.load("run-ui-summary");
+  assert.equal(stored?.run.state.lifecycle, "terminal");
+  assert.deepEqual(stored?.run.intent.workflow, {
+    id: "score.inspect",
+    contractVersion: 1,
+    ownerPluginId: "brilliant.score",
+    ownerPluginVersion: "1.0.0",
+  });
 });
 
 test("assistant session routes metadata questions to the metadata capability", async () => {
@@ -157,7 +209,7 @@ test("assistant session routes metadata questions to the metadata capability", a
     store: new InMemoryAgentRunStore(),
     createRunId: () => "run-ui-metadata",
     capabilities: new WorkbenchAgentCapabilityPort({
-      async invokeAgentCapability(request) {
+      async invokeCapability(request) {
         return {
           status: "completed",
           invocationId: request.invocationId,
@@ -203,7 +255,7 @@ test("assistant session routes structure questions to the structure capability",
     store: new InMemoryAgentRunStore(),
     createRunId: () => "run-ui-structure",
     capabilities: new WorkbenchAgentCapabilityPort({
-      async invokeAgentCapability(request) {
+      async invokeCapability(request) {
         return {
           status: "completed",
           invocationId: request.invocationId,
@@ -377,13 +429,49 @@ test("assistant session keeps one submission while waiting for and continuing wi
   ), false);
   assert.equal(runtime.continuationCalls, 0);
   assert.ok(waiting.requiredInput);
-  assert.equal(await session.provideRequiredInput(
+  const restartedRuntime = new FakeRuntime(provider);
+  const restartedSession = new AgentAssistantSession({
+    runtime: restartedRuntime,
+    store,
+    capabilities: {
+      async invoke(capabilityRequest, context) {
+        selections.push(context?.workspace.selection ?? null);
+        if (context?.workspace.selection === null) return {
+          status: "rejected",
+          invocationId: capabilityRequest.invocationId,
+          capabilityId: capabilityRequest.capabilityId,
+          contractVersion: capabilityRequest.contractVersion,
+          code: "selection-unavailable",
+          message: "当前没有可用于任务的小节选择区",
+        };
+        return {
+          status: "completed",
+          invocationId: capabilityRequest.invocationId,
+          capabilityId: capabilityRequest.capabilityId,
+          contractVersion: capabilityRequest.contractVersion,
+          data: {
+            documentId: "score-1",
+            documentVersion: 8,
+            startMeasureId: "measure-2",
+            endMeasureId: "measure-2",
+            measureCount: 1,
+            measures: [{
+              measureId: "measure-2",
+              meter: { numerator: 4, denominator: 4 },
+              pickupDuration: null,
+            }],
+          },
+        };
+      },
+    },
+  });
+  assert.equal(await restartedSession.provideRequiredInput(
     "run-selection-resume",
     waiting.requiredInput.requestId,
     selectedWorkspace,
   ), true);
 
-  const completed = session.getSnapshot();
+  const completed = restartedSession.getSnapshot();
   assert.equal(completed.status, "completed");
   assert.equal(completed.runId, "run-selection-resume");
   assert.equal(completed.requiredInput, null);
@@ -393,8 +481,10 @@ test("assistant session keeps one submission while waiting for and continuing wi
   assert.equal(completed.conversation.activities.every((activity) => activity.status === "completed"), true);
   assert.deepEqual(selections, [null, selectedWorkspace.selection]);
   assert.equal(runtime.beginCalls, 1);
-  assert.equal(runtime.continuationCalls, 1);
-  assert.equal(runtime.releaseCalls, 2);
+  assert.equal(runtime.continuationCalls, 0);
+  assert.equal(runtime.releaseCalls, 1);
+  assert.equal(restartedRuntime.continuationCalls, 1);
+  assert.equal(restartedRuntime.releaseCalls, 1);
   assert.equal((await store.load("run-selection-resume"))?.run.events.filter(
     (event) => event.event.type === "run.created",
   ).length, 1);
@@ -465,7 +555,7 @@ test("assistant session projects completed task summaries into the next run only
     createConversationId: () => "conversation-history",
     now: () => 100,
     capabilities: new WorkbenchAgentCapabilityPort({
-      async invokeAgentCapability(request) {
+      async invokeCapability(request) {
         return {
           status: "completed",
           invocationId: request.invocationId,
@@ -526,7 +616,7 @@ test("assistant session carries failed runs forward without their draft response
     createRunId: () => runIds.shift() ?? "unexpected-run",
     now: () => 200,
     capabilities: new WorkbenchAgentCapabilityPort({
-      async invokeAgentCapability(request) {
+      async invokeCapability(request) {
         return {
           status: "completed",
           invocationId: request.invocationId,
@@ -569,6 +659,490 @@ test("assistant session refuses a run until runtime and document prerequisites a
   assert.equal(await session.start("读取当前乐谱概要", workspace), false);
   assert.equal(session.getSnapshot().message, "需要配置模型 Provider");
   assert.equal(runtime.beginCalls, 1);
+});
+
+test("assistant session routes a title edit through approval, version binding and projection refresh", async () => {
+  const provider = new FakeAgentProvider([
+    {
+      kind: "decision",
+      expect: { capabilityIds: ["score.update-title"], contextSourceIds: [] },
+      decision: { kind: "tool-calls", calls: [{
+        callId: "update-title",
+        capabilityId: "score.update-title",
+        contractVersion: 1,
+        input: { title: "夜曲" },
+      }] },
+    },
+    {
+      kind: "decision",
+      expect: { capabilityIds: ["score.update-title"], contextSourceIds: ["score.update-title"] },
+      decision: { kind: "finish", reason: "completed", text: "作品标题已经修改为《夜曲》。" },
+    },
+  ]);
+  const runtime = new FakeRuntime(provider);
+  const store = new InMemoryAgentRunStore();
+  const requests: Parameters<WorkbenchAgentCapabilityPort["invoke"]>[0][] = [];
+  const changes: Array<{ documentId: string; documentVersion: number }> = [];
+  const session = new AgentAssistantSession({
+    runtime,
+    store,
+    createRunId: () => "run-update-title",
+    createConversationId: () => "conversation-update-title",
+    capabilities: new WorkbenchAgentCapabilityPort({
+      async invokeCapability(request) {
+        requests.push(request);
+        return {
+          status: "completed",
+          invocationId: request.invocationId,
+          capabilityId: request.capabilityId,
+          contractVersion: request.contractVersion,
+          data: {
+            documentId: "score-1",
+            documentVersion: 8,
+            previousTitle: "练习曲",
+            title: "夜曲",
+            undoAvailable: true,
+          },
+        };
+      },
+    }),
+    onDocumentChanged(change) { changes.push(change); },
+  });
+
+  assert.equal(await session.start("请把作品标题改为《夜曲》", workspace), false);
+  assert.equal(requests.length, 0);
+  const waiting = await store.load("run-update-title");
+  assert.ok(waiting);
+  const approval = getAgentRunRequiredApproval(waiting.run);
+  assert.ok(approval);
+  assert.equal(approval.items[0]?.summary.includes("夜曲"), true);
+  assert.deepEqual(approval.items[0]?.preview, {
+    kind: "field-change",
+    field: "score.title",
+    before: null,
+    after: "夜曲",
+  });
+  assert.equal(approval.items[0]?.policy.decision, "require-approval");
+
+  assert.equal(await session.provideApprovalDecision(
+    waiting.run.runId,
+    approval.approvalId,
+    "approved",
+    workspace,
+  ), true);
+  assert.deepEqual(requests.map((request) => ({
+    capabilityId: request.capabilityId,
+    documentPrecondition: request.documentPrecondition,
+    input: request.input,
+  })), [{
+    capabilityId: "score.update-title",
+    documentPrecondition: { documentId: "score-1", documentVersion: 7 },
+    input: { title: "夜曲" },
+  }]);
+  assert.deepEqual(changes, [{ documentId: "score-1", documentVersion: 8 }]);
+  assert.equal(session.getSnapshot().status, "completed");
+  assert.equal(session.getSnapshot().response, "作品标题已经修改为《夜曲》。");
+  assert.equal(runtime.approvalContinuationCalls, 1);
+  assert.equal(provider.exhausted, true);
+});
+
+test("assistant session prepares and approves an authoritative tempo ChangeSet", async () => {
+  const changeSetId = `sha256:${"b".repeat(64)}`;
+  const changeSet = {
+    changeSetId,
+    kind: "score-tempo",
+    documentId: "score-1",
+    baseDocumentVersion: 7,
+    beforeTempoBpm: 96,
+    afterTempoBpm: 132,
+  };
+  const provider = new FakeAgentProvider([
+    {
+      kind: "decision",
+      expect: { capabilityIds: ["score.update-tempo"], contextSourceIds: [] },
+      decision: { kind: "tool-calls", calls: [{
+        callId: "update-tempo",
+        capabilityId: "score.update-tempo",
+        contractVersion: 1,
+        input: { tempoBpm: 132 },
+      }] },
+    },
+    {
+      kind: "decision",
+      expect: { capabilityIds: ["score.update-tempo"], contextSourceIds: ["score.update-tempo"] },
+      decision: { kind: "finish", reason: "completed", text: "作品速度已经修改为 132 BPM。" },
+    },
+  ]);
+  const runtime = new FakeRuntime(provider);
+  const store = new InMemoryAgentRunStore();
+  const requests: Parameters<WorkbenchAgentCapabilityPort["invoke"]>[0][] = [];
+  const changes: Array<{ documentId: string; documentVersion: number }> = [];
+  const session = new AgentAssistantSession({
+    runtime,
+    store,
+    createRunId: () => "run-update-tempo",
+    createConversationId: () => "conversation-update-tempo",
+    capabilities: new WorkbenchAgentCapabilityPort({
+      async invokeCapability(request) {
+        requests.push(request);
+        if (request.capabilityId === "score.prepare-tempo-change") return {
+          status: "completed",
+          invocationId: request.invocationId,
+          capabilityId: request.capabilityId,
+          contractVersion: request.contractVersion,
+          data: changeSet,
+        };
+        assert.equal(request.capabilityId, "score.commit-tempo-change");
+        return {
+          status: "completed",
+          invocationId: request.invocationId,
+          capabilityId: request.capabilityId,
+          contractVersion: request.contractVersion,
+          data: {
+            changeSetId,
+            documentId: "score-1",
+            documentVersion: 8,
+            previousTempoBpm: 96,
+            tempoBpm: 132,
+            undoAvailable: true,
+          },
+        };
+      },
+    }),
+    onDocumentChanged(change) { changes.push(change); },
+  });
+
+  assert.equal(await session.start("请将速度改为 132 BPM", workspace), false);
+  assert.deepEqual(requests.map((request) => request.capabilityId), ["score.prepare-tempo-change"]);
+  const waiting = await store.load("run-update-tempo");
+  assert.ok(waiting);
+  const approval = getAgentRunRequiredApproval(waiting.run);
+  assert.ok(approval);
+  assert.equal(approval.items[0]?.changeSetId, changeSetId);
+  assert.deepEqual(approval.items[0]?.preview, {
+    kind: "field-change",
+    field: "score.tempo",
+    before: "96 BPM",
+    after: "132 BPM",
+  });
+
+  assert.equal(await session.provideApprovalDecision(
+    waiting.run.runId,
+    approval.approvalId,
+    "approved",
+    workspace,
+  ), true);
+  assert.deepEqual(requests.map((request) => request.capabilityId), [
+    "score.prepare-tempo-change",
+    "score.commit-tempo-change",
+  ]);
+  assert.deepEqual(requests[1]?.input, { changeSet });
+  assert.deepEqual(changes, [{ documentId: "score-1", documentVersion: 8 }]);
+  assert.equal(session.getSnapshot().status, "completed");
+  assert.equal(session.getSnapshot().response, "作品速度已经修改为 132 BPM。");
+  assert.equal(provider.exhausted, true);
+});
+
+test("assistant session commits title and tempo as one approved metadata transaction", async () => {
+  const changeSetId = `sha256:${"c".repeat(64)}`;
+  const changeSet = {
+    changeSetId,
+    kind: "score-metadata-transaction",
+    documentId: "score-1",
+    baseDocumentVersion: 7,
+    operations: ["set-title", "set-tempo"],
+    before: { title: "练习曲", tempoBpm: 96 },
+    after: { title: "夜曲", tempoBpm: 132 },
+  };
+  const provider = new FakeAgentProvider([
+    {
+      kind: "decision",
+      expect: { capabilityIds: ["score.update-metadata"], contextSourceIds: [] },
+      decision: { kind: "tool-calls", calls: [{
+        callId: "update-metadata",
+        capabilityId: "score.update-metadata",
+        contractVersion: 1,
+        input: { title: "夜曲", tempoBpm: 132 },
+      }] },
+    },
+    {
+      kind: "decision",
+      expect: {
+        capabilityIds: ["score.update-metadata"],
+        contextSourceIds: ["score.update-metadata"],
+      },
+      decision: {
+        kind: "finish",
+        reason: "completed",
+        text: "标题与速度已经在一个事务中修改。",
+      },
+    },
+  ]);
+  const runtime = new FakeRuntime(provider);
+  const store = new InMemoryAgentRunStore();
+  const requests: Parameters<WorkbenchAgentCapabilityPort["invoke"]>[0][] = [];
+  const changes: Array<{ documentId: string; documentVersion: number }> = [];
+  const session = new AgentAssistantSession({
+    runtime,
+    store,
+    createRunId: () => "run-update-metadata",
+    createConversationId: () => "conversation-update-metadata",
+    capabilities: new WorkbenchAgentCapabilityPort({
+      async invokeCapability(request) {
+        requests.push(request);
+        if (request.capabilityId === "score.prepare-metadata-transaction") return {
+          status: "completed",
+          invocationId: request.invocationId,
+          capabilityId: request.capabilityId,
+          contractVersion: request.contractVersion,
+          data: changeSet,
+        };
+        assert.equal(request.capabilityId, "score.commit-metadata-transaction");
+        return {
+          status: "completed",
+          invocationId: request.invocationId,
+          capabilityId: request.capabilityId,
+          contractVersion: request.contractVersion,
+          data: {
+            changeSetId,
+            documentId: "score-1",
+            documentVersion: 8,
+            appliedOperations: ["set-title", "set-tempo"],
+            previous: changeSet.before,
+            current: changeSet.after,
+            undoAvailable: true,
+          },
+        };
+      },
+    }),
+    onDocumentChanged(change) { changes.push(change); },
+  });
+
+  assert.equal(await session.start(
+    "请把作品标题改为《夜曲》，并将速度改为 132 BPM",
+    workspace,
+  ), false);
+  assert.deepEqual(requests.map((request) => request.capabilityId), [
+    "score.prepare-metadata-transaction",
+  ]);
+  const waiting = await store.load("run-update-metadata");
+  assert.ok(waiting);
+  const approval = getAgentRunRequiredApproval(waiting.run);
+  assert.ok(approval);
+  assert.equal(approval.items[0]?.changeSetId, changeSetId);
+  assert.equal(approval.items[0]?.preview?.kind, "change-list");
+
+  assert.equal(await session.provideApprovalDecision(
+    waiting.run.runId,
+    approval.approvalId,
+    "approved",
+    workspace,
+  ), true);
+  assert.deepEqual(requests.map((request) => request.capabilityId), [
+    "score.prepare-metadata-transaction",
+    "score.commit-metadata-transaction",
+  ]);
+  assert.deepEqual(requests[1]?.input, { changeSet });
+  assert.deepEqual(changes, [{ documentId: "score-1", documentVersion: 8 }]);
+  assert.equal(session.getSnapshot().status, "completed");
+  assert.equal(session.getSnapshot().response, "标题与速度已经在一个事务中修改。");
+  assert.equal(provider.exhausted, true);
+});
+
+test("assistant session approves a persisted Invocation and continues the same submission", async () => {
+  const descriptor = FIRST_PARTY_CAPABILITY_CATALOG.find(
+    (item) => item.id === "score.read-summary",
+  );
+  assert.ok(descriptor);
+  const catalog = [{
+    ...descriptor,
+    approvalRequirement: "risk-based" as const,
+    sideEffects: { ...descriptor.sideEffects, document: "write" as const },
+  }];
+  const store = new InMemoryAgentRunStore();
+  const preparatoryController = new AgentRunController({
+    provider: new FakeAgentProvider([{
+      kind: "decision",
+      expect: { capabilityIds: ["score.read-summary"], contextSourceIds: [] },
+      decision: {
+        kind: "tool-calls",
+        calls: [{
+          callId: "read-summary",
+          capabilityId: "score.read-summary",
+          contractVersion: 1,
+          input: {},
+        }],
+      },
+    }]),
+    capabilities: { async invoke() { throw new Error("approval is required"); } },
+    catalog,
+    completionVerifier: verifyScoreSummaryCompletion,
+    store,
+  });
+  const waiting = await preparatoryController.run({
+    runId: "run-approval-session",
+    workspace,
+    goal: "读取当前乐谱概要",
+    intent: { kind: "read", requestedCapabilityIds: ["score.read-summary"], scope: "document" },
+    policy: {
+      policyVersion: 1,
+      allowedCapabilityIds: ["score.read-summary"],
+      allowedKinds: ["query"],
+      maxToolsPerTurn: 1,
+      maxCostClass: "constant",
+      approvalMode: "risk-based",
+    },
+    budget: {
+      tokenBudget: 800,
+      itemCountBudget: 12,
+      toolResultSizeBudget: 4096,
+      rangeBudget: 0,
+      historyTurnBudget: 2,
+    },
+    initialContextItems: [],
+    maxTurns: 4,
+  });
+  const approval = getAgentRunRequiredApproval(waiting.run);
+  assert.ok(approval);
+  const continuationProvider = new FakeAgentProvider([{
+    kind: "decision",
+    expect: { capabilityIds: ["score.read-summary"], contextSourceIds: ["score.read-summary"] },
+    decision: { kind: "finish", reason: "completed", text: "批准后的读取已完成。" },
+  }]);
+  const runtime = new FakeRuntime(continuationProvider, {
+    ...readyRuntimeSnapshot,
+    status: "recovering",
+    canStartRun: false,
+    recovery: {
+      status: "ready",
+      items: [{
+        runId: waiting.run.runId,
+        workspaceId: workspace.workspaceId,
+        goal: waiting.run.goal,
+        kind: "awaiting-user",
+        state: waiting.run.state,
+        invocationId: approval.items[0]?.invocationId ?? null,
+        requiredInput: null,
+        requiredApproval: approval,
+        action: "approve",
+        message: "Agent 正在等待你的批准",
+        isBlocking: true,
+      }],
+      message: "有 1 个 Agent Run 需要处理",
+    },
+    message: "有 Agent 任务等待批准",
+  });
+  const session = new AgentAssistantSession({
+    runtime,
+    store,
+    capabilities: {
+      async invoke(request) {
+        return {
+          status: "completed",
+          invocationId: request.invocationId,
+          capabilityId: request.capabilityId,
+          contractVersion: request.contractVersion,
+          data: { documentId: "score-1", documentVersion: 8, title: "练习曲", measureCount: 32 },
+        };
+      },
+    },
+    createController: (lease) => new AgentRunController({
+      provider: lease.provider,
+      capabilities: {
+        async invoke(request) {
+          return {
+            status: "completed",
+            invocationId: request.invocationId,
+            capabilityId: request.capabilityId,
+            contractVersion: request.contractVersion,
+            data: { documentId: "score-1", documentVersion: 8, title: "练习曲", measureCount: 32 },
+          };
+        },
+      },
+      catalog,
+      completionVerifier: verifyScoreSummaryCompletion,
+      store,
+    }),
+  });
+
+  assert.equal(await session.provideApprovalDecision(
+    waiting.run.runId,
+    approval.approvalId,
+    "approved",
+    workspace,
+  ), true);
+  assert.equal(session.getSnapshot().status, "completed");
+  assert.equal(session.getSnapshot().response, "批准后的读取已完成。");
+  assert.equal(session.getSnapshot().conversation.activeSubmissionId, null);
+  assert.equal(runtime.approvalContinuationCalls, 1);
+  assert.equal((await store.load(waiting.run.runId))?.run.invocations[0]?.state.status, "succeeded");
+});
+
+test("assistant session freshly verifies the host receipt before granting a retry lease", async () => {
+  const store = new InMemoryAgentRunStore();
+  const preparatoryController = new AgentRunController({
+    provider: new FakeAgentProvider([{
+      kind: "decision",
+      expect: { capabilityIds: ["score.read-summary"], contextSourceIds: [] },
+      decision: {
+        kind: "tool-calls",
+        calls: [{
+          callId: "read-summary",
+          capabilityId: "score.read-summary",
+          contractVersion: 1,
+          input: {},
+        }],
+      },
+    }]),
+    capabilities: { async invoke() { throw new Error("transport outcome is unknown"); } },
+    catalog: FIRST_PARTY_CAPABILITY_CATALOG,
+    completionVerifier: verifyScoreSummaryCompletion,
+    store,
+  });
+  const recovering = await preparatoryController.run({
+    runId: "run-retry-session",
+    workspace,
+    goal: "读取当前乐谱概要",
+    intent: { kind: "read", requestedCapabilityIds: ["score.read-summary"], scope: "document" },
+    policy: {
+      policyVersion: 1,
+      allowedCapabilityIds: ["score.read-summary"],
+      allowedKinds: ["query"],
+      maxToolsPerTurn: 1,
+      maxCostClass: "constant",
+      approvalMode: "disallow",
+    },
+    budget: {
+      tokenBudget: 800,
+      itemCountBudget: 12,
+      toolResultSizeBudget: 4096,
+      rangeBudget: 0,
+      historyTurnBudget: 2,
+    },
+    initialContextItems: [],
+    maxTurns: 4,
+  });
+  assert.equal(recovering.run.state.lifecycle, "recovering");
+  const invocationId = recovering.run.invocations[0]?.invocationId;
+  assert.ok(invocationId);
+  const runtime = new FakeRuntime(new FakeAgentProvider([]));
+  let receiptLookups = 0;
+  const session = new AgentAssistantSession({
+    runtime,
+    store,
+    receipts: {
+      async lookup() {
+        receiptLookups += 1;
+        return { status: "started" };
+      },
+    },
+    capabilities: { async invoke(): Promise<never> { throw new Error("must not retry"); } },
+  });
+
+  assert.equal(await session.retryInvocation(recovering.run.runId, invocationId, workspace), false);
+  assert.equal(receiptLookups, 1);
+  assert.equal(runtime.retryContinuationCalls, 0);
+  assert.equal(session.getSnapshot().message, "无法证明原能力调用尚未开始，请先重新核对");
 });
 
 test("assistant cancellation aborts the same leased Provider turn", async () => {

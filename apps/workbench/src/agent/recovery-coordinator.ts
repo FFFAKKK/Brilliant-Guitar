@@ -1,4 +1,5 @@
 import type { CapabilityResult } from "../contracts/capability.ts";
+import type { AgentWorkspaceScope } from "./agent-contracts.ts";
 import type { AgentRunStoreEntry, AgentRunStorePort } from "./agent-store.ts";
 import { reduceAgentInvocationState } from "./invocation-state.ts";
 import type { AgentInvocationEvent, AgentInvocationEventRecord } from "./invocation-state.ts";
@@ -16,7 +17,7 @@ export type AgentInvocationReceiptLookup =
 export interface AgentInvocationReceiptPort {
   lookup(input: {
     readonly runId: string;
-    readonly workspaceId: string;
+    readonly workspace: AgentWorkspaceScope;
     readonly invocation: AgentInvocationRecord;
   }): Promise<AgentInvocationReceiptLookup>;
 }
@@ -191,7 +192,7 @@ export class AgentRecoveryCoordinator {
     try {
       receipt = await this.receipts.lookup({
         runId: entry.run.runId,
-        workspaceId: entry.run.workspace.workspaceId,
+        workspace: entry.run.workspace,
         invocation,
       });
     } catch {

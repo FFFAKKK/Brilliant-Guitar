@@ -75,6 +75,7 @@ test("composite measure capability resolves ordinals and preserves the outer inv
     capabilityId: "score.read-measures",
     contractVersion: 1,
     workspaceId: "workspace-1",
+    documentPrecondition: null,
     input: { reference: { kind: "ordinal-range", startOrdinal: 2, endOrdinal: 4 } },
   }, context);
 
@@ -96,6 +97,7 @@ test("current-selection references use the version-bound control-plane selection
     capabilityId: "score.read-measures",
     contractVersion: 1,
     workspaceId: "workspace-1",
+    documentPrecondition: null,
     input: { reference: { kind: "current-selection" } },
   }, {
     ...context,
@@ -126,6 +128,7 @@ test("range budgets reject resolved references before the atomic range read", as
     capabilityId: "score.read-measures",
     contractVersion: 1,
     workspaceId: "workspace-1",
+    documentPrecondition: null,
     input: { reference: { kind: "ordinal-range", startOrdinal: 1, endOrdinal: 4 } },
   }, { ...context, rangeBudget: 2 });
 
@@ -145,6 +148,7 @@ test("stale authoritative indices never reach the atomic range read", async () =
     capabilityId: "score.read-measures",
     contractVersion: 1,
     workspaceId: "workspace-1",
+    documentPrecondition: null,
     input: { reference: { kind: "ordinal-range", startOrdinal: 1, endOrdinal: 1 } },
   }, context);
 

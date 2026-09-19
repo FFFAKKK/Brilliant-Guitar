@@ -1,4 +1,7 @@
 import type {
+  AgentApprovalDecision,
+  AgentRequiredApproval,
+  AgentProvidedUserInput,
   AgentRequiredUserInput,
   AgentRunFailureCode,
   AgentRunRecoveryReason,
@@ -22,7 +25,15 @@ export type AgentRunEvent =
   | { readonly type: "turn.message-produced" }
   | { readonly type: "turn.finish-requested" }
   | { readonly type: "user-input.required"; readonly input: AgentRequiredUserInput }
-  | { readonly type: "approval.required" }
+  | { readonly type: "user-input.provided"; readonly input: AgentProvidedUserInput }
+  | { readonly type: "approval.required"; readonly approval: AgentRequiredApproval }
+  | { readonly type: "approval.approved"; readonly decision: AgentApprovalDecision }
+  | { readonly type: "approval.denied"; readonly decision: AgentApprovalDecision }
+  | {
+      readonly type: "invocation.retry-authorized";
+      readonly invocationId: string;
+      readonly authorizedBy: "local-user";
+    }
   | { readonly type: "invocations.completed" }
   | { readonly type: "verification.continue" }
   | { readonly type: "verification.completed" }
@@ -112,6 +123,27 @@ export function reduceAgentRunState(
       ? { accepted: true, state: { lifecycle: "active", phase: state.phase } }
       : reject(state, event);
   }
+  if (event.type === "user-input.provided") {
+    return state.lifecycle === "waiting"
+      && state.phase === "planning"
+      && state.waitReason === "user-input"
+      ? { accepted: true, state: { lifecycle: "active", phase: "planning" } }
+      : reject(state, event);
+  }
+  if (event.type === "approval.approved" || event.type === "approval.denied") {
+    const expectedOutcome = event.type === "approval.approved" ? "approved" : "denied";
+    return state.lifecycle === "waiting"
+      && state.phase === "executing"
+      && state.waitReason === "approval"
+      && event.decision.outcome === expectedOutcome
+      ? { accepted: true, state: { lifecycle: "active", phase: "executing" } }
+      : reject(state, event);
+  }
+  if (event.type === "invocation.retry-authorized") {
+    return state.lifecycle === "recovering" && state.phase === "executing"
+      ? { accepted: true, state: { lifecycle: "active", phase: "executing" } }
+      : reject(state, event);
+  }
 
   if (event.type === "run.prepared") {
     return state.lifecycle === "active" && state.phase === "preparing"
@@ -157,7 +189,8 @@ export function reduceAgentRunState(
       : reject(state, event);
   }
   if (event.type === "approval.required") {
-    return state.lifecycle === "active" && state.phase === "executing"
+    return state.lifecycle === "active"
+      && (state.phase === "planning" || state.phase === "executing")
       ? {
           accepted: true,
           state: { lifecycle: "waiting", phase: "executing", waitReason: "approval" },

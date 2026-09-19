@@ -21,6 +21,7 @@ export type AgentInvocationEvent =
   | { readonly type: "approval.required" }
   | { readonly type: "approval.granted" }
   | { readonly type: "approval.denied" }
+  | { readonly type: "invocation.retry-authorized" }
   | { readonly type: "invocation.dispatched" }
   | { readonly type: "invocation.started" }
   | { readonly type: "invocation.succeeded" }
@@ -108,6 +109,10 @@ export function reduceAgentInvocationState(
   }
   if (state.status === "awaiting-approval" && event.type === "approval.denied") {
     return { accepted: true, state: { status: "rejected" } };
+  }
+  if ((state.status === "dispatched" || state.status === "running" || state.status === "outcome-unknown")
+    && event.type === "invocation.retry-authorized") {
+    return { accepted: true, state: { status: "validated" } };
   }
   if (state.status === "validated" && event.type === "invocation.dispatched") {
     return { accepted: true, state: { status: "dispatched" } };

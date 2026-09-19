@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import type { CapabilityResult } from "../src/contracts/capability.ts";
-import type { AgentRunState } from "../src/agent/agent-contracts.ts";
+import type { AgentRequiredApproval, AgentRunState } from "../src/agent/agent-contracts.ts";
 import { InMemoryAgentRunStore } from "../src/agent/agent-store.ts";
 import { reduceAgentInvocationState } from "../src/agent/invocation-state.ts";
 import type {
@@ -75,7 +75,7 @@ function baseRun(state: AgentRunState, events: readonly AgentRunEventRecord[]): 
       allowedKinds: ["query"],
       maxToolsPerTurn: 1,
       maxCostClass: "constant",
-      exposeApprovalRequired: false,
+      approvalMode: "disallow",
     },
     intent: {
       kind: "read",
@@ -160,6 +160,41 @@ const completedResult: CapabilityResult<unknown> = {
   },
 };
 
+const requiredApproval: AgentRequiredApproval = {
+  approvalId: "approval-1",
+  kind: "capability-execution",
+  prompt: "Agent 请求执行以下能力",
+  items: [{
+    invocationId: "invocation-1",
+    capabilityId: "score.read-summary",
+    capabilityName: "读取乐谱概要",
+    contractVersion: 1,
+    summary: "将执行“读取乐谱概要”",
+    preview: null,
+    riskLevel: "low",
+    riskReasons: ["该能力需要显式确认后才能执行"],
+    policy: {
+      policyVersion: 1,
+      mode: "risk-based",
+      capabilityRequirement: "always",
+      decision: "require-approval",
+    },
+    scope: {
+      workspaceId: "workspace-1",
+      documentId: "score-1",
+      documentVersion: 7,
+      limit: "document",
+    },
+    sideEffects: {
+      document: "read",
+      filesystem: "none",
+      network: "none",
+      settings: "none",
+      playback: "none",
+    },
+  }],
+};
+
 test("an interrupted planning run becomes recoverable without asking the model", async () => {
   const store = new InMemoryAgentRunStore();
   await seedRun(store, [{ type: "run.created" }, { type: "run.prepared" }]);
@@ -231,7 +266,7 @@ test("waiting approval is re-emitted instead of being auto-approved", async () =
     { type: "run.created" },
     { type: "run.prepared" },
     { type: "turn.tools-accepted" },
-    { type: "approval.required" },
+    { type: "approval.required", approval: requiredApproval },
   ], pending);
   const receipts = new FakeReceiptPort({ status: "unavailable", message: "unused" });
 
@@ -240,6 +275,19 @@ test("waiting approval is re-emitted instead of being auto-approved", async () =
   assert.equal(result.status, "awaiting-user");
   assert.equal(result.status === "awaiting-user" && result.waitReason, "approval");
   assert.equal(receipts.calls, 0);
+  assert.deepEqual(projectRecovery(result), {
+    runId: "run-1",
+    workspaceId: "workspace-1",
+    goal: "读取当前乐谱概要",
+    kind: "awaiting-user",
+    state: { lifecycle: "waiting", phase: "executing", waitReason: "approval" },
+    invocationId: "invocation-1",
+    requiredInput: null,
+    requiredApproval,
+    action: "approve",
+    message: "Agent 正在等待你的批准",
+    isBlocking: true,
+  });
 });
 
 test("recovery projection rebuilds the persisted required input contract", async () => {
@@ -274,6 +322,7 @@ test("recovery projection rebuilds the persisted required input contract", async
     state: { lifecycle: "waiting", phase: "planning", waitReason: "user-input" },
     invocationId: "invocation-1",
     requiredInput,
+    requiredApproval: null,
     action: "provide-input",
     message: requiredInput.prompt,
     isBlocking: true,
@@ -416,6 +465,7 @@ test("recovery projection exposes explicit user actions instead of implementatio
     state: { lifecycle: "recovering", phase: "planning", recoveryReason: "host-interrupted" },
     invocationId: null,
     requiredInput: null,
+    requiredApproval: null,
     action: "resume",
     message: "Agent 已完成恢复核对，可以继续",
     isBlocking: true,
@@ -457,10 +507,16 @@ test("Tauri receipt adapter decodes host receipts and keeps host failure recover
     calls.push({ command, args });
     return { status: "resolved", result: completedResult } as T;
   });
+  const workspace = {
+    workspaceId: "workspace-1",
+    documentId: "score-1",
+    documentVersion: 1,
+    selection: null,
+  } as const;
 
   const result = await port.lookup({
     runId: "run-1",
-    workspaceId: "workspace-1",
+    workspace,
     invocation: running,
   });
   assert.deepEqual(result, { status: "resolved", result: completedResult });
@@ -472,6 +528,7 @@ test("Tauri receipt adapter decodes host receipts and keeps host failure recover
         capabilityId: "score.read-summary",
         contractVersion: 1,
         workspaceId: "workspace-1",
+        documentPrecondition: { documentId: "score-1", documentVersion: 1 },
         input: {},
       },
     },
@@ -482,7 +539,7 @@ test("Tauri receipt adapter decodes host receipts and keeps host failure recover
   });
   assert.deepEqual(await unavailable.lookup({
     runId: "run-1",
-    workspaceId: "workspace-1",
+    workspace,
     invocation: running,
   }), { status: "unavailable", message: "host offline" });
 
@@ -495,7 +552,7 @@ test("Tauri receipt adapter decodes host receipts and keeps host failure recover
   });
   assert.deepEqual(await conflict.lookup({
     runId: "run-1",
-    workspaceId: "workspace-1",
+    workspace,
     invocation: running,
   }), {
     status: "identity-conflict",
@@ -517,7 +574,12 @@ test("Tauri receipt adapter rejects malformed successful IPC data", async () => 
 
   await assert.rejects(port.lookup({
     runId: "run-1",
-    workspaceId: "workspace-1",
+    workspace: {
+      workspaceId: "workspace-1",
+      documentId: null,
+      documentVersion: null,
+      selection: null,
+    },
     invocation: running,
   }), (error: unknown) => error instanceof AgentInvocationReceiptProtocolError);
 });

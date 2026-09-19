@@ -1,6 +1,10 @@
-import type { AgentRequiredUserInput, AgentRunState } from "./agent-contracts.ts";
+import type {
+  AgentRequiredApproval,
+  AgentRequiredUserInput,
+  AgentRunState,
+} from "./agent-contracts.ts";
 import type { AgentRunRecoveryResult } from "./recovery-coordinator.ts";
-import { getAgentRunRequiredInput } from "./run-controller.ts";
+import { getAgentRunRequiredApproval, getAgentRunRequiredInput } from "./run-controller.ts";
 
 export type AgentRecoveryProjectionKind =
   | "awaiting-user"
@@ -26,6 +30,7 @@ export interface AgentRecoveryProjection {
   readonly state: AgentRunState | null;
   readonly invocationId: string | null;
   readonly requiredInput: AgentRequiredUserInput | null;
+  readonly requiredApproval: AgentRequiredApproval | null;
   readonly action: AgentRecoveryProjectionAction;
   readonly message: string;
   readonly isBlocking: boolean;
@@ -41,6 +46,7 @@ export function projectRecovery(result: AgentRunRecoveryResult): AgentRecoveryPr
       state: null,
       invocationId: null,
       requiredInput: null,
+      requiredApproval: null,
       action: "dismiss",
       message: "找不到需要恢复的 Agent Run",
       isBlocking: false,
@@ -52,6 +58,9 @@ export function projectRecovery(result: AgentRunRecoveryResult): AgentRecoveryPr
     const requiredInput = result.waitReason === "user-input"
       ? getAgentRunRequiredInput(run)
       : null;
+    const requiredApproval = result.waitReason === "approval"
+      ? getAgentRunRequiredApproval(run)
+      : null;
     return {
       runId: run.runId,
       workspaceId: run.workspace.workspaceId,
@@ -60,6 +69,7 @@ export function projectRecovery(result: AgentRunRecoveryResult): AgentRecoveryPr
       state: run.state,
       invocationId: requiredInput?.sourceInvocationId ?? run.invocations.at(-1)?.invocationId ?? null,
       requiredInput,
+      requiredApproval,
       action: result.waitReason === "approval" ? "approve" : "provide-input",
       message: result.waitReason === "approval"
         ? "Agent 正在等待你的批准"
@@ -76,6 +86,7 @@ export function projectRecovery(result: AgentRunRecoveryResult): AgentRecoveryPr
       state: run.state,
       invocationId: null,
       requiredInput: null,
+      requiredApproval: null,
       action: "resume",
       message: "Agent 已完成恢复核对，可以继续",
       isBlocking: true,
@@ -90,6 +101,7 @@ export function projectRecovery(result: AgentRunRecoveryResult): AgentRecoveryPr
       state: run.state,
       invocationId: result.invocationId,
       requiredInput: null,
+      requiredApproval: null,
       action: "retry",
       message: "原能力调用尚未开始，可以在确认后重试",
       isBlocking: true,
@@ -104,6 +116,7 @@ export function projectRecovery(result: AgentRunRecoveryResult): AgentRecoveryPr
       state: run.state,
       invocationId: result.invocationId,
       requiredInput: null,
+      requiredApproval: null,
       action: "reconcile",
       message: result.receiptStatus === "identity-conflict"
         ? "能力调用身份发生冲突，已阻止自动恢复"
@@ -119,6 +132,7 @@ export function projectRecovery(result: AgentRunRecoveryResult): AgentRecoveryPr
     state: run.state,
     invocationId: null,
     requiredInput: null,
+    requiredApproval: null,
     action: "dismiss",
     message: result.reason === "cancelled" ? "Agent 已取消" : "Agent 已终止",
     isBlocking: false,

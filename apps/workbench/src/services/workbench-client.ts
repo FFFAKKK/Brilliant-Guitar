@@ -10,9 +10,14 @@ import { isWorkspaceId } from "../contracts/workspace-id.ts";
 import { createWorkbenchHostBridge } from "./workbench-host-bridge.ts";
 import type { WorkbenchHostBridge } from "./workbench-host-bridge.ts";
 import { ScoreCapabilityClient } from "./score-capability-client.ts";
+import { ApplicationCapabilityGateway } from "./application-capability-gateway.ts";
+import type {
+  ApplicationCapabilityDirectory,
+  ApplicationCapabilityInvoker,
+} from "../contracts/application-capability.ts";
+import type { CapabilityTransportRequest } from "../contracts/capability.ts";
 import type {
   CapabilityResult,
-  CapabilityTransportRequest,
   ScoreMeasureIndexInputV1,
   ScoreMeasureIndexV1,
   ScoreMeasureRangeInputV1,
@@ -38,6 +43,10 @@ export { WorkbenchRequestError } from "./workbench-host-bridge.ts";
 
 const SESSION_WORKSPACE_KEY = "brilliant.workbench.session.v1";
 const DESKTOP_WORKSPACE_KEY = "brilliant.workbench.desktop.v1";
+const EMPTY_APPLICATION_CAPABILITIES: ApplicationCapabilityDirectory = Object.freeze({
+  get: () => undefined,
+  list: () => Object.freeze([]),
+});
 
 interface WorkspaceIdentityStorage {
   getItem(key: string): string | null;
@@ -80,11 +89,17 @@ export class WorkbenchClient {
   private readonly bridge: WorkbenchHostBridge;
   private readonly workspaceId: string;
   private readonly scoreCapabilities: ScoreCapabilityClient;
+  private readonly agentCapabilityInvoker: ApplicationCapabilityInvoker;
 
-  constructor(bridge: WorkbenchHostBridge = createWorkbenchHostBridge()) {
+  constructor(
+    bridge: WorkbenchHostBridge = createWorkbenchHostBridge(),
+    capabilities: ApplicationCapabilityDirectory = EMPTY_APPLICATION_CAPABILITIES,
+  ) {
     this.bridge = bridge;
     this.workspaceId = resolveWorkbenchWorkspaceId(bridge.nativeFiles === true);
-    this.scoreCapabilities = new ScoreCapabilityClient(bridge, this.workspaceId);
+    const gateway = new ApplicationCapabilityGateway(capabilities, bridge);
+    this.scoreCapabilities = new ScoreCapabilityClient(gateway.forCaller("ui"), this.workspaceId);
+    this.agentCapabilityInvoker = gateway.forCaller("agent");
   }
 
   readScoreSummary(): Promise<CapabilityResult<ScoreSummaryV1>> {
@@ -115,9 +130,13 @@ export class WorkbenchClient {
     return this.workspaceId;
   }
 
-  invokeAgentCapability(request: CapabilityTransportRequest): Promise<unknown> {
-    if (request.workspaceId !== this.workspaceId) throw new Error("Agent Capability 工作区不匹配");
-    return this.bridge.invokeAgentCapability(request);
+  agentCapabilities(): ApplicationCapabilityInvoker {
+    return Object.freeze({
+      invokeCapability: (request: CapabilityTransportRequest) => {
+        if (request.workspaceId !== this.workspaceId) throw new Error("Agent Capability 工作区不匹配");
+        return this.agentCapabilityInvoker.invokeCapability(request);
+      },
+    });
   }
 
   private session(value: unknown | null, requiredMessage?: string): ScoreSessionRead | null {

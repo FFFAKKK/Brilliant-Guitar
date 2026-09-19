@@ -77,7 +77,7 @@ pub enum DeleteTimePolicy {
     Collapse,
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(
     tag = "kind",
     rename_all = "kebab-case",
@@ -98,6 +98,13 @@ pub enum ScoreEditAction {
     },
     SetTitle {
         title: String,
+    },
+    SetTempo {
+        tempo_bpm: f64,
+    },
+    SetMetadata {
+        title: String,
+        tempo_bpm: f64,
     },
     Append {
         measure_id: String,
@@ -153,6 +160,77 @@ pub struct ScoreMetadataV1 {
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct ScoreTitleUpdateV1 {
+    pub document_id: String,
+    pub document_version: u64,
+    pub previous_title: String,
+    pub title: String,
+    pub undo_available: bool,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ScoreTempoChangeSetV1 {
+    pub change_set_id: String,
+    pub kind: String,
+    pub document_id: String,
+    pub base_document_version: u64,
+    pub before_tempo_bpm: f64,
+    pub after_tempo_bpm: f64,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScoreTempoUpdateV1 {
+    pub change_set_id: String,
+    pub document_id: String,
+    pub document_version: u64,
+    pub previous_tempo_bpm: f64,
+    pub tempo_bpm: f64,
+    pub undo_available: bool,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct ScoreMetadataSnapshotV1 {
+    pub title: String,
+    pub tempo_bpm: f64,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ScoreMetadataTransactionOperationV1 {
+    SetTitle,
+    SetTempo,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ScoreMetadataTransactionChangeSetV1 {
+    pub change_set_id: String,
+    pub kind: String,
+    pub document_id: String,
+    pub base_document_version: u64,
+    pub operations: Vec<ScoreMetadataTransactionOperationV1>,
+    pub before: ScoreMetadataSnapshotV1,
+    pub after: ScoreMetadataSnapshotV1,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScoreMetadataTransactionUpdateV1 {
+    pub change_set_id: String,
+    pub document_id: String,
+    pub document_version: u64,
+    pub applied_operations: Vec<ScoreMetadataTransactionOperationV1>,
+    pub previous: ScoreMetadataSnapshotV1,
+    pub current: ScoreMetadataSnapshotV1,
+    pub undo_available: bool,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ScoreStructureV1 {
     pub document_id: String,
     pub document_version: u64,
@@ -188,6 +266,13 @@ pub struct ScoreMeasureRangeV1 {
     pub measures: Vec<ScoreMeasureRangeMeasureV1>,
 }
 
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct CapabilityDocumentPrecondition {
+    pub document_id: String,
+    pub document_version: u64,
+}
+
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct CapabilityTransportRequest {
@@ -195,6 +280,8 @@ pub struct CapabilityTransportRequest {
     pub capability_id: String,
     pub contract_version: u64,
     pub workspace_id: String,
+    #[serde(default)]
+    pub document_precondition: Option<CapabilityDocumentPrecondition>,
     pub input: Value,
 }
 

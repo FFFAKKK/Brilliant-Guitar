@@ -1,7 +1,10 @@
 import type { AgentCapabilityDescriptor } from "./agent-contracts.ts";
 import {
   isScoreMeasureRangeInputV1,
+  isScorePrepareTempoChangeInputV1,
   isScoreReadMeasuresInputV1,
+  isScoreUpdateMetadataInputV1,
+  isScoreUpdateTitleInputV1,
 } from "../contracts/capability.ts";
 
 const emptyInput = (value: unknown): boolean => {
@@ -27,7 +30,7 @@ export const SCORE_READ_SUMMARY_DESCRIPTOR: AgentCapabilityDescriptor = {
   },
   scopeLimit: "document",
   requiresDocument: true,
-  requiresApproval: false,
+  approvalRequirement: "risk-based",
   costClass: "constant",
   allowedPhases: ["planning", "executing", "verifying"],
   validateInput: emptyInput,
@@ -51,7 +54,7 @@ export const SCORE_READ_METADATA_DESCRIPTOR: AgentCapabilityDescriptor = {
   },
   scopeLimit: "document",
   requiresDocument: true,
-  requiresApproval: false,
+  approvalRequirement: "risk-based",
   costClass: "constant",
   allowedPhases: ["planning", "executing", "verifying"],
   validateInput: emptyInput,
@@ -75,7 +78,7 @@ export const SCORE_READ_STRUCTURE_DESCRIPTOR: AgentCapabilityDescriptor = {
   },
   scopeLimit: "document",
   requiresDocument: true,
-  requiresApproval: false,
+  approvalRequirement: "risk-based",
   costClass: "constant",
   allowedPhases: ["planning", "executing", "verifying"],
   validateInput: emptyInput,
@@ -108,7 +111,7 @@ export const SCORE_READ_MEASURE_RANGE_DESCRIPTOR: AgentCapabilityDescriptor = {
   },
   scopeLimit: "range",
   requiresDocument: true,
-  requiresApproval: false,
+  approvalRequirement: "risk-based",
   costClass: "range",
   allowedPhases: ["planning", "executing", "verifying"],
   validateInput: isScoreMeasureRangeInputV1,
@@ -169,10 +172,123 @@ export const SCORE_READ_MEASURES_DESCRIPTOR: AgentCapabilityDescriptor = {
   },
   scopeLimit: "range",
   requiresDocument: true,
-  requiresApproval: false,
+  approvalRequirement: "risk-based",
   costClass: "range",
   allowedPhases: ["planning", "executing", "verifying"],
   validateInput: isScoreReadMeasuresInputV1,
+};
+
+export const SCORE_UPDATE_TITLE_DESCRIPTOR: AgentCapabilityDescriptor = {
+  id: "score.update-title",
+  contractVersion: 1,
+  name: "修改作品标题",
+  description: "修改当前乐谱的作品标题，保留作者、速度和其他乐谱内容。",
+  kind: "mutation",
+  inputSchema: {
+    type: "object",
+    properties: {
+      title: { type: "string", minLength: 1, maxLength: 120 },
+    },
+    required: ["title"],
+    additionalProperties: false,
+  },
+  outputSummary: "ScoreTitleUpdateV1: document identity, previous title, updated title and undo availability",
+  preconditions: ["当前工作区已打开乐谱", "用户批准后文档版本仍与任务快照一致"],
+  sideEffects: {
+    document: "write",
+    filesystem: "none",
+    network: "none",
+    settings: "none",
+    playback: "none",
+  },
+  scopeLimit: "document",
+  requiresDocument: true,
+  approvalRequirement: "risk-based",
+  costClass: "constant",
+  allowedPhases: ["planning", "executing", "verifying"],
+  validateInput: isScoreUpdateTitleInputV1,
+  summarizeApproval: (input) => isScoreUpdateTitleInputV1(input)
+    ? `将作品标题修改为《${input.title}》`
+    : "将修改作品标题",
+  previewApproval: (input) => isScoreUpdateTitleInputV1(input)
+    ? {
+        kind: "field-change",
+        field: "score.title",
+        before: null,
+        after: input.title,
+      }
+    : null,
+};
+
+export const SCORE_UPDATE_TEMPO_DESCRIPTOR: AgentCapabilityDescriptor = {
+  id: "score.update-tempo",
+  contractVersion: 1,
+  name: "修改作品速度",
+  description: "修改当前乐谱的全局速度，保留标题、作者和其他乐谱内容。",
+  kind: "mutation",
+  inputSchema: {
+    type: "object",
+    properties: {
+      tempoBpm: { type: "number", exclusiveMinimum: 0 },
+    },
+    required: ["tempoBpm"],
+    additionalProperties: false,
+  },
+  outputSummary: "ScoreTempoUpdateV1: committed ChangeSet identity, before and after tempo, document version and undo availability",
+  preconditions: ["当前工作区已打开乐谱", "用户批准由当前文档版本准备的精确变更集"],
+  sideEffects: {
+    document: "write",
+    filesystem: "none",
+    network: "none",
+    settings: "none",
+    playback: "none",
+  },
+  scopeLimit: "document",
+  requiresDocument: true,
+  approvalRequirement: "risk-based",
+  costClass: "constant",
+  allowedPhases: ["planning", "executing", "verifying"],
+  executionMode: "prepared-change-set",
+  validateInput: isScorePrepareTempoChangeInputV1,
+  summarizeApproval: (input) => isScorePrepareTempoChangeInputV1(input)
+    ? `将作品速度修改为 ${input.tempoBpm} BPM`
+    : "将修改作品速度",
+};
+
+export const SCORE_UPDATE_METADATA_DESCRIPTOR: AgentCapabilityDescriptor = {
+  id: "score.update-metadata",
+  contractVersion: 1,
+  name: "修改作品元数据",
+  description: "在一个原子事务中修改当前乐谱的标题、全局速度或两者。",
+  kind: "mutation",
+  inputSchema: {
+    type: "object",
+    properties: {
+      title: { type: "string", minLength: 1, maxLength: 120 },
+      tempoBpm: { type: "number", exclusiveMinimum: 0 },
+    },
+    minProperties: 1,
+    additionalProperties: false,
+  },
+  outputSummary: "ScoreMetadataTransactionUpdateV1: committed ChangeSet identity, applied operations, exact before and after snapshots, document version and undo availability",
+  preconditions: ["当前工作区已打开乐谱", "用户批准由当前文档版本准备的完整元数据事务"],
+  sideEffects: {
+    document: "write",
+    filesystem: "none",
+    network: "none",
+    settings: "none",
+    playback: "none",
+  },
+  scopeLimit: "document",
+  requiresDocument: true,
+  approvalRequirement: "risk-based",
+  costClass: "constant",
+  allowedPhases: ["planning", "executing", "verifying"],
+  executionMode: "prepared-change-set",
+  validateInput: isScoreUpdateMetadataInputV1,
+  summarizeApproval: (input) => isScoreUpdateMetadataInputV1(input)
+    ? `将在一个事务中修改作品的 ${Object.keys(input).length} 项元数据`
+    : "将修改作品元数据",
 };
 
 export const FIRST_PARTY_CAPABILITY_CATALOG: readonly AgentCapabilityDescriptor[] = [
@@ -180,4 +296,7 @@ export const FIRST_PARTY_CAPABILITY_CATALOG: readonly AgentCapabilityDescriptor[
   SCORE_READ_METADATA_DESCRIPTOR,
   SCORE_READ_STRUCTURE_DESCRIPTOR,
   SCORE_READ_MEASURES_DESCRIPTOR,
+  SCORE_UPDATE_TITLE_DESCRIPTOR,
+  SCORE_UPDATE_TEMPO_DESCRIPTOR,
+  SCORE_UPDATE_METADATA_DESCRIPTOR,
 ];

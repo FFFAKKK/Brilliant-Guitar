@@ -2,7 +2,7 @@ import type { WorkbenchCommand } from "../commands/workbench-command.ts";
 import { UiComponentRegistry } from "./component-registry.ts";
 import { isUiComponentDefinition } from "./plugin-contract.ts";
 import type { UiPluginManifest } from "./plugin-manifest.ts";
-import { isUiPluginManifest, WorkbenchCapabilityRegistry } from "./plugin-manifest.ts";
+import { isUiPluginManifest, WorkbenchFeatureRegistry } from "./plugin-manifest.ts";
 import type { AnyUiProjection, UiProjectionReader, UiProjectionSnapshot } from "./projection-registry.ts";
 import { UiProjectionRegistry } from "./projection-registry.ts";
 import type { UiComponentExtensionContribution, UiComponentViewContribution, UiResolvedComponentExtension,
@@ -12,6 +12,8 @@ import type { UiPluginDiagnostic, UiPluginFailureCode, UiPluginFailureStage, UiP
 import { NotationInteractionRegistry } from "../input/notation-interaction-registry.ts";
 import type { NotationInteractionContribution } from "../input/notation-interaction-registry.ts";
 import type { PluginInstrumentContribution, PluginPlaybackOutputContribution } from "../plugins/plugin-sdk.ts";
+import type { ApplicationCapabilityContribution } from "../contracts/application-capability.ts";
+import type { WorkflowContribution } from "../contracts/workflow.ts";
 
 export interface UiCommandContribution {
   readonly id: string;
@@ -27,6 +29,8 @@ export interface InternalUiPluginModule {
   readonly componentExtensions: readonly UiComponentExtensionContribution[];
   readonly instruments?: readonly PluginInstrumentContribution[];
   readonly playbackOutputs?: readonly PluginPlaybackOutputContribution[];
+  readonly applicationCapabilities?: readonly ApplicationCapabilityContribution[];
+  readonly workflows?: readonly WorkflowContribution[];
 }
 
 interface InstalledPlugin {
@@ -43,7 +47,7 @@ export class UiPluginHost {
   readonly components = new UiComponentRegistry();
   readonly projections: UiProjectionRegistry;
   readonly interactions = new NotationInteractionRegistry();
-  readonly #capabilities: WorkbenchCapabilityRegistry;
+  readonly #features: WorkbenchFeatureRegistry;
   readonly #plugins = new Map<string, InternalUiPluginModule>();
   readonly #componentOwners = new Map<string, string>();
   readonly #commandOwners = new Map<string, string>();
@@ -53,9 +57,9 @@ export class UiPluginHost {
   readonly #extensionPointOwners = new Map<string, Readonly<{ componentId: string; pluginId: string }>>();
   readonly #reportDiagnostic: ((diagnostic: UiPluginDiagnostic) => void) | undefined;
 
-  constructor(capabilities: WorkbenchCapabilityRegistry, projections: UiProjectionRegistry,
+  constructor(features: WorkbenchFeatureRegistry, projections: UiProjectionRegistry,
     reportDiagnostic?: (diagnostic: UiPluginDiagnostic) => void) {
-    this.#capabilities = capabilities;
+    this.#features = features;
     this.projections = projections;
     this.#reportDiagnostic = reportDiagnostic;
   }
@@ -77,11 +81,11 @@ export class UiPluginHost {
     if (this.#plugins.has(plugin.manifest.id)) throw this.#failure(plugin, "UI-PLG-002", "registration",
       "界面插件重复加载", `UI plugin already installed: ${plugin.manifest.id}`,
       { kind: "plugin", id: plugin.manifest.id, ownerPluginId: plugin.manifest.id });
-    const missingCapabilities = this.#capabilities.missing(plugin.manifest.requires.capabilities);
-    if (missingCapabilities.length > 0)
+    const missingFeatures = this.#features.missing(plugin.manifest.requires.hostFeatures);
+    if (missingFeatures.length > 0)
       throw this.#failure(plugin, "UI-PLG-003", "requirements", "插件需要的工作台能力不可用",
-        `UI plugin ${plugin.manifest.id} requires unavailable capabilities: ${missingCapabilities.join(", ")}`,
-        { kind: "capability", id: missingCapabilities.join(", ") });
+        `UI plugin ${plugin.manifest.id} requires unavailable host features: ${missingFeatures.join(", ")}`,
+        { kind: "capability", id: missingFeatures.join(", ") });
     const missingProjections = plugin.manifest.requires.projections.filter((id) => !this.projections.has(id));
     if (missingProjections.length > 0)
       throw this.#failure(plugin, "UI-PLG-004", "requirements", "插件需要的数据投影不可用",
@@ -93,6 +97,8 @@ export class UiPluginHost {
     const commandIds = plugin.commands.map((command) => command.id);
     const interactionIds = plugin.interactions.map((interaction) => interaction.id);
     const extensionIds = plugin.componentExtensions.map((extension) => extension.id);
+    const applicationCapabilityIds = (plugin.applicationCapabilities ?? []).map((capability) => capability.id);
+    const workflowIds = (plugin.workflows ?? []).map((workflow) => workflow.id);
     if (!sameIds(projectionIds, plugin.manifest.requires.projections))
       throw this.#failure(plugin, "UI-PLG-005", "contributions", "插件数据投影与清单不一致",
         `UI plugin ${plugin.manifest.id} projection binding does not match its manifest`);
@@ -108,9 +114,16 @@ export class UiPluginHost {
     if (!sameIds(extensionIds, plugin.manifest.contributes.componentExtensions))
       throw this.#failure(plugin, "UI-PLG-005", "contributions", "组件扩展与清单不一致",
         `UI plugin ${plugin.manifest.id} component extension binding does not match its manifest`);
+    if (!sameIds(applicationCapabilityIds, plugin.manifest.contributes.applicationCapabilities ?? []))
+      throw this.#failure(plugin, "UI-PLG-005", "contributions", "插件应用能力与清单不一致",
+        `UI plugin ${plugin.manifest.id} application capability binding does not match its manifest`);
+    if (!sameIds(workflowIds, plugin.manifest.contributes.workflows ?? []))
+      throw this.#failure(plugin, "UI-PLG-005", "contributions", "插件工作流与清单不一致",
+        `Plugin ${plugin.manifest.id} workflow binding does not match its manifest`);
     if (new Set(viewIds).size !== viewIds.length || new Set(commandIds).size !== commandIds.length
       || new Set(interactionIds).size !== interactionIds.length
       || new Set(extensionIds).size !== extensionIds.length
+      || new Set(applicationCapabilityIds).size !== applicationCapabilityIds.length
       || new Set(plugin.interactions.map((interaction) => interaction.notationKind)).size !== plugin.interactions.length)
       throw this.#failure(plugin, "UI-PLG-006", "contributions", "插件包含重复贡献",
         `UI plugin ${plugin.manifest.id} contains duplicate contributions`);

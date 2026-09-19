@@ -9,11 +9,26 @@ import { FakeAgentProvider } from "../src/agent/provider.ts";
 import {
   AgentRunController,
   AgentRunResumeError,
+  getAgentRunRequiredApproval,
   getAgentRunRequiredInput,
 } from "../src/agent/run-controller.ts";
 import type { AgentRunProgressEvent } from "../src/agent/run-progress.ts";
 import { reduceAgentRunState } from "../src/agent/run-state.ts";
 import { InMemoryAgentRunStore } from "../src/agent/agent-store.ts";
+import type {
+  AgentRunStoreCommitInput,
+  AgentRunStoreCommitResult,
+  AgentRunStorePort,
+} from "../src/agent/agent-store.ts";
+import { AgentRecoveryCoordinator } from "../src/agent/recovery-coordinator.ts";
+import {
+  getAgentApprovalAudit,
+  projectAgentApprovalAudits,
+} from "../src/agent/approval-audit.ts";
+import {
+  getAgentUserInputConsumption,
+  projectAgentUserInputConsumptions,
+} from "../src/agent/user-input-consumption.ts";
 import type {
   AgentContextBudget,
   RunPolicySnapshot,
@@ -34,7 +49,7 @@ const policy: RunPolicySnapshot = {
   allowedKinds: ["query"],
   maxToolsPerTurn: 1,
   maxCostClass: "constant",
-  exposeApprovalRequired: false,
+  approvalMode: "disallow",
 };
 
 function idSource(): (kind: "event" | "turn" | "invocation" | "user-input") => string {
@@ -64,6 +79,25 @@ function runRequest() {
   };
 }
 
+function approvalRunRequest() {
+  return {
+    ...runRequest(),
+    policy: { ...policy, approvalMode: "risk-based" as const },
+  };
+}
+
+function approvalCatalog() {
+  const descriptor = FIRST_PARTY_CAPABILITY_CATALOG.find(
+    (item) => item.id === "score.read-summary",
+  );
+  if (descriptor === undefined) throw new Error("score.read-summary descriptor is missing");
+  return [{
+    ...descriptor,
+    approvalRequirement: "risk-based" as const,
+    sideEffects: { ...descriptor.sideEffects, document: "write" as const },
+  }];
+}
+
 test("fake provider completes a grounded read-only run through the real capability boundary", async () => {
   const provider = new FakeAgentProvider([
     {
@@ -90,7 +124,7 @@ test("fake provider completes a grounded read-only run through the real capabili
   ]);
   const requests: CapabilityTransportRequest[] = [];
   const capabilities = new WorkbenchAgentCapabilityPort({
-    async invokeAgentCapability(request) {
+    async invokeCapability(request) {
       requests.push(request);
       return {
         status: "completed",
@@ -145,6 +179,746 @@ test("fake provider completes a grounded read-only run through the real capabili
   ]);
   assert.deepEqual(outcome.run.events.map((item) => item.sequence), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
   assert.deepEqual(outcome.run.invocations[0]?.events.map((item) => item.sequence), [1, 2, 3, 4, 5]);
+});
+
+test("controller persists a control-plane approval contract before dispatch", async () => {
+  const provider = new FakeAgentProvider([{
+    kind: "decision",
+    expect: { capabilityIds: ["score.read-summary"], contextSourceIds: [] },
+    decision: {
+      kind: "tool-calls",
+      calls: [{
+        callId: "read-summary",
+        capabilityId: "score.read-summary",
+        contractVersion: 1,
+        input: {},
+      }],
+    },
+  }]);
+  let invocationCalls = 0;
+  const store = new InMemoryAgentRunStore();
+  const controller = new AgentRunController({
+    provider,
+    capabilities: {
+      async invoke() {
+        invocationCalls += 1;
+        throw new Error("approval must happen before dispatch");
+      },
+    },
+    catalog: approvalCatalog(),
+    completionVerifier: verifyScoreSummaryCompletion,
+    store,
+    now: () => 100,
+    nextId: idSource(),
+  });
+
+  const outcome = await controller.run(approvalRunRequest());
+  const approval = getAgentRunRequiredApproval(outcome.run);
+
+  assert.deepEqual(outcome.run.state, {
+    lifecycle: "waiting",
+    phase: "executing",
+    waitReason: "approval",
+  });
+  assert.equal(invocationCalls, 0);
+  assert.equal(outcome.run.invocations[0]?.state.status, "awaiting-approval");
+  assert.equal(approval?.items[0]?.invocationId, outcome.run.invocations[0]?.invocationId);
+  assert.equal(approval?.items[0]?.capabilityName, "读取乐谱概要");
+  assert.equal(approval?.items[0]?.riskLevel, "high");
+  assert.deepEqual(approval?.items[0]?.riskReasons, ["会修改当前乐谱"]);
+  assert.deepEqual(approval?.items[0]?.policy, {
+    policyVersion: 1,
+    mode: "risk-based",
+    capabilityRequirement: "risk-based",
+    decision: "require-approval",
+  });
+  assert.deepEqual(approval?.items[0]?.scope, {
+    workspaceId: "workspace-1",
+    documentId: "score-1",
+    documentVersion: 7,
+    limit: "document",
+  });
+  assert.deepEqual(
+    (await store.load("run-summary"))?.run.events.at(-1)?.event,
+    { type: "approval.required", approval },
+  );
+});
+
+test("approved invocation executes its persisted input and resumes the same Run", async () => {
+  const provider = new FakeAgentProvider([
+    {
+      kind: "decision",
+      expect: { capabilityIds: ["score.read-summary"], contextSourceIds: [] },
+      decision: {
+        kind: "tool-calls",
+        calls: [{
+          callId: "read-summary",
+          capabilityId: "score.read-summary",
+          contractVersion: 1,
+          input: {},
+        }],
+      },
+    },
+    {
+      kind: "decision",
+      expect: { capabilityIds: ["score.read-summary"], contextSourceIds: ["score.read-summary"] },
+      decision: { kind: "finish", reason: "completed", text: "批准的能力已完成。" },
+    },
+  ]);
+  const requests: CapabilityTransportRequest[] = [];
+  const store = new InMemoryAgentRunStore();
+  const controller = new AgentRunController({
+    provider,
+    capabilities: {
+      async invoke(request) {
+        requests.push(request);
+        return {
+          status: "completed",
+          invocationId: request.invocationId,
+          capabilityId: request.capabilityId,
+          contractVersion: request.contractVersion,
+          data: { documentId: "score-1", documentVersion: 8, title: "练习曲", measureCount: 32 },
+        };
+      },
+    },
+    catalog: approvalCatalog(),
+    completionVerifier: verifyScoreSummaryCompletion,
+    store,
+    now: () => 100,
+    nextId: idSource(),
+  });
+  const waiting = await controller.run(approvalRunRequest());
+  const approval = getAgentRunRequiredApproval(waiting.run);
+  assert.ok(approval);
+
+  const completed = await controller.continueWithApproval(
+    approvalRunRequest(),
+    waiting.run,
+    { approvalId: approval.approvalId, kind: "capability-execution", outcome: "approved", decidedBy: "local-user" },
+  );
+
+  assert.equal(requests.length, 1);
+  assert.deepEqual(requests[0]?.input, {});
+  assert.equal(requests[0]?.invocationId, waiting.run.invocations[0]?.invocationId);
+  assert.equal(completed.run.state.lifecycle, "terminal");
+  assert.equal(completed.run.invocations[0]?.state.status, "succeeded");
+  assert.deepEqual(completed.run.invocations[0]?.events.map((event) => event.event.type), [
+    "invocation.requested",
+    "invocation.validated",
+    "approval.required",
+    "approval.granted",
+    "invocation.dispatched",
+    "invocation.started",
+    "invocation.succeeded",
+  ]);
+  assert.equal(completed.run.events.some((event) => event.event.type === "approval.approved"), true);
+  assert.equal(provider.exhausted, true);
+});
+
+test("approval barrier resumes every Invocation in a mixed tool-call batch", async () => {
+  const metadataDescriptor = FIRST_PARTY_CAPABILITY_CATALOG.find(
+    (item) => item.id === "score.read-metadata",
+  );
+  assert.ok(metadataDescriptor);
+  const catalog = [...approvalCatalog(), metadataDescriptor];
+  const provider = new FakeAgentProvider([
+    {
+      kind: "decision",
+      expect: {
+        capabilityIds: ["score.read-summary", "score.read-metadata"],
+        contextSourceIds: [],
+      },
+      decision: {
+        kind: "tool-calls",
+        calls: [{
+          callId: "read-summary",
+          capabilityId: "score.read-summary",
+          contractVersion: 1,
+          input: {},
+        }, {
+          callId: "read-metadata",
+          capabilityId: "score.read-metadata",
+          contractVersion: 1,
+          input: {},
+        }],
+      },
+    },
+    {
+      kind: "decision",
+      expect: {
+        capabilityIds: ["score.read-summary", "score.read-metadata"],
+        contextSourceIds: ["score.read-summary", "score.read-metadata"],
+      },
+      decision: { kind: "finish", reason: "completed", text: "批量读取完成。" },
+    },
+  ]);
+  const requests: CapabilityTransportRequest[] = [];
+  const store = new InMemoryAgentRunStore();
+  const persistedInvocationStates: string[][] = [];
+  const persistedContextSources: string[][] = [];
+  const persistedDocumentVersions: Array<number | null> = [];
+  const controller = new AgentRunController({
+    provider,
+    capabilities: {
+      async invoke(request) {
+        requests.push(request);
+        const persisted = await store.load("run-summary");
+        persistedInvocationStates.push(
+          persisted?.run.invocations.map(
+            (invocation) => invocation.state.status,
+          ) ?? [],
+        );
+        persistedContextSources.push(
+          persisted?.run.contextItems.map((item) => item.sourceId) ?? [],
+        );
+        persistedDocumentVersions.push(persisted?.run.workspace.documentVersion ?? null);
+        return {
+          status: "completed",
+          invocationId: request.invocationId,
+          capabilityId: request.capabilityId,
+          contractVersion: request.contractVersion,
+          data: request.capabilityId === "score.read-summary"
+            ? { documentId: "score-1", documentVersion: 8, title: "练习曲", measureCount: 32 }
+            : {
+                documentId: "score-1",
+                documentVersion: 8,
+                title: "练习曲",
+                authors: [],
+                tempoBpm: 120,
+              },
+        };
+      },
+    },
+    catalog,
+    completionVerifier: verifyScoreSummaryCompletion,
+    store,
+    now: () => 100,
+    nextId: idSource(),
+  });
+  const request = {
+    ...approvalRunRequest(),
+    intent: {
+      kind: "read" as const,
+      requestedCapabilityIds: ["score.read-summary", "score.read-metadata"],
+      scope: "document" as const,
+    },
+    policy: {
+      ...approvalRunRequest().policy,
+      allowedCapabilityIds: ["score.read-summary", "score.read-metadata"],
+      maxToolsPerTurn: 2,
+    },
+  };
+  const waiting = await controller.run(request);
+  const approval = getAgentRunRequiredApproval(waiting.run);
+  assert.ok(approval);
+  assert.deepEqual(approval.items.map((item) => item.capabilityId), ["score.read-summary"]);
+  assert.deepEqual(waiting.run.invocations.map((invocation) => invocation.state.status), [
+    "awaiting-approval",
+    "validated",
+  ]);
+
+  const completed = await controller.continueWithApproval(
+    request,
+    waiting.run,
+    { approvalId: approval.approvalId, kind: "capability-execution", outcome: "approved", decidedBy: "local-user" },
+  );
+
+  assert.deepEqual(requests.map((item) => item.capabilityId), [
+    "score.read-summary",
+    "score.read-metadata",
+  ]);
+  assert.deepEqual(persistedInvocationStates, [
+    ["running", "validated"],
+    ["succeeded", "running"],
+  ]);
+  assert.deepEqual(persistedContextSources, [[], ["score.read-summary"]]);
+  assert.deepEqual(persistedDocumentVersions, [7, 8]);
+  assert.deepEqual(completed.run.invocations.map((invocation) => invocation.state.status), [
+    "succeeded",
+    "succeeded",
+  ]);
+});
+
+test("denied invocation is never dispatched and returns the Run to planning", async () => {
+  const provider = new FakeAgentProvider([
+    {
+      kind: "decision",
+      expect: { capabilityIds: ["score.read-summary"], contextSourceIds: [] },
+      decision: {
+        kind: "tool-calls",
+        calls: [{
+          callId: "read-summary",
+          capabilityId: "score.read-summary",
+          contractVersion: 1,
+          input: {},
+        }],
+      },
+    },
+    {
+      kind: "decision",
+      expect: {
+        capabilityIds: ["score.read-summary"],
+        contextSourceIds: ["approval:run-summary:turn-3"],
+      },
+      decision: { kind: "message", text: "已按你的决定停止这项操作。" },
+    },
+  ]);
+  let invocationCalls = 0;
+  const controller = new AgentRunController({
+    provider,
+    capabilities: {
+      async invoke() {
+        invocationCalls += 1;
+        throw new Error("denied invocation must not execute");
+      },
+    },
+    catalog: approvalCatalog(),
+    completionVerifier: verifyScoreSummaryCompletion,
+    now: () => 100,
+    nextId: idSource(),
+  });
+  const waiting = await controller.run(approvalRunRequest());
+  const approval = getAgentRunRequiredApproval(waiting.run);
+  assert.ok(approval);
+
+  const denied = await controller.continueWithApproval(
+    approvalRunRequest(),
+    waiting.run,
+    { approvalId: approval.approvalId, kind: "capability-execution", outcome: "denied", decidedBy: "local-user" },
+  );
+
+  assert.equal(invocationCalls, 0);
+  assert.equal(denied.run.invocations[0]?.state.status, "rejected");
+  assert.deepEqual(denied.run.invocations[0]?.events.map((event) => event.event.type), [
+    "invocation.requested",
+    "invocation.validated",
+    "approval.required",
+    "approval.denied",
+  ]);
+  assert.equal(denied.run.events.some((event) => event.event.type === "approval.denied"), true);
+  const audit = getAgentApprovalAudit(denied.run, approval.approvalId);
+  assert.equal(audit?.decision?.decidedBy, "local-user");
+  assert.equal(audit?.requestedAt, 100);
+  assert.equal(audit?.decidedAt, 100);
+  assert.equal(audit?.executionOutcome, "denied");
+  assert.equal(audit?.items[0]?.attemptCount, 0);
+  assert.equal(audit?.items[0]?.finalStatus, "rejected");
+  assert.equal(denied.response, "已按你的决定停止这项操作。");
+  assert.deepEqual(denied.run.state, {
+    lifecycle: "waiting",
+    phase: "planning",
+    waitReason: "user-input",
+  });
+});
+
+test("approval refuses a stale document version before Capability dispatch", async () => {
+  const provider = new FakeAgentProvider([{
+    kind: "decision",
+    expect: { capabilityIds: ["score.read-summary"], contextSourceIds: [] },
+    decision: {
+      kind: "tool-calls",
+      calls: [{
+        callId: "read-summary",
+        capabilityId: "score.read-summary",
+        contractVersion: 1,
+        input: {},
+      }],
+    },
+  }]);
+  let invocationCalls = 0;
+  const controller = new AgentRunController({
+    provider,
+    capabilities: {
+      async invoke() {
+        invocationCalls += 1;
+        throw new Error("stale approval must not execute");
+      },
+    },
+    catalog: approvalCatalog(),
+    completionVerifier: verifyScoreSummaryCompletion,
+    now: () => 100,
+    nextId: idSource(),
+  });
+  const waiting = await controller.run(approvalRunRequest());
+  const approval = getAgentRunRequiredApproval(waiting.run);
+  assert.ok(approval);
+
+  await assert.rejects(
+    controller.continueWithApproval(
+      {
+        ...approvalRunRequest(),
+        workspace: { ...approvalRunRequest().workspace, documentVersion: 8 },
+      },
+      waiting.run,
+      { approvalId: approval.approvalId, kind: "capability-execution", outcome: "approved", decidedBy: "local-user" },
+    ),
+    (error: unknown) => error instanceof AgentRunResumeError
+      && error.code === "approval-decision-mismatch",
+  );
+  assert.equal(invocationCalls, 0);
+});
+
+test("Run Store sequence CAS allows only one cross-process approval decision", async () => {
+  const provider = new FakeAgentProvider([
+    {
+      kind: "decision",
+      expect: { capabilityIds: ["score.read-summary"], contextSourceIds: [] },
+      decision: {
+        kind: "tool-calls",
+        calls: [{
+          callId: "read-summary",
+          capabilityId: "score.read-summary",
+          contractVersion: 1,
+          input: {},
+        }],
+      },
+    },
+    {
+      kind: "decision",
+      expect: { capabilityIds: ["score.read-summary"], contextSourceIds: ["score.read-summary"] },
+      decision: { kind: "finish", reason: "completed", text: "完成" },
+    },
+  ]);
+  const store = new InMemoryAgentRunStore();
+  let approvedCalls = 0;
+  const winner = new AgentRunController({
+    provider,
+    capabilities: {
+      async invoke(request) {
+        approvedCalls += 1;
+        return {
+          status: "completed",
+          invocationId: request.invocationId,
+          capabilityId: request.capabilityId,
+          contractVersion: request.contractVersion,
+          data: { documentId: "score-1", documentVersion: 8, title: "练习曲", measureCount: 32 },
+        };
+      },
+    },
+    catalog: approvalCatalog(),
+    completionVerifier: verifyScoreSummaryCompletion,
+    store,
+    now: () => 100,
+    nextId: idSource(),
+  });
+  const waiting = await winner.run(approvalRunRequest());
+  const approval = getAgentRunRequiredApproval(waiting.run);
+  assert.ok(approval);
+  const staleRun = waiting.run;
+
+  const completed = await winner.continueWithApproval(
+    approvalRunRequest(),
+    staleRun,
+    { approvalId: approval.approvalId, kind: "capability-execution", outcome: "approved", decidedBy: "local-user" },
+  );
+  assert.equal(completed.run.state.lifecycle, "terminal");
+  assert.equal(approvedCalls, 1);
+
+  let losingCalls = 0;
+  const loser = new AgentRunController({
+    provider: new FakeAgentProvider([]),
+    capabilities: {
+      async invoke() {
+        losingCalls += 1;
+        throw new Error("stale writer must not dispatch");
+      },
+    },
+    catalog: approvalCatalog(),
+    completionVerifier: verifyScoreSummaryCompletion,
+    store,
+    now: () => 100,
+    nextId: idSource(),
+  });
+  await assert.rejects(
+    loser.continueWithApproval(
+      approvalRunRequest(),
+      staleRun,
+      { approvalId: approval.approvalId, kind: "capability-execution", outcome: "denied", decidedBy: "local-user" },
+    ),
+    /sequence conflict/,
+  );
+  assert.equal(losingCalls, 0);
+});
+
+test("approved Invocation can be safely retried after a persisted pre-dispatch crash", async () => {
+  const innerStore = new InMemoryAgentRunStore();
+  let crashAfterApprovalCommit = true;
+  const crashStore: AgentRunStorePort = {
+    load: (runId) => innerStore.load(runId),
+    listRecoverable: () => innerStore.listRecoverable(),
+    quarantine: (runId) => innerStore.quarantine(runId),
+    async commit(input: AgentRunStoreCommitInput): Promise<AgentRunStoreCommitResult> {
+      const result = await innerStore.commit(input);
+      if (crashAfterApprovalCommit
+        && result.status === "committed"
+        && input.event.event.type === "approval.approved") {
+        crashAfterApprovalCommit = false;
+        throw new Error("simulated process crash after approval commit");
+      }
+      return result;
+    },
+  };
+  const approvalProvider = new FakeAgentProvider([{
+    kind: "decision",
+    expect: { capabilityIds: ["score.read-summary"], contextSourceIds: [] },
+    decision: {
+      kind: "tool-calls",
+      calls: [{
+        callId: "read-summary",
+        capabilityId: "score.read-summary",
+        contractVersion: 1,
+        input: {},
+      }],
+    },
+  }]);
+  let preCrashCapabilityCalls = 0;
+  const approvalController = new AgentRunController({
+    provider: approvalProvider,
+    capabilities: {
+      async invoke(): Promise<never> {
+        preCrashCapabilityCalls += 1;
+        throw new Error("Capability must not start before the simulated crash");
+      },
+    },
+    catalog: approvalCatalog(),
+    completionVerifier: verifyScoreSummaryCompletion,
+    store: crashStore,
+    now: () => 100,
+    nextId: idSource(),
+  });
+  const waiting = await approvalController.run(approvalRunRequest());
+  const approval = getAgentRunRequiredApproval(waiting.run);
+  assert.ok(approval);
+  await assert.rejects(
+    approvalController.continueWithApproval(
+      approvalRunRequest(),
+      waiting.run,
+      { approvalId: approval.approvalId, kind: "capability-execution", outcome: "approved", decidedBy: "local-user" },
+    ),
+    /simulated process crash/,
+  );
+  assert.equal(preCrashCapabilityCalls, 0);
+
+  const crashed = await innerStore.load(waiting.run.runId);
+  assert.ok(crashed);
+  assert.equal(crashed.run.state.lifecycle, "active");
+  assert.equal(crashed.run.invocations[0]?.state.status, "running");
+  const recovery = new AgentRecoveryCoordinator({
+    store: innerStore,
+    receipts: { async lookup() { return { status: "not-started" }; } },
+    now: () => 101,
+    nextEventId: () => "event-recovery",
+  });
+  const retryAvailable = await recovery.recover(waiting.run.runId);
+  assert.equal(retryAvailable.status, "retry-available");
+  assert.ok(retryAvailable.status === "retry-available");
+
+  let retryCapabilityCalls = 0;
+  const retryController = new AgentRunController({
+    provider: new FakeAgentProvider([{
+      kind: "decision",
+      expect: { capabilityIds: ["score.read-summary"], contextSourceIds: ["score.read-summary"] },
+      decision: { kind: "finish", reason: "completed", text: "恢复后的调用已完成。" },
+    }]),
+    capabilities: {
+      async invoke(request) {
+        retryCapabilityCalls += 1;
+        return {
+          status: "completed",
+          invocationId: request.invocationId,
+          capabilityId: request.capabilityId,
+          contractVersion: request.contractVersion,
+          data: { documentId: "score-1", documentVersion: 7, title: "练习曲", measureCount: 32 },
+        };
+      },
+    },
+    catalog: approvalCatalog(),
+    completionVerifier: verifyScoreSummaryCompletion,
+    store: innerStore,
+    now: () => 102,
+    nextId: idSource(),
+  });
+  const completed = await retryController.retryInvocation(
+    approvalRunRequest(),
+    retryAvailable.run,
+    retryAvailable.invocationId,
+  );
+
+  assert.equal(retryCapabilityCalls, 1);
+  assert.equal(completed.run.state.lifecycle, "terminal");
+  assert.deepEqual(completed.run.invocations[0]?.events.map((event) => event.event.type), [
+    "invocation.requested",
+    "invocation.validated",
+    "approval.required",
+    "approval.granted",
+    "invocation.dispatched",
+    "invocation.started",
+    "invocation.retry-authorized",
+    "invocation.dispatched",
+    "invocation.started",
+    "invocation.succeeded",
+  ]);
+  const audit = getAgentApprovalAudit(completed.run, approval.approvalId);
+  assert.equal(audit?.decision?.decidedBy, "local-user");
+  assert.equal(audit?.requestedAt, 100);
+  assert.equal(audit?.decidedAt, 100);
+  assert.equal(audit?.executionOutcome, "succeeded");
+  assert.equal(audit?.items[0]?.attemptCount, 2);
+  assert.equal(audit?.items[0]?.retryCount, 1);
+  assert.equal(projectAgentApprovalAudits(completed.run).length, 1);
+});
+
+test("Run Store sequence CAS rejects a duplicate retry before Capability dispatch", async () => {
+  const store = new InMemoryAgentRunStore();
+  const seedController = new AgentRunController({
+    provider: new FakeAgentProvider([{
+      kind: "decision",
+      expect: { capabilityIds: ["score.read-summary"], contextSourceIds: [] },
+      decision: {
+        kind: "tool-calls",
+        calls: [{
+          callId: "read-summary",
+          capabilityId: "score.read-summary",
+          contractVersion: 1,
+          input: {},
+        }],
+      },
+    }]),
+    capabilities: { async invoke(): Promise<never> { throw new Error("not used"); } },
+    catalog: approvalCatalog(),
+    completionVerifier: verifyScoreSummaryCompletion,
+    store,
+    now: () => 100,
+    nextId: idSource(),
+  });
+  const waiting = await seedController.run(approvalRunRequest());
+  const approval = getAgentRunRequiredApproval(waiting.run);
+  assert.ok(approval);
+  const invocation = waiting.run.invocations[0];
+  assert.ok(invocation);
+  const approvedInvocation = [
+    { type: "approval.granted" as const },
+    { type: "invocation.dispatched" as const },
+    { type: "invocation.started" as const },
+  ].reduce((record, event) => {
+    const transition = reduceAgentInvocationState(record.state, event);
+    assert.ok(transition.accepted);
+    return {
+      ...record,
+      state: transition.state,
+      events: [...record.events, {
+        eventId: `seed-${record.events.length + 1}`,
+        invocationId: record.invocationId,
+        sequence: record.events.length + 1,
+        occurredAt: 101,
+        event,
+      }],
+    };
+  }, invocation);
+  const approvalTransition = reduceAgentRunState(waiting.run.state, {
+    type: "approval.approved",
+    decision: {
+      approvalId: approval.approvalId,
+      kind: "capability-execution",
+      outcome: "approved",
+      decidedBy: "local-user",
+    },
+  });
+  assert.ok(approvalTransition.accepted);
+  const recoveringTransition = reduceAgentRunState(approvalTransition.state, {
+    type: "run.recovery-required",
+    reason: "host-interrupted",
+  });
+  assert.ok(recoveringTransition.accepted);
+  const latest = await store.load(waiting.run.runId);
+  assert.ok(latest);
+  const approvalEvent = {
+    eventId: "seed-approval",
+    runId: waiting.run.runId,
+    sequence: latest.lastSequence + 1,
+    occurredAt: 101,
+    event: {
+      type: "approval.approved" as const,
+      decision: {
+        approvalId: approval.approvalId,
+        kind: "capability-execution" as const,
+        outcome: "approved" as const,
+        decidedBy: "local-user" as const,
+      },
+    },
+  };
+  const approvedRun = {
+    ...waiting.run,
+    state: approvalTransition.state,
+    invocations: [approvedInvocation],
+    events: [...waiting.run.events, approvalEvent],
+  };
+  const approvedCommit = await store.commit({
+    runId: waiting.run.runId,
+    expectedSequence: latest.lastSequence,
+    event: approvalEvent,
+    nextRun: approvedRun,
+  });
+  assert.equal(approvedCommit.status, "committed");
+  assert.ok(approvedCommit.status === "committed");
+  const recoveryEvent = {
+    eventId: "seed-recovery",
+    runId: waiting.run.runId,
+    sequence: approvedCommit.entry.lastSequence + 1,
+    occurredAt: 102,
+    event: { type: "run.recovery-required" as const, reason: "host-interrupted" as const },
+  };
+  const recoveringRun = {
+    ...approvedRun,
+    state: recoveringTransition.state,
+    events: [...approvedRun.events, recoveryEvent],
+  };
+  const recoveryCommit = await store.commit({
+    runId: waiting.run.runId,
+    expectedSequence: approvedCommit.entry.lastSequence,
+    event: recoveryEvent,
+    nextRun: recoveringRun,
+  });
+  assert.equal(recoveryCommit.status, "committed");
+  assert.ok(recoveryCommit.status === "committed");
+  const staleRun = recoveryCommit.entry.run;
+
+  const createRetryController = (onInvoke: () => void, text: string) => new AgentRunController({
+    provider: new FakeAgentProvider([{
+      kind: "decision",
+      expect: { capabilityIds: ["score.read-summary"], contextSourceIds: ["score.read-summary"] },
+      decision: { kind: "finish", reason: "completed", text },
+    }]),
+    capabilities: {
+      async invoke(request) {
+        onInvoke();
+        return {
+          status: "completed",
+          invocationId: request.invocationId,
+          capabilityId: request.capabilityId,
+          contractVersion: request.contractVersion,
+          data: { documentId: "score-1", documentVersion: 7, title: "练习曲", measureCount: 32 },
+        };
+      },
+    },
+    catalog: approvalCatalog(),
+    completionVerifier: verifyScoreSummaryCompletion,
+    store,
+    now: () => 103,
+    nextId: idSource(),
+  });
+  let winnerCalls = 0;
+  const winner = createRetryController(() => { winnerCalls += 1; }, "重试完成");
+  await winner.retryInvocation(approvalRunRequest(), staleRun, invocation.invocationId);
+  assert.equal(winnerCalls, 1);
+
+  let loserCalls = 0;
+  const loser = createRetryController(() => { loserCalls += 1; }, "不应执行");
+  await assert.rejects(
+    loser.retryInvocation(approvalRunRequest(), staleRun, invocation.invocationId),
+    /sequence conflict/,
+  );
+  assert.equal(loserCalls, 0);
 });
 
 test("controller projects Provider streaming into product progress without exposing tool fragments", async () => {
@@ -536,17 +1310,54 @@ test("a missing measure selection waits and resumes the same Run with the latest
       endMeasureId: "measure-3",
     },
   };
-  const completed = await controller.resume({
+  await assert.rejects(
+    controller.continueWithInput({
+      ...measureRequest,
+      workspace: selectedWorkspace,
+    }, stored.run, {
+      requestId: "stale-input-request",
+      kind: "measure-selection",
+      selection: selectedWorkspace.selection,
+    }),
+    (error: unknown) => error instanceof AgentRunResumeError
+      && error.code === "provided-input-mismatch",
+  );
+  const completed = await controller.continueWithInput({
     ...measureRequest,
     workspace: selectedWorkspace,
-  }, stored.run);
+  }, stored.run, {
+    requestId: requiredInput.requestId,
+    kind: "measure-selection",
+    selection: selectedWorkspace.selection,
+  });
 
   assert.equal(completed.run.runId, "run-selection");
   assert.equal(completed.run.state.lifecycle, "terminal");
   assert.equal(getAgentRunRequiredInput(completed.run), null);
   assert.equal(completed.run.workspace.documentVersion, 8);
   assert.deepEqual(invocationSelections, [null, selectedWorkspace.selection]);
-  assert.equal(completed.run.events.filter((event) => event.event.type === "run.resumed").length, 1);
+  assert.equal(completed.run.events.filter((event) => event.event.type === "user-input.provided").length, 1);
+  const consumption = getAgentUserInputConsumption(completed.run, requiredInput.requestId);
+  assert.equal(consumption?.requiredInput.sourceInvocationId, requiredInput.sourceInvocationId);
+  assert.deepEqual(consumption?.providedInput, {
+    requestId: requiredInput.requestId,
+    kind: "measure-selection",
+    selection: selectedWorkspace.selection,
+  });
+  await assert.rejects(
+    controller.continueWithInput({
+      ...measureRequest,
+      workspace: selectedWorkspace,
+    }, stored.run, {
+      requestId: requiredInput.requestId,
+      kind: "measure-selection",
+      selection: selectedWorkspace.selection,
+    }),
+    /sequence conflict/,
+  );
+  assert.equal(projectAgentUserInputConsumptions(
+    (await store.load("run-selection"))?.run ?? completed.run,
+  ).length, 1);
   assert.equal(provider.exhausted, true);
 });
 
@@ -602,14 +1413,39 @@ test("run and invocation reducers reject impossible transitions", () => {
   const prepared = reduceAgentRunState(created.state, { type: "run.prepared" });
   assert.equal(prepared.accepted, true);
   if (!prepared.accepted) return;
+  const illegalProvidedInput = reduceAgentRunState(prepared.state, {
+    type: "user-input.provided",
+    input: {
+      requestId: "input-without-request",
+      kind: "measure-selection",
+      selection: {
+        kind: "measure-range",
+        documentId: "score-1",
+        documentVersion: 7,
+        startMeasureId: "measure-1",
+        endMeasureId: "measure-1",
+      },
+    },
+  });
+  assert.equal(illegalProvidedInput.accepted, false);
   const illegalRun = reduceAgentRunState(prepared.state, { type: "invocations.completed" });
   assert.equal(illegalRun.accepted, false);
+  const illegalRetry = reduceAgentRunState(prepared.state, {
+    type: "invocation.retry-authorized",
+    invocationId: "invocation-1",
+    authorizedBy: "local-user",
+  });
+  assert.equal(illegalRetry.accepted, false);
 
   const requested = reduceAgentInvocationState(null, { type: "invocation.requested" });
   assert.equal(requested.accepted, true);
   if (!requested.accepted) return;
   const illegalInvocation = reduceAgentInvocationState(requested.state, { type: "invocation.succeeded" });
   assert.equal(illegalInvocation.accepted, false);
+  const illegalInvocationRetry = reduceAgentInvocationState(requested.state, {
+    type: "invocation.retry-authorized",
+  });
+  assert.equal(illegalInvocationRetry.accepted, false);
 });
 
 test("a guessed capability fails the run without reaching the capability port", async () => {
@@ -769,7 +1605,7 @@ test("cancellation after dispatch waits for reconciliation instead of claiming t
 
 test("capability port rejects a mismatched transport identity", async () => {
   const port = new WorkbenchAgentCapabilityPort({
-    async invokeAgentCapability(request) {
+    async invokeCapability(request) {
       return {
         status: "completed",
         invocationId: `${request.invocationId}-wrong`,
@@ -784,6 +1620,7 @@ test("capability port rejects a mismatched transport identity", async () => {
     capabilityId: "score.read-summary",
     contractVersion: 1,
     workspaceId: "workspace-1",
+    documentPrecondition: null,
     input: {},
   }), /identity/);
 });

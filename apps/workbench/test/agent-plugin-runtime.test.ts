@@ -20,6 +20,7 @@ const recoverySnapshot = (
     state: { lifecycle: "recovering", phase: "planning", recoveryReason: "host-interrupted" },
     invocationId: null,
     requiredInput: null,
+    requiredApproval: null,
     action: "resume",
     message: "Agent 已完成恢复核对，可以继续",
     isBlocking: true,
@@ -43,8 +44,83 @@ const selectionRecoverySnapshot = (): AgentRecoverySessionSnapshot => ({
       sourceInvocationId: "invocation-selection",
       constraints: { documentId: "score-1", minMeasures: 1, maxMeasures: 32 },
     },
+    requiredApproval: null,
     action: "provide-input",
     message: "请在当前乐谱中选择要读取的小节",
+    isBlocking: true,
+  }],
+  message: "有 1 个 Agent Run 需要处理",
+});
+
+const approvalRecoverySnapshot = (): AgentRecoverySessionSnapshot => ({
+  status: "ready",
+  items: [{
+    runId: "run-approval",
+    workspaceId: "workspace-1",
+    goal: "修改当前乐谱",
+    kind: "awaiting-user",
+    state: { lifecycle: "waiting", phase: "executing", waitReason: "approval" },
+    invocationId: "invocation-approval",
+    requiredInput: null,
+    requiredApproval: {
+      approvalId: "approval-1",
+      kind: "capability-execution",
+      prompt: "Agent 请求执行以下能力",
+      items: [{
+        invocationId: "invocation-approval",
+        capabilityId: "score.write-title",
+        capabilityName: "修改标题",
+        contractVersion: 1,
+        summary: "将执行“修改标题”",
+        preview: {
+          kind: "field-change",
+          field: "score.title",
+          before: null,
+          after: "夜曲",
+        },
+        riskLevel: "high",
+        riskReasons: ["会修改当前乐谱"],
+        policy: {
+          policyVersion: 1,
+          mode: "risk-based",
+          capabilityRequirement: "risk-based",
+          decision: "require-approval",
+        },
+        scope: {
+          workspaceId: "workspace-1",
+          documentId: "score-1",
+          documentVersion: 7,
+          limit: "document",
+        },
+        sideEffects: {
+          document: "write",
+          filesystem: "none",
+          network: "none",
+          settings: "none",
+          playback: "none",
+        },
+      }],
+    },
+    action: "approve",
+    message: "Agent 正在等待你的批准",
+    isBlocking: true,
+  }],
+  message: "有 1 个 Agent Run 需要处理",
+});
+
+const retryRecoverySnapshot = (): AgentRecoverySessionSnapshot => ({
+  status: "ready",
+  items: [{
+    runId: "run-retry",
+    workspaceId: "workspace-1",
+    goal: "读取当前乐谱",
+    kind: "retry-available",
+    state: { lifecycle: "recovering", phase: "executing", recoveryReason: "host-interrupted" },
+    invocationId: "invocation-retry",
+    requiredInput: null,
+    requiredApproval: null,
+    action: "retry",
+    message: "原能力调用尚未开始，可以在确认后重试",
     isBlocking: true,
   }],
   message: "有 1 个 Agent Run 需要处理",
@@ -238,6 +314,40 @@ test("runtime grants a continuation lease only to the matching input-waiting Run
   assert.ok(lease);
   assert.equal(runtime.getSnapshot().status, "running");
   assert.equal(runtime.beginContinuation("run-selection", "input-selection"), null);
+  lease.release();
+  assert.equal(runtime.getSnapshot().status, "recovering");
+});
+
+test("runtime grants an approval lease only for the persisted approval identity", async () => {
+  const runtime = new AgentPluginRuntime({ hostAvailable: true,
+    createProviderSession: () => new FakeProviderSession(readyProvider),
+    createRecoverySession: () => new FakeRecoverySession(approvalRecoverySnapshot()) });
+  await runtime.setEnabled(true);
+
+  assert.equal(runtime.beginApprovalContinuation("other-run", "approval-1"), null);
+  assert.equal(runtime.beginApprovalContinuation("run-approval", "stale-approval"), null);
+
+  const lease = runtime.beginApprovalContinuation("run-approval", "approval-1");
+  assert.ok(lease);
+  assert.equal(runtime.getSnapshot().status, "running");
+  assert.equal(runtime.beginApprovalContinuation("run-approval", "approval-1"), null);
+  lease.release();
+  assert.equal(runtime.getSnapshot().status, "recovering");
+});
+
+test("runtime grants a retry lease only for the projected Invocation identity", async () => {
+  const runtime = new AgentPluginRuntime({ hostAvailable: true,
+    createProviderSession: () => new FakeProviderSession(readyProvider),
+    createRecoverySession: () => new FakeRecoverySession(retryRecoverySnapshot()) });
+  await runtime.setEnabled(true);
+
+  assert.equal(runtime.beginRetryContinuation("other-run", "invocation-retry"), null);
+  assert.equal(runtime.beginRetryContinuation("run-retry", "stale-invocation"), null);
+
+  const lease = runtime.beginRetryContinuation("run-retry", "invocation-retry");
+  assert.ok(lease);
+  assert.equal(runtime.getSnapshot().status, "running");
+  assert.equal(runtime.beginRetryContinuation("run-retry", "invocation-retry"), null);
   lease.release();
   assert.equal(runtime.getSnapshot().status, "recovering");
 });

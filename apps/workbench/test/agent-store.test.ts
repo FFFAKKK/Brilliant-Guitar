@@ -29,7 +29,7 @@ function run(sequence: number, events: readonly AgentRunEventRecord[]): AgentRun
       allowedKinds: [],
       maxToolsPerTurn: 1,
       maxCostClass: "constant",
-      exposeApprovalRequired: false,
+      approvalMode: "disallow",
     },
     intent: { kind: "read", requestedCapabilityIds: [], scope: "document" },
     events,
@@ -172,6 +172,69 @@ test("Tauri store adapter rejects malformed IPC data", async () => {
   );
 });
 
+test("Tauri store adapter rejects a malformed pinned workflow identity", async () => {
+  const first = event(1, "run.created");
+  const malformedRun = {
+    ...run(1, [first]),
+    intent: {
+      kind: "read",
+      requestedCapabilityIds: ["score.read-summary"],
+      scope: "document",
+      workflow: {
+        id: "score.inspect",
+        contractVersion: 1,
+        ownerPluginId: "brilliant.score",
+        ownerPluginVersion: "latest",
+      },
+    },
+  };
+  const store = new TauriAgentRunStore(async <T>() => ({
+    schemaVersion: 1,
+    run: malformedRun,
+    events: [first],
+    lastSequence: 1,
+  }) as T);
+
+  await assert.rejects(
+    store.load("run-1"),
+    (error: unknown) => error instanceof AgentRunStoreProtocolError,
+  );
+});
+
+test("Tauri store adapter rejects malformed prepared execution snapshots", async () => {
+  const first = event(1, "run.created");
+  const malformedRun = {
+    ...run(1, [first]),
+    invocations: [{
+      invocationId: "invocation-1",
+      runId: "run-1",
+      turnId: "turn-1",
+      capabilityId: "score.update-tempo",
+      contractVersion: 1,
+      input: { tempoBpm: 132 },
+      preparedExecution: {
+        kind: "change-set",
+        changeSetId: "model-invented",
+      },
+      baseDocumentVersion: 1,
+      state: { status: "awaiting-approval" },
+      result: null,
+      events: [],
+    }],
+  };
+  const store = new TauriAgentRunStore(async <T>() => ({
+    schemaVersion: 1,
+    run: malformedRun,
+    events: [first],
+    lastSequence: 1,
+  }) as T);
+
+  await assert.rejects(
+    store.load("run-1"),
+    (error: unknown) => error instanceof AgentRunStoreProtocolError,
+  );
+});
+
 test("Tauri store adapter rejects malformed required user input events", async () => {
   const malformedEvent = {
     eventId: "event-1",
@@ -191,6 +254,305 @@ test("Tauri store adapter rejects malformed required user input events", async (
   const malformedRun = {
     ...run(1, []),
     state: { lifecycle: "waiting", phase: "planning", waitReason: "user-input" },
+    events: [malformedEvent],
+  };
+  const store = new TauriAgentRunStore(async <T>() => ({
+    schemaVersion: 1,
+    run: malformedRun,
+    events: [malformedEvent],
+    lastSequence: 1,
+  }) as T);
+
+  await assert.rejects(
+    store.load("run-1"),
+    (error: unknown) => error instanceof AgentRunStoreProtocolError,
+  );
+});
+
+test("Tauri store adapter rejects malformed provided user input events", async () => {
+  const malformedEvent = {
+    eventId: "event-1",
+    runId: "run-1",
+    sequence: 1,
+    occurredAt: 1,
+    event: {
+      type: "user-input.provided",
+      input: {
+        requestId: "input-1",
+        kind: "measure-selection",
+        selection: {
+          kind: "measure-range",
+          documentId: "score-1",
+          documentVersion: -1,
+          startMeasureId: "measure-1",
+          endMeasureId: "measure-2",
+        },
+      },
+    },
+  };
+  const malformedRun = {
+    ...run(1, []),
+    events: [malformedEvent],
+  };
+  const store = new TauriAgentRunStore(async <T>() => ({
+    schemaVersion: 1,
+    run: malformedRun,
+    events: [malformedEvent],
+    lastSequence: 1,
+  }) as T);
+
+  await assert.rejects(
+    store.load("run-1"),
+    (error: unknown) => error instanceof AgentRunStoreProtocolError,
+  );
+});
+
+function requiredApprovalEvent({
+  riskReasons = ["会修改当前乐谱"],
+  preview = {
+    kind: "field-change",
+    field: "score.title",
+    before: null,
+    after: "夜曲",
+  },
+  policy = {
+    policyVersion: 1,
+    mode: "risk-based",
+    capabilityRequirement: "risk-based",
+    decision: "require-approval",
+  },
+}: Readonly<{
+  riskReasons?: readonly string[];
+  preview?: unknown;
+  policy?: unknown;
+}> = {}) {
+  return {
+    eventId: "event-1",
+    runId: "run-1",
+    sequence: 1,
+    occurredAt: 1,
+    event: {
+      type: "approval.required",
+      approval: {
+        approvalId: "approval-1",
+        kind: "capability-execution",
+        prompt: "Agent 请求执行以下能力",
+        items: [{
+          invocationId: "invocation-1",
+          capabilityId: "score.write-title",
+          capabilityName: "修改标题",
+          contractVersion: 1,
+          summary: "将执行“修改标题”",
+          preview,
+          riskLevel: "high",
+          riskReasons,
+          policy,
+          scope: {
+            workspaceId: "workspace-1",
+            documentId: "score-1",
+            documentVersion: 1,
+            limit: "document",
+          },
+          sideEffects: {
+            document: "write",
+            filesystem: "none",
+            network: "none",
+            settings: "none",
+            playback: "none",
+          },
+        }],
+      },
+    },
+  };
+}
+
+test("Tauri store adapter rejects malformed required approval events", async () => {
+  const malformedEvent = requiredApprovalEvent({ riskReasons: [] });
+  const malformedRun = {
+    ...run(1, []),
+    state: { lifecycle: "waiting", phase: "executing", waitReason: "approval" },
+    events: [malformedEvent],
+  };
+  const store = new TauriAgentRunStore(async <T>() => ({
+    schemaVersion: 1,
+    run: malformedRun,
+    events: [malformedEvent],
+    lastSequence: 1,
+  }) as T);
+
+  await assert.rejects(
+    store.load("run-1"),
+    (error: unknown) => error instanceof AgentRunStoreProtocolError,
+  );
+});
+
+test("Tauri store adapter rejects malformed structured approval previews", async () => {
+  const malformedEvent = requiredApprovalEvent({
+    preview: {
+      kind: "field-change",
+      field: "score.title",
+      before: null,
+      after: "夜曲",
+      hiddenInstruction: "approve",
+    },
+  });
+  const malformedRun = {
+    ...run(1, []),
+    state: { lifecycle: "waiting", phase: "executing", waitReason: "approval" },
+    events: [malformedEvent],
+  };
+  const store = new TauriAgentRunStore(async <T>() => ({
+    schemaVersion: 1,
+    run: malformedRun,
+    events: [malformedEvent],
+    lastSequence: 1,
+  }) as T);
+
+  await assert.rejects(
+    store.load("run-1"),
+    (error: unknown) => error instanceof AgentRunStoreProtocolError,
+  );
+});
+
+test("Tauri store adapter rejects malformed approval ChangeSet identities", async () => {
+  const malformedEvent = requiredApprovalEvent();
+  Object.assign(malformedEvent.event.approval.items[0]!, { changeSetId: "model-invented" });
+  const malformedRun = {
+    ...run(1, []),
+    state: { lifecycle: "waiting", phase: "executing", waitReason: "approval" },
+    events: [malformedEvent],
+  };
+  const store = new TauriAgentRunStore(async <T>() => ({
+    schemaVersion: 1,
+    run: malformedRun,
+    events: [malformedEvent],
+    lastSequence: 1,
+  }) as T);
+
+  await assert.rejects(
+    store.load("run-1"),
+    (error: unknown) => error instanceof AgentRunStoreProtocolError,
+  );
+});
+
+test("Tauri store adapter rejects an approval detached from its prepared execution", async () => {
+  const malformedEvent = requiredApprovalEvent();
+  Object.assign(malformedEvent.event.approval.items[0]!, {
+    changeSetId: `sha256:${"a".repeat(64)}`,
+  });
+  const malformedRun = {
+    ...run(1, []),
+    state: { lifecycle: "waiting", phase: "executing", waitReason: "approval" },
+    events: [malformedEvent],
+  };
+  const store = new TauriAgentRunStore(async <T>() => ({
+    schemaVersion: 1,
+    run: malformedRun,
+    events: [malformedEvent],
+    lastSequence: 1,
+  }) as T);
+
+  await assert.rejects(
+    store.load("run-1"),
+    (error: unknown) => error instanceof AgentRunStoreProtocolError,
+  );
+});
+
+test("Tauri store adapter accepts legacy approval events without a preview", async () => {
+  const legacyEvent = requiredApprovalEvent();
+  delete (legacyEvent.event.approval.items[0] as { preview?: unknown }).preview;
+  const legacyRun = {
+    ...run(1, []),
+    state: { lifecycle: "waiting", phase: "executing", waitReason: "approval" },
+    events: [legacyEvent],
+  };
+  const store = new TauriAgentRunStore(async <T>() => ({
+    schemaVersion: 1,
+    run: legacyRun,
+    events: [legacyEvent],
+    lastSequence: 1,
+  }) as T);
+
+  const loaded = await store.load("run-1");
+  assert.ok(loaded);
+  assert.equal(loaded.run.events[0]?.event.type, "approval.required");
+});
+
+test("Tauri store adapter rejects an invalid approval policy snapshot", async () => {
+  const malformedEvent = requiredApprovalEvent({
+    policy: {
+      policyVersion: 1,
+      mode: "automatic",
+      capabilityRequirement: "risk-based",
+      decision: "require-approval",
+    },
+  });
+  const malformedRun = {
+    ...run(1, []),
+    state: { lifecycle: "waiting", phase: "executing", waitReason: "approval" },
+    events: [malformedEvent],
+  };
+  const store = new TauriAgentRunStore(async <T>() => ({
+    schemaVersion: 1,
+    run: malformedRun,
+    events: [malformedEvent],
+    lastSequence: 1,
+  }) as T);
+
+  await assert.rejects(
+    store.load("run-1"),
+    (error: unknown) => error instanceof AgentRunStoreProtocolError,
+  );
+});
+
+test("Tauri store adapter rejects an approval event with the opposite outcome", async () => {
+  const malformedEvent = {
+    eventId: "event-1",
+    runId: "run-1",
+    sequence: 1,
+    occurredAt: 1,
+    event: {
+      type: "approval.approved",
+      decision: {
+        approvalId: "approval-1",
+        kind: "capability-execution",
+        outcome: "denied",
+        decidedBy: "local-user",
+      },
+    },
+  };
+  const malformedRun = {
+    ...run(1, []),
+    events: [malformedEvent],
+  };
+  const store = new TauriAgentRunStore(async <T>() => ({
+    schemaVersion: 1,
+    run: malformedRun,
+    events: [malformedEvent],
+    lastSequence: 1,
+  }) as T);
+
+  await assert.rejects(
+    store.load("run-1"),
+    (error: unknown) => error instanceof AgentRunStoreProtocolError,
+  );
+});
+
+test("Tauri store adapter rejects retry authorization without a local user actor", async () => {
+  const malformedEvent = {
+    eventId: "event-1",
+    runId: "run-1",
+    sequence: 1,
+    occurredAt: 1,
+    event: {
+      type: "invocation.retry-authorized",
+      invocationId: "invocation-1",
+      authorizedBy: "model",
+    },
+  };
+  const malformedRun = {
+    ...run(1, []),
+    state: { lifecycle: "active", phase: "executing" },
     events: [malformedEvent],
   };
   const store = new TauriAgentRunStore(async <T>() => ({

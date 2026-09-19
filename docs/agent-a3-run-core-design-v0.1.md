@@ -4,6 +4,10 @@
 状态：A3 已完成  
 前置：[AI Agent 控制面设计](agent-control-plane-design-v0.1.md) · [AI Agent 上下文与工具集设计](agent-context-toolset-design-v0.1.md) · [A1 Capability Foundation](agent-a1-capability-foundation-design.md)
 
+> **历史实施记录。** A3 的 Run 状态机、工具筛选、持久化和恢复原则继续有效；其底层统一
+> Application Capability 调用路径是迁移兼容层，不是未来架构。新的业务入口采用 Direct Tool Adapter
+> 或插件工作流，参见 [目标重构方案](plugin-platform-ui-contribution-and-session-freeze-plan-v1.md)。
+
 ## 1. A3 要证明什么
 
 A1 已经证明统一 Application Capability 可以跨越 TypeScript、Tauri、Rust 应用层和

@@ -49,7 +49,7 @@ export function adaptUiPluginPackage(plugin: UiPluginPackage, services?: PluginS
       runtime: "internal-module",
       activation: plugin.activation,
       requires: {
-        capabilities: plugin.capabilities,
+        hostFeatures: plugin.hostFeatures,
         projections: plugin.projections.map((projection) => projection.id),
       },
       contributes: {
@@ -59,6 +59,8 @@ export function adaptUiPluginPackage(plugin: UiPluginPackage, services?: PluginS
         componentExtensions: plugin.componentExtensions.map((extension) => extension.id),
         instruments: plugin.instruments.map((instrument) => instrument.id),
         playbackOutputs: plugin.playbackOutputs.map((output) => output.id),
+        applicationCapabilities: plugin.applicationCapabilities.map((capability) => capability.id),
+        workflows: plugin.workflows.map((workflow) => workflow.id),
         kernelModules: plugin.kernelModules,
       },
     },
@@ -77,6 +79,8 @@ export function adaptUiPluginPackage(plugin: UiPluginPackage, services?: PluginS
     })),
     instruments: plugin.instruments,
     playbackOutputs: plugin.playbackOutputs,
+    applicationCapabilities: plugin.applicationCapabilities,
+    workflows: plugin.workflows,
     views: plugin.views.map((contribution) => ({
       definition: contribution.definition as UiComponentDefinition,
       label: contribution.label,

@@ -4,6 +4,11 @@
 状态：首个只读垂直切片已实施  
 上游：[A0 Kernel Query Foundation](agent-a0-kernel-query-foundation-plan.md) · [AI Agent 插件架构基线](agent-architecture-v0.1.md) · [Milestone A 差距分析](agent-milestone-a-gap-analysis.md)
 
+> **历史验证切片。** A1 证明了业务调用能够脱离 UI 并安全跨越进程边界，但其“UI 与 Agent 共用前端
+> Application Capability Gateway”的具体落点已于 2026-09-20 被取代。保留输入校验、版本约束和权威
+> Application Service；新实现采用类型化直接访问与插件工作流。参见
+> [目标重构方案](plugin-platform-ui-contribution-and-session-freeze-plan-v1.md)。
+
 ## 1. A1 的目标
 
 A1 只验证统一 Application Capability 的核心架构：

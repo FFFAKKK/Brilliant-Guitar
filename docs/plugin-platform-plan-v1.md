@@ -2,6 +2,11 @@
 
 日期：2026-09-18。
 
+> **2026-09-20 架构更新：** UI 与 Agent 共用 `ApplicationCapabilityGateway` 的部分属于过渡实现，
+> 不再是目标架构。新设计采用“类型化直接访问 + 插件工作流”，并保留固定会话与统一 PluginPlatform。
+> 详细背景、术语、迁移表和审计标准以
+> [插件平台、UI 贡献、工作流与固定会话重构方案](plugin-platform-ui-contribution-and-session-freeze-plan-v1.md)为准。
+
 ## 目标
 
 把当前分散在 UI 插件目录、UI 宿主、诊断存储和工作台组合根中的插件逻辑，整理为一个应用级插件平台。插件平台负责发现、校验、排序、启动前配置、固定会话装配和诊断；具体组件只消费已经解析好的贡献，不再自行扫描插件。
@@ -28,6 +33,15 @@ Tauri / Rust Kernel
 - `UiPluginHost` 负责 UI 组件、命令、交互、Projection 和扩展贡献的合同校验与解析。
 - `PluginPlatform` 负责把目录、宿主、激活集合和运行状态统一起来。
 - 组件只通过 Projection、命令和扩展点工作，不读取插件清单或插件目录。
+
+现有 Plugin API `3.0` 的 `applicationCapabilities`、只读能力目录和 `ApplicationCapabilityGateway` 已完成过渡期
+统一，但不再扩展。目标是让 UI 和第一方产品插件通过平台授予的类型化领域端口直接访问可信应用服务，
+Agent 则根据任务使用 Direct Tool Adapter 或插件工作流。旧的宿主特性目录已更名为
+`WorkbenchFeatureRegistry`，插件依赖字段为 `requires.hostFeatures`。
+
+工作流贡献也进入同一个固定会话平台。领域插件可以一次注册多个聚合工作流，`PluginPlatform` 生成按
+`ownerPluginId` 分类的只读 `WorkflowDirectory`，Agent 运行时只消费该目录。工作流目录不是第二个插件平台，
+也不拥有插件生命周期。详细合同见 `agent-a7.12-plugin-owned-workflow-directory-v0.1.md`。
 
 ## 统一插件包与两个执行域
 
@@ -67,6 +81,10 @@ configuring
 ```
 
 所有应用组件和 Kernel 模块都遵循相同规则：注册、启用、停用、安装、卸载、升级和执行域变更只能发生在启动配置阶段。进入工作台后，当前会话的插件 ID 集合、UI 贡献拓扑和 Kernel assembly plan 全部冻结。运行中的启停请求只保存为下次启动配置，并明确标记 `restartRequired`；它不能卸载当前 View、Command、交互、服务或 Kernel 模块。
+
+同一规则适用于 Workflow Directory。由于运行中卸载在平台入口已经被禁止，工作流运行时不得增加
+`draining`、热替换或运行时注销状态；这些状态会重复表达一个在本架构中不可达的场景。跨进程恢复使用
+工作流与所有者版本固定解决，不使用热卸载协议。
 
 `always` 表示强制随产品装配，`user` 表示用户可以在启动前配置。`user` 不表示允许运行时激活。应用仍可修改普通业务设置，但设置不得借机改变组件拓扑或加载新的可执行代码。
 

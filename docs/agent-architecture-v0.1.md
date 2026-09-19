@@ -3,6 +3,11 @@
 日期：2026-09-17  
 状态：设计中，已确认部分可作为后续方案的默认前提；未进入业务代码实现。
 
+> 2026-09-20 更新：本文原先的“统一 Application Capability”前端执行层已被重新规划。
+> 业务逻辑仍然只实现一次，但 UI 通过类型化领域端口直接访问，Agent 使用 Direct Tool Adapter 或插件工作流，
+> 最终在 Rust Application Service 与 Kernel 事务处汇合。以
+> [插件平台、UI 贡献、工作流与固定会话重构方案](plugin-platform-ui-contribution-and-session-freeze-plan-v1.md)为准。
+
 ## 1. 产品目标
 
 Brilliant Guitar 的 AI Agent 是一个可启停的第一方插件。它帮助用户理解作品、调用音乐能力、生成候选方案并在用户控制下完成操作。关闭插件后，普通制谱、播放、文件和插件能力仍完整可用。
@@ -34,17 +39,18 @@ Agent 插件关闭时不初始化模型、不构建 Agent 上下文、不注册�
 
 模型属于控制面的一部分，但不拥有最终执行权。Rust Kernel 继续持有文档、事务和历史事实。
 
-### 2.4 统一 Application Capability
+### 2.4 类型化直接访问与插件工作流
 
-UI、快捷键、Agent 和将来的自动化不各自实现业务逻辑，而是共同调用统一的 Application Capability。
+UI、快捷键、Agent 和将来的自动化不各自实现业务逻辑，但也不再被迫经过同一个前端通用 Gateway。
 
 ```text
-UI Command ───────┐
-                  ├─ Application Capability → Application Service → Rust Kernel / Domain Plugin
-Agent Tool ───────┘
+UI Command -> typed domain port ─────────────────┐
+Agent Direct Tool -> controlled adapter ─────────┼→ Rust Application Service → Kernel / Domain Plugin
+Agent Workflow -> WorkflowRuntime -> typed port ─┘
 ```
 
-Agent Tool 是 Capability 面向模型的受限适配器，不是另一套业务实现。
+Agent Tool 是类型化服务或工作流面向模型的受限适配器，不是另一套业务实现。UI 不承担 Agent 的审批、
+回执和恢复机械；这些仍由 Agent 控制面负责。
 
 ### 2.5 只读起步，写入走提案
 
@@ -64,7 +70,7 @@ Agent Runtime 不依赖某一家模型 SDK。Provider 负责把统一的模型�
 Agent Runtime、策略检查、运行时校验、用户审批、Tool Host
         ↓
 受控业务边界
-Application Capability、应用服务、领域插件
+类型化领域端口、Workflow Runtime、Rust Application Service、领域插件
         ↓
 权威状态
 Rust Kernel 文档、事务、历史、应用持久化结果
@@ -73,7 +79,7 @@ Rust Kernel 文档、事务、历史、应用持久化结果
 必须保持以下不变量：
 
 - 模型不能直接访问 Rust Kernel 或修改 React 内部状态。
-- 所有真实写入必须经过 Application Capability 和应用事务路径。
+- 所有真实写入必须经过受限类型化端口和应用事务路径。
 - 权限、审批、调用者身份、请求 ID 和文档版本由可信宿主提供，不能由模型声明。
 - 模型声称“已经完成”不构成执行成功；必须依据能力回执和权威状态回读。
 - 无法确定副作用是否已经提交时，不得使用新请求 ID 盲目重试。

@@ -4,6 +4,11 @@
 依据：[AI Agent 插件架构基线 v0.1](agent-architecture-v0.1.md)  
 状态：差距基线；A1-A3 首个垂直切片已实施，剩余差距继续按 A4-A6 收敛。
 
+> 2026-09-20 更新：本文的统一 `Application Capability` 命令层属于历史差距方案。A7.11 的实现保留为迁移
+> 兼容层，但禁止继续扩展。目标架构改为 UI 类型化直接访问、Agent Direct Tool Adapter 与插件工作流，
+> 统一在 Rust Application Service 和 Kernel 事务处汇合。详见
+> [插件平台、UI 贡献、工作流与固定会话重构方案](plugin-platform-ui-contribution-and-session-freeze-plan-v1.md)。
+
 ## 1. 分析目标
 
 本分析将 Agent 架构映射到当前 Brilliant Guitar 仓库，区分：
@@ -186,7 +191,7 @@ Milestone A 的目标不是交付完整 AI 助手，而是建立不依赖真实�
 
 继续承载文档、事务、历史和领域规则。它们不知道模型、聊天、Prompt、Provider 或 Agent UI。
 
-## 6. 命令层重构策略
+## 6. 命令层重构策略（历史方案，已被 2026-09-20 目标架构取代）
 
 引入 Application Capability 不等于删除现有命令系统，而是把目前由命令、Hook、Client 和应用服务共同承担的业务职责重新分层。
 
@@ -205,7 +210,7 @@ Milestone A 的目标不是交付完整 AI 助手，而是建立不依赖真实�
 
 这条链路已经可用，但业务动作的身份、输入输出、副作用和结果语义散落在 UI Hook、Bridge DTO 与 Rust 服务中，因此无法被 Agent 安全发现和统一调用。
 
-### 6.2 目标调用链
+### 6.2 当时的目标调用链
 
 ```text
 UI Command ─────────────┐

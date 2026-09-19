@@ -25,12 +25,31 @@
 .agent-recovery-item-title strong { overflow: hidden; font-size: 11px; font-weight: 610; text-overflow: ellipsis; white-space: nowrap; }
 .agent-recovery-item-title small { color: var(--color-tertiary); font-size: 9px; }
 .agent-recovery-item p { margin: 0; color: var(--color-secondary); font-size: 10px; line-height: 1.45; }
+.agent-approval-summary { min-width: 0; display: grid; gap: 6px; }
+.agent-approval-summary > strong { color: var(--color-text); font-size: 10px; font-weight: 620; }
+.agent-approval-items { min-width: 0; display: grid; gap: 6px; }
+.agent-approval-item { min-width: 0; padding-block: 6px; border-block-start: 1px solid var(--color-border); display: grid; gap: 3px; }
+.agent-approval-item-head { min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.agent-approval-item-head span { overflow: hidden; color: var(--color-text); font-size: 10px; font-weight: 590; text-overflow: ellipsis; white-space: nowrap; }
+.agent-approval-item-head small { flex: 0 0 auto; color: var(--color-tertiary); font-size: 8px; }
+.agent-approval-item[data-risk="high"] .agent-approval-item-head small { color: var(--color-danger); }
+.agent-approval-item[data-risk="medium"] .agent-approval-item-head small { color: var(--color-warning, var(--color-secondary)); }
+.agent-approval-preview { min-width: 0; padding: 5px 0 4px 8px; border-inline-start: 2px solid color-mix(in srgb, var(--color-accent) 42%, var(--color-border)); display: grid; grid-template-columns: minmax(64px, .65fr) minmax(0, 1fr); align-items: start; gap: 8px; }
+.agent-approval-change-list { min-width: 0; display: grid; gap: 2px; }
+.agent-approval-preview > span { color: var(--color-secondary); font-size: 9px; font-weight: 590; }
+.agent-approval-preview-values { min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 6px; align-items: baseline; }
+.agent-approval-preview-values small { color: var(--color-tertiary); font-size: 8px; }
+.agent-approval-preview-values strong { overflow-wrap: anywhere; color: var(--color-text); font-size: 9px; font-weight: 610; }
+.agent-approval-meta { min-width: 0; display: flex; flex-wrap: wrap; gap: 3px 8px; color: var(--color-tertiary); font-size: 8px; line-height: 1.4; }
 .agent-recovery-item-foot { min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .agent-recovery-item-foot code { overflow: hidden; color: var(--color-tertiary); font-family: ui-monospace, "Cascadia Code", monospace; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
 .agent-recovery-action { min-height: 28px; padding: 0 9px; border: 1px solid color-mix(in srgb, var(--color-accent) 38%, var(--color-border)); border-radius: 7px; color: var(--color-text); background: color-mix(in srgb, var(--color-accent) 15%, transparent); font: inherit; font-size: 10px; cursor: pointer; transition: background-color 120ms ease, transform 100ms ease; }
 .agent-recovery-action:hover:not(:disabled) { background: color-mix(in srgb, var(--color-accent) 24%, transparent); }
 .agent-recovery-action:active:not(:disabled) { transform: scale(.97); }
 .agent-recovery-action:disabled { cursor: default; opacity: .48; }
+.agent-approval-actions { display: flex; align-items: center; gap: 5px; }
+.agent-approval-deny { border-color: var(--color-border); color: var(--color-secondary); background: transparent; }
+.agent-approval-deny:hover:not(:disabled) { color: var(--color-text); background: var(--color-hover); }
 .agent-recovery-passive-action { color: var(--color-tertiary); font-size: 9px; text-align: right; }
 .agent-recovery-empty { min-height: 96px; padding: 16px 10px; display: grid; place-items: center; align-content: center; gap: 8px; color: var(--color-tertiary); text-align: center; }
 .agent-recovery-empty span { max-width: 190px; font-size: 10px; line-height: 1.45; }

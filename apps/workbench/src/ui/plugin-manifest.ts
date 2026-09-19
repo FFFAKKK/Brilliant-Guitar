@@ -8,9 +8,9 @@ import type {
   PluginTier,
 } from "../plugins/plugin-package-contract.ts";
 
-export const WORKBENCH_PLUGIN_API_VERSION = "2.0" as const;
+export const WORKBENCH_PLUGIN_API_VERSION = "3.0" as const;
 
-export type WorkbenchCapabilityId = string;
+export type WorkbenchFeatureId = string;
 
 export interface UiPluginManifest {
   readonly id: string;
@@ -21,7 +21,7 @@ export interface UiPluginManifest {
   readonly runtime: "internal-module";
   readonly activation: "always" | "user";
   readonly requires: Readonly<{
-    capabilities: readonly WorkbenchCapabilityId[];
+    hostFeatures: readonly WorkbenchFeatureId[];
     projections: readonly string[];
   }>;
   readonly contributes: Readonly<{
@@ -31,6 +31,8 @@ export interface UiPluginManifest {
     componentExtensions: readonly string[];
     readonly instruments?: readonly string[];
     readonly playbackOutputs?: readonly string[];
+    readonly applicationCapabilities?: readonly string[];
+    readonly workflows?: readonly string[];
     readonly kernelModules?: readonly PluginKernelModuleManifestV1[];
   }>;
 }
@@ -122,12 +124,12 @@ export function captureUiPluginManifest(value: unknown): UiPluginManifest | null
       || candidate.apiVersion !== WORKBENCH_PLUGIN_API_VERSION
       || candidate.runtime !== "internal-module"
       || (candidate.activation !== "always" && candidate.activation !== "user")) return null;
-    const requires = exactDataRecord(candidate.requires, ["capabilities", "projections"]);
-    const capabilities = capturedStrings(requires?.capabilities);
+    const requires = exactDataRecord(candidate.requires, ["hostFeatures", "projections"]);
+    const hostFeatures = capturedStrings(requires?.hostFeatures);
     const projections = capturedStrings(requires?.projections);
     const contributes = exactDataRecord(candidate.contributes,
       ["views", "commands", "interactions", "componentExtensions"],
-      ["instruments", "playbackOutputs", "kernelModules"]);
+      ["instruments", "playbackOutputs", "applicationCapabilities", "workflows", "kernelModules"]);
     const views = capturedStrings(contributes?.views);
     const commands = capturedStrings(contributes?.commands);
     const interactions = capturedStrings(contributes?.interactions);
@@ -135,10 +137,15 @@ export function captureUiPluginManifest(value: unknown): UiPluginManifest | null
     const instruments = contributes?.instruments === undefined ? undefined : capturedStrings(contributes.instruments);
     const playbackOutputs = contributes?.playbackOutputs === undefined
       ? undefined : capturedStrings(contributes.playbackOutputs);
+    const applicationCapabilities = contributes?.applicationCapabilities === undefined
+      ? undefined : capturedStrings(contributes.applicationCapabilities);
+    const workflows = contributes?.workflows === undefined
+      ? undefined : capturedStrings(contributes.workflows);
     const kernelModules = contributes?.kernelModules === undefined
       ? undefined : capturedKernelModules(contributes.kernelModules);
-    if (!capabilities || !projections || !contributes || !views || !commands || !interactions || !componentExtensions
-      || instruments === null || playbackOutputs === null || kernelModules === null) return null;
+    if (!hostFeatures || !projections || !contributes || !views || !commands || !interactions || !componentExtensions
+      || instruments === null || playbackOutputs === null || applicationCapabilities === null || workflows === null
+      || kernelModules === null) return null;
     const manifest: UiPluginManifest = Object.freeze({
       id: candidate.id,
       name: candidate.name,
@@ -147,11 +154,13 @@ export function captureUiPluginManifest(value: unknown): UiPluginManifest | null
       apiVersion: WORKBENCH_PLUGIN_API_VERSION,
       runtime: "internal-module",
       activation: candidate.activation,
-      requires: Object.freeze({ capabilities, projections }),
+      requires: Object.freeze({ hostFeatures, projections }),
       contributes: Object.freeze({
         views, commands, interactions, componentExtensions,
         ...(instruments === undefined ? {} : { instruments }),
         ...(playbackOutputs === undefined ? {} : { playbackOutputs }),
+        ...(applicationCapabilities === undefined ? {} : { applicationCapabilities }),
+        ...(workflows === undefined ? {} : { workflows }),
         ...(kernelModules === undefined ? {} : { kernelModules }),
       }),
     });
@@ -174,17 +183,17 @@ export function isUiPluginManifest(value: unknown): value is UiPluginManifest {
 }
 
 /** Immutable service directory exposed by the host during plugin installation. */
-export class WorkbenchCapabilityRegistry {
-  readonly #capabilities: ReadonlySet<WorkbenchCapabilityId>;
+export class WorkbenchFeatureRegistry {
+  readonly #features: ReadonlySet<WorkbenchFeatureId>;
 
-  constructor(capabilities: readonly WorkbenchCapabilityId[]) {
-    if (!uniqueStrings(capabilities)) throw new Error("Invalid workbench capability directory");
-    this.#capabilities = new Set(capabilities);
+  constructor(features: readonly WorkbenchFeatureId[]) {
+    if (!uniqueStrings(features)) throw new Error("Invalid workbench feature directory");
+    this.#features = new Set(features);
   }
 
-  has(capability: WorkbenchCapabilityId): boolean { return this.#capabilities.has(capability); }
-  list(): readonly WorkbenchCapabilityId[] { return [...this.#capabilities]; }
-  missing(required: readonly WorkbenchCapabilityId[]): readonly WorkbenchCapabilityId[] {
-    return required.filter((capability) => !this.#capabilities.has(capability));
+  has(feature: WorkbenchFeatureId): boolean { return this.#features.has(feature); }
+  list(): readonly WorkbenchFeatureId[] { return [...this.#features]; }
+  missing(required: readonly WorkbenchFeatureId[]): readonly WorkbenchFeatureId[] {
+    return required.filter((feature) => !this.#features.has(feature));
   }
 }

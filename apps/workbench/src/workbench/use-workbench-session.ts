@@ -4,11 +4,15 @@ import { WorkbenchClient } from "../services/workbench-client";
 import { readOrCreateInitialScore } from "../services/initial-score";
 import type { WorkbenchTaskRuntime } from "../runtime/workbench-runtime.tsx";
 import type { WorkbenchIssue } from "../contracts/workbench-issue.ts";
+import type { ApplicationCapabilityDirectory } from "../contracts/application-capability.ts";
 import { issueFromError } from "./issue-from-error.ts";
 
 /** The workbench owns the atomic read; views receive disposable projections. */
-export function useWorkbenchSession(runtime?: WorkbenchTaskRuntime) {
-  const [client] = useState(() => new WorkbenchClient());
+export function useWorkbenchSession(
+  capabilities: ApplicationCapabilityDirectory,
+  runtime?: WorkbenchTaskRuntime,
+) {
+  const [client] = useState(() => new WorkbenchClient(undefined, capabilities));
   const [requestId] = useState(() => crypto.randomUUID());
   const [session, setSession] = useState<ScoreSessionRead | null>(null);
   const [loadEpoch, setLoadEpoch] = useState(0);

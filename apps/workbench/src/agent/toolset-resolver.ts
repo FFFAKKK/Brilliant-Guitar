@@ -10,6 +10,7 @@ import type {
   ToolsetResolutionResult,
   ToolsetSnapshot,
 } from "./agent-contracts.ts";
+import { evaluateCapabilityApproval } from "./approval-policy.ts";
 
 const COST_RANK: Record<CapabilityCostClass, number> = {
   constant: 0,
@@ -41,7 +42,10 @@ function hash(value: string): string {
   return (result >>> 0).toString(16).padStart(8, "0");
 }
 
-function visibleDescriptor(descriptor: AgentCapabilityDescriptor): AgentToolDescriptor {
+function visibleDescriptor(
+  descriptor: AgentCapabilityDescriptor,
+  requiresApproval: boolean,
+): AgentToolDescriptor {
   return {
     id: descriptor.id,
     contractVersion: descriptor.contractVersion,
@@ -52,7 +56,7 @@ function visibleDescriptor(descriptor: AgentCapabilityDescriptor): AgentToolDesc
     preconditions: descriptor.preconditions,
     sideEffects: descriptor.sideEffects,
     scopeLimit: descriptor.scopeLimit,
-    requiresApproval: descriptor.requiresApproval,
+    requiresApproval,
     costClass: descriptor.costClass,
     failureModes: ["invalid-input", "missing-precondition", "version-conflict", "capability-failed"],
   };
@@ -74,7 +78,10 @@ function omit(capabilityId: string, code: ToolsetOmission["code"]): ToolsetOmiss
 export class ToolsetResolver {
   resolve(input: ToolsetResolverInput): ToolsetResolutionResult {
     const omitted: ToolsetOmission[] = [];
-    const descriptors: AgentCapabilityDescriptor[] = [];
+    const descriptors: Array<Readonly<{
+      descriptor: AgentCapabilityDescriptor;
+      requiresApproval: boolean;
+    }>> = [];
     const requested = new Set(input.intent.requestedCapabilityIds);
     const allowedKinds = new Set(input.policy.allowedKinds);
     const intentKinds = new Set(INTENT_KINDS[input.intent.kind]);
@@ -96,16 +103,24 @@ export class ToolsetResolver {
         omitted.push(omit(descriptor.id, "scope-exceeded"));
       } else if (COST_RANK[descriptor.costClass] > COST_RANK[input.policy.maxCostClass]) {
         omitted.push(omit(descriptor.id, "budget-exceeded"));
-      } else if (descriptor.requiresApproval && !input.policy.exposeApprovalRequired) {
-        omitted.push(omit(descriptor.id, "approval-required"));
       } else if (requested.size > 0 && !requested.has(descriptor.id)) {
         omitted.push(omit(descriptor.id, "not-requested"));
       } else {
-        descriptors.push(descriptor);
+        const approval = evaluateCapabilityApproval(descriptor, input.policy);
+        if (approval.decision === "deny") {
+          omitted.push(omit(descriptor.id, "approval-required"));
+        } else {
+          descriptors.push({
+            descriptor,
+            requiresApproval: approval.decision === "require-approval",
+          });
+        }
       }
     }
 
-    const toolDescriptors = descriptors.map(visibleDescriptor);
+    const toolDescriptors = descriptors.map(
+      ({ descriptor, requiresApproval }) => visibleDescriptor(descriptor, requiresApproval),
+    );
     const capabilityIds = toolDescriptors.map((descriptor) => descriptor.id);
     const identity = stableJson({
       policyVersion: input.policy.policyVersion,
@@ -114,8 +129,11 @@ export class ToolsetResolver {
       rangeBudget: input.rangeBudget,
     });
     const toolsetHash = hash(identity);
-    const inputValidators = new Map(descriptors.map((descriptor) => [descriptor.id, descriptor.validateInput]));
+    const inputValidators = new Map(descriptors.map(
+      ({ descriptor }) => [descriptor.id, descriptor.validateInput],
+    ));
     const rangeEstimators = new Map(descriptors
+      .map(({ descriptor }) => descriptor)
       .filter((descriptor) => descriptor.estimateRangeUnits !== undefined)
       .map((descriptor) => [descriptor.id, descriptor.estimateRangeUnits!]));
     const rangeBudget = Number.isSafeInteger(input.rangeBudget) && input.rangeBudget >= 0

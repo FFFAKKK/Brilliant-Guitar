@@ -3,7 +3,7 @@ import test from "node:test";
 import { UiPluginHost } from "../src/ui/plugin-manager.ts";
 import type { InternalUiPluginModule } from "../src/ui/plugin-manager.ts";
 import type { UiComponentDefinition } from "../src/ui/plugin-contract.ts";
-import { WORKBENCH_PLUGIN_API_VERSION, WorkbenchCapabilityRegistry } from "../src/ui/plugin-manifest.ts";
+import { WORKBENCH_PLUGIN_API_VERSION, WorkbenchFeatureRegistry } from "../src/ui/plugin-manifest.ts";
 import { bindUiProjection, defineUiProjection, UiProjectionRegistry } from "../src/ui/projection-registry.ts";
 import { UiPluginDiagnosticStore, UiPluginHostError, serializeUiPluginDiagnostic } from "../src/ui/plugin-diagnostic.ts";
 import type { NotationInteractionContribution } from "../src/input/notation-interaction-registry.ts";
@@ -16,7 +16,7 @@ const definition = (id: string, commands: readonly string[] = []): UiComponentDe
   permissions: { projections: [projection.id], commands },
 });
 
-function plugin(id: string, component: UiComponentDefinition, capabilities: readonly string[] = [],
+function plugin(id: string, component: UiComponentDefinition, hostFeatures: readonly string[] = [],
   commands: InternalUiPluginModule["commands"] = [], interactions: InternalUiPluginModule["interactions"] = [],
   componentExtensions: readonly UiComponentExtensionContribution[] = [],
   activation: "always" | "user" = "always"): InternalUiPluginModule {
@@ -25,7 +25,7 @@ function plugin(id: string, component: UiComponentDefinition, capabilities: read
       ? host.extensions(component.extensionPoints[0]).map((extension) => extension.render()).join(",")
       : reader.get(projection).enabled ? "enabled" : "disabled" }];
   return { manifest: { id, name: id, version: "1.0.0", apiVersion: WORKBENCH_PLUGIN_API_VERSION,
-    runtime: "internal-module", activation, requires: { capabilities, projections: [projection.id] },
+    runtime: "internal-module", activation, requires: { hostFeatures, projections: [projection.id] },
     contributes: { views: [component.id], commands: commands.map((command) => command.id),
       interactions: interactions.map((interaction) => interaction.id),
       componentExtensions: componentExtensions.map((extension) => extension.id) } },
@@ -38,8 +38,8 @@ function interaction(id: string, notationKind: "staff" | "tablature" = "staff"):
     navigate: () => null, edit: () => null };
 }
 
-function host(capabilities: readonly string[] = []) {
-  return new UiPluginHost(new WorkbenchCapabilityRegistry(capabilities), new UiProjectionRegistry([projection]));
+function host(features: readonly string[] = []) {
+  return new UiPluginHost(new WorkbenchFeatureRegistry(features), new UiProjectionRegistry([projection]));
 }
 
 function pluginError(run: () => void): UiPluginHostError {
@@ -170,7 +170,7 @@ test("command factories keep declared ownership and receive only plugin projecti
 
 test("a production host isolates command assembly failures and deduplicates their reports", () => {
   const diagnostics = new UiPluginDiagnosticStore();
-  const manager = new UiPluginHost(new WorkbenchCapabilityRegistry([]), new UiProjectionRegistry([projection]),
+  const manager = new UiPluginHost(new WorkbenchFeatureRegistry([]), new UiProjectionRegistry([projection]),
     (diagnostic) => diagnostics.report(diagnostic));
   const good = { id: "example.good", create: () => ({ id: "example.good", label: "正常命令", scope: "global" as const,
     enabled: true, run() {} }) };

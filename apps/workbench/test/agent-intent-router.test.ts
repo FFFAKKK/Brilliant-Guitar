@@ -72,3 +72,33 @@ test("intent router recognizes the current measure selection without matching ev
   assert.equal(selection.capabilityId, "score.read-measures");
   assert.equal(voice.capabilityId, "score.read-structure");
 });
+
+test("intent router gives an explicit title mutation precedence over metadata reading", () => {
+  const route = router.route("请把作品标题改为《夜曲》");
+
+  assert.equal(route.kind, "edit");
+  assert.equal(route.selectedIntent, "update-title");
+  assert.equal(route.capabilityId, "score.update-title");
+  assert.deepEqual(route.matchedIntents, ["update-title"]);
+  assert.equal(route.requiresClarification, false);
+});
+
+test("intent router distinguishes tempo mutation from metadata reading", () => {
+  const route = router.route("请将速度改为 132 BPM");
+
+  assert.equal(route.kind, "edit");
+  assert.equal(route.selectedIntent, "update-tempo");
+  assert.equal(route.capabilityId, "score.update-tempo");
+  assert.deepEqual(route.matchedIntents, ["update-tempo"]);
+  assert.equal(route.requiresClarification, false);
+});
+
+test("intent router combines title and tempo edits into one metadata transaction", () => {
+  const route = router.route("请修改标题并将速度改为 132 BPM");
+
+  assert.equal(route.kind, "edit");
+  assert.equal(route.selectedIntent, "update-metadata");
+  assert.equal(route.capabilityId, "score.update-metadata");
+  assert.deepEqual(route.matchedIntents, ["update-title", "update-tempo"]);
+  assert.equal(route.requiresClarification, false);
+});

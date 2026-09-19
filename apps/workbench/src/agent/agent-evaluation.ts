@@ -1,16 +1,28 @@
-import type { AgentRunFailureCode } from "./agent-contracts.ts";
+import {
+  isAgentApprovalPreview,
+} from "./agent-contracts.ts";
+import type {
+  AgentApprovalPreview,
+  AgentRunFailureCode,
+} from "./agent-contracts.ts";
 import type { AgentRunOutcome } from "./run-controller.ts";
 
 export type AgentEvaluationCategory =
   | "capability-routing"
   | "grounded-answer"
   | "failure-handling"
-  | "context-continuity";
+  | "context-continuity"
+  | "write-safety";
 
 export type AgentEvaluationTerminalReason = "completed" | "failed" | "cancelled" | "non-terminal";
 
+export interface AgentEvaluationApprovalPreview {
+  readonly capabilityId: string;
+  readonly preview: AgentApprovalPreview;
+}
+
 export interface AgentEvaluationExpectations {
-  readonly terminalReason: Exclude<AgentEvaluationTerminalReason, "non-terminal">;
+  readonly terminalReason: AgentEvaluationTerminalReason;
   readonly failureCode: AgentRunFailureCode | null;
   readonly requiredCapabilityIds: readonly string[];
   readonly forbiddenCapabilityIds: readonly string[];
@@ -18,6 +30,8 @@ export interface AgentEvaluationExpectations {
   readonly verificationSatisfied: boolean | null;
   readonly requiredEvidence: readonly string[];
   readonly responseIncludes: readonly string[];
+  readonly approvalRequired: boolean | null;
+  readonly requiredApprovalPreviews: readonly AgentEvaluationApprovalPreview[];
   readonly maxTurns: number;
   readonly maxCapabilityCalls: number;
   readonly maxDurationMs: number | null;
@@ -40,6 +54,8 @@ export interface AgentEvaluationObservation {
   readonly verificationSatisfied: boolean;
   readonly verificationEvidence: readonly string[];
   readonly response: string | null;
+  readonly approvalRequired: boolean;
+  readonly approvalPreviews: readonly AgentEvaluationApprovalPreview[];
   readonly turnCount: number;
   readonly capabilityCallCount: number;
   readonly durationMs: number | null;
@@ -54,6 +70,8 @@ export type AgentEvaluationCriterion =
   | "completion-verification"
   | "verification-evidence"
   | "response-content"
+  | "approval-required"
+  | "approval-preview"
   | "turn-budget"
   | "capability-call-budget"
   | "duration-budget"
@@ -123,6 +141,11 @@ export function defineAgentEvaluationCase(testCase: AgentEvaluationCase): AgentE
   validateTextList("forbidden capabilities", expected.forbiddenCapabilityIds);
   validateTextList("required evidence", expected.requiredEvidence);
   validateTextList("response fragments", expected.responseIncludes);
+  for (const item of expected.requiredApprovalPreviews) {
+    if (!validText(item.capabilityId, 256) || !isAgentApprovalPreview(item.preview)) {
+      throw new Error("Agent evaluation approval preview expectation is invalid");
+    }
+  }
   if (expected.exactCapabilitySequence !== null) {
     validateTextSequence("exact capability sequence", expected.exactCapabilitySequence);
   }
@@ -155,6 +178,10 @@ export function defineAgentEvaluationCase(testCase: AgentEvaluationCase): AgentE
         : Object.freeze([...expected.exactCapabilitySequence]),
       requiredEvidence: Object.freeze([...expected.requiredEvidence]),
       responseIncludes: Object.freeze([...expected.responseIncludes]),
+      requiredApprovalPreviews: Object.freeze(expected.requiredApprovalPreviews.map((item) => Object.freeze({
+        capabilityId: item.capabilityId,
+        preview: Object.freeze({ ...item.preview }),
+      }))),
     }),
   });
 }
@@ -171,6 +198,12 @@ export function observeAgentEvaluation(outcome: AgentRunOutcome): AgentEvaluatio
   const durationMs = timestamps.length === 0
     ? null
     : Math.max(0, timestamps.at(-1)! - timestamps[0]!);
+  const approvalRequests = outcome.run.events.flatMap((event) => event.event.type === "approval.required"
+    ? [event.event.approval]
+    : []);
+  const approvalPreviews = approvalRequests.flatMap((approval) => approval.items.flatMap((item) => (
+    item.preview == null ? [] : [{ capabilityId: item.capabilityId, preview: item.preview }]
+  )));
   return Object.freeze({
     terminalReason,
     failureCode,
@@ -182,8 +215,14 @@ export function observeAgentEvaluation(outcome: AgentRunOutcome): AgentEvaluatio
     verificationSatisfied: outcome.verification?.satisfied === true,
     verificationEvidence: Object.freeze([...(outcome.verification?.evidence ?? [])]),
     response: outcome.response,
+    approvalRequired: approvalRequests.length > 0,
+    approvalPreviews: Object.freeze(approvalPreviews.map((item) => Object.freeze({
+      capabilityId: item.capabilityId,
+      preview: Object.freeze({ ...item.preview }),
+    }))),
     turnCount: outcome.run.turns.length,
-    capabilityCallCount: outcome.run.invocations.length,
+    capabilityCallCount: outcome.run.invocations.reduce((count, invocation) => count
+      + invocation.events.filter((event) => event.event.type === "invocation.dispatched").length, 0),
     durationMs,
   });
 }
@@ -200,6 +239,30 @@ function check(
 
 function sameStrings(left: readonly string[], right: readonly string[]): boolean {
   return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
+function sameApprovalPreview(
+  left: AgentEvaluationApprovalPreview,
+  right: AgentEvaluationApprovalPreview,
+): boolean {
+  if (left.capabilityId !== right.capabilityId || left.preview.kind !== right.preview.kind) {
+    return false;
+  }
+  if (left.preview.kind === "field-change" && right.preview.kind === "field-change") {
+    return left.preview.field === right.preview.field
+      && left.preview.before === right.preview.before
+      && left.preview.after === right.preview.after;
+  }
+  if (left.preview.kind !== "change-list" || right.preview.kind !== "change-list"
+    || left.preview.changes.length !== right.preview.changes.length) return false;
+  const rightChanges = right.preview.changes;
+  return left.preview.changes.every((change, index) => {
+    const candidate = rightChanges[index];
+    return candidate !== undefined
+      && change.field === candidate.field
+      && change.before === candidate.before
+      && change.after === candidate.after;
+  });
 }
 
 export function evaluateAgentOutcome(
@@ -255,6 +318,22 @@ export function evaluateAgentOutcome(
     observation.response?.includes(fragment) === true,
     true,
     observation.response?.includes(fragment) === true,
+  ));
+  if (expected.approvalRequired !== null) checks.push(check(
+    "approval-required",
+    null,
+    observation.approvalRequired === expected.approvalRequired,
+    expected.approvalRequired,
+    observation.approvalRequired,
+  ));
+  for (const preview of expected.requiredApprovalPreviews) checks.push(check(
+    "approval-preview",
+    `${preview.capabilityId}:${preview.preview.kind === "field-change"
+      ? preview.preview.field
+      : "change-list"}`,
+    observation.approvalPreviews.some((actual) => sameApprovalPreview(actual, preview)),
+    preview,
+    observation.approvalPreviews,
   ));
   checks.push(check("turn-budget", null, observation.turnCount <= expected.maxTurns,
     expected.maxTurns, observation.turnCount));

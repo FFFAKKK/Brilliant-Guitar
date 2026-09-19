@@ -15,7 +15,7 @@ use crate::{
     document_io::atomic_write_raw,
 };
 
-const RECEIPT_SCHEMA_VERSION: u32 = 2;
+const RECEIPT_SCHEMA_VERSION: u32 = 3;
 const MAX_RECEIPT_BYTES: u64 = 1024 * 1024;
 const INPUT_HASH_DOMAIN: &[u8] = b"brilliant-capability-input-v1\0";
 
@@ -27,6 +27,8 @@ struct CapabilityReceiptRecord {
     capability_id: String,
     contract_version: u64,
     workspace_id: String,
+    #[serde(default)]
+    document_precondition: Option<crate::dto::CapabilityDocumentPrecondition>,
     #[serde(default)]
     input_hash: Option<String>,
     state: CapabilityReceiptState,
@@ -92,6 +94,7 @@ impl CapabilityReceiptStore {
                 capability_id: invocation.capability_id.clone(),
                 contract_version: invocation.contract_version,
                 workspace_id: invocation.workspace_id.clone(),
+                document_precondition: invocation.document_precondition.clone(),
                 input_hash: Some(input_hash),
                 state: CapabilityReceiptState::Started,
             },
@@ -163,6 +166,7 @@ fn validate_identity(
         || record.capability_id != invocation.capability_id
         || record.contract_version != invocation.contract_version
         || record.workspace_id != invocation.workspace_id
+        || record.document_precondition != invocation.document_precondition
         || record.input_hash.as_deref() != Some(input_hash)
     {
         return Err(invalid_data("capability receipt identity mismatch"));
@@ -256,6 +260,7 @@ mod tests {
             capability_id: "score.read-summary".into(),
             contract_version: 1,
             workspace_id: Uuid::new_v4().to_string(),
+            document_precondition: None,
             caller: CapabilityCaller::Test,
             input: json!({}),
         }
@@ -317,6 +322,19 @@ mod tests {
             store.begin(&mismatch).expect_err("reject mismatch").kind(),
             io::ErrorKind::InvalidData
         );
+        let mut precondition_mismatch = original.clone();
+        precondition_mismatch.document_precondition =
+            Some(crate::dto::CapabilityDocumentPrecondition {
+                document_id: "score-1".into(),
+                document_version: 3,
+            });
+        assert_eq!(
+            store
+                .begin(&precondition_mismatch)
+                .expect_err("reject document precondition mismatch")
+                .kind(),
+            io::ErrorKind::InvalidData
+        );
         let _ = fs::remove_dir_all(root);
     }
 
@@ -376,6 +394,7 @@ mod tests {
                 capability_id: invocation.capability_id.clone(),
                 contract_version: invocation.contract_version,
                 workspace_id: invocation.workspace_id.clone(),
+                document_precondition: None,
                 input_hash: None,
                 state: CapabilityReceiptState::Resolved {
                     result: completed(&invocation),

@@ -73,6 +73,12 @@ export interface AgentAssistantPanelProjection {
   readonly selectionAvailable: boolean;
   start(goal: string): Promise<boolean>;
   provideRequiredInput(runId: string, requestId: string): Promise<boolean>;
+  provideApprovalDecision(
+    runId: string,
+    approvalId: string,
+    outcome: "approved" | "denied",
+  ): Promise<boolean>;
+  retryInvocation(runId: string, invocationId: string): Promise<boolean>;
   cancel(): void;
   refresh(): Promise<void>;
   resume(runId: string): Promise<boolean>;

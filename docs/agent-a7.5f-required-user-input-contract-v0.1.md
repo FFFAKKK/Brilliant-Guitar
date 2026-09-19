@@ -30,6 +30,18 @@ type AgentRequiredUserInput = {
 };
 ```
 
+用户提交值是另一份合同，不能直接把 UI 的 workspace 对象当作 Run 事件：
+
+```ts
+type AgentProvidedUserInput = {
+  requestId: string;
+  kind: "measure-selection";
+  selection: AgentMeasureSelection;
+};
+```
+
+请求描述“需要什么”，提交值描述“用户实际提供了什么”。两者通过 `requestId` 绑定，并在控制器中再次与当前 workspace sidecar、文档身份和请求约束交叉校验。
+
 Run 事件直接保存完整请求：
 
 ```ts
@@ -51,7 +63,7 @@ Run 事件直接保存完整请求：
 runId + requestId
 ```
 
-恢复后，旧请求在 `run.resumed` 之后失效；如果同一个 Run 再次等待，必须生成新的 `requestId`。这相当于为等待点提供一次性关联令牌，而不是把 UI 点击当成可信事实。
+恢复后，旧请求在 `user-input.provided` 或 `run.resumed` 之后失效；如果同一个 Run 再次等待，必须生成新的 `requestId`。这相当于为等待点提供一次性关联令牌，而不是把 UI 点击当成可信事实。
 
 ## 为什么需要 sourceInvocationId
 
@@ -105,9 +117,11 @@ Capability 返回 selection-unavailable
   -> RecoveryProjection 重建 requiredInput
   -> UI 展示 prompt
   -> 用户选择小节
-  -> Session 校验 runId + requestId + documentId
+  -> Session 构建 AgentProvidedUserInput
+  -> Controller 校验 runId + requestId + documentId + selection
+  -> Run 持久化 user-input.provided
   -> Runtime 发放 continuation lease
-  -> Controller 写入 run.resumed
+  -> Run 进入 active:planning
   -> 最新 workspace sidecar 注入下一轮 planning
 ```
 
@@ -131,14 +145,15 @@ OpenAI Agents SDK 的 interruption/resume、Microsoft Agent Framework 的 checkp
 5. 继续操作不能切换 workspace 或 document。
 6. 真实选择端点不会进入模型生成的 capability 参数。
 7. IPC 返回的残缺输入请求会在边界被拒绝。
-8. `run.resumed` 之后旧输入请求不再有效。
+8. `user-input.provided` 或 `run.resumed` 之后旧输入请求不再有效。
+9. 用户提交值必须与请求 ID、文档身份和当前选择区同时匹配。
+10. 应用重启后，Session 可以仅凭持久化 Run 重建最小对话消息和等待 activity。
 
 ## 下一阶段
 
-A7.5g 应把“提供输入”从当前选择区按钮扩展为完整的交互提交协议：
+A7.5h 应继续完善用户输入的可靠性：
 
-- 定义 `AgentProvidedUserInput`，区分请求合同和用户提交值。
-- 为提交增加消费记录，支持防重复和审计。
-- 重启后重建等待中的对话消息和输入控件。
+- 为提交增加独立的消费记录，支持跨进程防重复和审计查询。
+- 把重建出的等待输入从当前选择区按钮扩展为统一输入渲染器。
 - 再按真实产品需求增加 `choice`、`text` 或 `approval` 判别变体。
 - 增加等待耗时、过期提交和恢复成功率指标。

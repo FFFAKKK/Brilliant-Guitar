@@ -121,7 +121,7 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
   const fileMenuRef = useRef<HTMLButtonElement>(null);
   const helpMenuRef = useRef<HTMLButtonElement>(null);
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
-  const score = useWorkbenchSession(runtime);
+  const score = useWorkbenchSession(workbenchPluginPlatform.applicationCapabilities(), runtime);
   const workspaceConfiguration = useWorkspaceConfiguration(score.client, INSTALLED_COMPONENTS, runtime);
   const { layout, setLayout, visibility, toggleDock, uiLayout, move, hide, setPresentation,
     dockSelection, selectDockItem } = workspaceConfiguration;
@@ -130,7 +130,11 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
   const { deleteTimePolicy, noteInput: noteInputPreferences } = applicationSettings.settings.editing;
   const [agentComposition] = useState(() => {
     const plugin = createAgentPluginRuntime(score.client);
-    const assistant = createAgentAssistantSession(plugin, score.client);
+    const assistant = createAgentAssistantSession(plugin, score.client, workbenchPluginPlatform.workflows(), async (change) => {
+      const fresh = await score.client.read();
+      if (fresh?.documentId === change.documentId
+        && fresh.documentVersion >= change.documentVersion) score.replaceSession(fresh);
+    });
     return {
       plugin,
       assistant,
@@ -348,6 +352,17 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
       provideRequiredInput: (runId, requestId) => agentAssistant.provideRequiredInput(
         runId,
         requestId,
+        agentWorkspace,
+      ),
+      provideApprovalDecision: (runId, approvalId, outcome) => agentAssistant.provideApprovalDecision(
+        runId,
+        approvalId,
+        outcome,
+        agentWorkspace,
+      ),
+      retryInvocation: (runId, invocationId) => agentAssistant.retryInvocation(
+        runId,
+        invocationId,
         agentWorkspace,
       ),
       cancel: agentAssistant.cancel,

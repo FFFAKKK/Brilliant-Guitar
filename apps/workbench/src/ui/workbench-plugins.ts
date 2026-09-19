@@ -1,7 +1,7 @@
 import { FIRST_PARTY_UI_PLUGINS } from "./first-party-plugins.ts";
 import { FIRST_PARTY_UI_PROJECTIONS } from "./first-party-plugin-projections.ts";
 import { UiPluginDiagnosticStore } from "./plugin-diagnostic.ts";
-import { WorkbenchCapabilityRegistry } from "./plugin-manifest.ts";
+import { WorkbenchFeatureRegistry } from "./plugin-manifest.ts";
 import { persistUiPluginDiagnostic } from "../services/plugin-diagnostic-host.ts";
 import { PluginPlatform } from "../plugins/plugin-platform.ts";
 import { PluginManifestDiscovery } from "../plugins/plugin-discovery.ts";
@@ -11,7 +11,7 @@ import { BrowserPluginActivationStorage, BrowserPluginSettingsStorage } from "..
 import { isTauri } from "@tauri-apps/api/core";
 import { UiPluginHostError, uiPluginIdentity } from "./plugin-diagnostic.ts";
 
-export const workbenchCapabilities = new WorkbenchCapabilityRegistry([
+export const workbenchFeatures = new WorkbenchFeatureRegistry([
   "workbench.commands",
   "workbench.layout",
   "workbench.focus",
@@ -29,11 +29,11 @@ export const workbenchCapabilities = new WorkbenchCapabilityRegistry([
 /** Static composition root. Third-party code loading remains deliberately unsupported. */
 export const workbenchPluginDiagnostics = new UiPluginDiagnosticStore();
 export const workbenchPluginDiscovery = new PluginManifestDiscovery({
-  capabilities: workbenchCapabilities,
+  hostFeatures: workbenchFeatures,
   projections: FIRST_PARTY_UI_PROJECTIONS.map((projection) => projection.id),
 });
 export const workbenchPluginPlatform = new PluginPlatform({
-  capabilities: workbenchCapabilities,
+  hostFeatures: workbenchFeatures,
   projections: FIRST_PARTY_UI_PROJECTIONS,
   diagnostics: workbenchPluginDiagnostics,
   onDiagnostic: (diagnostic) => { persistUiPluginDiagnostic(diagnostic); },

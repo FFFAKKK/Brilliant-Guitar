@@ -1,4 +1,4 @@
-import type { UiPluginManifest, WorkbenchCapabilityRegistry } from "../ui/plugin-manifest.ts";
+import type { UiPluginManifest, WorkbenchFeatureRegistry } from "../ui/plugin-manifest.ts";
 import { captureUiPluginManifest } from "../ui/plugin-manifest.ts";
 
 export type PluginManifestDiscoveryFailureCode =
@@ -19,7 +19,7 @@ export type PluginManifestDiscoveryResult =
   | { readonly accepted: false; readonly failure: PluginManifestDiscoveryFailure };
 
 export interface PluginManifestDiscoveryOptions {
-  readonly capabilities: WorkbenchCapabilityRegistry;
+  readonly hostFeatures: WorkbenchFeatureRegistry;
   readonly projections: readonly string[];
 }
 
@@ -34,13 +34,13 @@ function candidateId(value: unknown): string | null {
 
 /** Preflight directory for host supplied manifests; it never loads or executes plugin code. */
 export class PluginManifestDiscovery {
-  readonly #capabilities: WorkbenchCapabilityRegistry;
+  readonly #hostFeatures: WorkbenchFeatureRegistry;
   readonly #projections: ReadonlySet<string>;
   readonly #manifests = new Map<string, UiPluginManifest>();
   readonly #failures: PluginManifestDiscoveryFailure[] = [];
 
   constructor(options: PluginManifestDiscoveryOptions) {
-    this.#capabilities = options.capabilities;
+    this.#hostFeatures = options.hostFeatures;
     this.#projections = new Set(options.projections);
   }
 
@@ -66,13 +66,13 @@ export class PluginManifestDiscovery {
       this.#failures.push(failure);
       return { accepted: false, failure };
     }
-    const missingCapabilities = this.#capabilities.missing(manifest.requires.capabilities);
-    if (missingCapabilities.length > 0) {
+    const missingFeatures = this.#hostFeatures.missing(manifest.requires.hostFeatures);
+    if (missingFeatures.length > 0) {
       const failure: PluginManifestDiscoveryFailure = {
         code: "manifest.capability-unavailable",
         pluginId: manifest.id,
         message: "插件所需能力不可用",
-        detail: missingCapabilities.join(", "),
+        detail: missingFeatures.join(", "),
       };
       this.#failures.push(failure);
       return { accepted: false, failure };

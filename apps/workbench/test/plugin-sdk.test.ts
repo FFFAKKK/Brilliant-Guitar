@@ -12,7 +12,7 @@ import {
 } from "../src/plugins/plugin-sdk.ts";
 import type { PluginInputContext, PluginNotationInteractionContribution,
   PluginSettingsHost } from "../src/plugins/plugin-sdk.ts";
-import { WorkbenchCapabilityRegistry } from "../src/ui/plugin-manifest.ts";
+import { WorkbenchFeatureRegistry } from "../src/ui/plugin-manifest.ts";
 import { bindUiProjection } from "../src/ui/projection-registry.ts";
 import {
   createPluginKernelAssemblyPlanV1,
@@ -38,7 +38,7 @@ function packageDefinition() {
           ? { compact: candidate.compact } : null;
       },
     },
-    capabilities: ["workbench.layout"],
+    hostFeatures: ["workbench.layout"],
     projections: [state],
     instruments: [{
       id: "test.instrument.guitar",
@@ -90,10 +90,10 @@ test("definePlugin derives the internal manifest without exposing host registrie
     name: "SDK 插件",
     version: "1.2.3",
     tier: "product",
-    apiVersion: "2.0",
+    apiVersion: "3.0",
     runtime: "internal-module",
     activation: "user",
-    requires: { capabilities: ["workbench.layout"], projections: [state.id] },
+    requires: { hostFeatures: ["workbench.layout"], projections: [state.id] },
     contributes: {
       views: ["test.sdk.view"],
       commands: ["test.sdk.run"],
@@ -101,6 +101,8 @@ test("definePlugin derives the internal manifest without exposing host registrie
       componentExtensions: [],
       instruments: ["test.instrument.guitar"],
       playbackOutputs: ["test-sdk-output"],
+      applicationCapabilities: [],
+      workflows: [],
       kernelModules: [],
     },
   });
@@ -111,7 +113,7 @@ test("definePlugin derives the internal manifest without exposing host registrie
 
 test("the plugin platform accepts SDK packages and applies its activation lifecycle", () => {
   const platform = new PluginPlatform({
-    capabilities: new WorkbenchCapabilityRegistry(["workbench.layout"]),
+    hostFeatures: new WorkbenchFeatureRegistry(["workbench.layout"]),
     projections: [state],
   });
   platform.register(packageDefinition());
@@ -166,7 +168,7 @@ test("instrument descriptions and their note-control extensions share one activa
       render: () => "guitar-techniques",
     })],
   });
-  const platform = new PluginPlatform({ capabilities: new WorkbenchCapabilityRegistry([]), projections: [] });
+  const platform = new PluginPlatform({ hostFeatures: new WorkbenchFeatureRegistry([]), projections: [] });
   platform.registerAll([guitar, noteControl]);
   platform.activate(guitar.id);
   platform.start();
@@ -182,7 +184,7 @@ test("instrument descriptions and their note-control extensions share one activa
 });
 
 test("instrument descriptions cannot claim note-control extensions owned elsewhere or missing", () => {
-  const platform = new PluginPlatform({ capabilities: new WorkbenchCapabilityRegistry([]), projections: [] });
+  const platform = new PluginPlatform({ hostFeatures: new WorkbenchFeatureRegistry([]), projections: [] });
   platform.register(definePlugin({
     id: "test.invalid-instrument",
     name: "无效乐器",
@@ -205,7 +207,7 @@ test("instrument descriptions cannot claim note-control extensions owned elsewhe
 
 test("plugin settings stay in their plugin namespace and validate restored values", () => {
   const platform = new PluginPlatform({
-    capabilities: new WorkbenchCapabilityRegistry(["workbench.layout"]),
+    hostFeatures: new WorkbenchFeatureRegistry(["workbench.layout"]),
     projections: [state],
   });
   platform.register(packageDefinition());
@@ -232,7 +234,7 @@ test("plugin settings stay in their plugin namespace and validate restored value
 
 test("plugin settings persistence preserves temporarily unavailable plugin namespaces", async () => {
   const platform = new PluginPlatform({
-    capabilities: new WorkbenchCapabilityRegistry(["workbench.layout"]),
+    hostFeatures: new WorkbenchFeatureRegistry(["workbench.layout"]),
     projections: [state],
   });
   platform.register(packageDefinition());
@@ -303,7 +305,7 @@ test("SDK views and commands receive only their owning plugin settings handle", 
       },
     }],
   });
-  const platform = new PluginPlatform({ capabilities: new WorkbenchCapabilityRegistry([]), projections: [state] });
+  const platform = new PluginPlatform({ hostFeatures: new WorkbenchFeatureRegistry([]), projections: [state] });
   platform.register(plugin);
   platform.start();
   let stored: unknown = {};
@@ -331,7 +333,7 @@ test("SDK views and commands receive only their owning plugin settings handle", 
 });
 
 test("plugin settings restore isolates parser failures and recovers defaults", () => {
-  const platform = new PluginPlatform({ capabilities: new WorkbenchCapabilityRegistry([]), projections: [] });
+  const platform = new PluginPlatform({ hostFeatures: new WorkbenchFeatureRegistry([]), projections: [] });
   platform.register(definePlugin({
     id: "test.throwing-settings",
     name: "异常设置",
@@ -390,7 +392,7 @@ test("one plugin package publishes a canonical fixed-session kernel assembly pla
     kernelModules: [mutableModule],
   });
   mutableModule.moduleId = "test.notation.changed";
-  const platform = new PluginPlatform({ capabilities: new WorkbenchCapabilityRegistry([]), projections: [] });
+  const platform = new PluginPlatform({ hostFeatures: new WorkbenchFeatureRegistry([]), projections: [] });
   platform.register(plugin);
 
   const manifest = adaptUiPluginPackage(plugin).manifest;
@@ -427,7 +429,7 @@ test("kernel-bearing packages are configurable before launch and fixed within th
     activation: "user",
     kernelModules: [module],
   });
-  const platform = new PluginPlatform({ capabilities: new WorkbenchCapabilityRegistry([]), projections: [] });
+  const platform = new PluginPlatform({ hostFeatures: new WorkbenchFeatureRegistry([]), projections: [] });
   platform.register(configurable);
   assert.deepEqual(platform.kernelAssemblyPlan().modules, []);
   assert.equal(platform.activate(configurable.id).effect, "configured");
@@ -436,7 +438,7 @@ test("kernel-bearing packages are configurable before launch and fixed within th
   assert.equal(platform.deactivate(configurable.id).effect, "restart-required");
   assert.deepEqual(platform.sessionPlan().kernelAssembly.modules.map((entry) => entry.moduleId), ["test.kernel.module"]);
 
-  const safePlatform = new PluginPlatform({ capabilities: new WorkbenchCapabilityRegistry([]), projections: [] });
+  const safePlatform = new PluginPlatform({ hostFeatures: new WorkbenchFeatureRegistry([]), projections: [] });
   safePlatform.register(configurable);
   safePlatform.activate(configurable.id);
   const safeSession = safePlatform.start({ selectedPluginIds: [] });
@@ -517,7 +519,7 @@ test("a notation plugin registers its own input grammar without changing the wor
     version: "1.0.0",
     interactions: [tablature],
   });
-  const platform = new PluginPlatform({ capabilities: new WorkbenchCapabilityRegistry([]), projections: [] });
+  const platform = new PluginPlatform({ hostFeatures: new WorkbenchFeatureRegistry([]), projections: [] });
   platform.register(plugin);
   platform.start();
 

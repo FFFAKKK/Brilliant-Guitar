@@ -14,6 +14,8 @@ import { NOTE_CONTROL_EXTENSION_POINT } from "./note-control-extension.ts";
 import { definePlugin } from "../plugins/plugin-sdk.ts";
 import type { PluginCommandContribution, PluginProjectionReader, UiPluginPackage } from "../plugins/plugin-sdk.ts";
 import { BUILTIN_SYNTH_PLAYBACK_OUTPUT } from "../playback/playback-output.ts";
+import { GUITAR_PLUGIN } from "../instruments/guitar-plugin.ts";
+import { SCORE_APPLICATION_PLUGIN } from "../plugins/score-application-plugin.ts";
 
 export const AGENT_ASSISTANT_PLUGIN_ID = "brilliant.agent.assistant";
 
@@ -101,7 +103,7 @@ const historyPlugin = definePlugin({
   id: "brilliant.editing.history",
   name: "编辑历史",
   version: "1.0.0",
-  capabilities: ["workbench.layout", "workbench.commands", "score.history"],
+  hostFeatures: ["workbench.layout", "workbench.commands", "score.history"],
   projections: [HISTORY_PROJECTION],
   commands: historyCommands,
   views: [{
@@ -117,7 +119,7 @@ const paperZoomPlugin = definePlugin({
   id: "brilliant.view.paper-zoom",
   name: "谱面缩放",
   version: "1.0.0",
-  capabilities: ["workbench.layout", "workbench.commands", "view.paper"],
+  hostFeatures: ["workbench.layout", "workbench.commands", "view.paper"],
   projections: [PAPER_ZOOM_PROJECTION],
   commands: zoomCommands,
   views: [{
@@ -141,7 +143,7 @@ const noteControlPlugin = definePlugin({
   id: "brilliant.notation.note-control",
   name: "音符控制",
   version: "1.0.0",
-  capabilities: ["workbench.layout", "workbench.commands", "score.document", "score.selection", "score.input"],
+  hostFeatures: ["workbench.layout", "workbench.commands", "score.document", "score.selection", "score.input"],
   projections: [NOTE_CONTROL_PROJECTION],
   commands: noteControlCommands,
   views: [{
@@ -159,7 +161,7 @@ const playbackPlugin = definePlugin({
   id: "brilliant.playback.transport",
   name: "播放控制",
   version: "1.0.0",
-  capabilities: ["workbench.layout", "workbench.commands", "playback.transport"],
+  hostFeatures: ["workbench.layout", "workbench.commands", "playback.transport"],
   projections: [PLAYBACK_PROJECTION],
   commands: playbackCommands,
   views: [{
@@ -175,7 +177,7 @@ const playbackOutputPlugin = definePlugin({
   id: "brilliant.playback.output",
   name: "播放输出",
   version: "1.0.0",
-  capabilities: ["workbench.layout", "playback.output"],
+  hostFeatures: ["workbench.layout", "playback.output"],
   projections: [PLAYBACK_OUTPUT_PROJECTION],
   playbackOutputs: [BUILTIN_SYNTH_PLAYBACK_OUTPUT],
   views: [{
@@ -191,7 +193,7 @@ const agentAssistantPlugin = definePlugin({
   name: "Agent 助手",
   version: "1.0.0",
   activation: "user",
-  capabilities: ["workbench.layout", "agent.assistant"],
+  hostFeatures: ["workbench.layout", "agent.assistant"],
   projections: [AGENT_ASSISTANT_PROJECTION],
   views: [{
     definition: AGENT_RECOVERY_COMPONENT,
@@ -207,7 +209,7 @@ const staffPlugin = definePlugin({
   id: "brilliant.notation.staff",
   name: "五线谱",
   version: "1.0.0",
-  capabilities: ["workbench.layout", "score.document", "score.selection"],
+  hostFeatures: ["workbench.layout", "score.document", "score.selection"],
   projections: [STAFF_PROJECTION],
   interactions: [staffInteractionContribution],
   views: [{
@@ -218,6 +220,8 @@ const staffPlugin = definePlugin({
 });
 
 export const FIRST_PARTY_UI_PLUGINS: readonly UiPluginPackage[] = [
+  SCORE_APPLICATION_PLUGIN,
+  GUITAR_PLUGIN,
   staffPlugin,
   noteControlPlugin,
   historyPlugin,

@@ -90,6 +90,7 @@ export class ScoreCapabilityClient {
       capabilityId,
       contractVersion,
       workspaceId: this.workspaceId,
+      documentPrecondition: null,
       input,
     };
     const result = await this.host.invokeCapability(request);

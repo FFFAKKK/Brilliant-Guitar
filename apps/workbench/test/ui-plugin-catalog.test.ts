@@ -4,7 +4,7 @@ import test from "node:test";
 import { UiPluginCatalog } from "../src/ui/plugin-catalog.ts";
 import { UiPluginHost } from "../src/ui/plugin-manager.ts";
 import type { InternalUiPluginModule } from "../src/ui/plugin-manager.ts";
-import { WORKBENCH_PLUGIN_API_VERSION, WorkbenchCapabilityRegistry } from "../src/ui/plugin-manifest.ts";
+import { WORKBENCH_PLUGIN_API_VERSION, WorkbenchFeatureRegistry } from "../src/ui/plugin-manifest.ts";
 import { bindUiProjection, defineUiProjection, UiProjectionRegistry } from "../src/ui/projection-registry.ts";
 import { defineNoteControlExtension, NOTE_CONTROL_EXTENSION_POINT } from "../src/ui/note-control-extension.ts";
 
@@ -24,7 +24,7 @@ function manifest(input: Readonly<{
     apiVersion: WORKBENCH_PLUGIN_API_VERSION,
     runtime: "internal-module" as const,
     activation: input.activation ?? "always",
-    requires: { capabilities: [] as const, projections: [state.id] },
+    requires: { hostFeatures: [] as const, projections: [state.id] },
     contributes: {
       views: input.views ?? [],
       commands: [] as const,
@@ -82,7 +82,7 @@ test("startup catalog discovers extension-only instrument plugins and installs c
   assert.deepEqual(catalog.installationPlan().map((plugin) => plugin.manifest.id),
     ["example.note-control", "example.instrument.guitar"]);
 
-  const host = new UiPluginHost(new WorkbenchCapabilityRegistry([]), new UiProjectionRegistry([state]));
+  const host = new UiPluginHost(new WorkbenchFeatureRegistry([]), new UiProjectionRegistry([state]));
   for (const plugin of catalog.installationPlan()) host.install(plugin);
   const snapshot = host.projections.snapshot([bindUiProjection(state, { instrument: "guitar" })]);
 
@@ -92,7 +92,7 @@ test("startup catalog discovers extension-only instrument plugins and installs c
 });
 
 test("instrument extensions may stay registered while hiding controls outside their document context", () => {
-  const host = new UiPluginHost(new WorkbenchCapabilityRegistry([]), new UiProjectionRegistry([state]));
+  const host = new UiPluginHost(new WorkbenchFeatureRegistry([]), new UiProjectionRegistry([state]));
   for (const plugin of new UiPluginCatalog([noteControl, guitar]).installationPlan()) host.install(plugin);
   const snapshot = host.projections.snapshot([bindUiProjection(state, { instrument: "piano" })]);
 

@@ -48,7 +48,7 @@ function policy(overrides: Partial<RunPolicySnapshot> = {}): RunPolicySnapshot {
     allowedKinds: ["query"],
     maxToolsPerTurn: 2,
     maxCostClass: "constant",
-    exposeApprovalRequired: false,
+    approvalMode: "disallow",
     ...overrides,
   };
 }

@@ -1,4 +1,12 @@
 import type { WorkbenchCommand } from "../commands/workbench-command.ts";
+import type {
+  ApplicationCapabilityDirectory,
+  RegisteredApplicationCapability,
+} from "../contracts/application-capability.ts";
+import type {
+  RegisteredWorkflow,
+  WorkflowDirectory,
+} from "../contracts/workflow.ts";
 import type { AnyUiProjection, UiProjectionSnapshot } from "../ui/projection-registry.ts";
 import type { UiPluginManifest } from "../ui/plugin-manifest.ts";
 import type { UiComponentRegistry } from "../ui/component-registry.ts";
@@ -13,7 +21,7 @@ import { UiPluginDiagnosticStore, UiPluginHostError, isUiPluginHostError, uiPlug
 import type { UiPluginDiagnostic } from "../ui/plugin-diagnostic.ts";
 import { UiProjectionRegistry } from "../ui/projection-registry.ts";
 import { UiPluginHost as ConcreteUiPluginHost } from "../ui/plugin-manager.ts";
-import { WorkbenchCapabilityRegistry } from "../ui/plugin-manifest.ts";
+import { WorkbenchFeatureRegistry } from "../ui/plugin-manifest.ts";
 import { adaptUiPluginPackage } from "./plugin-sdk-adapter.ts";
 import { isUiPluginPackage } from "./plugin-sdk.ts";
 import { NOTE_CONTROL_EXTENSION_POINT } from "./plugin-sdk.ts";
@@ -64,7 +72,7 @@ export interface PluginStartOptions {
 }
 
 export interface PluginPlatformOptions {
-  readonly capabilities: WorkbenchCapabilityRegistry;
+  readonly hostFeatures: WorkbenchFeatureRegistry;
   readonly projections: readonly AnyUiProjection[];
   readonly diagnostics?: UiPluginDiagnosticStore;
   readonly onDiagnostic?: (diagnostic: UiPluginDiagnostic) => void;
@@ -103,6 +111,10 @@ export class PluginPlatform {
   readonly #records = new Map<string, PluginRuntimeInfo>();
   readonly #instrumentOwners = new Map<string, string>();
   readonly #playbackOutputOwners = new Map<string, string>();
+  readonly #applicationCapabilities = new Map<string, RegisteredApplicationCapability>();
+  readonly #applicationCapabilityDirectory: ApplicationCapabilityDirectory;
+  readonly #workflows = new Map<string, RegisteredWorkflow>();
+  readonly #workflowDirectory: WorkflowDirectory;
   readonly #activated = new Set<string>();
   readonly #nextLaunchActivated = new Set<string>();
   readonly #listeners = new Set<() => void>();
@@ -115,7 +127,7 @@ export class PluginPlatform {
   constructor(options: PluginPlatformOptions) {
     this.diagnostics = options.diagnostics ?? new UiPluginDiagnosticStore();
     this.#onDiagnostic = options.onDiagnostic;
-    this.#ui = new ConcreteUiPluginHost(options.capabilities, new UiProjectionRegistry(options.projections),
+    this.#ui = new ConcreteUiPluginHost(options.hostFeatures, new UiProjectionRegistry(options.projections),
       (diagnostic) => this.#report(diagnostic));
     this.#componentDirectory = Object.freeze({
       get: (id: string) => this.#ui.components.get(id),
@@ -150,6 +162,17 @@ export class PluginPlatform {
       reset: <T = unknown>(pluginId: string) => this.#settings.reset<T>(pluginId),
       restore: (value: unknown) => this.#settings.restore(value),
       serialize: () => this.#settings.serialize(),
+    });
+    this.#applicationCapabilityDirectory = Object.freeze({
+      get: (id: string) => this.#applicationCapabilities.get(id),
+      list: (caller: "ui" | "agent" | undefined) => Object.freeze([...this.#applicationCapabilities.values()]
+        .filter((capability) => caller === undefined || capability.callers.includes(caller))),
+    });
+    this.#workflowDirectory = Object.freeze({
+      get: (id: string) => this.#workflows.get(id),
+      list: () => Object.freeze([...this.#workflows.values()]),
+      listByPlugin: (ownerPluginId: string) => Object.freeze([...this.#workflows.values()]
+        .filter((workflow) => workflow.ownerPluginId === ownerPluginId)),
     });
     this.#settings.subscribe(() => this.#publish());
   }
@@ -210,12 +233,30 @@ export class PluginPlatform {
       try {
         this.#validateInstruments(plugin);
         this.#validatePlaybackOutputs(plugin);
+        this.#validateApplicationCapabilities(plugin);
+        this.#validateWorkflows(plugin);
         this.#ui.install(plugin);
         for (const instrument of plugin.instruments ?? []) {
           this.#instrumentOwners.set(instrument.id, plugin.manifest.id);
         }
         for (const output of plugin.playbackOutputs ?? []) {
           this.#playbackOutputOwners.set(output.id, plugin.manifest.id);
+        }
+        for (const capability of plugin.applicationCapabilities ?? []) {
+          this.#applicationCapabilities.set(capability.id, Object.freeze({
+            ...capability,
+            callers: Object.freeze([...capability.callers]),
+            ownerPluginId: plugin.manifest.id,
+          }));
+        }
+        for (const workflow of plugin.workflows ?? []) {
+          this.#workflows.set(workflow.id, Object.freeze({
+            ...workflow,
+            operationIds: Object.freeze([...workflow.operationIds]),
+            entryOperationIds: Object.freeze([...workflow.entryOperationIds]),
+            ownerPluginId: plugin.manifest.id,
+            ownerPluginVersion: plugin.manifest.version,
+          }));
         }
         this.#activated.add(plugin.manifest.id);
         this.#records.set(plugin.manifest.id, { manifest: plugin.manifest,
@@ -313,6 +354,8 @@ export class PluginPlatform {
   interactions(): PluginInteractionDirectory { return this.#interactionDirectory; }
   projections(): PluginProjectionDirectory { return this.#projectionDirectory; }
   settings(): PluginSettingsDirectory { return this.#settingsDirectory; }
+  applicationCapabilities(): ApplicationCapabilityDirectory { return this.#applicationCapabilityDirectory; }
+  workflows(): WorkflowDirectory { return this.#workflowDirectory; }
   instruments(): readonly PluginInstrumentContribution[] {
     return Object.freeze(this.#catalog.list().flatMap((plugin) => {
       const record = this.#records.get(plugin.manifest.id);
@@ -509,6 +552,116 @@ export class PluginPlatform {
         subject: { kind: "playback-output", id: output.id, ownerPluginId },
         message: "播放输出 ID 与其他插件冲突",
         detail: `Playback output already owned: ${output.id}`,
+      });
+    }
+  }
+
+  #validateApplicationCapabilities(plugin: InternalUiPluginModule): void {
+    const capabilities = plugin.applicationCapabilities ?? [];
+    const actualIds = capabilities.map((capability) => capability.id);
+    const declaredIds = plugin.manifest.contributes.applicationCapabilities ?? [];
+    const sameDeclaration = actualIds.length === declaredIds.length
+      && actualIds.every((id, index) => id === declaredIds[index]);
+    if (!sameDeclaration) throw new UiPluginHostError({
+      code: "UI-PLG-005",
+      stage: "contributions",
+      plugin: uiPluginIdentity(plugin.manifest),
+      message: "应用能力与插件清单不一致",
+      detail: `Plugin ${plugin.manifest.id} application capability binding does not match its manifest`,
+    });
+    const duplicateId = actualIds.find((id, index) => actualIds.indexOf(id) !== index);
+    if (duplicateId) throw new UiPluginHostError({
+      code: "UI-PLG-006",
+      stage: "contributions",
+      plugin: uiPluginIdentity(plugin.manifest),
+      subject: { kind: "capability", id: duplicateId },
+      message: "插件包含重复应用能力",
+      detail: `Plugin ${plugin.manifest.id} contains duplicate Application Capability: ${duplicateId}`,
+    });
+    for (const capability of capabilities) {
+      if (!/^[a-z][a-z0-9-]*(?:\.[a-z][a-z0-9-]*)+$/.test(capability.id)
+        || !Number.isSafeInteger(capability.contractVersion)
+        || capability.contractVersion < 1
+        || capability.callers.length === 0
+        || capability.callers.length !== new Set(capability.callers).size
+        || capability.callers.some((caller) => caller !== "ui" && caller !== "agent")
+        || typeof capability.validateInput !== "function"
+        || typeof capability.validateOutput !== "function") {
+        throw new UiPluginHostError({
+          code: "UI-PLG-007",
+          stage: "contributions",
+          plugin: uiPluginIdentity(plugin.manifest),
+          subject: { kind: "capability", id: capability.id },
+          message: "应用能力定义无效",
+          detail: `Plugin ${plugin.manifest.id} contains an invalid Application Capability: ${capability.id}`,
+        });
+      }
+      const ownerPluginId = this.#applicationCapabilities.get(capability.id)?.ownerPluginId;
+      if (ownerPluginId) throw new UiPluginHostError({
+        code: "UI-PLG-008",
+        stage: "registration",
+        plugin: uiPluginIdentity(plugin.manifest),
+        subject: { kind: "capability", id: capability.id, ownerPluginId },
+        message: "应用能力 ID 与其他插件冲突",
+        detail: `Application Capability already owned: ${capability.id}`,
+      });
+    }
+  }
+
+  #validateWorkflows(plugin: InternalUiPluginModule): void {
+    const workflows = plugin.workflows ?? [];
+    const actualIds = workflows.map((workflow) => workflow.id);
+    const declaredIds = plugin.manifest.contributes.workflows ?? [];
+    const sameDeclaration = actualIds.length === declaredIds.length
+      && actualIds.every((id, index) => id === declaredIds[index]);
+    if (!sameDeclaration) throw new UiPluginHostError({
+      code: "UI-PLG-005",
+      stage: "contributions",
+      plugin: uiPluginIdentity(plugin.manifest),
+      message: "工作流与插件清单不一致",
+      detail: `Plugin ${plugin.manifest.id} workflow binding does not match its manifest`,
+    });
+    const duplicateId = actualIds.find((id, index) => actualIds.indexOf(id) !== index);
+    if (duplicateId) throw new UiPluginHostError({
+      code: "UI-PLG-006",
+      stage: "contributions",
+      plugin: uiPluginIdentity(plugin.manifest),
+      subject: { kind: "workflow", id: duplicateId },
+      message: "插件包含重复工作流",
+      detail: `Plugin ${plugin.manifest.id} contains duplicate workflow: ${duplicateId}`,
+    });
+    for (const workflow of workflows) {
+      const validOperationIds = workflow.operationIds.length > 0
+        && workflow.operationIds.length === new Set(workflow.operationIds).size
+        && workflow.operationIds.every((id) => /^[a-z][a-z0-9-]*(?:\.[a-z][a-z0-9-]*)+$/.test(id));
+      const validEntryIds = workflow.entryOperationIds.length > 0
+        && workflow.entryOperationIds.length === new Set(workflow.entryOperationIds).size
+        && workflow.entryOperationIds.every((id) => workflow.operationIds.includes(id));
+      if (!/^[a-z][a-z0-9-]*(?:\.[a-z][a-z0-9-]*)+$/.test(workflow.id)
+        || !Number.isSafeInteger(workflow.contractVersion)
+        || workflow.contractVersion < 1
+        || !workflow.name.trim()
+        || !workflow.description.trim()
+        || workflow.runtime !== "agent-orchestration-v1"
+        || !validOperationIds
+        || !validEntryIds) {
+        throw new UiPluginHostError({
+          code: "UI-PLG-007",
+          stage: "contributions",
+          plugin: uiPluginIdentity(plugin.manifest),
+          subject: { kind: "workflow", id: workflow.id },
+          message: "工作流定义无效",
+          detail: `Plugin ${plugin.manifest.id} contains an invalid workflow: ${workflow.id}`,
+        });
+      }
+      const ownerPluginId = this.#workflows.get(workflow.id)?.ownerPluginId;
+      if (ownerPluginId) throw new UiPluginHostError({
+        code: "UI-PLG-008",
+        stage: "registration",
+        plugin: uiPluginIdentity(plugin.manifest),
+        subject: { kind: "workflow", id: workflow.id, ownerPluginId },
+        message: "工作流 ID 与其他插件冲突",
+        detail: `Workflow already owned: ${workflow.id}`,
       });
     }
   }

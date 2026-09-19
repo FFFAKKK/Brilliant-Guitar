@@ -570,6 +570,14 @@ fn validate_edit(request: &ScoreEditRequest) -> Result<(), HostError> {
         ScoreEditAction::SetTitle { title } if text_length(title.trim()) > 120 => {
             Err(HostError::new("标题最多 120 个字符", 400))
         }
+        ScoreEditAction::SetTempo { tempo_bpm } if !tempo_bpm.is_finite() || *tempo_bpm <= 0.0 => {
+            Err(HostError::new("速度必须是大于 0 的有限数值", 400))
+        }
+        ScoreEditAction::SetMetadata { title, tempo_bpm }
+            if text_length(title.trim()) > 120 || !tempo_bpm.is_finite() || *tempo_bpm <= 0.0 =>
+        {
+            Err(HostError::new("作品元数据无效", 400))
+        }
         ScoreEditAction::Append {
             duration, content, ..
         } if !validate_duration(*duration, matches!(content, InputContent::Rest)) => {
@@ -1154,6 +1162,40 @@ fn execute_edit(
                 "title": if title.trim().is_empty() { "未命名乐谱" } else { title.trim() },
                 "authors": document.metadata.authors,
                 "tempo": document.metadata.tempo,
+            });
+            submit_command(
+                session,
+                json!({
+                    "commandVersion": 1,
+                    "commandId": "core.document.set-metadata",
+                    "target": { "kind": "document", "documentId": current.document_id },
+                    "payload": { "metadata": metadata }
+                }),
+            )
+        }
+        ScoreEditAction::SetTempo { tempo_bpm } => {
+            let document = read_state(session)?.snapshot.document;
+            let metadata = json!({
+                "title": document.metadata.title,
+                "authors": document.metadata.authors,
+                "tempo": { "bpm": tempo_bpm },
+            });
+            submit_command(
+                session,
+                json!({
+                    "commandVersion": 1,
+                    "commandId": "core.document.set-metadata",
+                    "target": { "kind": "document", "documentId": current.document_id },
+                    "payload": { "metadata": metadata }
+                }),
+            )
+        }
+        ScoreEditAction::SetMetadata { title, tempo_bpm } => {
+            let document = read_state(session)?.snapshot.document;
+            let metadata = json!({
+                "title": title,
+                "authors": document.metadata.authors,
+                "tempo": { "bpm": tempo_bpm },
             });
             submit_command(
                 session,

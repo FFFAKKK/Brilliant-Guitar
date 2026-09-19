@@ -1,9 +1,9 @@
 import type {
   AgentDecision,
+  AgentApprovalRequirement,
   AgentRunState,
   AgentToolCall,
   DecisionRejection,
-  RequiredUserInput,
   ToolsetResolutionResult,
   ValidatedAction,
   ValidatedActions,
@@ -75,17 +75,17 @@ export function validateDecision(
   if (decision === null) return {
     acceptedActions: [],
     rejectedActions: [rejection(null, "invalid-decision", "模型决策格式无效")],
-    requiredUserInput: [],
+    approvalRequirements: [],
   };
   if (runState.lifecycle !== "active") return {
     acceptedActions: [],
     rejectedActions: [rejection(null, "run-not-active", "当前任务不允许继续执行")],
-    requiredUserInput: [],
+    approvalRequirements: [],
   };
   if (decision.kind === "message") return {
     acceptedActions: [{ kind: "message", text: decision.text }],
     rejectedActions: [],
-    requiredUserInput: [],
+    approvalRequirements: [],
   };
   if (decision.kind === "finish") return {
     acceptedActions: [{
@@ -95,18 +95,18 @@ export function validateDecision(
       completionCheckRequired: true,
     }],
     rejectedActions: [],
-    requiredUserInput: [],
+    approvalRequirements: [],
   };
 
   if (decision.calls.length > snapshot.maxCalls) return {
     acceptedActions: [],
     rejectedActions: [rejection(null, "too-many-calls", "本回合工具调用数量超出限制")],
-    requiredUserInput: [],
+    approvalRequirements: [],
   };
 
   const accepted: ValidatedAction[] = [];
   const rejected: DecisionRejection[] = [];
-  const required: RequiredUserInput[] = [];
+  const required: AgentApprovalRequirement[] = [];
   const seen = new Set<string>();
   const descriptors = new Map(snapshot.toolDescriptors.map((descriptor) => [descriptor.id, descriptor]));
   for (const call of decision.calls) {
@@ -166,5 +166,5 @@ export function validateDecision(
       capabilityId: call.capabilityId,
     });
   }
-  return { acceptedActions: accepted, rejectedActions: rejected, requiredUserInput: required };
+  return { acceptedActions: accepted, rejectedActions: rejected, approvalRequirements: required };
 }

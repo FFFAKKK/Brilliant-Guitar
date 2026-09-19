@@ -14,18 +14,25 @@ import type { AgentContextBudget, RunPolicySnapshot } from "../src/agent/agent-c
 import {
   AgentIntentRouter,
 } from "../src/agent/agent-intent-router.ts";
-import type { AgentReadCapabilityId } from "../src/agent/agent-intent-router.ts";
+import type { AgentCapabilityId } from "../src/agent/agent-intent-router.ts";
 import { WorkbenchAgentCapabilityPort } from "../src/agent/capability-port.ts";
 import {
   verifyScoreMetadataCompletion,
+  verifyScoreMetadataTransactionCompletion,
   verifyScoreMeasuresCompletion,
   verifyScoreStructureCompletion,
   verifyScoreSummaryCompletion,
+  verifyScoreTempoUpdateCompletion,
+  verifyScoreTitleUpdateCompletion,
 } from "../src/agent/completion-verifier.ts";
 import type { AgentCompletionVerifier } from "../src/agent/completion-verifier.ts";
 import { FIRST_PARTY_CAPABILITY_CATALOG } from "../src/agent/first-party-capabilities.ts";
 import { FakeAgentProvider } from "../src/agent/provider.ts";
-import { AgentRunController } from "../src/agent/run-controller.ts";
+import {
+  AgentRunController,
+  getAgentRunRequiredApproval,
+} from "../src/agent/run-controller.ts";
+import type { AgentRunRequest } from "../src/agent/run-controller.ts";
 import { MeasureReferenceAgentCapabilityPort } from "../src/agent/measure-reference-capability-port.ts";
 import { MeasureReferenceReadService } from "../src/agent/measure-reference-read-service.ts";
 import { AGENT_EVALUATION_BASELINE } from "./agent-evaluation-cases.ts";
@@ -45,17 +52,23 @@ interface EvaluationCapabilityPlan {
   readonly response: string;
   readonly data: unknown;
   readonly input: unknown;
+  readonly intentKind: "read" | "edit";
+  readonly capabilityKind: "query" | "mutation";
+  readonly approvalMode: "disallow" | "risk-based";
   readonly scope: "document" | "range";
   readonly rangeBudget: number;
 }
 
-type EvaluationCapabilityId = AgentReadCapabilityId;
+type EvaluationCapabilityId = AgentCapabilityId;
 
 const capabilityPlans: Readonly<Record<EvaluationCapabilityId, EvaluationCapabilityPlan>> = {
   "score.read-summary": {
     completionVerifier: verifyScoreSummaryCompletion,
     response: "当前乐谱共有 32 小节。",
     input: {},
+    intentKind: "read",
+    capabilityKind: "query",
+    approvalMode: "disallow",
     scope: "document",
     rangeBudget: 0,
     data: {
@@ -69,6 +82,9 @@ const capabilityPlans: Readonly<Record<EvaluationCapabilityId, EvaluationCapabil
     completionVerifier: verifyScoreMetadataCompletion,
     response: "《练习曲》由 Brilliant 创作，速度为 120 BPM。",
     input: {},
+    intentKind: "read",
+    capabilityKind: "query",
+    approvalMode: "disallow",
     scope: "document",
     rangeBudget: 0,
     data: {
@@ -83,6 +99,9 @@ const capabilityPlans: Readonly<Record<EvaluationCapabilityId, EvaluationCapabil
     completionVerifier: verifyScoreStructureCompletion,
     response: "当前乐谱有 32 小节、2 个声部和 2 个谱表。",
     input: {},
+    intentKind: "read",
+    capabilityKind: "query",
+    approvalMode: "disallow",
     scope: "document",
     rangeBudget: 0,
     data: {
@@ -103,6 +122,9 @@ const capabilityPlans: Readonly<Record<EvaluationCapabilityId, EvaluationCapabil
         endMeasureId: "measure-4",
       },
     },
+    intentKind: "read",
+    capabilityKind: "query",
+    approvalMode: "disallow",
     scope: "range",
     rangeBudget: 3,
     data: {
@@ -118,23 +140,86 @@ const capabilityPlans: Readonly<Record<EvaluationCapabilityId, EvaluationCapabil
       ],
     },
   },
+  "score.update-title": {
+    completionVerifier: verifyScoreTitleUpdateCompletion,
+    response: "作品标题已修改为《夜曲》。",
+    input: { title: "夜曲" },
+    intentKind: "edit",
+    capabilityKind: "mutation",
+    approvalMode: "risk-based",
+    scope: "document",
+    rangeBudget: 0,
+    data: {
+      documentId: "score-1",
+      documentVersion: 8,
+      previousTitle: "练习曲",
+      title: "夜曲",
+      undoAvailable: true,
+    },
+  },
+  "score.update-tempo": {
+    completionVerifier: verifyScoreTempoUpdateCompletion,
+    response: "作品速度已修改为 132 BPM。",
+    input: { tempoBpm: 132 },
+    intentKind: "edit",
+    capabilityKind: "mutation",
+    approvalMode: "risk-based",
+    scope: "document",
+    rangeBudget: 0,
+    data: {
+      changeSetId: `sha256:${"a".repeat(64)}`,
+      documentId: "score-1",
+      documentVersion: 8,
+      previousTempoBpm: 120,
+      tempoBpm: 132,
+      undoAvailable: true,
+    },
+  },
+  "score.update-metadata": {
+    completionVerifier: verifyScoreMetadataTransactionCompletion,
+    response: "标题与速度已在一个事务中修改。",
+    input: { title: "夜曲", tempoBpm: 132 },
+    intentKind: "edit",
+    capabilityKind: "mutation",
+    approvalMode: "risk-based",
+    scope: "document",
+    rangeBudget: 0,
+    data: {
+      changeSetId: `sha256:${"b".repeat(64)}`,
+      documentId: "score-1",
+      documentVersion: 8,
+      appliedOperations: ["set-title", "set-tempo"],
+      previous: { title: "练习曲", tempoBpm: 120 },
+      current: { title: "夜曲", tempoBpm: 132 },
+      undoAvailable: true,
+    },
+  },
 };
 
+function isEvaluationCapabilityId(value: string): value is EvaluationCapabilityId {
+  return Object.prototype.hasOwnProperty.call(capabilityPlans, value);
+}
+
 function policy(capabilityId: EvaluationCapabilityId): RunPolicySnapshot {
+  const plan = capabilityPlans[capabilityId];
   return {
     policyVersion: 1,
     allowedCapabilityIds: [capabilityId],
-    allowedKinds: ["query"],
+    allowedKinds: [plan.capabilityKind],
     maxToolsPerTurn: 1,
     maxCostClass: capabilityId === "score.read-measures" ? "range" : "constant",
-    exposeApprovalRequired: false,
+    approvalMode: plan.approvalMode,
   };
 }
 
 function capabilityForCase(testCase: AgentEvaluationCase): EvaluationCapabilityId {
   const route = intentRouter.route(testCase.goal);
-  if (route.capabilityId === null || route.requiresClarification) {
-    throw new Error("evaluation goal did not resolve to one capability");
+  if (
+    route.capabilityId === null
+    || route.requiresClarification
+    || !isEvaluationCapabilityId(route.capabilityId)
+  ) {
+    throw new Error("evaluation goal did not resolve to one supported capability");
   }
   return route.capabilityId;
 }
@@ -156,11 +241,16 @@ class BaselineExecutor implements AgentEvaluationExecutor {
   async execute(testCase: AgentEvaluationCase) {
     if (testCase.fixtureId !== "score.standard-32"
       && testCase.fixtureId !== "score.standard-32.provider-failure"
-      && testCase.fixtureId !== "score.standard-32.measure-range") {
+      && testCase.fixtureId !== "score.standard-32.measure-range"
+      && testCase.fixtureId !== "score.standard-32.title-update-approved"
+      && testCase.fixtureId !== "score.standard-32.title-update-denied"
+      && testCase.fixtureId !== "score.standard-32.tempo-update-approved"
+      && testCase.fixtureId !== "score.standard-32.metadata-transaction-approved") {
       throw new Error("unknown evaluation fixture");
     }
     const capabilityId = capabilityForCase(testCase);
     const plan = capabilityPlans[capabilityId];
+    const deniesApproval = testCase.fixtureId === "score.standard-32.title-update-denied";
     const provider = testCase.fixtureId === "score.standard-32.provider-failure"
       ? new FakeAgentProvider([{
           kind: "error",
@@ -181,19 +271,90 @@ class BaselineExecutor implements AgentEvaluationExecutor {
             }],
           },
         },
-        {
-          kind: "decision",
-          expect: {
-            capabilityIds: [capabilityId],
-            contextSourceIds: [capabilityId],
-          },
-          decision: { kind: "finish", reason: "completed", text: plan.response },
-        },
+        deniesApproval
+          ? {
+              kind: "decision",
+              expect: {
+                capabilityIds: [capabilityId],
+                contextSourceIds: [`approval:evaluation:${testCase.id}:turn-3`],
+              },
+              decision: { kind: "message", text: "已按你的决定停止这项操作。" },
+            }
+          : {
+              kind: "decision",
+              expect: {
+                capabilityIds: [capabilityId],
+                contextSourceIds: [capabilityId],
+              },
+              decision: { kind: "finish", reason: "completed", text: plan.response },
+            },
       ]);
     const atomicCapabilities = new WorkbenchAgentCapabilityPort({
-      async invokeAgentCapability(request) {
+      async invokeCapability(request) {
         assert.notEqual(request.capabilityId, "score.read-measures");
+        if (request.capabilityId === "score.prepare-tempo-change") return {
+          status: "completed",
+          invocationId: request.invocationId,
+          capabilityId: request.capabilityId,
+          contractVersion: request.contractVersion,
+          data: {
+            changeSetId: `sha256:${"a".repeat(64)}`,
+            kind: "score-tempo",
+            documentId: "score-1",
+            baseDocumentVersion: 7,
+            beforeTempoBpm: 120,
+            afterTempoBpm: 132,
+          },
+        };
+        if (request.capabilityId === "score.commit-tempo-change") {
+          assert.deepEqual(request.documentPrecondition, { documentId: "score-1", documentVersion: 7 });
+          assert.equal((request.input as { changeSet: { changeSetId: string } }).changeSet.changeSetId,
+            `sha256:${"a".repeat(64)}`);
+          return {
+            status: "completed",
+            invocationId: request.invocationId,
+            capabilityId: request.capabilityId,
+            contractVersion: request.contractVersion,
+            data: capabilityPlans["score.update-tempo"].data,
+          };
+        }
+        if (request.capabilityId === "score.prepare-metadata-transaction") return {
+          status: "completed",
+          invocationId: request.invocationId,
+          capabilityId: request.capabilityId,
+          contractVersion: request.contractVersion,
+          data: {
+            changeSetId: `sha256:${"b".repeat(64)}`,
+            kind: "score-metadata-transaction",
+            documentId: "score-1",
+            baseDocumentVersion: 7,
+            operations: ["set-title", "set-tempo"],
+            before: { title: "练习曲", tempoBpm: 120 },
+            after: { title: "夜曲", tempoBpm: 132 },
+          },
+        };
+        if (request.capabilityId === "score.commit-metadata-transaction") {
+          assert.deepEqual(request.documentPrecondition, {
+            documentId: "score-1",
+            documentVersion: 7,
+          });
+          assert.equal(
+            (request.input as { changeSet: { changeSetId: string } }).changeSet.changeSetId,
+            `sha256:${"b".repeat(64)}`,
+          );
+          return {
+            status: "completed",
+            invocationId: request.invocationId,
+            capabilityId: request.capabilityId,
+            contractVersion: request.contractVersion,
+            data: capabilityPlans["score.update-metadata"].data,
+          };
+        }
         assert.deepEqual(request.input, plan.input);
+        if (request.capabilityId === "score.update-title") assert.deepEqual(
+          request.documentPrecondition,
+          { documentId: "score-1", documentVersion: 7 },
+        );
         return {
           status: "completed",
           invocationId: request.invocationId,
@@ -252,7 +413,7 @@ class BaselineExecutor implements AgentEvaluationExecutor {
       now: clock(),
       nextId: idSource(),
     });
-    return controller.run({
+    const runRequest: AgentRunRequest = {
       runId: `evaluation:${testCase.id}`,
       workspace: {
         workspaceId: "workspace-evaluation",
@@ -262,7 +423,7 @@ class BaselineExecutor implements AgentEvaluationExecutor {
       },
       goal: testCase.goal,
       intent: {
-        kind: "read",
+        kind: plan.intentKind,
         requestedCapabilityIds: [capabilityId],
         scope: plan.scope,
       },
@@ -270,6 +431,16 @@ class BaselineExecutor implements AgentEvaluationExecutor {
       budget: { ...budget, rangeBudget: plan.rangeBudget },
       initialContextItems: [],
       maxTurns: 4,
+    };
+    const initial = await controller.run(runRequest);
+    if (plan.approvalMode === "disallow") return initial;
+    const approval = getAgentRunRequiredApproval(initial.run);
+    assert.notEqual(approval, null);
+    return controller.continueWithApproval(runRequest, initial.run, {
+      approvalId: approval!.approvalId,
+      kind: "capability-execution",
+      outcome: deniesApproval ? "denied" : "approved",
+      decidedBy: "local-user",
     });
   }
 }
@@ -277,16 +448,24 @@ class BaselineExecutor implements AgentEvaluationExecutor {
 test("evaluation baseline runs through the real controller without a paid Provider", async () => {
   const report = await runAgentEvaluationSuite(AGENT_EVALUATION_BASELINE, new BaselineExecutor());
 
-  assert.equal(report.totalCases, 5);
-  assert.equal(report.passedCases, 5);
-  assert.equal(report.failedCases, 0);
-  assert.equal(report.infrastructureFailedCases, 0);
+  assert.equal(report.totalCases, 9);
+  assert.equal(report.failedCases, 0, JSON.stringify(
+    report.reports.filter((item) => item.status !== "passed"),
+  ));
+  assert.equal(report.infrastructureFailedCases, 0, JSON.stringify(
+    report.reports.filter((item) => item.status !== "passed"),
+  ));
+  assert.equal(report.passedCases, 9);
   assert.equal(report.passRate, 1);
   assert.equal(report.averageScore, 1);
   assert.deepEqual(report.reports.map((item) => item.observation?.terminalReason), [
     "completed",
     "failed",
     "completed",
+    "completed",
+    "completed",
+    "completed",
+    "non-terminal",
     "completed",
     "completed",
   ]);
@@ -309,6 +488,8 @@ test("evaluation reports which deterministic criteria failed", async () => {
       verificationSatisfied: false,
       requiredEvidence: ["missing-evidence"],
       responseIncludes: ["不存在的回答"],
+      approvalRequired: null,
+      requiredApprovalPreviews: [],
       maxTurns: 1,
       maxCapabilityCalls: 0,
       maxDurationMs: 0,
@@ -340,7 +521,7 @@ test("evaluation suite isolates executor failures and continues later cases", as
     },
   });
 
-  assert.equal(report.passedCases, 4);
+  assert.equal(report.passedCases, 8);
   assert.equal(report.infrastructureFailedCases, 1);
   assert.equal(report.reports[0]?.status, "infrastructure-failed");
   assert.equal(JSON.stringify(report).includes("private infrastructure detail"), false);
@@ -363,6 +544,8 @@ test("evaluation case definition rejects contradictory capability expectations",
       verificationSatisfied: true,
       requiredEvidence: [],
       responseIncludes: [],
+      approvalRequired: null,
+      requiredApprovalPreviews: [],
       maxTurns: 2,
       maxCapabilityCalls: 1,
       maxDurationMs: null,
@@ -383,6 +566,8 @@ test("evaluation case definition rejects contradictory capability expectations",
       verificationSatisfied: false,
       requiredEvidence: [],
       responseIncludes: [],
+      approvalRequired: null,
+      requiredApprovalPreviews: [],
       maxTurns: 1,
       maxCapabilityCalls: 0,
       maxDurationMs: null,
@@ -403,6 +588,8 @@ test("evaluation case definition rejects contradictory capability expectations",
       verificationSatisfied: true,
       requiredEvidence: [],
       responseIncludes: [],
+      approvalRequired: null,
+      requiredApprovalPreviews: [],
       maxTurns: 3,
       maxCapabilityCalls: 2,
       maxDurationMs: null,

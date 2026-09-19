@@ -114,6 +114,28 @@ export class AgentPluginRuntime {
     return this.#createRunLease(provider);
   };
 
+  beginApprovalContinuation = (runId: string, approvalId: string): AgentPluginRunLease | null => {
+    if (!this.#snapshot.enabled || this.#activeRun !== null) return null;
+    const continuation = this.#snapshot.recovery.items.find((item) => item.runId === runId);
+    if (continuation?.action !== "approve"
+      || continuation.requiredApproval?.approvalId !== approvalId
+      || !continuation.isBlocking) return null;
+    const provider = this.getProvider();
+    if (provider === null) return null;
+    return this.#createRunLease(provider);
+  };
+
+  beginRetryContinuation = (runId: string, invocationId: string): AgentPluginRunLease | null => {
+    if (!this.#snapshot.enabled || this.#activeRun !== null) return null;
+    const continuation = this.#snapshot.recovery.items.find((item) => item.runId === runId);
+    if (continuation?.action !== "retry"
+      || continuation.invocationId !== invocationId
+      || !continuation.isBlocking) return null;
+    const provider = this.getProvider();
+    if (provider === null) return null;
+    return this.#createRunLease(provider);
+  };
+
   #createRunLease(provider: AgentProviderPort): AgentPluginRunLease {
     const token = Symbol("agent-run");
     const controller = new AbortController();

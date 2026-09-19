@@ -7,10 +7,16 @@ import type {
   AgentRunStoreEntry,
   AgentRunStorePort,
 } from "./agent-store.ts";
-import { isAgentRequiredUserInput } from "./agent-contracts.ts";
+import {
+  isAgentApprovalDecision,
+  isAgentProvidedUserInput,
+  isAgentRequiredApproval,
+  isAgentRequiredUserInput,
+} from "./agent-contracts.ts";
 import type { AgentRunState } from "./agent-contracts.ts";
 import type { AgentRunRecord } from "./run-controller.ts";
 import type { AgentRunEventRecord } from "./run-state.ts";
+import { isAgentPreparedExecution } from "./prepared-mutation.ts";
 
 type Invoke = <T>(command: string, args?: Record<string, unknown>) => Promise<T>;
 
@@ -26,8 +32,59 @@ function isStringArray(value: unknown): value is readonly string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
 
+function isWorkflowIdentity(value: unknown): boolean {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  const workflow = value as Record<string, unknown>;
+  return typeof workflow.id === "string"
+    && workflow.id.length > 0
+    && Number.isSafeInteger(workflow.contractVersion)
+    && (workflow.contractVersion as number) >= 1
+    && typeof workflow.ownerPluginId === "string"
+    && workflow.ownerPluginId.length > 0
+    && typeof workflow.ownerPluginVersion === "string"
+    && /^\d+\.\d+\.\d+$/.test(workflow.ownerPluginVersion);
+}
+
 function isSequence(value: unknown): value is number {
   return Number.isSafeInteger(value) && (value as number) >= 0;
+}
+
+function isInvocationSnapshot(value: unknown): boolean {
+  const candidate = record(value);
+  const state = record(candidate?.state);
+  return candidate !== null
+    && typeof candidate.invocationId === "string"
+    && typeof candidate.capabilityId === "string"
+    && Number.isSafeInteger(candidate.contractVersion)
+    && state !== null
+    && typeof state.status === "string"
+    && (candidate.preparedExecution === undefined
+      || candidate.preparedExecution === null
+      || isAgentPreparedExecution(candidate.preparedExecution));
+}
+
+function preparedApprovalBindingsMatch(
+  events: readonly unknown[],
+  invocations: readonly unknown[],
+): boolean {
+  for (const eventValue of events) {
+    const event = record(record(eventValue)?.event);
+    if (event?.type !== "approval.required") continue;
+    const approval = record(event.approval);
+    if (!Array.isArray(approval?.items)) return false;
+    for (const itemValue of approval.items) {
+      const item = record(itemValue);
+      if (item === null || item.changeSetId === undefined || item.changeSetId === null) continue;
+      const invocation = invocations
+        .map(record)
+        .find((candidate) => candidate?.invocationId === item.invocationId);
+      if (invocation === undefined
+        || invocation === null
+        || !isAgentPreparedExecution(invocation.preparedExecution)
+        || invocation.preparedExecution.changeSetId !== item.changeSetId) return false;
+    }
+  }
+  return true;
 }
 
 function isAgentRunState(value: unknown): value is AgentRunState {
@@ -58,7 +115,17 @@ function decodeEvent(value: unknown): AgentRunEventRecord {
     || typeof candidate.occurredAt !== "number"
     || event === null
     || typeof event.type !== "string"
-    || (event.type === "user-input.required" && !isAgentRequiredUserInput(event.input))) {
+    || (event.type === "user-input.required" && !isAgentRequiredUserInput(event.input))
+    || (event.type === "user-input.provided" && !isAgentProvidedUserInput(event.input))
+    || (event.type === "approval.required" && !isAgentRequiredApproval(event.approval))
+    || (event.type === "approval.approved"
+      && (!isAgentApprovalDecision(event.decision) || event.decision.outcome !== "approved"))
+    || (event.type === "approval.denied"
+      && (!isAgentApprovalDecision(event.decision) || event.decision.outcome !== "denied"))
+    || (event.type === "invocation.retry-authorized"
+      && (typeof event.invocationId !== "string"
+        || event.invocationId.length === 0
+        || event.authorizedBy !== "local-user"))) {
     throw new AgentRunStoreProtocolError("Agent Run Store returned an invalid event record");
   }
   return candidate as unknown as AgentRunEventRecord;
@@ -82,18 +149,23 @@ function decodeRun(value: unknown): AgentRunRecord {
     || !isStringArray(policy.allowedKinds)
     || typeof policy.maxToolsPerTurn !== "number"
     || typeof policy.maxCostClass !== "string"
-    || typeof policy.exposeApprovalRequired !== "boolean"
+    || !["disallow", "risk-based", "always"].includes(String(policy.approvalMode))
     || intent === null
     || typeof intent.kind !== "string"
     || !isStringArray(intent.requestedCapabilityIds)
     || typeof intent.scope !== "string"
+    || (intent.workflow !== undefined && !isWorkflowIdentity(intent.workflow))
     || !Array.isArray(candidate.events)
     || !Array.isArray(candidate.turns)
     || !Array.isArray(candidate.invocations)
+    || !candidate.invocations.every(isInvocationSnapshot)
     || !Array.isArray(candidate.contextItems)) {
     throw new AgentRunStoreProtocolError("Agent Run Store returned an invalid run snapshot");
   }
   candidate.events.forEach(decodeEvent);
+  if (!preparedApprovalBindingsMatch(candidate.events, candidate.invocations)) {
+    throw new AgentRunStoreProtocolError("Agent Run Store returned a mismatched prepared approval");
+  }
   return candidate as unknown as AgentRunRecord;
 }
 

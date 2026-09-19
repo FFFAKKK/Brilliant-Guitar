@@ -8,6 +8,8 @@ import type {
 import type { AgentRecoveryProjection } from "../agent/recovery-projection.ts";
 import type { AgentAssistantPanelProjection } from "../ui/first-party-plugin-projections.ts";
 import { ComponentPlacementMenu } from "./component-placement-menu.tsx";
+import { AgentRequiredApprovalSummary } from "./agent-required-approval-summary.tsx";
+import { AgentRequiredInputControl } from "./agent-required-input-control.tsx";
 
 function AgentIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7.5h8a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3v-5a3 3 0 0 1 3-3Z"
@@ -60,9 +62,8 @@ const PHASE_LABELS = {
 } as const;
 
 function passiveActionLabel(action: AgentRecoveryProjection["action"]): string {
-  if (action === "approve") return "等待批准入口接入";
+  if (action === "approve") return "等待批准处理";
   if (action === "provide-input") return "等待输入入口接入";
-  if (action === "retry") return "等待重试执行器接入";
   return "无需继续操作";
 }
 
@@ -74,20 +75,41 @@ function RecoveryAction({ item, projection }: Readonly<{
     disabled={projection.runtime.recovery.status === "loading"}
     onClick={() => { void projection.resume(item.runId); }}>准备继续</button>;
   const requiredInput = item.requiredInput;
-  if (item.action === "provide-input") return <button type="button" className="agent-recovery-action"
-    disabled={projection.runtime.recovery.status === "loading"
-      || !projection.selectionAvailable
-      || requiredInput?.kind !== "measure-selection"
-      || projection.session.requiredInput?.requestId !== requiredInput.requestId
-      || projection.session.runId !== item.runId}
-    onClick={() => {
-      if (requiredInput !== null) void projection.provideRequiredInput(item.runId, requiredInput.requestId);
-    }}>
-    {projection.selectionAvailable ? "继续任务" : "请先选择小节"}
-  </button>;
+  if (item.action === "provide-input" && requiredInput !== null) return <AgentRequiredInputControl
+    input={requiredInput}
+    disabled={projection.runtime.recovery.status === "loading"}
+    selectionAvailable={projection.selectionAvailable}
+    onSubmit={(requestId) => { void projection.provideRequiredInput(item.runId, requestId); }}
+  />;
+  const requiredApproval = item.requiredApproval;
+  if (item.action === "approve" && requiredApproval !== null) return <span className="agent-approval-actions">
+    <button type="button" className="agent-recovery-action agent-approval-deny"
+      disabled={projection.runtime.recovery.status === "loading"}
+      onClick={() => { void projection.provideApprovalDecision(
+        item.runId,
+        requiredApproval.approvalId,
+        "denied",
+      ); }}>拒绝</button>
+    <button type="button" className="agent-recovery-action"
+      disabled={projection.runtime.recovery.status === "loading"}
+      onClick={() => { void projection.provideApprovalDecision(
+        item.runId,
+        requiredApproval.approvalId,
+        "approved",
+      ); }}>批准</button>
+  </span>;
   if (item.action === "reconcile") return <button type="button" className="agent-recovery-action"
     disabled={projection.runtime.recovery.status === "loading"}
     onClick={() => { void projection.refresh(); }}>重新核对</button>;
+  if (item.action === "retry") {
+    const invocationId = item.invocationId;
+    if (invocationId !== null) return <button
+      type="button"
+      className="agent-recovery-action"
+      disabled={projection.runtime.recovery.status === "loading"}
+      onClick={() => { void projection.retryInvocation(item.runId, invocationId); }}
+    >确认重试</button>;
+  }
   return <span className="agent-recovery-passive-action">{passiveActionLabel(item.action)}</span>;
 }
 
@@ -105,6 +127,8 @@ function RecoveryItem({ item, projection }: Readonly<{
       </span>
     </div>
     <p>{item.message}</p>
+    {item.requiredApproval !== null
+      && <AgentRequiredApprovalSummary approval={item.requiredApproval} />}
     <div className="agent-recovery-item-foot">
       <code title={item.runId}>{item.runId.slice(0, 12)}</code>
       <RecoveryAction item={item} projection={projection} />

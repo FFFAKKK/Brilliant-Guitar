@@ -1,4 +1,6 @@
 import type { ReactNode } from "react";
+import type { ApplicationCapabilityContribution } from "../contracts/application-capability.ts";
+import type { WorkflowContribution } from "../contracts/workflow.ts";
 import { createPluginKernelAssemblyPlanV1 } from "./plugin-package-contract.ts";
 import type {
   PluginKernelModuleManifestV1,
@@ -233,7 +235,7 @@ export interface UiPluginPackage {
   readonly tier: PluginTier;
   readonly activation: PluginActivation;
   readonly kernelModules: readonly PluginKernelModuleManifestV1[];
-  readonly capabilities: readonly string[];
+  readonly hostFeatures: readonly string[];
   readonly projections: readonly PluginProjection<unknown>[];
   readonly commands: readonly PluginCommandContribution[];
   readonly views: readonly PluginViewContribution[];
@@ -241,6 +243,8 @@ export interface UiPluginPackage {
   readonly componentExtensions: readonly PluginComponentExtensionContribution[];
   readonly instruments: readonly PluginInstrumentContribution[];
   readonly playbackOutputs: readonly PluginPlaybackOutputContribution[];
+  readonly applicationCapabilities: readonly ApplicationCapabilityContribution[];
+  readonly workflows: readonly WorkflowContribution[];
   readonly settings?: PluginSettingsContribution<unknown>;
 }
 
@@ -254,7 +258,7 @@ export interface DefinePluginInput {
   readonly tier?: PluginTier;
   readonly activation?: PluginActivation;
   readonly kernelModules?: readonly PluginKernelModuleManifestV1[];
-  readonly capabilities?: readonly string[];
+  readonly hostFeatures?: readonly string[];
   readonly projections?: readonly PluginProjection<unknown>[];
   readonly commands?: readonly PluginCommandContribution[];
   readonly views?: readonly PluginViewContribution[];
@@ -262,11 +266,72 @@ export interface DefinePluginInput {
   readonly componentExtensions?: readonly PluginComponentExtensionContribution[];
   readonly instruments?: readonly PluginInstrumentContribution[];
   readonly playbackOutputs?: readonly PluginPlaybackOutputContribution[];
+  readonly applicationCapabilities?: readonly ApplicationCapabilityContribution[];
+  readonly workflows?: readonly WorkflowContribution[];
   readonly settings?: PluginSettingsContribution<unknown>;
 }
 
 function immutableList<T>(value: readonly T[] | undefined): readonly T[] {
   return Object.freeze([...(value ?? [])]);
+}
+
+function applicationCapabilities(
+  pluginId: string,
+  value: readonly ApplicationCapabilityContribution[] | undefined,
+): readonly ApplicationCapabilityContribution[] {
+  const result = (value ?? []).map((capability) => {
+    if (!/^[a-z][a-z0-9-]*(?:\.[a-z][a-z0-9-]*)+$/.test(capability.id)
+      || !Number.isSafeInteger(capability.contractVersion)
+      || capability.contractVersion < 1
+      || capability.callers.length === 0
+      || new Set(capability.callers).size !== capability.callers.length
+      || capability.callers.some((caller) => caller !== "ui" && caller !== "agent")
+      || typeof capability.validateInput !== "function"
+      || typeof capability.validateOutput !== "function") {
+      throw new Error(`Invalid application capability contribution: ${pluginId}`);
+    }
+    return Object.freeze({
+      ...capability,
+      callers: Object.freeze([...capability.callers]),
+    });
+  });
+  if (new Set(result.map((capability) => capability.id)).size !== result.length) {
+    throw new Error(`Duplicate application capability contribution: ${pluginId}`);
+  }
+  return Object.freeze(result);
+}
+
+function workflows(
+  pluginId: string,
+  value: readonly WorkflowContribution[] | undefined,
+): readonly WorkflowContribution[] {
+  const result = (value ?? []).map((workflow) => {
+    const operationIds = [...workflow.operationIds];
+    const entryOperationIds = [...workflow.entryOperationIds];
+    if (!/^[a-z][a-z0-9-]*(?:\.[a-z][a-z0-9-]*)+$/.test(workflow.id)
+      || !Number.isSafeInteger(workflow.contractVersion)
+      || workflow.contractVersion < 1
+      || !workflow.name.trim()
+      || !workflow.description.trim()
+      || workflow.runtime !== "agent-orchestration-v1"
+      || operationIds.length === 0
+      || new Set(operationIds).size !== operationIds.length
+      || operationIds.some((id) => !/^[a-z][a-z0-9-]*(?:\.[a-z][a-z0-9-]*)+$/.test(id))
+      || entryOperationIds.length === 0
+      || new Set(entryOperationIds).size !== entryOperationIds.length
+      || entryOperationIds.some((id) => !operationIds.includes(id))) {
+      throw new Error(`Invalid workflow contribution: ${pluginId}`);
+    }
+    return Object.freeze({
+      ...workflow,
+      operationIds: Object.freeze(operationIds),
+      entryOperationIds: Object.freeze(entryOperationIds),
+    });
+  });
+  if (new Set(result.map((workflow) => workflow.id)).size !== result.length) {
+    throw new Error(`Duplicate workflow contribution: ${pluginId}`);
+  }
+  return Object.freeze(result);
 }
 
 /** Stable authoring entry point. Internal host contracts are produced by the platform adapter. */
@@ -305,7 +370,7 @@ export function definePlugin(input: DefinePluginInput): UiPluginPackage {
     tier,
     activation,
     kernelModules,
-    capabilities: immutableList(input.capabilities),
+    hostFeatures: immutableList(input.hostFeatures),
     projections: immutableList(input.projections),
     commands: immutableList(input.commands),
     views: immutableList(input.views),
@@ -313,6 +378,8 @@ export function definePlugin(input: DefinePluginInput): UiPluginPackage {
     componentExtensions: immutableList(input.componentExtensions),
     instruments: immutableList(input.instruments),
     playbackOutputs: immutableList(input.playbackOutputs),
+    applicationCapabilities: applicationCapabilities(input.id, input.applicationCapabilities),
+    workflows: workflows(input.id, input.workflows),
     ...(input.settings ? { settings: Object.freeze({ ...input.settings }) } : {}),
   });
 }
