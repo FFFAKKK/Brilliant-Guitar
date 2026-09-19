@@ -435,6 +435,14 @@ test("kernel-bearing packages are configurable before launch and fixed within th
   assert.deepEqual(session.kernelAssembly.modules.map((entry) => entry.moduleId), ["test.kernel.module"]);
   assert.equal(platform.deactivate(configurable.id).effect, "restart-required");
   assert.deepEqual(platform.sessionPlan().kernelAssembly.modules.map((entry) => entry.moduleId), ["test.kernel.module"]);
+
+  const safePlatform = new PluginPlatform({ capabilities: new WorkbenchCapabilityRegistry([]), projections: [] });
+  safePlatform.register(configurable);
+  safePlatform.activate(configurable.id);
+  const safeSession = safePlatform.start({ safeMode: true });
+  assert.deepEqual(safeSession.kernelAssembly.modules, []);
+  assert.deepEqual([...safePlatform.nextLaunchPluginIds()], [configurable.id]);
+  assert.equal(safePlatform.restartRequired(), true);
 });
 
 test("kernel package validation rejects untrusted execution and mutable system activation", () => {

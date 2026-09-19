@@ -3,11 +3,13 @@ import { PluginActivationPersistence } from "./plugin-activation-persistence.ts"
 import type { PluginPlatform, PluginRuntimeInfo, PluginSessionPlanV1 } from "./plugin-platform.ts";
 
 export type PluginStartupControllerPhase = "unprepared" | "configuring" | "launched";
+export type PluginStartupLaunchMode = "normal" | "safe";
 
 export interface PluginStartupSnapshot {
   readonly phase: PluginStartupControllerPhase;
   readonly plugins: readonly PluginRuntimeInfo[];
   readonly restartRequired: boolean;
+  readonly launchMode: PluginStartupLaunchMode | null;
 }
 
 /**
@@ -19,6 +21,7 @@ export class PluginStartupController {
   readonly #platform: PluginPlatform;
   readonly #activation: PluginActivationPersistence;
   #phase: PluginStartupControllerPhase = "unprepared";
+  #launchMode: PluginStartupLaunchMode | null = null;
 
   constructor(platform: PluginPlatform, activationStorage: PluginActivationStoragePort) {
     this.#platform = platform;
@@ -30,6 +33,7 @@ export class PluginStartupController {
       phase: this.#phase,
       plugins: this.#platform.list(),
       restartRequired: this.#platform.restartRequired(),
+      launchMode: this.#launchMode,
     });
   }
 
@@ -46,9 +50,11 @@ export class PluginStartupController {
     return this.#activation.setEnabled(pluginId, enabled);
   }
 
-  launch(): PluginSessionPlanV1 {
+  launch(options: { readonly mode?: PluginStartupLaunchMode } = {}): PluginSessionPlanV1 {
     if (this.#phase !== "configuring") throw new Error("Plugin startup is not ready to launch");
-    const plan = this.#platform.start();
+    const mode = options.mode ?? "normal";
+    const plan = this.#platform.start({ safeMode: mode === "safe" });
+    this.#launchMode = mode;
     this.#phase = "launched";
     return plan;
   }

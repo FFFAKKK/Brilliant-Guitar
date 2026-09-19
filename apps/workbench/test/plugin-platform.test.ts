@@ -420,11 +420,35 @@ test("startup controller restores configuration before producing one immutable s
   const plan = startup.launch();
 
   assert.equal(startup.snapshot().phase, "launched");
+  assert.equal(startup.snapshot().launchMode, "normal");
   assert.deepEqual(plan.pluginIds, ["test.startup.always", "test.startup.user"]);
   assert.equal(Object.isFrozen(plan), true);
   assert.equal(Object.isFrozen(plan.pluginIds), true);
   await assert.rejects(() => startup.setEnabled("test.startup.user", false), /not configurable/);
   assert.throws(() => startup.launch(), /not ready/);
+});
+
+test("startup controller can omit every user plugin for one safe session without erasing preferences", async () => {
+  const platformInstance = platform();
+  platformInstance.registerAll([
+    plugin({ id: "test.safe.always", componentId: "test.safe.always.view" }),
+    plugin({ id: "test.safe.user", componentId: "test.safe.user.view", activation: "user" }),
+  ]);
+  let stored: unknown = { schemaVersion: 1, enabledPluginIds: ["test.safe.user"] };
+  const startup = new PluginStartupController(platformInstance, {
+    read: async () => stored,
+    write: async (document) => { stored = document; },
+  });
+
+  await startup.prepare();
+  const plan = startup.launch({ mode: "safe" });
+
+  assert.deepEqual(plan.pluginIds, ["test.safe.always"]);
+  assert.equal(startup.snapshot().launchMode, "safe");
+  assert.equal(startup.snapshot().restartRequired, true);
+  assert.deepEqual(stored, { schemaVersion: 1, enabledPluginIds: ["test.safe.user"] });
+  assert.deepEqual([...platformInstance.nextLaunchPluginIds()], ["test.safe.always", "test.safe.user"]);
+  assert.equal(platformInstance.components().get("test.safe.user.view"), undefined);
 });
 
 test("manifest discovery preflights contracts without loading plugin modules", () => {

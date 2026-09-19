@@ -58,6 +58,11 @@ export interface PluginSessionPlanV1 {
   readonly kernelAssembly: PluginKernelAssemblyPlanV1;
 }
 
+export interface PluginStartOptions {
+  /** Omits every user-configurable package for this process without changing its next-launch preference. */
+  readonly safeMode?: boolean;
+}
+
 export interface PluginPlatformOptions {
   readonly capabilities: WorkbenchCapabilityRegistry;
   readonly projections: readonly AnyUiProjection[];
@@ -181,18 +186,20 @@ export class PluginPlatform {
     for (const plugin of plugins) this.register(plugin);
   }
 
-  start(): PluginSessionPlanV1 {
+  start(options: PluginStartOptions = {}): PluginSessionPlanV1 {
     if (this.#started) return this.sessionPlan();
     this.#started = true;
     for (const plugin of this.#catalog.installationPlan()) {
-      const selected = plugin.manifest.activation === "always" || this.#nextLaunchActivated.has(plugin.manifest.id);
+      const nextLaunchActive = plugin.manifest.activation === "always"
+        || this.#nextLaunchActivated.has(plugin.manifest.id);
+      const selected = plugin.manifest.activation === "always" || (!options.safeMode && nextLaunchActive);
       if (!selected) {
         this.#records.set(plugin.manifest.id, {
           manifest: plugin.manifest,
           status: "installed",
           active: false,
-          nextLaunchActive: false,
-          restartRequired: false,
+          nextLaunchActive,
+          restartRequired: nextLaunchActive,
         });
         continue;
       }
