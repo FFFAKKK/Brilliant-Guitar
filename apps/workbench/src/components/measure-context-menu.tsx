@@ -8,12 +8,15 @@ export interface MeasureContextMenuProps {
   readonly canRemove: boolean;
   readonly onInsertBefore: () => void;
   readonly onInsertAfter: () => void;
+  readonly onChangeMeter: () => void;
+  readonly onChangeKeySignature: () => void;
   readonly onRemove: () => void;
   readonly onClose: () => void;
 }
 
 /** A small score-specific context menu. It owns keyboard and focus behavior, not score mutations. */
-export function MeasureContextMenu({ x, y, measureNumber, canRemove, onInsertBefore, onInsertAfter, onRemove,
+export function MeasureContextMenu({ x, y, measureNumber, canRemove, onInsertBefore, onInsertAfter, onChangeMeter,
+  onChangeKeySignature, onRemove,
   onClose }: MeasureContextMenuProps) {
   const menu = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ x, y });
@@ -55,6 +58,8 @@ export function MeasureContextMenu({ x, y, measureNumber, canRemove, onInsertBef
     <div className="measure-context-menu-label">第 {measureNumber} 小节</div>
     <button type="button" role="menuitem" onClick={() => run(onInsertBefore)}>在前面插入小节</button>
     <button type="button" role="menuitem" onClick={() => run(onInsertAfter)}>在后面插入小节</button>
+    <button type="button" role="menuitem" onClick={() => run(onChangeMeter)}>更改拍号…</button>
+    <button type="button" role="menuitem" onClick={() => run(onChangeKeySignature)}>更改调号…</button>
     <div className="measure-context-menu-separator" role="separator" />
     <button type="button" role="menuitem" className="measure-context-menu-danger" disabled={!canRemove}
       onClick={() => run(onRemove)}>删除当前小节</button>

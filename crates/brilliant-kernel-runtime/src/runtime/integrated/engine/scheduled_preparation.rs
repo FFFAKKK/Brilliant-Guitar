@@ -46,7 +46,7 @@ impl ModuleEnvironment<'_> {
             self.assembly,
             self.assessment_reads,
         )?;
-        let mut prepared = candidate.callback(
+        let prepared = candidate.callback(
             "commandPrepare",
             source,
             definition,
@@ -61,34 +61,19 @@ impl ModuleEnvironment<'_> {
                 ("prepared", prepared),
             ]));
         }
-        if !exact(&prepared, &["status", "effectRequests", "affected"])
+        if !(exact(&prepared, &["status", "effectRequests"])
+            || exact(&prepared, &["status", "effectRequests", "affected"]))
             || !tag(&prepared, "status", "changed")
         {
             return Err(contract());
         }
-        // Capture affected addresses before executing effects, retaining the
-        // existing first-error ordering and unique-address resource boundary.
-        let mut addresses = std::collections::BTreeMap::new();
-        for address in array(field(&prepared, "affected")?).map_err(|_| contract())? {
-            let (key, _, _) = decode_address(address).map_err(|_| contract())?;
-            addresses.insert(key, address.clone());
-            if addresses.len() > 131_072 {
-                return Err(resource("affected-addresses", 131_072));
-            }
-        }
+        module::validate_legacy_affected(&prepared, &contract)?;
         if array(field(&prepared, "effectRequests")?)
             .map_err(|_| contract())?
             .is_empty()
         {
             return Err(contract());
         }
-        let JsonValue::Object(fields) = &mut prepared else {
-            unreachable!()
-        };
-        fields.insert(
-            "affected".into(),
-            JsonValue::Array(addresses.into_values().collect()),
-        );
         Ok(object([
             ("ok", JsonValue::Bool(true)),
             ("prepared", prepared),

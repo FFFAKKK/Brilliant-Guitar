@@ -82,12 +82,18 @@ function versionWarnings(
 
 export class ContextBuilder {
   build(input: ContextBuildInput): ContextBuildResult {
+    const workspaceContext = {
+      workspaceId: input.workspace.workspaceId,
+      documentId: input.workspace.documentId,
+      documentVersion: input.workspace.documentVersion,
+      selectionAvailable: input.workspace.selection !== null,
+    };
     const baseItems: AgentContextItem[] = [
       syntheticItem("run.goal", "user-goal", { runId: input.runId, goal: input.goal },
         "user", `${input.runId}:goal`, "run", "user-provided", input.now),
       syntheticItem("run.state", "system-constraint", input.runState,
         "control-plane", input.runId, "run", "authoritative", input.now),
-      syntheticItem("workspace.scope", "workspace-scope", input.workspace,
+      syntheticItem("workspace.scope", "workspace-scope", workspaceContext,
         "workspace", input.workspace.workspaceId, "workspace", "authoritative", input.now),
     ];
     if (input.turnInput !== null) baseItems.push(syntheticItem(
@@ -126,7 +132,26 @@ export class ContextBuilder {
         omitted.push({ contextItemId: item.contextItemId, reason: "duplicate" });
       }
     });
-    const candidates = [...candidatesByKey.values()];
+    const deduplicatedCandidates = [...candidatesByKey.values()];
+    const historyTurnBudget = Number.isSafeInteger(input.budget.historyTurnBudget)
+      && input.budget.historyTurnBudget >= 0
+      ? input.budget.historyTurnBudget
+      : 0;
+    const historyCandidates = deduplicatedCandidates.filter(
+      (candidate) => candidate.item.kind === "task-history",
+    );
+    const retainedHistory = new Set([...historyCandidates]
+      .sort((left, right) => right.item.createdAt - left.item.createdAt || right.index - left.index)
+      .slice(0, historyTurnBudget));
+    for (const candidate of historyCandidates) {
+      if (!retainedHistory.has(candidate)) omitted.push({
+        contextItemId: candidate.item.contextItemId,
+        reason: "history-turn-budget",
+      });
+    }
+    const candidates = deduplicatedCandidates.filter(
+      (candidate) => candidate.item.kind !== "task-history" || retainedHistory.has(candidate),
+    );
     candidates.sort((left, right) => PRIORITY_RANK[left.item.priority] - PRIORITY_RANK[right.item.priority]
       || left.index - right.index);
 

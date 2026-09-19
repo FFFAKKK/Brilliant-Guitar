@@ -6,7 +6,10 @@ import { installNativeIntegratedBackendV2, type IntegratedNativeAddonV2 } from "
 import { createCoreScoreFixture } from "../fixtures/core-score";
 import { crossCatalog, crossCommand } from "../fixtures/cross-plugin-relationship";
 
-const addon = require(resolve("target/integrated-v2/brilliant_kernel_node.node")) as IntegratedNativeAddonV2;
+const addon = require(resolve(
+  process.env.BRILLIANT_INTEGRATED_ADDON_PATH
+    ?? "target/integrated-v2/brilliant_kernel_node.node",
+)) as IntegratedNativeAddonV2;
 const catalog = crossCatalog();
 const metadata = { commandVersion: 1, commandId: "core.document.set-metadata", target: { kind: "document", documentId: "score-1" },
   payload: { metadata: { ...createCoreScoreFixture().metadata, title: "Native Core authority" } } };

@@ -5,7 +5,7 @@ import { fitScorePaper, layoutScorePages, SCORE_PAPER } from "../src/notation/sc
 import { ENGRAVING, STAFF_SPACE, staffSpaces } from "../src/notation/engraving-metrics.ts";
 
 function emptyScore(count: number): StaffView {
-  return { kind: "staff", clef: "treble", partId: "part", staffId: "staff",
+  return { kind: "staff", clef: "treble", tempoBpm: 96, keySignatureChanges: [], partId: "part", staffId: "staff",
     measures: Array.from({ length: count }, (_, index) => ({ id: `measure-${index}`, voiceId: `voice-${index}`, events: [], meter: { numerator: 4, denominator: 4 }, ruleWarnings: [] })) };
 }
 

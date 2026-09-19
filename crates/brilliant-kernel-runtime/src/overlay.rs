@@ -350,28 +350,56 @@ pub(crate) struct TransactionOverlayV1<'a> {
 }
 
 impl<'a> TransactionOverlayV1<'a> {
-    /// Standalone module writes currently cover pitch and extension data only.
-    /// Compare touched values and, for membership edits, extension header order;
-    /// never detach unrelated Core records or opaque extension payloads.
+    /// Compare the final overlay state with the base state for the typed Core
+    /// and extension effects exposed to standalone modules. Only touched
+    /// records, owners, orders, references, scalar values, voice times and
+    /// extension headers are inspected; unrelated document state is untouched.
     pub(crate) fn module_net_changed(&self) -> Result<bool, ExtensionHeaderReadFailureV1> {
         use ExtensionHeaderReadFailureV1::Invariant;
-        if self.poisoned
-            || !self.records.is_empty()
-            || !self.entity_states.is_empty()
-            || !self.owners.is_empty()
-            || !self.orders.is_empty()
-            || !self.order_tombstones.is_empty()
-            || !self.voice_times.is_empty()
-            || self
-                .scalar_replacements
-                .keys()
-                .any(|key| !matches!(key, ScalarAddressV1::NoteWrittenPitch { .. }))
-            || self
-                .references
-                .keys()
-                .any(|key| !matches!(key, ReferenceAddressV1::ExtensionOwner { .. }))
-        {
+        if self.poisoned {
             return Err(Invariant);
+        }
+
+        for (address, record) in &self.records {
+            let current = match record {
+                OverlayRecordV1::Present(entity) => Some(entity.clone()),
+                OverlayRecordV1::Tombstone => None,
+            };
+            if current != self.base.detach_entity(address) {
+                return Ok(true);
+            }
+        }
+        for (address, owner) in &self.owners {
+            let current = match owner {
+                OverlayOwnerV1::Present(owner) => Some(owner.clone()),
+                OverlayOwnerV1::Tombstone => None,
+            };
+            if current != self.base.read_owner(address) {
+                return Ok(true);
+            }
+        }
+        let mut touched_orders = HashSet::new();
+        touched_orders.extend(self.orders.keys().cloned());
+        touched_orders.extend(self.order_tombstones.iter().cloned());
+        for address in touched_orders {
+            let current = if self.order_tombstones.contains(&address) {
+                None
+            } else {
+                self.orders.get(&address).cloned()
+            };
+            if current != self.base.read_order(&address) {
+                return Ok(true);
+            }
+        }
+        for (address, value) in &self.references {
+            if value != &self.base.read_reference(address) {
+                return Ok(true);
+            }
+        }
+        for (voice_id, value) in &self.voice_times {
+            if value != &self.base.read_voice_time(voice_id) {
+                return Ok(true);
+            }
         }
         for (key, value) in &self.scalar_replacements {
             let original = self.base.read_scalar(key).ok_or(Invariant)?;
@@ -477,6 +505,64 @@ impl<'a> TransactionOverlayV1<'a> {
 
     pub(crate) fn affected_order(&self) -> &[StableEntityAddressV1] {
         self.builder.affected_order()
+    }
+
+    /// Return addresses recorded after `start`, retaining only entities whose
+    /// final value differs from the base state. Module effects may touch an
+    /// address more than once; the public result describes the net change.
+    pub(crate) fn module_affected_since(
+        &mut self,
+        start: usize,
+    ) -> Result<Vec<StableEntityAddressV1>, ExtensionHeaderReadFailureV1> {
+        use ExtensionHeaderReadFailureV1::Invariant;
+        if self.poisoned || start > self.affected_order().len() {
+            return Err(Invariant);
+        }
+        let recorded = self.affected_order()[start..].to_vec();
+        let mut result = Vec::new();
+        for address in recorded {
+            if self.module_address_changed(&address)? && !result.contains(&address) {
+                result.push(address);
+            }
+        }
+        Ok(result)
+    }
+
+    fn module_address_changed(
+        &mut self,
+        address: &StableEntityAddressV1,
+    ) -> Result<bool, ExtensionHeaderReadFailureV1> {
+        use ExtensionHeaderReadFailureV1::Invariant;
+        let entity_changed = match address {
+            StableEntityAddressV1::Document { document_id } => {
+                let scalar = ScalarAddressV1::DocumentMetadata {
+                    document_id: document_id.clone(),
+                };
+                self.read_scalar(&scalar).ok_or(Invariant)?
+                    != self.base.read_scalar(&scalar).ok_or(Invariant)?
+            }
+            _ => self.read_entity(address) != self.base.detach_entity(address),
+        };
+        Ok(entity_changed || self.module_extension_owner_changed(address))
+    }
+
+    fn module_extension_owner_changed(&self, address: &StableEntityAddressV1) -> bool {
+        self.extensions.keys().any(|key| {
+            let owner_matches = match (&key.owner, address) {
+                (StableExtensionOwnerV1::Score, StableEntityAddressV1::Document { .. }) => true,
+                (
+                    StableExtensionOwnerV1::Part { part_id },
+                    StableEntityAddressV1::Part {
+                        part_id: address_id,
+                    },
+                ) => part_id == address_id,
+                _ => false,
+            };
+            if !owner_matches {
+                return false;
+            }
+            self.read_extension(key) != self.base.read_extension(key)
+        })
     }
 
     pub(crate) fn begin_deferred_segment(&mut self) -> Result<(), OverlayFailureV1> {

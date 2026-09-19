@@ -10,12 +10,19 @@ impl<'a> Candidate<'a> {
         mut self,
     ) -> Result<StableCandidateView<'a>, FinalizationFailure> {
         if let Err(failure) = self.scan_structural_boundary() {
+            if let Err(budget) = self.ensure_work_budget() {
+                self.reservation.abort();
+                return Err(FinalizationFailure::Command(budget));
+            }
             self.reservation.abort();
             return Err(FinalizationFailure::Preparation(failure));
         }
+        self.ensure_work_budget()
+            .map_err(FinalizationFailure::Command)?;
         Ok(StableCandidateView {
             candidate: RefCell::new(self),
             structural_scans: 1,
+            incremental_work: IncrementalValidationWorkV1::default(),
         })
     }
 
@@ -39,6 +46,8 @@ impl<'a> Candidate<'a> {
             .visited_entries
             .checked_add(1)
             .ok_or(TransactionPrepareFailureV1::Capacity)?;
+        self.observe_work_budget()
+            .map_err(|_| TransactionPrepareFailureV1::Capacity)?;
         while let Some((source, expected_kind, owner)) = pending.pop() {
             if self.kind(&source) != Some(expected_kind)
                 || !self.visible(&source)

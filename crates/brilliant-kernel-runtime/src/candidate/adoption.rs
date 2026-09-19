@@ -4,10 +4,13 @@
 use super::*;
 use crate::{
     change_set::ChangeSetV1,
+    incremental_validation::{
+        FinalValidationDeltaV1, IncrementalValidationWorkV1, validate_final_semantics,
+    },
     overlay::CoreBaseReadV1,
     store::LiveScoreStore,
     transaction::{
-        FinalExtensionDeltaV1, FinalStateDeltaV1, PreparedFinalStateCommitV1,
+        FinalExtensionDeltaV1, FinalStateDeltaV1, PreparedFinalStateCommitV1, StableRecordV1,
         TransactionPrepareFailureV1, collect_frozen_prefix_delta, prepare_validated_final_state,
     },
 };
@@ -25,6 +28,7 @@ mod view;
 pub(super) struct StableCandidateView<'a> {
     candidate: RefCell<Candidate<'a>>,
     pub(super) structural_scans: u64,
+    incremental_work: IncrementalValidationWorkV1,
 }
 
 pub(super) struct ValidatedCandidate<'a> {
@@ -63,6 +67,14 @@ impl<'a> Candidate<'a> {
             .map_err(|(failure, _)| failure)
     }
 
+    pub(super) fn validate_final_against(
+        self,
+        store: &LiveScoreStore,
+    ) -> Result<ValidatedCandidate<'a>, FinalizationFailure> {
+        self.validate_final_with_metrics_against(store)
+            .map_err(|(failure, _)| failure)
+    }
+
     #[expect(
         clippy::result_large_err,
         reason = "failure metrics returned without allocation, including capacity failures"
@@ -70,7 +82,14 @@ impl<'a> Candidate<'a> {
     pub(super) fn validate_final_with_metrics(
         mut self,
     ) -> Result<ValidatedCandidate<'a>, (FinalizationFailure, KernelStage3MetricsV1)> {
-        let report = match self.assess_final_semantics() {
+        let assessment = self.assess_final_semantics();
+        if let Err(failure) = self.ensure_work_budget() {
+            return Err((
+                FinalizationFailure::Command(failure),
+                self.attempt_metrics(),
+            ));
+        }
+        let report = match assessment {
             Ok(report) => report,
             Err(failure) => {
                 return Err((
@@ -91,12 +110,136 @@ impl<'a> Candidate<'a> {
             view: StableCandidateView {
                 candidate: RefCell::new(self),
                 structural_scans: 0,
+                incremental_work: IncrementalValidationWorkV1::default(),
             },
         })
+    }
+
+    #[expect(
+        clippy::result_large_err,
+        reason = "failure metrics returned without allocation, including capacity failures"
+    )]
+    pub(super) fn validate_final_with_metrics_against(
+        self,
+        store: &LiveScoreStore,
+    ) -> Result<ValidatedCandidate<'a>, (FinalizationFailure, KernelStage3MetricsV1)> {
+        if !self.incremental_validation_is_eligible() {
+            return self.validate_final_with_metrics();
+        }
+
+        let mut view = StableCandidateView {
+            candidate: RefCell::new(self),
+            structural_scans: 0,
+            incremental_work: IncrementalValidationWorkV1::default(),
+        };
+        let delta = match view.collect_suffix_delta() {
+            Ok(delta) => delta,
+            Err(failure) => {
+                if let Err(budget) = view.ensure_work_budget() {
+                    return Err((FinalizationFailure::Command(budget), view.replay_work()));
+                }
+                return Err((
+                    FinalizationFailure::Preparation(failure),
+                    view.replay_work(),
+                ));
+            }
+        };
+        let records = match view.validation_records(&delta) {
+            Ok(records) => records,
+            Err(failure) => {
+                if let Err(budget) = view.ensure_work_budget() {
+                    return Err((FinalizationFailure::Command(budget), view.replay_work()));
+                }
+                return Err((
+                    FinalizationFailure::Preparation(failure),
+                    view.replay_work(),
+                ));
+            }
+        };
+        let metadata =
+            delta
+                .scalar_values
+                .iter()
+                .find_map(|(address, value)| match (address, value) {
+                    (Scalar::DocumentMetadata { .. }, Value::DocumentMetadata(metadata)) => {
+                        Some(metadata)
+                    }
+                    _ => None,
+                });
+        let mut overlay = crate::overlay::TransactionOverlayV1::new(&view);
+        let result = validate_final_semantics(
+            &view,
+            &store.header.id,
+            &store.header.metadata,
+            &mut overlay,
+            FinalValidationDeltaV1 {
+                metadata,
+                records: &records,
+                touched_voices: &delta.touched_voice_ids,
+                references: &delta.reference_states,
+                entities: &delta.entity_states,
+                orders: &delta.order_addresses,
+            },
+            None,
+        );
+        match result {
+            Ok(work) => {
+                view.incremental_work = work;
+                if let Err(failure) = view.ensure_work_budget() {
+                    return Err((FinalizationFailure::Command(failure), view.replay_work()));
+                }
+                Ok(ValidatedCandidate { view })
+            }
+            Err(failure) => {
+                view.incremental_work = failure.work;
+                if let Err(budget) = view.ensure_work_budget() {
+                    return Err((FinalizationFailure::Command(budget), view.replay_work()));
+                }
+                Err((
+                    FinalizationFailure::Command(failure.failure),
+                    view.replay_work(),
+                ))
+            }
+        }
+    }
+
+    fn incremental_validation_is_eligible(&self) -> bool {
+        self.mutation_work.semantic_assessments == 0
+            && self.prefix.operation_count() == 0
+            && self.nodes.is_empty()
+            && self.hidden.is_empty()
+            && self.orders.is_empty()
+            && self.instruments.is_empty()
+            && self.extension_state_is_pristine()
+            && self.staff_references.iter().all(|(source, value)| {
+                let stable = |value: &JsString| StableId::new(value).is_ok();
+                match (self.kind(source), value) {
+                    (Some(Kind::Voice), Some(value)) => stable(value),
+                    (Some(Kind::Event), Some(value)) => stable(value),
+                    (Some(Kind::Event), None) => true,
+                    _ => false,
+                }
+            })
+            && self.values.values().all(|value| {
+                matches!(
+                    value,
+                    Value::DocumentMetadata(_)
+                        | Value::MeasureDefinition { .. }
+                        | Value::StaffDefinition { .. }
+                        | Value::VoiceSequenceStart(_)
+                        | Value::EventNoteValue(_)
+                        | Value::NoteWrittenPitch(_)
+                )
+            })
     }
 }
 
 impl StableCandidateView<'_> {
+    fn ensure_work_budget(&self) -> Result<(), Failure> {
+        let work = self.replay_work();
+        self.candidate.borrow().work_budget.observe_metrics(&work)
+    }
+
     pub(super) fn replay_extension_delta(
         &self,
     ) -> Result<FinalExtensionDeltaV1, FinalizationFailure> {
@@ -111,7 +254,72 @@ impl StableCandidateView<'_> {
         work.full_document_scans = work
             .full_document_scans
             .saturating_add(self.structural_scans);
+        work.semantic_rules_evaluated = work
+            .semantic_rules_evaluated
+            .saturating_add(self.incremental_work.rules_evaluated);
+        work.semantic_dependency_reads = work
+            .semantic_dependency_reads
+            .saturating_add(self.incremental_work.dependency_reads);
         work
+    }
+
+    fn validation_records(
+        &self,
+        delta: &FinalStateDeltaV1,
+    ) -> Result<HashMap<Entity, StableRecordV1>, TransactionPrepareFailureV1> {
+        let mut records = HashMap::new();
+        records
+            .try_reserve(
+                delta
+                    .entity_states
+                    .len()
+                    .saturating_add(delta.scalar_values.len()),
+            )
+            .map_err(|_| TransactionPrepareFailureV1::Capacity)?;
+        for (address, state) in &delta.entity_states {
+            if let Some(record) = state {
+                records.insert(address.clone(), record.clone());
+            }
+        }
+        for address in delta.scalar_values.keys() {
+            if matches!(address, Scalar::DocumentMetadata { .. }) {
+                continue;
+            }
+            let entity = scalar_entity_address(address);
+            if matches!(delta.entity_states.get(&entity), Some(None)) {
+                continue;
+            }
+            if !records.contains_key(&entity) {
+                records.insert(entity.clone(), self.final_record_for(&entity)?);
+            }
+        }
+        Ok(records)
+    }
+}
+
+fn scalar_entity_address(address: &Scalar) -> Entity {
+    match address {
+        Scalar::DocumentMetadata { document_id } => Entity::Document {
+            document_id: document_id.clone(),
+        },
+        Scalar::MeasureDefinition { measure_id } => Entity::Measure {
+            measure_id: measure_id.clone(),
+        },
+        Scalar::PartName { part_id } | Scalar::PartInstrument { part_id } => Entity::Part {
+            part_id: part_id.clone(),
+        },
+        Scalar::StaffDefinition { staff_id } => Entity::Staff {
+            staff_id: staff_id.clone(),
+        },
+        Scalar::VoiceSequenceStart { voice_id } => Entity::Voice {
+            voice_id: voice_id.clone(),
+        },
+        Scalar::EventNoteValue { event_id } => Entity::Event {
+            event_id: event_id.clone(),
+        },
+        Scalar::NoteWrittenPitch { note_id } => Entity::Note {
+            note_id: note_id.clone(),
+        },
     }
 }
 

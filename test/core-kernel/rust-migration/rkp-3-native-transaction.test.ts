@@ -233,7 +233,7 @@ test("RKP-3 overlay uses discard-only failure and copies entity orders on first 
   assert.equal(source.includes("self.base ="), false);
 });
 
-test("RKP-3 Session owns a literal closed catalog and all twenty-eight command routes", () => {
+test("RKP-3 Session owns a closed catalog and routes local commands through shared Effects", () => {
   const catalog = readText(
     "crates/brilliant-kernel-session/src/commands/catalog.rs",
   );
@@ -248,6 +248,7 @@ test("RKP-3 Session owns a literal closed catalog and all twenty-eight command r
   const range = readText("crates/brilliant-kernel-session/src/commands/range.rs");
   const session = readText("crates/brilliant-kernel-session/src/session.rs");
   const runtime = readText("crates/brilliant-kernel-runtime/src/runtime.rs");
+  const effects = readText("crates/brilliant-kernel-runtime/src/runtime/effect.rs");
   const variants = [
     "DocumentSetMetadata",
     "NoteSetWrittenPitch",
@@ -294,15 +295,19 @@ test("RKP-3 Session owns a literal closed catalog and all twenty-eight command r
     /SESSION_COMMAND_CATALOG_V1: \[CoreCommandDefinitionV1; CORE_COMMAND_COUNT_V1\]/u,
   );
 
-  for (const method of [
-    "set_document_metadata",
-    "set_note_written_pitch",
-    "set_event_note_value",
-    "insert_notes_event",
-    "insert_rest_event",
-    "remove_event",
-  ]) {
-    assert.ok(local.includes(method), `local route missing ${method}`);
+  for (const [effect, method] of [
+    ["SetDocumentMetadata", "set_document_metadata"],
+    ["ReplaceWrittenPitch", "replace_written_pitch"],
+    ["SetEventNoteValue", "set_event_note_value"],
+    ["InsertNotesEvent", "insert_notes_event"],
+    ["InsertRestEvent", "insert_rest_event"],
+    ["RemoveEvent", "remove_event"],
+  ] as const) {
+    assert.ok(local.includes(`KernelEffectV1::${effect}`),
+      `local route missing shared Effect ${effect}`);
+    assert.match(effects, new RegExp(`fn ${method}\\(`, "u"));
+    assert.ok(effects.includes(`transaction.${method}(`),
+      `shared Effect does not dispatch ${method}`);
   }
   for (const forbidden of ["LiveScoreStore", "ScoreDocumentV1", "export_document"])
     assert.equal(local.includes(forbidden), false, `Session handler leaked ${forbidden}`);

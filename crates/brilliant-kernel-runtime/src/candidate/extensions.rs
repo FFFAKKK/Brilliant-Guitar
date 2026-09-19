@@ -62,6 +62,34 @@ fn anchor_id(header: &ExtensionHeaderV1) -> Result<StableId, HeaderFailure> {
 }
 
 impl Candidate<'_> {
+    pub(super) fn add_retained_extension_key(
+        bound: &mut RetainedBytesUpperBound,
+        key: &ExtensionKeyV1,
+    ) {
+        bound.add_js_string(&key.namespace);
+        if let StableExtensionOwnerV1::Part { part_id } = &key.owner {
+            bound.add_js_string(part_id.as_js_string());
+        }
+    }
+
+    pub(super) fn add_retained_extension_header(
+        bound: &mut RetainedBytesUpperBound,
+        header: &ExtensionHeaderV1,
+    ) {
+        bound.add_js_string(&header.namespace);
+        if let ExtensionOwnerV1::Part { part_id } = &header.owner {
+            bound.add_js_string(part_id.as_js_string());
+        }
+    }
+
+    pub(super) fn extension_state_is_pristine(&self) -> bool {
+        self.extension_state.order.is_none()
+            && self.extension_state.states.is_empty()
+            && self.extension_state.owners.is_empty()
+            && self.extension_state.preserved_dangling.is_empty()
+            && self.extension_state.removed.is_empty()
+    }
+
     pub(super) fn visit_extension_headers(
         &self,
         visitor: &mut dyn FnMut(&ExtensionHeaderV1) -> bool,
@@ -69,15 +97,28 @@ impl Candidate<'_> {
         self.reservation
             .ensure_active()
             .map_err(|_| HeaderFailure::Invariant)?;
-        if let Some(order) = &self.extension_state.order {
+        let mut budget_failed = false;
+        let mut visit = |header: &ExtensionHeaderV1| {
+            if self.charge_supplemental_work(1).is_err() {
+                budget_failed = true;
+                return false;
+            }
+            visitor(header)
+        };
+        let result = if let Some(order) = &self.extension_state.order {
             for header in order {
-                if !visitor(header) {
+                if !visit(header) {
                     break;
                 }
             }
             Ok(())
         } else {
-            self.prefix.visit_extension_headers(visitor)
+            self.prefix.visit_extension_headers(&mut visit)
+        };
+        if budget_failed {
+            Err(HeaderFailure::Invariant)
+        } else {
+            result
         }
     }
 
@@ -512,5 +553,39 @@ impl Candidate<'_> {
             states,
             removed,
         })
+    }
+}
+
+impl ExtensionState {
+    pub(super) fn add_retained_bytes_upper_bound(&self, bound: &mut RetainedBytesUpperBound) {
+        if let Some(order) = &self.order {
+            bound.add_vec(order);
+            for header in order {
+                Candidate::add_retained_extension_header(bound, header);
+            }
+        }
+        bound.add_map(&self.states);
+        for (key, block) in &self.states {
+            Candidate::add_retained_extension_key(bound, key);
+            if let Some(block) = block {
+                bound.add_value::<ExtensionBlockV1>();
+                bound.add_js_string(&block.namespace);
+                if let ExtensionOwnerV1::Part { part_id } = &block.owner {
+                    bound.add_js_string(part_id.as_js_string());
+                }
+            }
+        }
+        bound.add_map(&self.owners);
+        for key in self.owners.keys() {
+            Candidate::add_retained_extension_key(bound, key);
+        }
+        bound.add_set(&self.preserved_dangling);
+        for key in &self.preserved_dangling {
+            Candidate::add_retained_extension_key(bound, key);
+        }
+        bound.add_set(&self.removed);
+        for key in &self.removed {
+            Candidate::add_retained_extension_key(bound, key);
+        }
     }
 }

@@ -4,6 +4,26 @@
 
 ## 实际执行路径
 
+**2026-09-18 affected 权威边界收口：** 插件准备结果中的 `affected` 降为可选的
+兼容字段，Rust 仍校验其形状和上限，但不再把它作为提交、历史和事件的事实源。
+独立模块命令从 typed overlay 的真实写入日志生成集合，并按最终状态过滤写后恢复、
+创建后删除和其他净 no-op；混合 Batch 从 occurrence candidate 的不可变操作日志推导
+扩展 owner、标量实体及事件子树地址。两条路径统一按稳定种类／ID 排序，扩展修改归到
+Score 的 document 或对应 Part，结果继续进入共享资源计量、撤销重做和提交事件。
+后续若插件需要比实际写集合更大的 UI 失效范围，应使用独立 hint/invalidation 合同，
+不能覆盖内核事实。
+
+**2026-09-18 Effect 失败溯源收口：** Effect 解码、版本检查、命令目标检查、扩展
+匹配、扩展 owner 检查、变换结果检查和扩展 schema 版本检查现在都沿用同一条
+`command.contribution-effect-rejected` 失败合同。只要请求仍能安全识别其来源，返回值
+会固定包含 `moduleId`、`contributionId`、`effectIndex`、`effectKind`、`target` 和
+`failureCode`；未来 `requestVersion` 或扩展 `schemaVersion` 返回
+`command.unsupported-version`，未知 Effect 返回 `command.unknown-id`，畸形请求返回
+`command.invalid-envelope`。失败前已经写入候选的 Effect 仍由事务边界整体丢弃，文档、
+历史、版本、事件和 affected 均保持不变。无法安全识别请求来源时才退回原有
+`command.contribution-contract-violation`，避免伪造定位信息。Rust 单元测试和集成测试
+覆盖未来版本、未知请求、额外字段、错误 owner、扩展 schema 版本和原子回滚。
+
 **2026-09-13 插件结果边界收口：** Rust 根据当前候选文档、已安装贡献者和捕获的
 跨插件读取声明计算应参与评估的名单，再核对宿主返回的顺序、完整性、唯一性和身份。
 未来版本的依赖数据仍按既有约定跳过对应消费者，不把正常只读打开误判为漏校验。
@@ -43,7 +63,7 @@ V1 产物沿用既有构建，未改其执行路径。证据与限制见
 2. 真实 SDK decoder/preparer/transformer 绑定留在宿主适配器。任意 decoded JS 中间值不跨 JSON。回调只收到冻结的 Core 文档和兼容扩展视图，不持有可写 Store。
 3. `createIntegratedKernelSessionV2` 返回一个绑定 session 与固定执行器的 Node 函数。函数的 N-API 生命周期管理 Rust session 和 callback reference；`RefCell` 在进入回调前取得独占借用，重入不能取得第二个可变引用。它没有可替换 executor 的后续参数，也不能把 V1 handle 混入这条入口。
 4. Rust 独立检查描述符来源、安装状态、命名空间、owner、版本、请求形状、引用存在性和效果数量。独立模块命令使用 typed overlay，混合 Batch 使用 occurrence candidate；两者共用 SDK 准备与效果解码逻辑。后续回调的完整视图反映此前的 Core/扩展修改。JS adapter 检查单个回调，Rust 另行检查汇总结果的名单、身份、诊断合同和候选可用性；Rust Foundation 及现有 adoption 路径校验 Core。
-5. 所有准备与模块 assessment 成功后才调用现有统一提交。模块声明的 affected addresses 在 Rust 校验、去重、排序后进入同一历史和事件。撤销重做先预览已存 inverse/forward 并重新 assessment，成功后才移动原历史游标；不重跑原 prepare/transform。
+5. 所有准备与模块 assessment 成功后才调用现有统一提交。Rust 从实际 Effect 写入生成、过滤并排序最小 affected 集合，进入同一资源账户、历史和事件；插件旧字段仅作兼容校验。撤销重做先预览已存 inverse/forward 并重新 assessment，成功后才移动原历史游标；不重跑原 prepare/transform。
 
 Core 命令 ID 的原有编码不变。内部历史与事件增加模块 ID 表示，V2 facade 按已固定的 catalog 补上现有公开事件合同要求的 module source。没有建立 TS 命令状态或第二套历史。
 

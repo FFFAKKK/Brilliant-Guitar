@@ -45,6 +45,7 @@ export type ContextItemKind =
   | "authoritative-fact"
   | "capability-result"
   | "derived-analysis"
+  | "task-history"
   | "user-preference"
   | "system-constraint";
 
@@ -76,11 +77,55 @@ export interface AgentContextBudget {
   readonly historyTurnBudget: number;
 }
 
+export interface AgentMeasureSelection {
+  readonly kind: "measure-range";
+  readonly documentId: string;
+  readonly documentVersion: number;
+  readonly startMeasureId: string;
+  readonly endMeasureId: string;
+}
+
+export interface AgentMeasureSelectionRequiredInput {
+  readonly requestId: string;
+  readonly kind: "measure-selection";
+  readonly prompt: string;
+  readonly sourceInvocationId: string;
+  readonly constraints: Readonly<{
+    documentId: string;
+    minMeasures: number;
+    maxMeasures: number;
+  }>;
+}
+
+export type AgentRequiredUserInput = AgentMeasureSelectionRequiredInput;
+
+export function isAgentRequiredUserInput(value: unknown): value is AgentRequiredUserInput {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  const candidate = value as Record<string, unknown>;
+  if (candidate.kind !== "measure-selection"
+    || typeof candidate.requestId !== "string"
+    || candidate.requestId.length === 0
+    || typeof candidate.prompt !== "string"
+    || candidate.prompt.length === 0
+    || typeof candidate.sourceInvocationId !== "string"
+    || candidate.sourceInvocationId.length === 0
+    || typeof candidate.constraints !== "object"
+    || candidate.constraints === null
+    || Array.isArray(candidate.constraints)) return false;
+  const constraints = candidate.constraints as Record<string, unknown>;
+  return typeof constraints.documentId === "string"
+    && constraints.documentId.length > 0
+    && Number.isSafeInteger(constraints.minMeasures)
+    && (constraints.minMeasures as number) > 0
+    && Number.isSafeInteger(constraints.maxMeasures)
+    && (constraints.maxMeasures as number) >= (constraints.minMeasures as number);
+}
+
 export interface AgentWorkspaceScope {
   readonly workspaceId: string;
   readonly documentId: string | null;
   readonly documentVersion: number | null;
-  readonly selection: string | null;
+  readonly selection: AgentMeasureSelection | null;
 }
 
 export interface ContextBuildInput {
@@ -98,6 +143,7 @@ export type ContextOmissionReason =
   | "duplicate"
   | "item-count-budget"
   | "token-budget"
+  | "history-turn-budget"
   | "expired"
   | "invalid-estimate";
 
@@ -158,6 +204,7 @@ export interface AgentCapabilityDescriptor {
   readonly costClass: CapabilityCostClass;
   readonly allowedPhases: readonly AgentRunPhase[];
   readonly validateInput: (input: unknown) => boolean;
+  readonly estimateRangeUnits?: (input: unknown) => number | null;
 }
 
 export interface AgentToolDescriptor {
@@ -219,6 +266,8 @@ export interface ToolsetResolutionResult {
   readonly snapshot: ToolsetSnapshot;
   readonly omitted: readonly ToolsetOmission[];
   readonly inputValidators: ReadonlyMap<string, (input: unknown) => boolean>;
+  readonly rangeBudget: number;
+  readonly rangeEstimators: ReadonlyMap<string, (input: unknown) => number | null>;
 }
 
 export type AgentDecision =
@@ -259,6 +308,7 @@ export interface DecisionRejection {
     | "capability-not-exposed"
     | "contract-version-mismatch"
     | "invalid-input"
+    | "range-budget-exceeded"
     | "too-many-calls"
     | "run-not-active";
   readonly message: string;

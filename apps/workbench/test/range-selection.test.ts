@@ -4,7 +4,7 @@ import type { StaffEvent, StaffView } from "../src/contracts/notation.ts";
 import { resolveScoreEventRange, selectScoreEventRange, stepScoreEventRange } from "../src/editor/range-selection.ts";
 
 const event = (id: string): StaffEvent => ({ id, duration: { base: 4, dots: 0 }, content: { kind: "rest" } });
-const view: StaffView = { kind: "staff", partId: "part", staffId: "staff", clef: "treble", measures: [
+const view: StaffView = { kind: "staff", partId: "part", staffId: "staff", clef: "treble", tempoBpm: 96, keySignatureChanges: [], measures: [
   { id: "m1", voiceId: "v1", meter: { numerator: 4, denominator: 4 }, ruleWarnings: [],
     events: [event("a"), event("b"), event("c"), event("d")] },
   { id: "m2", voiceId: "v2", meter: { numerator: 4, denominator: 4 }, ruleWarnings: [], events: [event("e")] },

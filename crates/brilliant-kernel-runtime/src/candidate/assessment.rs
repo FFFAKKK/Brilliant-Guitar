@@ -81,6 +81,10 @@ impl Candidate<'_> {
                 .semantic
                 .dependency_reads
                 .saturating_add(observed.dependency_reads);
+            if candidate.observe_work_budget().is_err() {
+                candidate.reservation.abort();
+                return Err(AssessmentFailure::InternalCapacity);
+            }
         }
         if report.is_err() {
             source.candidate.borrow_mut().reservation.abort();

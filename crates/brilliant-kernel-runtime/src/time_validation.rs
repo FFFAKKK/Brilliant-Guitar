@@ -41,7 +41,7 @@ impl Assessment<'_, '_> {
         let mut links = HashSet::new();
         if !measures.is_empty() {
             for address in delta.references.keys() {
-                self.work.dependency_reads += 1;
+                self.charge_dependency_reads(1)?;
                 if let Reference::PartMeasureLink { measure_id, .. } = address
                     && measures.contains(measure_id)
                 {
@@ -57,9 +57,9 @@ impl Assessment<'_, '_> {
                 return Err(Failure::InternalError);
             };
             self.check_measure(measure)?;
-            self.work.dependency_reads += 1;
+            self.charge_dependency_reads(1)?;
             for address in base.list_references_to(&measure_id) {
-                self.work.dependency_reads += 1;
+                self.charge_dependency_reads(1)?;
                 if matches!(&address, Reference::PartMeasureLink { measure_id: target, .. } if target == &measure_id)
                 {
                     links.try_reserve(1).map_err(|_| Failure::InternalError)?;
@@ -88,7 +88,7 @@ impl Assessment<'_, '_> {
                 .cmp(&(right.0.as_js_string(), right.1.as_js_string()))
         });
         for (part_id, measure_id) in sorted_links {
-            self.work.dependency_reads += 1;
+            self.charge_dependency_reads(1)?;
             if self.overlay.read_reference(&Reference::PartMeasureLink {
                 part_id: part_id.clone(),
                 measure_id: measure_id.clone(),
@@ -105,7 +105,7 @@ impl Assessment<'_, '_> {
         }
         let mut bounds = HashMap::new();
         for voice in sorted_ids(voices)? {
-            self.work.dependency_reads += 1;
+            self.charge_dependency_reads(1)?;
             if self.overlay.resolve_entity_address(&voice)
                 != Some(Entity::Voice {
                     voice_id: voice.clone(),
@@ -115,7 +115,7 @@ impl Assessment<'_, '_> {
             }
             let route = self.voice_route(voice)?;
             if !bounds.contains_key(&route.measure) {
-                self.work.dependency_reads += 1;
+                self.charge_dependency_reads(1)?;
                 let Some(Value::MeasureDefinition {
                     meter,
                     pickup_duration,
@@ -125,7 +125,7 @@ impl Assessment<'_, '_> {
                 else {
                     return Err(Failure::InternalError);
                 };
-                self.work.rules_evaluated += 1;
+                self.charge_rules(1)?;
                 bounds.try_reserve(1).map_err(|_| Failure::InternalError)?;
                 bounds.insert(
                     route.measure.clone(),
@@ -144,7 +144,7 @@ impl Assessment<'_, '_> {
         positive: bool,
         location: Location,
     ) -> Result<Option<ExactFraction>, Failure> {
-        self.work.rules_evaluated += 1;
+        self.charge_rules(1)?;
         let Ok(value) = ExactFraction::from_canonical(fraction) else {
             self.diagnostics
                 .add(location, Code::FractionNonCanonical, None)?;
@@ -163,7 +163,7 @@ impl Assessment<'_, '_> {
     }
 
     fn check_measure(&mut self, measure: &MeasureRecord) -> Result<(), Failure> {
-        self.work.rules_evaluated += 2;
+        self.charge_rules(2)?;
         if measure.meter.numerator.get() <= 0 {
             self.diagnostics.add(
                 Location::Measure {
@@ -193,10 +193,10 @@ impl Assessment<'_, '_> {
                     field: MeasureField::Pickup,
                 },
             )?;
-            self.work.rules_evaluated += 1;
+            self.charge_rules(1)?;
             let regular = assess_measure_duration(&measure.meter, None);
             if let (Some(pickup), Ok(regular)) = (checked, regular) {
-                self.work.rules_evaluated += 1;
+                self.charge_rules(1)?;
                 let code = match pickup.checked_compare(regular) {
                     Err(_) => Some(Code::TimeArithmeticOverflow),
                     Ok(Ordering::Greater) => Some(Code::PickupExceedsMeasure),
@@ -222,7 +222,7 @@ impl Assessment<'_, '_> {
         route: VoiceRoute,
         bound: Result<ExactFraction, &'static str>,
     ) -> Result<(), Failure> {
-        self.work.dependency_reads += 1;
+        self.charge_dependency_reads(1)?;
         let Some(Value::VoiceSequenceStart(start)) =
             self.overlay.read_scalar(&Scalar::VoiceSequenceStart {
                 voice_id: route.voice.clone(),
@@ -239,7 +239,7 @@ impl Assessment<'_, '_> {
             )?;
         }
         if let (Some(position), Ok(end)) = (current, bound) {
-            self.work.rules_evaluated += 1;
+            self.charge_rules(1)?;
             if position.checked_compare(end).is_err() {
                 self.diagnostics.add(
                     Location::Start(route.clone()),
@@ -255,7 +255,7 @@ impl Assessment<'_, '_> {
         for event in self.order(&Order::Events {
             voice_id: route.voice.clone(),
         })? {
-            self.work.dependency_reads += 1;
+            self.charge_dependency_reads(1)?;
             let Some(Value::EventNoteValue(value)) =
                 self.overlay.read_scalar(&Scalar::EventNoteValue {
                     event_id: event.clone(),
@@ -263,7 +263,7 @@ impl Assessment<'_, '_> {
             else {
                 return Err(Failure::InternalError);
             };
-            self.work.rules_evaluated += 1;
+            self.charge_rules(1)?;
             let duration = match assess_note_duration(&value) {
                 Ok(duration) => duration,
                 Err(reason) => {
@@ -289,7 +289,7 @@ impl Assessment<'_, '_> {
             let Some(position) = current else {
                 continue;
             };
-            self.work.rules_evaluated += 1;
+            self.charge_rules(1)?;
             let next = match position.checked_add(duration) {
                 Err(_) => {
                     self.diagnostics.add(
@@ -308,7 +308,7 @@ impl Assessment<'_, '_> {
             };
             current = Some(next);
             if let Ok(end) = bound {
-                self.work.rules_evaluated += 1;
+                self.charge_rules(1)?;
                 if next.checked_compare(end).is_err() {
                     self.diagnostics.add(
                         Location::Event {

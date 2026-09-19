@@ -655,6 +655,18 @@ struct Affected<'a> {
     seen: HashSet<(Kind, JsString)>,
     deduplicate: bool,
 }
+
+fn affected_key(address: &AffectedEntityAddressV1) -> (u8, &JsString) {
+    match address {
+        Target::Document { document_id } => (0, document_id.as_js_string()),
+        Target::Event { event_id } => (1, event_id.as_js_string()),
+        Target::Measure { measure_id } => (2, measure_id.as_js_string()),
+        Target::Note { note_id } => (3, note_id.as_js_string()),
+        Target::Part { part_id } => (4, part_id.as_js_string()),
+        Target::Staff { staff_id } => (5, staff_id.as_js_string()),
+        Target::Voice { voice_id } => (6, voice_id.as_js_string()),
+    }
+}
 impl Affected<'_> {
     fn add(&mut self, kind: Kind, raw: &JsString) -> Result<(), Failure> {
         if kind == Kind::Content {
@@ -764,6 +776,60 @@ impl Recorder<'_> {
             effect_count,
             affected,
         })
+    }
+
+    pub(super) fn module_affected(
+        &mut self,
+        first: usize,
+    ) -> Result<Vec<AffectedEntityAddressV1>, Failure> {
+        if first > self.steps.len() {
+            return Err(Failure::InternalError);
+        }
+        let mut reservation = std::mem::take(&mut self.candidate.reservation);
+        let mut facts = Affected {
+            reservation: &mut reservation,
+            values: Vec::new(),
+            seen: HashSet::new(),
+            deduplicate: true,
+        };
+        let result = (|| {
+            for step in &self.steps[first..] {
+                match &step.forward {
+                    Operation::Extension(edit) => match &edit.key.owner {
+                        crate::change_set::StableExtensionOwnerV1::Score => {
+                            facts.source(&self.candidate, &self.candidate.document)?;
+                        }
+                        crate::change_set::StableExtensionOwnerV1::Part { part_id } => {
+                            facts.add(Kind::Part, part_id.as_js_string())?;
+                        }
+                    },
+                    Operation::ReplaceScalar { target, .. } => {
+                        facts.source(&self.candidate, self.journal_source(*target)?)?;
+                    }
+                    Operation::InsertEntity { owner, bundle, .. } => {
+                        self.entity_facts(bundle, *owner, true, &[], &mut facts)?;
+                    }
+                    Operation::RemoveEntity {
+                        owner, expected, ..
+                    } => {
+                        self.entity_facts(expected, *owner, false, &[], &mut facts)?;
+                    }
+                    Operation::Measure { .. }
+                    | Operation::ReplaceOrderedChildren { .. }
+                    | Operation::MoveOrderedChild { .. }
+                    | Operation::UpdateReference { .. } => {
+                        return Err(Failure::InternalError);
+                    }
+                }
+            }
+            Ok(())
+        })();
+        let mut affected = facts.values;
+        self.candidate.reservation = reservation;
+        result?;
+        self.candidate.reservation.ensure_active()?;
+        affected.sort_by(|left, right| affected_key(left).cmp(&affected_key(right)));
+        Ok(affected)
     }
 
     fn fill_command_facts(

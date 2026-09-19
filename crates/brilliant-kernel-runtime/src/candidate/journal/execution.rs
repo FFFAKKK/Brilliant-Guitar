@@ -10,7 +10,14 @@ use brilliant_core_types::DocumentVersionV1;
 use brilliant_kernel_contracts::ScoreEntityTargetV1 as Target;
 use brilliant_kernel_contracts::{AffectedEntityAddressV1, KernelStage3MetricsV1};
 mod module;
+#[cfg(test)]
+mod retained_memory_tests;
+#[cfg(test)]
+mod work_budget_tests;
 pub(crate) use module::ModuleSegmentSource;
+
+pub(crate) const MAX_CANDIDATE_RETAINED_BYTES_V1: u64 = 512 * 1024 * 1024;
+const RETAINED_DYNAMIC_PAYLOAD_MULTIPLIER_V1: u64 = 2;
 
 pub(crate) struct CandidateExecution<'a> {
     recorder: Recorder<'a>,
@@ -19,6 +26,8 @@ pub(crate) struct CandidateExecution<'a> {
     changed: bool,
     operation_count: u64,
     segments: Vec<CommandSegment>,
+    #[cfg(test)]
+    retained_limit: u64,
 }
 
 struct CommandSegment {
@@ -34,8 +43,16 @@ struct CommandSegment {
 
 impl<'a> CandidateExecution<'a> {
     pub(crate) fn new(
+        prefix: TransactionOverlayV1<'a>,
+        document_id: StableId,
+    ) -> Result<Self, Failure> {
+        Self::new_with_budget(prefix, document_id, Default::default())
+    }
+
+    pub(crate) fn new_with_budget(
         mut prefix: TransactionOverlayV1<'a>,
         document_id: StableId,
+        work_budget: crate::work_budget::TransactionWorkBudgetV1,
     ) -> Result<Self, Failure> {
         let mut affected = Vec::new();
         affected
@@ -52,14 +69,98 @@ impl<'a> CandidateExecution<'a> {
         let accounting = prefix
             .take_accounting()
             .map_err(|_| Failure::InternalError)?;
-        Ok(Self {
-            recorder: Recorder::new(Candidate::new(prefix, document_id)),
+        let execution = Self {
+            recorder: Recorder::new(Candidate::new_with_budget(prefix, document_id, work_budget)),
             accounting,
             affected,
             changed: operation_count != 0,
             operation_count,
             segments: Vec::new(),
-        })
+            #[cfg(test)]
+            retained_limit: MAX_CANDIDATE_RETAINED_BYTES_V1,
+        };
+        execution.ensure_work_budget()?;
+        execution.ensure_retained_bytes_within_limit()?;
+        Ok(execution)
+    }
+
+    fn ensure_work_budget(&self) -> Result<(), Failure> {
+        self.recorder
+            .candidate
+            .work_budget
+            .observe_metrics(&self.attempt_metrics())?;
+        self.recorder.candidate.work_budget.ensure_active()
+    }
+
+    #[cfg(test)]
+    pub(crate) fn set_work_limit_for_test(&mut self, limit: u64) {
+        self.recorder.candidate.work_budget.set_limit(limit);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn work_units_for_test(&self) -> u64 {
+        self.recorder.candidate.work_budget.used()
+    }
+
+    fn conclude_operation<T>(&mut self, result: Result<T, Failure>) -> Result<T, Failure> {
+        let result = match self.ensure_work_budget() {
+            Ok(()) => result,
+            Err(failure) => Err(failure),
+        };
+        if result.is_err() {
+            self.recorder.candidate.reservation.abort();
+        }
+        result
+    }
+
+    fn retained_bytes_upper_bound(&self) -> u64 {
+        let mut bound = RetainedBytesUpperBound::default();
+        bound.add_value::<Self>();
+        bound.add_bytes(self.recorder.retained_bytes_upper_bound());
+        bound.add_bytes(self.accounting.retained_bytes_upper_bound());
+        bound.add_vec(&self.affected);
+        for address in &self.affected {
+            bound.add_js_string(raw_affected(address).id);
+        }
+        bound.add_vec(&self.segments);
+        for segment in &self.segments {
+            if let Some(source) = &segment.module_source {
+                bound.add_js_string(source.command_id.as_js_string());
+                bound.add_js_string(source.module_id.as_js_string());
+                bound.add_js_string(source.contribution_id.as_js_string());
+            }
+        }
+        bound.add_bytes(
+            self.accounting
+                .logical_bytes()
+                .saturating_mul(RETAINED_DYNAMIC_PAYLOAD_MULTIPLIER_V1),
+        );
+        bound.finish()
+    }
+
+    fn ensure_retained_bytes_within_limit(&self) -> Result<(), Failure> {
+        let actual = self.retained_bytes_upper_bound();
+        let limit = self.retained_limit();
+        if actual > limit {
+            Err(Failure::ResourceLimitExceeded {
+                limit_kind:
+                    brilliant_kernel_contracts::KernelStage3ResourceLimitKindV1::CandidateRetainedBytes,
+                limit,
+                actual,
+            })
+        } else {
+            Ok(())
+        }
+    }
+
+    #[cfg(not(test))]
+    fn retained_limit(&self) -> u64 {
+        MAX_CANDIDATE_RETAINED_BYTES_V1
+    }
+
+    #[cfg(test)]
+    fn retained_limit(&self) -> u64 {
+        self.retained_limit
     }
 
     pub(crate) fn attempt_metrics(&self) -> KernelStage3MetricsV1 {
@@ -76,10 +177,7 @@ impl<'a> CandidateExecution<'a> {
         batch_child: Option<usize>,
     ) -> Result<(), Failure> {
         let result = self.dispatch_inner(command, batch_child);
-        if result.is_err() {
-            self.recorder.candidate.reservation.abort();
-        }
-        result
+        self.conclude_operation(result)
     }
 
     fn dispatch_inner(
@@ -144,7 +242,7 @@ impl<'a> CandidateExecution<'a> {
             });
         }
         self.changed = true;
-        Ok(())
+        self.ensure_retained_bytes_within_limit()
     }
 
     #[expect(
@@ -157,6 +255,12 @@ impl<'a> CandidateExecution<'a> {
         version: DocumentVersionV1,
     ) -> Result<PreparedCandidate, (Failure, KernelStage3MetricsV1)> {
         let metrics = self.attempt_metrics();
+        if let Err(failure) = self.ensure_work_budget() {
+            return Err((failure, metrics));
+        }
+        if let Err(failure) = self.ensure_retained_bytes_within_limit() {
+            return Err((failure, metrics));
+        }
         let (mut plan, combined) = self
             .recorder
             .prepare_combined_commit_with_metrics(store, version)

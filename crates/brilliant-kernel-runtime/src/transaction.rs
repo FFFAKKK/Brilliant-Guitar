@@ -102,11 +102,30 @@ impl CommitReservationPolicyV1 {
     }
 }
 
+#[cfg(test)]
 pub(crate) fn commit_change_set(
     store: &mut LiveScoreStore,
     document_version: &mut DocumentVersionV1,
     committed_metrics: &mut KernelStage3MetricsV1,
     change_set: ChangeSetV1,
+) -> Result<ChangeSetV1, TransactionPrepareFailureV1> {
+    let work_budget = crate::work_budget::TransactionWorkBudgetV1::default();
+    commit_change_set_with_policy(
+        store,
+        document_version,
+        committed_metrics,
+        change_set,
+        CommitReservationPolicyV1::production(),
+        &work_budget,
+    )
+}
+
+pub(crate) fn commit_change_set_with_work_budget(
+    store: &mut LiveScoreStore,
+    document_version: &mut DocumentVersionV1,
+    committed_metrics: &mut KernelStage3MetricsV1,
+    change_set: ChangeSetV1,
+    work_budget: crate::work_budget::TransactionWorkBudgetV1,
 ) -> Result<ChangeSetV1, TransactionPrepareFailureV1> {
     commit_change_set_with_policy(
         store,
@@ -114,6 +133,7 @@ pub(crate) fn commit_change_set(
         committed_metrics,
         change_set,
         CommitReservationPolicyV1::production(),
+        &work_budget,
     )
 }
 
@@ -123,6 +143,7 @@ fn commit_change_set_with_policy(
     committed_metrics: &mut KernelStage3MetricsV1,
     change_set: ChangeSetV1,
     policy: CommitReservationPolicyV1,
+    work_budget: &crate::work_budget::TransactionWorkBudgetV1,
 ) -> Result<ChangeSetV1, TransactionPrepareFailureV1> {
     if change_set.forward.is_empty() {
         return Ok(change_set);
@@ -136,6 +157,7 @@ fn commit_change_set_with_policy(
         &change_set.arena,
         &change_set.forward,
         &change_set,
+        work_budget,
     )?;
     plan.reserve(store, policy)?;
     plan.adopt(store, document_version, committed_metrics);
@@ -152,12 +174,14 @@ pub(crate) fn apply_stored_operations(
     let next_version = document_version
         .checked_next()
         .ok_or(TransactionPrepareFailureV1::VersionOverflow)?;
+    let work_budget = crate::work_budget::TransactionWorkBudgetV1::default();
     let mut plan = CommitPlanV1::prepare(
         store,
         next_version,
         &change_set.arena,
         operations,
         change_set,
+        &work_budget,
     )?;
     plan.reserve(store, CommitReservationPolicyV1::production())?;
     plan.adopt(store, document_version, committed_metrics);
@@ -2261,8 +2285,23 @@ impl CommitPlanV1 {
         arena: &ChangeArenaV1,
         operations: &[ChangeOpV1],
         change_set: &ChangeSetV1,
+        work_budget: &crate::work_budget::TransactionWorkBudgetV1,
     ) -> Result<Self, TransactionPrepareFailureV1> {
-        let mut extension_simulation = if operations_touch_extensions(arena, operations)? {
+        let work_failure = |failure, work| {
+            TransactionPrepareFailureV1::Validation(
+                crate::incremental_validation::IncrementalValidationFailureV1 { failure, work },
+            )
+        };
+        let touches_extensions = operations_touch_extensions(arena, operations)?;
+        if touches_extensions {
+            work_budget
+                .charge_supplemental(store.topology.extension_order.len() as u64)
+                .map_err(|failure| work_failure(failure, Default::default()))?;
+        }
+        work_budget
+            .charge_supplemental((operations.len() as u64).saturating_mul(2))
+            .map_err(|failure| work_failure(failure, Default::default()))?;
+        let mut extension_simulation = if touches_extensions {
             ExtensionSimulationV1::from_store(store)?
         } else {
             ExtensionSimulationV1::default()
@@ -2272,6 +2311,20 @@ impl CommitPlanV1 {
 
         add_extension_reference_states(&extension_simulation, &mut collector);
         let (header_metadata, final_records) = prepare_final_records(store, &collector)?;
+        let delta_work = collector
+            .entity_states
+            .len()
+            .saturating_add(collector.removed_entities.len())
+            .saturating_add(collector.order_addresses.len())
+            .saturating_add(collector.scalar_values.len())
+            .saturating_add(collector.reference_states.len())
+            .saturating_add(collector.touched_voice_ids.len())
+            .saturating_add(final_records.len())
+            .saturating_add(extension_simulation.order.len())
+            .saturating_add(extension_simulation.touched.len());
+        work_budget
+            .charge_supplemental(delta_work as u64)
+            .map_err(|failure| work_failure(failure, Default::default()))?;
         let validation_work = crate::incremental_validation::validate_final_semantics(
             store,
             &store.header.id,
@@ -2285,6 +2338,7 @@ impl CommitPlanV1 {
                 entities: &collector.entity_states,
                 orders: &collector.order_addresses,
             },
+            Some(work_budget),
         )
         .map_err(TransactionPrepareFailureV1::Validation)?;
         let metrics = KernelStage3MetricsV1 {
@@ -2297,7 +2351,7 @@ impl CommitPlanV1 {
                 .map_err(|_| TransactionPrepareFailureV1::LocalInvariant)?,
             ..KernelStage3MetricsV1::default()
         };
-        Self::prepare_collected(
+        let plan = Self::prepare_collected(
             store,
             next_version,
             &mut overlay,
@@ -2308,7 +2362,14 @@ impl CommitPlanV1 {
                 final_records,
                 metrics,
             },
-        )
+        )?;
+        let commit_work = crate::work_budget::metric_work_units(&plan.metrics)
+            .saturating_sub(plan.metrics.semantic_rules_evaluated)
+            .saturating_sub(plan.metrics.semantic_dependency_reads);
+        work_budget
+            .charge_supplemental(commit_work)
+            .map_err(|failure| work_failure(failure, validation_work))?;
+        Ok(plan)
     }
 
     fn prepare_collected(
@@ -4723,6 +4784,7 @@ mod tests {
                 &mut metrics,
                 change_set,
                 CommitReservationPolicyV1::fail_all(),
+                &crate::work_budget::TransactionWorkBudgetV1::default(),
             ),
             Err(TransactionPrepareFailureV1::Capacity)
         );

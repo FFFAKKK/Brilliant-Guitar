@@ -224,7 +224,10 @@ impl AgentRunStore {
     }
 }
 
-fn read_entry_or_quarantine(path: &Path, expected_run_id: &str) -> io::Result<AgentRunStoreEntryV1> {
+fn read_entry_or_quarantine(
+    path: &Path,
+    expected_run_id: &str,
+) -> io::Result<AgentRunStoreEntryV1> {
     match read_entry(path, expected_run_id) {
         Ok(entry) => Ok(entry),
         Err(error) if error.kind() == io::ErrorKind::InvalidData => {
@@ -474,9 +477,11 @@ mod tests {
     fn storage_failure_does_not_create_a_partial_run() {
         let (root, store) = store();
         fs::write(&root, b"not-a-directory").expect("create storage blocker");
-        assert!(store
-            .commit(commit_input("run-1", 0, "active", &[]))
-            .is_err());
+        assert!(
+            store
+                .commit(commit_input("run-1", 0, "active", &[]))
+                .is_err()
+        );
         assert_eq!(fs::read(&root).expect("read blocker"), b"not-a-directory");
         let _ = fs::remove_file(root);
     }

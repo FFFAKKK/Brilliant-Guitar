@@ -55,6 +55,9 @@ impl StableCandidateView<'_> {
         {
             let candidate = self.candidate.borrow();
             for source in &candidate.hidden {
+                candidate
+                    .charge_supplemental_work(1)
+                    .map_err(|_| Error::Capacity)?;
                 if !matches!(source, Occurrence::Added(_)) {
                     collect_removed_prefix(&candidate, source, &mut removed)?;
                 }
@@ -63,10 +66,18 @@ impl StableCandidateView<'_> {
         // Deletion first, insertion second: a rebirth keeps the removed identity
         // marker even when its final stable address and fields are identical.
         for source in removed {
+            self.candidate
+                .borrow()
+                .charge_supplemental_work(1)
+                .map_err(|_| Error::Capacity)?;
             self.append_source(&mut delta, &source, false)?;
         }
         let node_count = self.candidate.borrow().nodes.len();
         for index in 0..node_count {
+            self.candidate
+                .borrow()
+                .charge_supplemental_work(1)
+                .map_err(|_| Error::Capacity)?;
             let source = Occurrence::Added(index);
             if self.candidate.borrow().visible(&source) {
                 self.append_source(&mut delta, &source, true)?;
@@ -74,6 +85,9 @@ impl StableCandidateView<'_> {
         }
         let candidate = self.candidate.borrow();
         for (source, value) in &candidate.values {
+            candidate
+                .charge_supplemental_work(1)
+                .map_err(|_| Error::Capacity)?;
             if !matches!(source, Occurrence::Prefix(_)) || !candidate.visible(source) {
                 continue;
             }
@@ -86,6 +100,9 @@ impl StableCandidateView<'_> {
             touch_time(&candidate, &mut delta, source)?;
         }
         for (source, instrument) in &candidate.instruments {
+            candidate
+                .charge_supplemental_work(1)
+                .map_err(|_| Error::Capacity)?;
             if !matches!(source, Occurrence::Prefix(_)) || !candidate.visible(source) {
                 continue;
             }
@@ -102,6 +119,9 @@ impl StableCandidateView<'_> {
             )?;
         }
         for (source, value) in &candidate.staff_references {
+            candidate
+                .charge_supplemental_work(1)
+                .map_err(|_| Error::Capacity)?;
             if !matches!(source, Occurrence::Prefix(_)) || !candidate.visible(source) {
                 continue;
             }
@@ -118,12 +138,19 @@ impl StableCandidateView<'_> {
             .try_reserve(candidate.orders.len())
             .map_err(|_| Error::Capacity)?;
         for order in candidate.orders.keys() {
+            candidate
+                .charge_supplemental_work(1)
+                .map_err(|_| Error::Capacity)?;
             if candidate.visible(&order.owner) {
                 orders.push(order.clone());
             }
         }
         drop(candidate);
         for order in orders {
+            self.candidate
+                .borrow()
+                .charge_supplemental_work(1)
+                .map_err(|_| Error::Capacity)?;
             push(
                 &mut delta.order_addresses,
                 self.strong_order(&order).ok_or(Error::LocalInvariant)?,
@@ -204,6 +231,10 @@ impl StableCandidateView<'_> {
         // strong_order maps retained owner identities even if their old lifetime
         // is hidden. The read side subsequently supplies absence or a rebirth.
         for order in orders {
+            self.candidate
+                .borrow()
+                .charge_supplemental_work(1)
+                .map_err(|_| Error::Capacity)?;
             push(
                 &mut delta.order_addresses,
                 self.strong_order(&order).ok_or(Error::LocalInvariant)?,
@@ -212,7 +243,7 @@ impl StableCandidateView<'_> {
         Ok(())
     }
 
-    fn final_record(&self, source: &Occurrence) -> Result<StableRecordV1> {
+    pub(super) fn final_record(&self, source: &Occurrence) -> Result<StableRecordV1> {
         let mut candidate = self.candidate.borrow_mut();
         let id = candidate
             .strong_address(source)
@@ -293,6 +324,10 @@ fn collect_removed_prefix(
         let mut ids = Vec::new();
         let mut capacity_failed = false;
         let visited = candidate.prefix.visit_order(&stable, &mut |id| {
+            if candidate.charge_supplemental_work(1).is_err() {
+                capacity_failed = true;
+                return false;
+            }
             if push(&mut ids, id.clone()).is_err() {
                 capacity_failed = true;
                 return false;

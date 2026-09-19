@@ -355,6 +355,38 @@ impl Recorder<'_> {
         Ok(result)
     }
 
+    fn charge_scalar_operation(
+        &self,
+        target: JournalId,
+        expected: &Value,
+        value: &Value,
+        accounting: &mut ChangeSetAccountingV1,
+    ) -> Outcome {
+        accounting.charge_scalar_pair(self.accounting_raw(target)?, expected, value)
+    }
+
+    fn charge_entity_operation(
+        &self,
+        owner: JournalId,
+        anchor: Option<JournalId>,
+        bundle: &StoredEntityBundle,
+        accounting: &mut ChangeSetAccountingV1,
+    ) -> Outcome {
+        let owner = self.accounting_address(owner)?;
+        let anchor = anchor.map(|id| self.accounting_raw(id)).transpose()?;
+        accounting.charge_entity_pair(
+            owner
+                .iter()
+                .flatten()
+                .chain(owner.iter().flatten())
+                .chain(anchor),
+            &View {
+                recorder: self,
+                entity: Entity::Stored(bundle),
+            },
+        )
+    }
+
     /// Primitive log accounting only. The execution seam owns command effects,
     /// affected facts and batch segment charges, in their existing precedence.
     #[cfg(test)]
@@ -470,11 +502,7 @@ impl Recorder<'_> {
                     expected,
                     value,
                 } => {
-                    accounting.charge_scalar_pair(
-                        self.accounting_raw(*target)?,
-                        expected,
-                        value,
-                    )?;
+                    self.charge_scalar_operation(*target, expected, value, accounting)?;
                     count += 1;
                 }
                 Operation::UpdateReference {
@@ -511,19 +539,7 @@ impl Recorder<'_> {
                     expected_anchor: anchor,
                     expected: bundle,
                 } => {
-                    let owner = self.accounting_address(*owner)?;
-                    let anchor = anchor.map(|id| self.accounting_raw(id)).transpose()?;
-                    accounting.charge_entity_pair(
-                        owner
-                            .iter()
-                            .flatten()
-                            .chain(owner.iter().flatten())
-                            .chain(anchor),
-                        &View {
-                            recorder: self,
-                            entity: Entity::Stored(bundle),
-                        },
-                    )?;
+                    self.charge_entity_operation(*owner, *anchor, bundle, accounting)?;
                     count += 1;
                 }
                 Operation::MoveOrderedChild {
@@ -762,12 +778,26 @@ impl Recorder<'_> {
                         target,
                         expected,
                         value,
-                    } if matches!(value.as_ref(), Value::NoteWrittenPitch(_)) => {
-                        accounting.charge_scalar_pair(
-                            self.accounting_raw(*target)?,
-                            expected,
-                            value,
-                        )?;
+                    } if matches!(
+                        value.as_ref(),
+                        Value::DocumentMetadata(_)
+                            | Value::EventNoteValue(_)
+                            | Value::NoteWrittenPitch(_)
+                    ) =>
+                    {
+                        self.charge_scalar_operation(*target, expected, value, accounting)?;
+                    }
+                    Operation::InsertEntity {
+                        owner,
+                        anchor,
+                        bundle: bundle @ StoredEntityBundle::Event(_),
+                    }
+                    | Operation::RemoveEntity {
+                        owner,
+                        expected_anchor: anchor,
+                        expected: bundle @ StoredEntityBundle::Event(_),
+                    } => {
+                        self.charge_entity_operation(*owner, *anchor, bundle, accounting)?;
                     }
                     _ => return Err(invariant()),
                 }

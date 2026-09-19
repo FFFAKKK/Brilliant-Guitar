@@ -29,7 +29,7 @@ export function PlaybackTransport({ projection }: { readonly projection: Playbac
         <button type="button" className="playback-transport-button" disabled={unavailable || snapshot.pending || !projection.canPrevious}
           aria-label="上一个音符" title="上一个音符" onClick={() => { component.executeCommand("playback.previous"); }}><PreviousIcon /></button>
         <button type="button" className="playback-transport-primary" disabled={unavailable || snapshot.pending}
-          aria-label={playing ? "暂停" : "播放"} aria-keyshortcuts="Space" title={`${playing ? "暂停" : "播放"} · Space`}
+          aria-label={playing ? "暂停" : "播放"} title={playing ? "暂停" : "播放"}
           onClick={() => { component.executeCommand("playback.toggle"); }}>
           <span className="playback-transport-primary-glyph">{playing ? <PauseIcon /> : <PlayIcon />}</span>
         </button>

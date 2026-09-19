@@ -32,6 +32,8 @@ export interface UiComponentDefinition {
   }>;
   readonly capabilities: UiComponentCapabilities;
   readonly permissions: UiComponentPermissions;
+  /** Stable host points where other plugins may contribute component-owned controls. */
+  readonly extensionPoints?: readonly string[];
 }
 
 export function isUiComponentDefinition(value: unknown): value is UiComponentDefinition {
@@ -53,5 +55,9 @@ export function isUiComponentDefinition(value: unknown): value is UiComponentDef
   const capabilities = candidate.capabilities;
   if (typeof capabilities !== "object" || capabilities === null
     || Object.values(capabilities).some((enabled) => typeof enabled !== "boolean")) return false;
+  if (candidate.extensionPoints !== undefined && (!Array.isArray(candidate.extensionPoints)
+    || candidate.extensionPoints.some((item) => typeof item !== "string"
+      || !/^[a-z][a-z0-9-]*(?:\.[a-z][a-z0-9-]*)+$/.test(item))
+    || new Set(candidate.extensionPoints).size !== candidate.extensionPoints.length)) return false;
   return true;
 }

@@ -143,6 +143,9 @@ test("staff pointer pitch maps lines and ledger positions within the input range
   assert.deepEqual(pitchAtY(110, 100, 10), { step: "C", octave: 4, alter: 0 });
   assert.deepEqual(pitchAtY(60, 100, 10), { step: "F", octave: 5, alter: 0 });
   assert.deepEqual(pitchAtY(-900, 100, 10), { step: "B", octave: 6, alter: 0 });
+  assert.deepEqual(pitchAtY(100, 100, 10, "bass"), { step: "G", octave: 2, alter: 0 });
+  assert.deepEqual(pitchAtY(100, 100, 10, "alto"), { step: "F", octave: 3, alter: 0 });
+  assert.deepEqual(pitchAtY(100, 100, 10, "tenor"), { step: "D", octave: 3, alter: 0 });
   for (const pitch of [{ step: "C" as const, octave: 4, alter: 0 as const },
     { step: "B" as const, octave: 4, alter: 1 as const }, { step: "F" as const, octave: 5, alter: -1 as const }]) {
     assert.deepEqual(pitchAtY(yForPitch(pitch, 100, 10), 100, 10), { ...pitch, alter: 0 });

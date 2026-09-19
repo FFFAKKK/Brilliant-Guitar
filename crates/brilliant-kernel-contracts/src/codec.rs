@@ -2089,6 +2089,17 @@ mod tests {
             }
         ));
 
+        let structure = decode_stage4_operation_request(
+            br#"{"apiVersion":1,"operation":{"kind":"select","selector":{"selectorId":"core.selector.score-structure"}}}"#,
+        )
+        .expect("valid structure selector");
+        assert!(matches!(
+            structure.operation,
+            KernelStage4OperationV1::Select {
+                selector: SelectorRequestV1::ScoreStructure
+            }
+        ));
+
         let overview_extra = decode_stage4_operation_request(
             br#"{"apiVersion":1,"operation":{"kind":"select","selector":{"selectorId":"core.selector.score-overview","extra":true}}}"#,
         );

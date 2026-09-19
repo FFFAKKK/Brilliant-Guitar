@@ -45,7 +45,14 @@ const bufferToString = Buffer.prototype.toString;
 const promiseResolve = Promise.resolve;
 const promiseCatch = Promise.prototype.catch;
 
-function pluginFailureRecord(value: unknown): { code: string; moduleId?: string; contributionId?: string } | undefined {
+function pluginFailureRecord(value: unknown): {
+  code: string;
+  moduleId?: string;
+  contributionId?: string;
+  effectIndex?: number;
+  effectKind?: string;
+  failureCode?: string;
+} | undefined {
   if (value === null || typeof value !== "object") return undefined;
   const record = value as Record<string, unknown>;
   if (typeof record.code !== "string") return undefined;
@@ -53,6 +60,9 @@ function pluginFailureRecord(value: unknown): { code: string; moduleId?: string;
     code: record.code,
     ...(typeof record.moduleId === "string" ? { moduleId: record.moduleId } : {}),
     ...(typeof record.contributionId === "string" ? { contributionId: record.contributionId } : {}),
+    ...(isSafeNonNegativeInteger(record.effectIndex) ? { effectIndex: record.effectIndex } : {}),
+    ...(typeof record.effectKind === "string" ? { effectKind: record.effectKind } : {}),
+    ...(typeof record.failureCode === "string" ? { failureCode: record.failureCode } : {}),
   };
 }
 
@@ -204,6 +214,7 @@ function recordPluginFailure(value: unknown, operation: "create" | "prepare" | "
     || failure.code === "command.required-contribution-incompatible"
     || failure.code === "command.contribution-semantic-invalid"
     || failure.code === "command.contribution-contract-violation"
+    || failure.code === "command.contribution-effect-rejected"
     || failure.code === "command.contribution-internal-error"
   )) return;
   recordKernelPluginDiagnostic(failure.code, {
@@ -211,6 +222,9 @@ function recordPluginFailure(value: unknown, operation: "create" | "prepare" | "
     operation,
     ...(failure.moduleId === undefined ? {} : { moduleId: failure.moduleId }),
     ...(failure.contributionId === undefined ? {} : { contributionId: failure.contributionId }),
+    ...(failure.effectIndex === undefined ? {} : { effectIndex: failure.effectIndex }),
+    ...(failure.effectKind === undefined ? {} : { effectKind: failure.effectKind }),
+    ...(failure.failureCode === undefined ? {} : { failureCode: failure.failureCode }),
   });
 }
 function freeze<T>(value: T): T {

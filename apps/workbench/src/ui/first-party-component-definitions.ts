@@ -1,5 +1,6 @@
 import type { UiComponentDefinition } from "./plugin-contract.ts";
-import { HISTORY_PROJECTION, NOTE_CONTROL_PROJECTION, PAPER_ZOOM_PROJECTION, PLAYBACK_OUTPUT_PROJECTION, PLAYBACK_PROJECTION, STAFF_PROJECTION } from "./first-party-plugin-projections.ts";
+import { AGENT_ASSISTANT_PROJECTION, HISTORY_PROJECTION, NOTE_CONTROL_PROJECTION, PAPER_ZOOM_PROJECTION, PLAYBACK_OUTPUT_PROJECTION, PLAYBACK_PROJECTION, STAFF_PROJECTION } from "./first-party-plugin-projections.ts";
+import { NOTE_CONTROL_EXTENSION_POINT } from "./note-control-extension.ts";
 
 export const STAFF_COMPONENT: UiComponentDefinition = {
   id: "notation.staff-view", version: "1.0", kind: "view", domain: "notation.score", slots: ["workspace"],
@@ -14,6 +15,7 @@ export const NOTE_CONTROL_COMPONENT: UiComponentDefinition = {
   capabilities: { movable: true, resizable: true, dockable: true, acceptsKeyboardInput: true,
     rendersPreview: true, mutatesDocument: true, selectionAware: true },
   permissions: { projections: [NOTE_CONTROL_PROJECTION.id], commands: [] },
+  extensionPoints: [NOTE_CONTROL_EXTENSION_POINT],
 };
 
 export const HISTORY_COMPONENT: UiComponentDefinition = {
@@ -45,6 +47,14 @@ export const PLAYBACK_OUTPUT_COMPONENT: UiComponentDefinition = {
   permissions: { projections: [PLAYBACK_OUTPUT_PROJECTION.id], commands: [] },
 };
 
+export const AGENT_RECOVERY_COMPONENT: UiComponentDefinition = {
+  id: "agent.recovery-panel", version: "1.1", kind: "inspector", domain: "agent.assistant",
+  slots: ["right", "left", "bottom", "top"],
+  presentation: { allowed: ["panel", "popover"], default: "panel" },
+  capabilities: { movable: true, resizable: true, dockable: true, acceptsKeyboardInput: true },
+  permissions: { projections: [AGENT_ASSISTANT_PROJECTION.id], commands: [] },
+};
+
 export const FIRST_PARTY_UI_COMPONENTS = [
   STAFF_COMPONENT,
   NOTE_CONTROL_COMPONENT,
@@ -52,4 +62,5 @@ export const FIRST_PARTY_UI_COMPONENTS = [
   PAPER_ZOOM_COMPONENT,
   PLAYBACK_COMPONENT,
   PLAYBACK_OUTPUT_COMPONENT,
+  AGENT_RECOVERY_COMPONENT,
 ] as const;

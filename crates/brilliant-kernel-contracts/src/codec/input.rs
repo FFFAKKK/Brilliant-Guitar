@@ -93,6 +93,7 @@ decode_tagged!([] ScoreRangeV1, "kind" {
 decode_tagged!([] SelectorRequestV1, "selectorId" {
     "core.selector.score-overview" => ScoreOverview,
     "core.selector.score-metadata" => ScoreMetadata,
+    "core.selector.score-structure" => ScoreStructure,
     "core.selector.score-entity" => ScoreEntity { address => "address" },
     "core.selector.score-entity-ownership" => ScoreEntityOwnership { address => "address" },
     "core.selector.score-range" => ScoreRange { range => "range" },

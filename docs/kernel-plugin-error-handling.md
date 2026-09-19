@@ -1,6 +1,6 @@
 # 内核与插件边界错误处理
 
-更新日期：2026-09-17
+更新日期：2026-09-18
 
 内核命令返回值继续使用既有稳定错误码，避免插件宿主和旧版本客户端因为增加诊断字段而破坏协议。宿主同时把边界错误写入进程级 `kernelPluginDiagnostics` 环形日志，并为每条记录生成 `kdiag-*` 报告编号。
 
@@ -10,9 +10,10 @@
 - `stage`：`assembly`、`binding`、`callback`、`core-read` 或 `transport`；
 - `operation`：创建、准备、变换、评估或读取；
 - `moduleId` / `contributionId`：能够确定归属时记录；
+- `effectIndex` / `effectKind` / `failureCode`：插件请求的某个 Effect 被内核拒绝时，记录其顺序、种类和底层稳定错误码；
 - `reportId` / `occurredAt`：用于 UI 展示和问题回溯。
 
-日志不会保存命令 payload、乐谱内容、WASM 字节或插件返回对象。最多保留 128 条记录，插件发生异常时不会因为日志监听器自身失败而影响内核事务。
+日志不会保存 Effect `target`、命令 payload、乐谱内容、WASM 字节或插件返回对象。最多保留 128 条记录，插件发生异常时不会因为日志监听器自身失败而影响内核事务。
 
 WASM 绑定阶段抛出的 `TypeError` 仍保留原来的 `message`，并额外带有不可枚举的 `diagnosticId` 属性。调用方可以继续按错误文本兼容处理，同时把报告编号交给诊断界面。集成内核创建和提交阶段的旧返回结构保持不变，宿主可以从 `kernelPluginDiagnostics.list()` 读取最近记录。
 
@@ -22,6 +23,7 @@ WASM 绑定阶段抛出的 `TypeError` 仍保留原来的 `message`，并额外�
 - 必需贡献缺失或 schema 不兼容；
 - addon 无效、绑定缺失、重复或完整性校验失败；
 - 回调结果不符合插件契约、插件回调抛出异常；
+- 插件请求的 Effect 无法解码、版本不支持、种类未知、目标或扩展归属不匹配，以及变换结果违反协议；
 - WASM 返回格式错误、执行失败或 core-read 协议错误。
 
 WASM 的 `wasm.core-read-pending` 是一次正常的读取握手，不属于故障，也不会写入诊断日志。内核边界日志使用稳定的中文错误说明；可定位的插件 ID 与报告编号随记录保留。

@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-09-19",
+  "scope": "kernel-transaction-work-budget-v1",
+  "limitWorkUnits": 8388608,
+  "wireLimitKind": "transaction-work-units",
+  "accountedMetrics": [
+    "semantic_rules_evaluated",
+    "semantic_dependency_reads",
+    "entities_visited",
+    "entity_index_lookups",
+    "owner_index_lookups",
+    "time_index_comparisons",
+    "overlay_records",
+    "order_collections_copied",
+    "change_ops",
+    "affected_addresses",
+    "index_entries_removed",
+    "index_entries_inserted"
+  ],
+  "supplementalWork": [
+    "candidate identity binding",
+    "extension header traversal",
+    "final delta collection",
+    "journal replay",
+    "commit preparation"
+  ],
+  "excludedResponsibility": "TypeScript plugin callback CPU preemption remains a plugin-platform worker/process/WASM responsibility.",
+  "nativeArtifacts": [
+    {
+      "kind": "core-v1",
+      "path": "target/rkp-1-node/brilliant_kernel_node.node",
+      "bytes": 3614720,
+      "sha256": "70485d13e0bb217141c46ec6011214bf7f3361829a2c3a815b31233e528304a0"
+    },
+    {
+      "kind": "integrated-v2",
+      "path": "target/kernel-commercial-current/integrated-v2.node",
+      "bytes": 5056512,
+      "sha256": "d531500d819bdd4f14d779a32b366d7a43f3567b8e749743c27230a22aa2a715",
+      "standardDestinationWasNotOverwritten": true
+    },
+    {
+      "kind": "wasm-v1",
+      "path": "target/wasm-v1/brilliant_kernel_node.node",
+      "bytes": 6289408,
+      "sha256": "1341b1fc85c7f6896210f2855f1faa30d202ae4e85ecbb1d1327836a3c267fde"
+    }
+  ],
+  "checks": [
+    {
+      "command": "targeted rustfmt --check",
+      "status": "passed"
+    },
+    {
+      "command": "cargo test --workspace --all-features --locked --offline",
+      "status": "passed",
+      "passed": 658,
+      "ignored": 1,
+      "failed": 0
+    },
+    {
+      "command": "cargo clippy --workspace --all-targets --all-features --locked --offline -- -D warnings",
+      "status": "passed"
+    },
+    {
+      "command": "npm run typecheck",
+      "status": "passed"
+    },
+    {
+      "command": "npm run build",
+      "status": "passed"
+    },
+    {
+      "command": "node --test dist/test/core-kernel/rust-migration/rkp-3-workspace-contracts.test.js",
+      "status": "passed",
+      "passed": 7,
+      "failed": 0
+    },
+    {
+      "command": "$env:BRILLIANT_INTEGRATED_ADDON_PATH='target/kernel-commercial-current/integrated-v2.node'; npm test",
+      "status": "passed",
+      "total": 907,
+      "passed": 905,
+      "skipped": 2,
+      "failed": 0,
+      "compiledTestFiles": 133,
+      "compiledTestManifestSha256": "f58e879f6a0f65423411e7977d2d06e9976aebd1196b4fbe4f60d73806efcff8"
+    },
+    {
+      "command": "git diff --check",
+      "status": "passed"
+    }
+  ],
+  "verificationRepair": {
+    "initialFullNodeFailureCount": 1,
+    "cause": "The historical RKP-3 source-token audit did not have a literal transaction-work-units token in command.rs.",
+    "repair": "Added a real Rust serialization assertion for the new resource kind and reran focused and full suites."
+  },
+  "typeSafety": {
+    "transactionWorkBudgetCloneable": false,
+    "preparedTransactionCloneable": false,
+    "reason": "The work account and prepared commit token are affine transaction state."
+  }
+}

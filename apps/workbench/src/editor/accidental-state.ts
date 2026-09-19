@@ -1,6 +1,7 @@
 import type { InputPitch } from "../contracts/note-input.ts";
 import type { StaffMeasure, StaffView } from "../contracts/notation.ts";
 import type { ScoreEditPoint } from "./score-navigation.ts";
+import { keySignatureAlterForStep, keySignatureFifthsAtMeasure } from "../notation/key-signature.ts";
 
 export type AccidentalState = "none" | "flat" | "natural" | "sharp";
 export const ACCIDENTAL_STATES = ["none", "flat", "natural", "sharp"] as const;
@@ -16,8 +17,8 @@ export function accidentalForTransition(previous: InputPitch["alter"], current: 
 }
 
 export function inheritedAlterBeforeEvent(measure: StaffMeasure, eventId: string,
-  pitch: Pick<InputPitch, "step" | "octave">): InputPitch["alter"] {
-  let inherited: InputPitch["alter"] = 0;
+  pitch: Pick<InputPitch, "step" | "octave">, baseline: InputPitch["alter"] = 0): InputPitch["alter"] {
+  let inherited: InputPitch["alter"] = baseline;
   const key = pitchKey(pitch);
   for (const event of measure.events) {
     if (event.id === eventId) break;
@@ -26,18 +27,20 @@ export function inheritedAlterBeforeEvent(measure: StaffMeasure, eventId: string
   return inherited;
 }
 
-export function accidentalForEvent(measure: StaffMeasure, eventId: string): AccidentalState {
+export function accidentalForEvent(measure: StaffMeasure, eventId: string,
+  baseline: InputPitch["alter"] = 0): AccidentalState {
   const event = measure.events.find((item) => item.id === eventId);
   if (!event || event.content.kind !== "note") return "none";
-  return accidentalForTransition(inheritedAlterBeforeEvent(measure, eventId, event.content.pitch), event.content.pitch.alter);
+  return accidentalForTransition(inheritedAlterBeforeEvent(measure, eventId, event.content.pitch, baseline), event.content.pitch.alter);
 }
 
 /** Resolve the accidental already active at an insertion point. Key signatures are not in the V1 projection yet. */
 export function inheritedAlterAtPoint(view: StaffView, point: ScoreEditPoint,
   pitch: Pick<InputPitch, "step" | "octave">): InputPitch["alter"] {
   const measure = view.measures.find((item) => item.id === point.measureId);
-  if (!measure || point.anchor.kind === "start") return 0;
-  let inherited: InputPitch["alter"] = 0;
+  const baseline = keySignatureAlterForStep(keySignatureFifthsAtMeasure(view, point.measureId), pitch.step);
+  if (!measure || point.anchor.kind === "start") return baseline;
+  let inherited: InputPitch["alter"] = baseline;
   const key = pitchKey(pitch);
   for (const event of measure.events) {
     if (event.content.kind === "note" && pitchKey(event.content.pitch) === key) inherited = event.content.pitch.alter;

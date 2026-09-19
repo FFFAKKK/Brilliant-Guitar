@@ -355,6 +355,7 @@ test("RKP-3 adds no bridge failure and keeps stage failures data-only", () => {
     "command.invalid-envelope",
     "command.batch-child-rejected",
     "changeset-logical-bytes",
+    "transaction-work-units",
     "stage3.local-invariant-rejected",
     "full_document_scans",
     "ffi_response_bytes",

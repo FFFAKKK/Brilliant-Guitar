@@ -12,6 +12,23 @@ pub enum KernelEffectV1 {
         document_id: StableId,
         metadata: ScoreMetadataV1,
     },
+    SetEventNoteValue {
+        event_id: StableId,
+        note_value: NoteValueV1,
+    },
+    InsertNotesEvent {
+        voice_id: StableId,
+        anchor: SequenceAnchorV1,
+        event: RhythmicEventV1,
+    },
+    InsertRestEvent {
+        voice_id: StableId,
+        anchor: SequenceAnchorV1,
+        event: RhythmicEventV1,
+    },
+    RemoveEvent {
+        event_id: StableId,
+    },
     SetExtension {
         namespace: JsString,
         owner: ExtensionOwnerV1,
@@ -32,6 +49,28 @@ pub(crate) trait KernelEffectTransaction {
         metadata: ScoreMetadataV1,
     ) -> Result<(), KernelStage3CommandFailureLeafV1>;
 
+    fn set_event_note_value(
+        &mut self,
+        event_id: StableId,
+        note_value: NoteValueV1,
+    ) -> Result<(), KernelStage3CommandFailureLeafV1>;
+
+    fn remove_event(&mut self, event_id: StableId) -> Result<(), KernelStage3CommandFailureLeafV1>;
+
+    fn insert_notes_event(
+        &mut self,
+        voice_id: StableId,
+        anchor: SequenceAnchorV1,
+        event: RhythmicEventV1,
+    ) -> Result<(), KernelStage3CommandFailureLeafV1>;
+
+    fn insert_rest_event(
+        &mut self,
+        voice_id: StableId,
+        anchor: SequenceAnchorV1,
+        event: RhythmicEventV1,
+    ) -> Result<(), KernelStage3CommandFailureLeafV1>;
+
     fn set_extension(
         &mut self,
         namespace: JsString,
@@ -45,7 +84,8 @@ impl KernelEffectV1 {
         self,
         transaction: &mut KernelStage3TransactionV1<'_>,
     ) -> Result<(), KernelStage3CommandFailureLeafV1> {
-        self.apply_to(transaction)
+        self.apply_to(transaction)?;
+        transaction.ensure_work_budget()
     }
 
     pub(crate) fn apply_to<T: KernelEffectTransaction>(
@@ -60,6 +100,21 @@ impl KernelEffectV1 {
                 document_id,
                 metadata,
             } => transaction.set_document_metadata(document_id, metadata),
+            Self::SetEventNoteValue {
+                event_id,
+                note_value,
+            } => transaction.set_event_note_value(event_id, note_value),
+            Self::InsertNotesEvent {
+                voice_id,
+                anchor,
+                event,
+            } => transaction.insert_notes_event(voice_id, anchor, event),
+            Self::InsertRestEvent {
+                voice_id,
+                anchor,
+                event,
+            } => transaction.insert_rest_event(voice_id, anchor, event),
+            Self::RemoveEvent { event_id } => transaction.remove_event(event_id),
             Self::SetExtension {
                 namespace,
                 owner,
@@ -84,6 +139,36 @@ impl KernelEffectTransaction for KernelStage3TransactionV1<'_> {
         metadata: ScoreMetadataV1,
     ) -> Result<(), KernelStage3CommandFailureLeafV1> {
         self.set_document_metadata(document_id, metadata)
+    }
+
+    fn set_event_note_value(
+        &mut self,
+        event_id: StableId,
+        note_value: NoteValueV1,
+    ) -> Result<(), KernelStage3CommandFailureLeafV1> {
+        self.set_event_note_value(event_id, note_value)
+    }
+
+    fn remove_event(&mut self, event_id: StableId) -> Result<(), KernelStage3CommandFailureLeafV1> {
+        KernelStage3TransactionV1::remove_event(self, event_id)
+    }
+
+    fn insert_notes_event(
+        &mut self,
+        voice_id: StableId,
+        anchor: SequenceAnchorV1,
+        event: RhythmicEventV1,
+    ) -> Result<(), KernelStage3CommandFailureLeafV1> {
+        KernelStage3TransactionV1::insert_notes_event(self, voice_id, anchor, event)
+    }
+
+    fn insert_rest_event(
+        &mut self,
+        voice_id: StableId,
+        anchor: SequenceAnchorV1,
+        event: RhythmicEventV1,
+    ) -> Result<(), KernelStage3CommandFailureLeafV1> {
+        KernelStage3TransactionV1::insert_rest_event(self, voice_id, anchor, event)
     }
 
     fn set_extension(

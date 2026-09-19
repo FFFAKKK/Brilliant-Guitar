@@ -278,6 +278,283 @@ fn invalid_or_poisoned_candidates_never_produce_a_stable_final_view() {
 }
 
 #[test]
+fn stable_scalar_candidate_uses_incremental_validation_without_a_full_scan() {
+    let document = fixture();
+    let store = build_live_score_store(&document).unwrap();
+    let mut candidate = Candidate::new(TransactionOverlayV1::new(&store), document.id.clone());
+    let mut metadata = document.metadata.clone();
+    metadata.title = "incremental candidate".into();
+    metadata.tempo.bpm = FiniteNumber::new(96.0).unwrap();
+    candidate
+        .replace_value(
+            &candidate.document.clone(),
+            Value::DocumentMetadata(metadata),
+        )
+        .unwrap();
+
+    let validated = candidate
+        .validate_final_with_metrics_against(&store)
+        .unwrap();
+    let metrics = validated.replay_work();
+    assert_eq!(metrics.full_document_scans, 0);
+    assert_eq!(metrics.full_semantic_validations, 0);
+    assert!(metrics.semantic_rules_evaluated > 0);
+    assert_eq!(store.export_document().unwrap(), document);
+}
+
+#[test]
+fn incremental_candidate_rejection_matches_the_full_foundation_oracle() {
+    fn invalid_tempo<'a>(store: &'a LiveScoreStore) -> Candidate<'a> {
+        let mut candidate =
+            Candidate::new(TransactionOverlayV1::new(store), store.header.id.clone());
+        let mut metadata = store.header.metadata.clone();
+        metadata.tempo.bpm = FiniteNumber::new(0.0).unwrap();
+        candidate
+            .replace_value(
+                &candidate.document.clone(),
+                Value::DocumentMetadata(metadata),
+            )
+            .unwrap();
+        candidate
+    }
+
+    fn rejection(
+        result: Result<ValidatedCandidate<'_>, (FinalizationFailure, KernelStage3MetricsV1)>,
+    ) -> (
+        Vec<brilliant_score_foundation::CoreDiagnosticV1>,
+        KernelStage3MetricsV1,
+    ) {
+        let Err((FinalizationFailure::Command(Failure::SemanticInvalid { diagnostics }), work)) =
+            result
+        else {
+            panic!("invalid tempo must be rejected")
+        };
+        (diagnostics, work)
+    }
+
+    let document = fixture();
+    let store = build_live_score_store(&document).unwrap();
+    let (full_diagnostics, full_work) =
+        rejection(invalid_tempo(&store).validate_final_with_metrics());
+    let (incremental_diagnostics, incremental_work) =
+        rejection(invalid_tempo(&store).validate_final_with_metrics_against(&store));
+
+    assert_eq!(incremental_diagnostics, full_diagnostics);
+    assert_eq!(full_work.full_semantic_validations, 1);
+    assert_eq!(incremental_work.full_semantic_validations, 0);
+    assert_eq!(incremental_work.full_document_scans, 0);
+    assert!(incremental_work.semantic_rules_evaluated > 0);
+}
+
+#[test]
+fn stable_missing_staff_reference_matches_the_oracle_and_raw_empty_reference_falls_back() {
+    fn missing_staff<'a>(store: &'a LiveScoreStore, id: &str) -> Candidate<'a> {
+        let mut candidate =
+            Candidate::new(TransactionOverlayV1::new(store), store.header.id.clone());
+        let voice = candidate.resolve(Kind::Voice, &"voice-a".into()).unwrap();
+        candidate
+            .replace_staff_reference(&voice, Some(id.into()))
+            .unwrap();
+        candidate
+    }
+
+    fn rejected(
+        result: Result<ValidatedCandidate<'_>, (FinalizationFailure, KernelStage3MetricsV1)>,
+    ) -> (FinalizationFailure, KernelStage3MetricsV1) {
+        match result {
+            Err(failure) => failure,
+            Ok(_) => panic!("candidate must be rejected"),
+        }
+    }
+
+    let document = fixture();
+    let store = build_live_score_store(&document).unwrap();
+    let full = rejected(missing_staff(&store, "missing-staff").validate_final_with_metrics());
+    let incremental = rejected(
+        missing_staff(&store, "missing-staff").validate_final_with_metrics_against(&store),
+    );
+    let (
+        FinalizationFailure::Command(Failure::SemanticInvalid {
+            diagnostics: full_diagnostics,
+        }),
+        full_work,
+    ) = full
+    else {
+        panic!("full oracle must reject the missing staff")
+    };
+    let (
+        FinalizationFailure::Command(Failure::SemanticInvalid {
+            diagnostics: incremental_diagnostics,
+        }),
+        incremental_work,
+    ) = incremental
+    else {
+        panic!("incremental validation must reject the missing staff")
+    };
+    assert_eq!(incremental_diagnostics, full_diagnostics);
+    assert_eq!(full_work.full_semantic_validations, 1);
+    assert_eq!(incremental_work.full_semantic_validations, 0);
+
+    let (failure, fallback_work) =
+        rejected(missing_staff(&store, "").validate_final_with_metrics_against(&store));
+    assert!(matches!(
+        failure,
+        FinalizationFailure::Command(Failure::SemanticInvalid { .. })
+    ));
+    assert_eq!(fallback_work.full_semantic_validations, 1);
+}
+
+#[test]
+fn multi_rule_incremental_report_matches_full_diagnostic_content_order_and_paths() {
+    fn candidate_with_failures<'a>(
+        store: &'a LiveScoreStore,
+        document: &brilliant_score_foundation::ScoreDocumentV1,
+    ) -> Candidate<'a> {
+        let mut candidate = Candidate::new(TransactionOverlayV1::new(store), document.id.clone());
+
+        let mut metadata = document.metadata.clone();
+        metadata.tempo.bpm = FiniteNumber::new(0.0).unwrap();
+        candidate
+            .replace_value(
+                &candidate.document.clone(),
+                Value::DocumentMetadata(metadata),
+            )
+            .unwrap();
+
+        let measure = &document.measure_definitions[0];
+        let measure_source = candidate
+            .resolve(Kind::Measure, measure.id.as_js_string())
+            .unwrap();
+        let mut meter = measure.meter.clone();
+        meter.numerator = SafeInteger::new(0).unwrap();
+        candidate
+            .replace_value(
+                &measure_source,
+                Value::MeasureDefinition {
+                    meter,
+                    pickup_duration: measure.pickup_duration.clone(),
+                },
+            )
+            .unwrap();
+
+        let part = &document.parts[0];
+        let staff = &part.staves[0];
+        let staff_source = candidate
+            .resolve(Kind::Staff, staff.id.as_js_string())
+            .unwrap();
+        candidate
+            .replace_value(
+                &staff_source,
+                Value::StaffDefinition {
+                    line_count: SafeInteger::new(0).unwrap(),
+                    default_clef: staff.default_clef.clone(),
+                },
+            )
+            .unwrap();
+
+        let voice = &part.measure_contents[0].voices[0];
+        let voice_source = candidate
+            .resolve(Kind::Voice, voice.id.as_js_string())
+            .unwrap();
+        let mut start = voice.sequence.start.clone();
+        start.numerator = SafeInteger::new(-1).unwrap();
+        candidate
+            .replace_value(&voice_source, Value::VoiceSequenceStart(start))
+            .unwrap();
+        candidate
+            .replace_staff_reference(&voice_source, Some("missing-staff".into()))
+            .unwrap();
+
+        let event = &voice.sequence.events[0];
+        let event_source = candidate
+            .resolve(Kind::Event, event.id.as_js_string())
+            .unwrap();
+        let mut duration = event.duration.clone();
+        duration.base = SafeInteger::new(3).unwrap();
+        candidate
+            .replace_value(&event_source, Value::EventNoteValue(duration))
+            .unwrap();
+
+        let RhythmicContentV1::Notes { notes } = &event.content else {
+            panic!("fixture first event must contain notes")
+        };
+        let note = &notes[0];
+        let note_source = candidate
+            .resolve(Kind::Note, note.id.as_js_string())
+            .unwrap();
+        let mut pitch = note.written_pitch.clone();
+        pitch.octave = SafeInteger::new(100).unwrap();
+        candidate
+            .replace_value(&note_source, Value::NoteWrittenPitch(pitch))
+            .unwrap();
+        candidate
+    }
+
+    fn diagnostics(
+        result: Result<ValidatedCandidate<'_>, (FinalizationFailure, KernelStage3MetricsV1)>,
+    ) -> (
+        Vec<brilliant_score_foundation::CoreDiagnosticV1>,
+        KernelStage3MetricsV1,
+    ) {
+        let Err((FinalizationFailure::Command(Failure::SemanticInvalid { diagnostics }), work)) =
+            result
+        else {
+            panic!("multi-rule candidate must be rejected")
+        };
+        (diagnostics, work)
+    }
+
+    let document = fixture();
+    let store = build_live_score_store(&document).unwrap();
+    let (full, full_work) =
+        diagnostics(candidate_with_failures(&store, &document).validate_final_with_metrics());
+    let (incremental, incremental_work) = diagnostics(
+        candidate_with_failures(&store, &document).validate_final_with_metrics_against(&store),
+    );
+
+    assert_eq!(incremental, full);
+    assert!(incremental.len() >= 6);
+    assert_eq!(full_work.full_semantic_validations, 1);
+    assert_eq!(incremental_work.full_semantic_validations, 0);
+    assert!(incremental_work.semantic_rules_evaluated > 0);
+    assert!(incremental_work.semantic_dependency_reads > 0);
+}
+
+#[test]
+fn structural_and_frozen_prefix_candidates_explicitly_fall_back_to_full_validation() {
+    let document = fixture();
+    let store = build_live_score_store(&document).unwrap();
+
+    let mut structural = Candidate::new(TransactionOverlayV1::new(&store), document.id.clone());
+    let event = structural.resolve(Kind::Event, &"event-a".into()).unwrap();
+    structural.hide(&event).unwrap();
+    let structural_work = structural
+        .validate_final_with_metrics_against(&store)
+        .unwrap()
+        .replay_work();
+    assert_eq!(structural_work.full_document_scans, 1);
+    assert_eq!(structural_work.full_semantic_validations, 1);
+
+    let mut prefix = TransactionOverlayV1::new(&store);
+    let mut metadata = document.metadata.clone();
+    metadata.title = "frozen prefix".into();
+    prefix
+        .replace_scalar(
+            Scalar::DocumentMetadata {
+                document_id: document.id.clone(),
+            },
+            Value::DocumentMetadata(metadata),
+        )
+        .unwrap();
+    let prefix_work = Candidate::new(prefix, document.id.clone())
+        .validate_final_with_metrics_against(&store)
+        .unwrap()
+        .replay_work();
+    assert_eq!(prefix_work.full_document_scans, 1);
+    assert_eq!(prefix_work.full_semantic_validations, 1);
+}
+
+#[test]
 fn removed_event_id_can_be_reborn_as_a_different_entity_kind() {
     let document = fixture();
     let mut expected = document.clone();

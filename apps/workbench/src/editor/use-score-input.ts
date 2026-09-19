@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import type { KeyboardEvent, RefObject } from "react";
+import type { NoteInputPreferencesV1 } from "../contracts/application-settings.ts";
 import type { ScoreSessionRead } from "../contracts/score-session";
 import type { DeleteTimePolicy, InputDuration, InputPitch, ScoreEditAction, ScoreEditRequest, ScoreEventRange } from "../contracts/note-input";
 import type { ScoreClipboardFragmentV1 } from "../contracts/score-clipboard.ts";
 import type { PitchDraft } from "./pitch-entry";
 import type { WorkbenchClient } from "../services/workbench-client";
-import { nextMeasure } from "../notation/input-position";
 import { stepInputDuration } from "./input-duration";
-import { defaultScoreEditPoint, edgeScoreEditPoint, eventEndPoint, jumpScoreEditPoint,
-  eventStartPoint, measureStartPoint, measureTailPoint, moveScoreEditPoint, normalizeScoreEditPoint } from "./score-navigation";
+import { defaultScoreEditPoint, edgeScoreEditPoint, jumpScoreEditPoint,
+  measureTailPoint, moveScoreEditPoint } from "./score-navigation";
 import type { ScoreEditPoint } from "./score-navigation";
 import { alterForAccidental, inheritedAlterAtPoint } from "./accidental-state";
 import type { AccidentalState } from "./accidental-state";
@@ -17,15 +17,33 @@ import { adaptWorkbenchIssue, localWorkbenchIssue } from "../feedback/workbench-
 import type { WorkbenchFeedback, WorkbenchFeedbackContext } from "../feedback/workbench-feedback.ts";
 import type { WorkbenchTaskRuntime } from "../runtime/workbench-runtime.tsx";
 import { useEditorMachine } from "./use-editor-machine.ts";
-import { resolveStaffKey } from "./staff-input-adapter.ts";
-import { scoreIntentToAction } from "./score-edit-intent.ts";
-import type { ScoreEditIntent } from "./score-edit-intent.ts";
+import type { StaffInputContext, StaffInputOutput, StaffInsertIntent } from "./staff-input-adapter.ts";
+import { scoreIntentToAction } from "../application/edit/score-edit-intent.ts";
+import type { ScoreEditIntent } from "../application/edit/score-edit-intent.ts";
+import { reconcileScoreFocus } from "../application/edit/score-focus-reconciler.ts";
+import { ScoreEditController } from "../application/edit/score-edit-controller.ts";
+import type { ScoreEditResolution } from "../application/edit/score-edit-controller.ts";
+import { keyPressSignal } from "../input/input-signal.ts";
+import type { NotationInteractionRegistry } from "../input/notation-interaction-registry.ts";
 
-interface Queued { intent: ScoreEditIntent; context: WorkbenchFeedbackContext; request?: ScoreEditRequest; completionFocus?: HTMLElement; operationToken?: string }
+interface Queued {
+  intent: ScoreEditIntent;
+  context: WorkbenchFeedbackContext;
+  generation: number;
+  request?: ScoreEditRequest;
+  completionFocus?: HTMLElement;
+  operationToken?: string;
+  point?: ScoreEditPoint;
+  preserveSelection?: boolean;
+}
+type PropertyEditAction = Extract<ScoreEditAction, {
+  kind: "set-event-properties" | "set-title" | "set-document-metadata" | "set-measure-meter"
+    | "set-key-signature" | "set-staff-clef";
+}>;
 
 function feedbackContext(session: ScoreSessionRead, point: ScoreEditPoint | null, intent: ScoreEditIntent): WorkbenchFeedbackContext {
-  if (intent.kind === "insert") return { ...(point ? { measureId: point.measureId } : {}), componentId: "score" };
-  if (intent.kind === "delete" || intent.kind === "update") {
+  if (intent.kind === "insert-event") return { ...(point ? { measureId: point.measureId } : {}), componentId: "score" };
+  if (intent.kind === "delete-event" || intent.kind === "update-event") {
     const measure = session.notation.kind === "staff"
       ? session.notation.measures.find((item) => item.events.some((event) => event.id === intent.eventId)) : null;
     return { ...(measure ? { measureId: measure.id } : {}), eventId: intent.eventId, componentId: "note-control" };
@@ -35,19 +53,25 @@ function feedbackContext(session: ScoreSessionRead, point: ScoreEditPoint | null
   if (intent.kind === "insert-measure" || intent.kind === "remove-measure") {
     return { measureId: intent.measureId, componentId: "score" };
   }
+  if (intent.kind === "set-measure-meter") {
+    return { measureId: intent.measureId, componentId: "score-properties" };
+  }
+  if (intent.kind === "set-key-signature") {
+    return { measureId: intent.measureId, componentId: "score-properties" };
+  }
+  if (intent.kind === "set-staff-clef") return { componentId: "score-properties" };
   return { componentId: intent.kind === "document" ? "document" : "score" };
 }
 export function useScoreInput(session: ScoreSessionRead | null, client: WorkbenchClient, onSession: (session: ScoreSessionRead) => void,
   focusRef: RefObject<HTMLDivElement | null>, loadEpoch = 0, deleteTimePolicy: DeleteTimePolicy = "preserve",
-  runtime?: WorkbenchTaskRuntime) {
+  noteInputPreferences: NoteInputPreferencesV1, interactions: NotationInteractionRegistry, runtime?: WorkbenchTaskRuntime) {
   const editor = useEditorMachine<ScoreEditPoint, NonNullable<PitchDraft>>();
   const point = editor.state.target.kind === "unavailable" ? null : editor.state.target.point;
   const enabled = editor.state.target.kind === "caret";
-  const draft = editor.state.composition.kind === "composing" && editor.state.composition.methodId === "staff.pitch"
-    && enabled ? editor.state.composition.draft : null;
+  const draft = enabled ? interactions.readDraft<NonNullable<PitchDraft>>("staff", editor.state.composition) : null;
   const selectedEventId = editor.state.target.kind === "event" ? editor.state.target.eventId : null;
   const retryable = editor.state.transaction.kind === "failed" && editor.state.transaction.retryable;
-  const [duration, setDuration] = useState<InputDuration>({ base: 4, dots: 0 });
+  const [duration, setDuration] = useState<InputDuration>(noteInputPreferences.defaultDuration);
   const [draftMessage, setDraftMessage] = useState("");
   const [alter, setAlter] = useState<-1 | 0 | 1>(0);
   const [accidental, setAccidental] = useState<AccidentalState>("none");
@@ -59,21 +83,45 @@ export function useScoreInput(session: ScoreSessionRead | null, client: Workbenc
   const [feedback, setFeedback] = useState<WorkbenchFeedback | null>(null);
   const feedbackSequence = useRef(0);
   const snapshot = useRef(session); snapshot.current = session;
-  const queue = useRef<Queued[]>([]), running = useRef(false), blocked = useRef(false), mounted = useRef(true);
+  const mounted = useRef(true);
+  const generation = useRef(0);
+  const noteInputPreferencesRef = useRef(noteInputPreferences);
+  noteInputPreferencesRef.current = noteInputPreferences;
+  const controllerRef = useRef<ScoreEditController<Queued> | null>(null);
+  if (!controllerRef.current) {
+    controllerRef.current = new ScoreEditController<Queued>((state) => {
+      if (mounted.current) setPending(state.pending);
+    });
+  }
+  const controller = controllerRef.current;
   const currentPoint = () => editor.current.current.target.kind === "unavailable" ? null : editor.current.current.target.point;
   function clearDraft() { editor.send({ type: "cancel-composition" }); setDraftMessage(""); }
   function updatePoint(next: ScoreEditPoint) { editor.send({ type: "point-updated", point: next }); }
-  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   useEffect(() => {
-    for (const item of queue.current) if (item.operationToken) runtime?.operations.finish(item.operationToken);
-    queue.current = []; blocked.current = false;
-    setPending(0); setMessage(""); setFeedback(null);
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      generation.current += 1;
+      for (const item of controller.reset()) {
+        if (item.operationToken) runtime?.operations.finish(item.operationToken);
+      }
+    };
+  }, [controller, runtime?.operations.finish]);
+  useEffect(() => {
+    generation.current += 1;
+    for (const item of controller.reset()) {
+      if (item.operationToken) runtime?.operations.finish(item.operationToken);
+    }
+    setMessage(""); setFeedback(null);
     setPreviewPitch(null);
     editor.send({ type: "reset", point: session?.notation.kind === "staff" ? defaultScoreEditPoint(session.notation) : null });
-  }, [session?.documentId, loadEpoch, runtime?.operations.finish]);
+  }, [controller, session?.documentId, loadEpoch, runtime?.operations.finish]);
+  useEffect(() => {
+    setDuration(noteInputPreferences.defaultDuration);
+  }, [noteInputPreferences.defaultDuration.base, noteInputPreferences.defaultDuration.dots]);
   const focus = () => focusRef.current?.focus({ preventScroll: true });
   function clearFeedback() {
-    if (!blocked.current) {
+    if (!controller.blocked) {
       setMessage(""); setFeedback(null);
       editor.send({ type: "dismiss-failure" });
     }
@@ -88,125 +136,111 @@ export function useScoreInput(session: ScoreSessionRead | null, client: Workbenc
     setMessage("");
     setFeedback(nextFeedback);
   }
-  async function drain() {
-    if (running.current || blocked.current) return;
-    running.current = true;
+  async function execute(item: Queued): Promise<ScoreEditResolution> {
+    if (!mounted.current || item.generation !== generation.current) return "discard-current";
+    const current = snapshot.current;
+    if (!current) return "discard-current";
+    const editPoint = item.point ?? currentPoint();
+    const action = scoreIntentToAction(item.intent, editPoint, deleteTimePolicy);
+    if (!action) {
+      const invalidTargetMessage = "当前输入目标已经失效，请重新定位";
+      rejectEdit(invalidTargetMessage, item.context);
+      setMessage(invalidTargetMessage);
+      return "discard-all";
+    }
+    item.context = feedbackContext(current, editPoint, item.intent);
+    item.request ??= { requestId: crypto.randomUUID(), documentId: current.documentId,
+      expectedVersion: current.documentVersion, action };
+    if (!item.operationToken && runtime) {
+      item.operationToken = runtime.operations.begin("score.edit", item.context.componentId ?? "score");
+    }
+    editor.send({ type: "submit", operation: item.intent.kind, requestId: item.request.requestId });
     try {
-      while (queue.current.length && mounted.current) {
-        const item = queue.current[0]!, current = snapshot.current;
-        if (!current) { queue.current = []; break; }
-        const editPoint = currentPoint();
-        const action = scoreIntentToAction(item.intent, editPoint, deleteTimePolicy);
-        if (!action) { queue.current = []; setPending(0); break; }
-        item.context = feedbackContext(current, editPoint, item.intent);
-        item.request ??= { requestId: crypto.randomUUID(), documentId: current.documentId, expectedVersion: current.documentVersion, action };
-        if (!item.operationToken && runtime) item.operationToken = runtime.operations.begin("score.edit", item.context.componentId ?? "score");
-        editor.send({ type: "submit", operation: item.intent.kind, requestId: item.request.requestId });
-        try {
-          const result = await client.edit(item.request);
-          if (!mounted.current || snapshot.current?.documentId !== result.documentId) return;
-          snapshot.current = result; onSession(result);
-          if (action.kind === "set-event-properties" || action.kind === "set-title" || action.kind === "set-document-metadata") {
-            const destination = item.completionFocus?.isConnected ? item.completionFocus : focusRef.current;
-            destination?.focus({ preventScroll: true });
-          }
-          if (result.notation.kind === "staff") {
-            const previous = current.notation;
-            let nextPoint = normalizeScoreEditPoint(result.notation, currentPoint());
-            if (action.kind === "append") {
-              const before = previous.kind === "staff" ? previous.measures.find((measure) => measure.id === action.measureId) : undefined;
-              const after = result.notation.measures.find((measure) => measure.id === action.measureId);
-              const beforeIds = new Set(before?.events.map((event) => event.id) ?? []);
-              const inserted = after?.events.filter((event) => !beforeIds.has(event.id)).at(-1);
-              const nextMeasureId = nextMeasure(result.notation, action.measureId);
-              const oldTail = before?.events.at(-1);
-              const insertedAtTail = action.anchor.kind === "start" ? !oldTail
-                : oldTail?.id === action.anchor.eventId;
-              if (insertedAtTail && nextMeasureId !== action.measureId) {
-                const nextMeasure = result.notation.measures.find((measure) => measure.id === nextMeasureId);
-                if (nextMeasure) nextPoint = measureStartPoint(result.notation, nextMeasure, currentPoint()?.preferredPitch ?? null);
-              } else if (inserted) {
-                nextPoint = eventEndPoint(result.notation, inserted.id, currentPoint()?.preferredPitch ?? null) ?? nextPoint;
-              }
-            }
-            if (action.kind === "paste-fragment") {
-              const before = previous.kind === "staff" ? previous.measures.find((measure) => measure.id === action.measureId) : undefined;
-              const after = result.notation.measures.find((measure) => measure.id === action.measureId);
-              const beforeIds = new Set(before?.events.map((event) => event.id) ?? []);
-              const inserted = after?.events.filter((event) => !beforeIds.has(event.id));
-              const lastInserted = inserted?.at(-1);
-              if (lastInserted) nextPoint = eventEndPoint(result.notation, lastInserted.id,
-                currentPoint()?.preferredPitch ?? null) ?? nextPoint;
-            }
-            if (action.kind === "insert-measure") {
-              const beforeIds = new Set(previous.kind === "staff" ? previous.measures.map((measure) => measure.id) : []);
-              const inserted = result.notation.measures.find((measure) => !beforeIds.has(measure.id));
-              if (inserted) nextPoint = measureStartPoint(result.notation, inserted, currentPoint()?.preferredPitch ?? null);
-            }
-            if (action.kind === "remove-measure") {
-              const previousIndex = previous.kind === "staff"
-                ? previous.measures.findIndex((measure) => measure.id === action.measureId) : 0;
-              const fallbackIndex = Math.max(0, Math.min(result.notation.measures.length - 1, previousIndex));
-              const destination = result.notation.measures[fallbackIndex] ?? result.notation.measures.at(-1);
-              if (destination) nextPoint = measureStartPoint(result.notation, destination, currentPoint()?.preferredPitch ?? null);
-            }
-            const selectedId = editor.current.current.target.kind === "event" ? editor.current.current.target.eventId : null;
-            const retainSelection = action.kind !== "delete-event" && action.kind !== "delete-range"
-              && action.kind !== "paste-fragment" && action.kind !== "insert-measure" && action.kind !== "remove-measure";
-            const selectedPoint = selectedId && retainSelection
-              ? eventStartPoint(result.notation, selectedId, nextPoint.preferredPitch) : null;
-            editor.send({ type: "commit", requestId: item.request.requestId,
-              target: selectedId && selectedPoint ? { kind: "event", eventId: selectedId, point: selectedPoint }
-                : { kind: "caret", point: nextPoint } });
-          } else {
-            editor.send({ type: "commit", requestId: item.request.requestId, target: { kind: "unavailable" } });
-          }
-          if (item.operationToken) runtime?.operations.finish(item.operationToken);
-          queue.current.shift(); setPending(queue.current.length);
-        } catch (error) {
-          if (!mounted.current) return;
-          const propertyEdit = action.kind === "set-event-properties" || action.kind === "set-title"
-            || action.kind === "set-document-metadata";
-          setFeedbackTarget(propertyEdit ? "properties" : "score");
-          const requestIssue = error instanceof Error && "issue" in error && isWorkbenchIssue(error.issue) ? error.issue : null;
-          const errorMessage = error instanceof Error ? error.message : "操作失败，请重试";
-          const status = error instanceof Error && "status" in error && typeof error.status === "number" ? error.status : 0;
-          const definiteRejection = status >= 400 && status < 500;
-          const issue = requestIssue ?? localWorkbenchIssue(errorMessage, item.context, {
-            code: definiteRejection ? "editor.operation-rejected" : "bridge.operation-unconfirmed",
-            retryable: !definiteRejection, source: definiteRejection ? "editor" : "bridge",
-          });
-          const nextFeedback = runtime?.feedback.report(issue, item.context) ?? (() => {
-            feedbackSequence.current += 1;
-            return adaptWorkbenchIssue(issue, item.context, feedbackSequence.current);
-          })();
-          setFeedback(nextFeedback);
-          if (item.operationToken) runtime?.operations.fail(item.operationToken, issue, !definiteRejection);
-          editor.send({ type: "reject", requestId: item.request.requestId, retryable: !definiteRejection });
-          // The retained client may predate a development hot reload. Class identity
-          // can change, but a definite HTTP rejection still must not become a retry.
-          if (definiteRejection) {
-            queue.current = []; setPending(0);
-            if (status === 409) {
-              try { const fresh = await client.read(); if (fresh && mounted.current) { snapshot.current = fresh; onSession(fresh); } } catch { /* The original conflict remains visible. */ }
-            }
-            setMessage(action.kind === "append" ? `${issue.message}。后续排队输入已停止。` : issue.message);
-          } else {
-            blocked.current = true;
-            setMessage(issue.message);
-          }
-          break;
-        }
+      const result = await client.edit(item.request);
+      if (!mounted.current || item.generation !== generation.current
+        || snapshot.current?.documentId !== result.documentId) {
+        if (item.operationToken) runtime?.operations.finish(item.operationToken);
+        return "discard-current";
       }
-    } finally { running.current = false; }
+      snapshot.current = result; onSession(result);
+      if (action.kind === "set-event-properties" || action.kind === "set-title"
+        || action.kind === "set-document-metadata" || action.kind === "set-measure-meter"
+        || action.kind === "set-staff-clef") {
+        const destination = item.completionFocus?.isConnected ? item.completionFocus : focusRef.current;
+        destination?.focus({ preventScroll: true });
+      }
+      const selectedId = item.preserveSelection === false ? null
+        : editor.current.current.target.kind === "event" ? editor.current.current.target.eventId : null;
+      const focusResolution = reconcileScoreFocus(current, result, action, editPoint, selectedId);
+      editor.send({ type: "commit", requestId: item.request.requestId, target: focusResolution.target });
+      if (action.kind === "append" && noteInputPreferencesRef.current.retention !== "all") {
+        const preferences = noteInputPreferencesRef.current;
+        if (preferences.retention === "reset") setDuration(preferences.defaultDuration);
+        setAccidental("none");
+        setAlter(0);
+        setRest(false);
+        setPreviewPitch(null);
+        editor.send({ type: "cancel-composition" });
+        setDraftMessage("");
+      }
+      if (item.operationToken) runtime?.operations.finish(item.operationToken);
+      return "committed";
+    } catch (error) {
+      if (!mounted.current || item.generation !== generation.current) {
+        if (item.operationToken) runtime?.operations.finish(item.operationToken);
+        return "discard-current";
+      }
+      const propertyEdit = action.kind === "set-event-properties" || action.kind === "set-title"
+        || action.kind === "set-document-metadata" || action.kind === "set-measure-meter"
+        || action.kind === "set-staff-clef";
+      setFeedbackTarget(propertyEdit ? "properties" : "score");
+      const requestIssue = error instanceof Error && "issue" in error && isWorkbenchIssue(error.issue) ? error.issue : null;
+      const errorMessage = error instanceof Error ? error.message : "操作失败，请重试";
+      const status = error instanceof Error && "status" in error && typeof error.status === "number" ? error.status : 0;
+      const definiteRejection = status >= 400 && status < 500;
+      const issue = requestIssue ?? localWorkbenchIssue(errorMessage, item.context, {
+        code: definiteRejection ? "editor.operation-rejected" : "bridge.operation-unconfirmed",
+        retryable: !definiteRejection, source: definiteRejection ? "editor" : "bridge",
+      });
+      const nextFeedback = runtime?.feedback.report(issue, item.context) ?? (() => {
+        feedbackSequence.current += 1;
+        return adaptWorkbenchIssue(issue, item.context, feedbackSequence.current);
+      })();
+      setFeedback(nextFeedback);
+      if (item.operationToken) runtime?.operations.fail(item.operationToken, issue, !definiteRejection);
+      editor.send({ type: "reject", requestId: item.request.requestId, retryable: !definiteRejection });
+      // The retained client may predate a development hot reload. Class identity
+      // can change, but a definite HTTP rejection still must not become a retry.
+      if (definiteRejection) {
+        if (status === 409) {
+          try {
+            const fresh = await client.read();
+            if (fresh && mounted.current && item.generation === generation.current) {
+              snapshot.current = fresh; onSession(fresh);
+            }
+          } catch { /* The original conflict remains visible. */ }
+        }
+        setMessage(action.kind === "append" ? `${issue.message}。后续排队输入已停止。` : issue.message);
+        return "discard-all";
+      }
+      setMessage(issue.message);
+      return "retryable";
+    }
   }
-  function enqueue(intent: ScoreEditIntent, completionFocus?: HTMLElement) {
-    const point = currentPoint();
-    if (!snapshot.current || snapshot.current.notation.kind !== "staff" || (intent.kind === "insert" && !point)
-      || blocked.current) return false;
+  function drain() { void controller.drain(execute); }
+  function enqueue(intent: ScoreEditIntent, completionFocus?: HTMLElement,
+    options: { readonly point?: ScoreEditPoint; readonly preserveSelection?: boolean } = {}) {
+    const point = options.point ?? currentPoint();
+    if (!snapshot.current || snapshot.current.notation.kind !== "staff" || (intent.kind === "insert-event" && !point)
+      || controller.blocked) return false;
     const context = feedbackContext(snapshot.current, point, intent);
-    setMessage(""); setFeedback(null); queue.current.push({ intent, context, ...(completionFocus ? { completionFocus } : {}) }); setPending(queue.current.length); void drain();
-    return true;
+    setMessage(""); setFeedback(null);
+    const accepted = controller.enqueue({ intent, context, generation: generation.current,
+      ...(options.point ? { point: options.point } : {}),
+      ...(options.preserveSelection === undefined ? {} : { preserveSelection: options.preserveSelection }),
+      ...(completionFocus ? { completionFocus } : {}) });
+    if (accepted) drain();
+    return accepted;
   }
   function write(pitch: Pick<InputPitch, "step" | "octave">, asRest = rest) {
     const view = snapshot.current?.notation;
@@ -217,10 +251,10 @@ export function useScoreInput(session: ScoreSessionRead | null, client: Workbenc
       setPreviewPitch(writtenPitch);
       if (point) updatePoint({ ...point, preferredPitch: writtenPitch });
     }
-    enqueue({ kind: "insert", event: { duration, content: asRest ? { kind: "rest" } : { kind: "note", pitch: writtenPitch } } });
+    enqueue({ kind: "insert-event", event: { duration, content: asRest ? { kind: "rest" } : { kind: "note", pitch: writtenPitch } } });
   }
   function locate(nextPoint: ScoreEditPoint, pitch: InputPitch, writeNow: boolean) {
-    if (queue.current.length) return;
+    if (controller.pending) return;
     editor.send({ type: "locate", point: { ...nextPoint, preferredPitch: pitch } }); focus();
     if (writeNow) write(pitch);
   }
@@ -253,27 +287,73 @@ export function useScoreInput(session: ScoreSessionRead | null, client: Workbenc
       if (!event.repeat) setDuration((value) => ({ ...value, dots: value.dots ? 0 : 1 }));
       return;
     }
-    const composition = editor.current.current.composition;
-    const result = resolveStaffKey(composition.kind === "composing" && composition.methodId === "staff.pitch"
-      ? composition.draft : null, event.key, event.repeat);
-    if (!result.handled) return;
+    const state = editor.current.current;
+    const view = snapshot.current?.notation;
+    const editPoint = currentPoint();
+    const output = interactions.translate<StaffInputContext, NonNullable<PitchDraft>, StaffInsertIntent>("staff", keyPressSignal(event), {
+      focusScope: "score",
+      target: state.target.kind,
+      notationKind: view?.kind === "staff" ? "staff" : "unknown",
+      capabilities: ["locate", "navigate", "compose", "insert", "update", "delete", "paste", "history"],
+      composing: state.composition.kind === "composing",
+      composition: state.composition,
+      duration,
+      rest,
+      resolveAlter: (pitch) => {
+        const inherited = view?.kind === "staff" && editPoint ? inheritedAlterAtPoint(view, editPoint, pitch) : 0;
+        return alterForAccidental(accidental, inherited);
+      },
+    }) as StaffInputOutput | null;
+    if (!output || (output.kind === "ignored" && !output.handled)) return;
     event.preventDefault();
-    if (event.repeat) return;
-    if (result.draft) editor.send({ type: "compose", methodId: "staff.pitch", draft: result.draft });
-    else clearDraft();
-    setDraftMessage(result.message ?? "");
-    if (result.draft) setRest(false);
-    if (result.pitch) write(result.pitch, false);
-    if (result.rest) { setRest(true); enqueue({ kind: "insert", event: { duration, content: { kind: "rest" } } }); }
+    if (output.kind === "ignored") return;
+    if (output.kind === "compose") {
+      editor.send({ type: "compose", methodId: output.methodId, draft: output.draft });
+      setDraftMessage(output.message ?? "");
+      setRest(false);
+      return;
+    }
+    if (output.kind === "cancel-composition") {
+      clearDraft();
+      setDraftMessage(output.message ?? "");
+      return;
+    }
+    clearDraft();
+    setDraftMessage("");
+    if (output.intent.kind !== "insert-event") return;
+    if (output.intent.event.content.kind === "note") {
+      const pitch = output.intent.event.content.pitch;
+      setPreviewPitch(pitch);
+      setRest(false);
+      if (editPoint) updatePoint({ ...editPoint, preferredPitch: pitch });
+    } else {
+      setRest(true);
+    }
+    enqueue(output.intent);
   }
   function navigate(nextPoint: ScoreEditPoint) {
-    if (queue.current.length || blocked.current) return;
+    if (controller.pending || controller.blocked) return;
     editor.send({ type: "locate", point: nextPoint }); focus();
   }
   function withView(action: (view: Extract<ScoreSessionRead["notation"], { readonly kind: "staff" }>, current: ScoreEditPoint) => ScoreEditPoint) {
     const view = snapshot.current?.notation, current = currentPoint();
     if (view?.kind !== "staff" || !current) return;
     navigate(action(view, current));
+  }
+  function propertyIntent(action: PropertyEditAction): ScoreEditIntent {
+    if (action.kind === "set-title" || action.kind === "set-document-metadata") return { kind: "document", action };
+    if (action.kind === "set-measure-meter") return { kind: "set-measure-meter", measureId: action.measureId,
+      meter: action.meter, scope: action.scope };
+    if (action.kind === "set-key-signature") return { kind: "set-key-signature", partId: action.partId,
+      measureId: action.measureId, change: action.change };
+    if (action.kind === "set-staff-clef") return { kind: "set-staff-clef", staffId: action.staffId, clef: action.clef };
+    return { kind: "update-event", eventId: action.eventId, properties: action.properties };
+  }
+  function applyPropertyChanges(actions: readonly PropertyEditAction[], completionFocus?: HTMLElement) {
+    if (!actions.length || controller.pending || controller.blocked) return false;
+    const dialog = document.activeElement?.closest<HTMLElement>('[role="dialog"]');
+    clearDraft();
+    return actions.every((action) => enqueue(propertyIntent(action), dialog ?? completionFocus));
   }
   return { editorState: editor.state, selectedEventId, enabled, duration, draft, draftMessage, alter, accidental, rest,
     previewPitch, point, measureId: point?.measureId ?? "",
@@ -284,16 +364,9 @@ export function useScoreInput(session: ScoreSessionRead | null, client: Workbenc
     edgeEditPoint: (edge: "measure-start" | "measure-end" | "score-start" | "score-end") =>
       withView((view, current) => edgeScoreEditPoint(view, current, edge)),
     activate: () => { if (currentPoint()) editor.send({ type: "locate", point: currentPoint()! }); focus(); },
-    applyProperties: (action: Extract<ScoreEditAction, {
-      kind: "set-event-properties" | "set-title" | "set-document-metadata";
-    }>, completionFocus?: HTMLElement) => {
-      if (queue.current.length || blocked.current) return false;
-      // Capture before disabling the form; modal edits must not focus the score behind it.
-      const dialog = document.activeElement?.closest<HTMLElement>('[role="dialog"]');
-      clearDraft();
-      return enqueue(action.kind === "set-title" || action.kind === "set-document-metadata" ? { kind: "document", action }
-        : { kind: "update", eventId: action.eventId, properties: action.properties }, dialog ?? completionFocus);
-    },
+    applyProperties: (action: PropertyEditAction, completionFocus?: HTMLElement) =>
+      applyPropertyChanges([action], completionFocus),
+    applyPropertyChanges,
     exit: clearDraft,
     selectEvent: (eventId: string, nextPoint: ScoreEditPoint) => {
       editor.send({ type: "select", eventId, point: nextPoint }); clearFeedback(); focus();
@@ -301,11 +374,20 @@ export function useScoreInput(session: ScoreSessionRead | null, client: Workbenc
     clearSelection: () => { if (currentPoint()) editor.send({ type: "locate", point: currentPoint()! }); focus(); },
     composePitchStep: (step: InputPitch["step"]) => {
       clearFeedback();
-      editor.send({ type: "compose", methodId: "staff.pitch", draft: step });
+      const composition = interactions.startComposition("staff", step);
+      if (composition) editor.send({ type: "compose", ...composition });
     },
     cancelComposition: clearDraft,
-    deleteEvent: (eventId: string) => { clearDraft(); enqueue({ kind: "delete", eventId }); focus(); },
+    deleteEvent: (eventId: string, timePolicy?: DeleteTimePolicy) => {
+      clearDraft(); enqueue({ kind: "delete-event", eventId, ...(timePolicy ? { timePolicy } : {}) }); focus();
+    },
     deleteRange: (range: ScoreEventRange) => { clearDraft(); enqueue({ kind: "delete-range", range }); focus(); },
+    insertRestAt: (target: ScoreEditPoint) => {
+      clearDraft();
+      enqueue({ kind: "insert-event", event: { duration, content: { kind: "rest" } } }, undefined,
+        { point: target, preserveSelection: false });
+      focus();
+    },
     insertMeasure: (measureId: string, position: "before" | "after") => {
       clearDraft(); enqueue({ kind: "insert-measure", measureId, position }); focus();
     },
@@ -327,7 +409,7 @@ export function useScoreInput(session: ScoreSessionRead | null, client: Workbenc
     },
     setAccidental: (value: AccidentalState, completionFocus?: HTMLElement) => {
       setAccidental(value);
-      if (value !== "none") setAlter(value === "flat" ? -1 : value === "sharp" ? 1 : 0);
+      setAlter(value === "flat" ? -1 : value === "sharp" ? 1 : 0);
       if (completionFocus?.isConnected) completionFocus.focus({ preventScroll: true }); else focus();
     },
     setPitch: (value: InputPitch, completionFocus?: HTMLElement) => {
@@ -339,12 +421,14 @@ export function useScoreInput(session: ScoreSessionRead | null, client: Workbenc
     history: (kind: "undo" | "redo") => { clearDraft(); enqueue({ kind: "history", direction: kind }); focus(); },
     retry: () => {
       const dialog = document.activeElement?.closest<HTMLElement>('[role="dialog"]');
-      if (dialog && queue.current[0]) queue.current[0].completionFocus = dialog;
-      if (queue.current[0]?.operationToken) runtime?.operations.recover(queue.current[0].operationToken);
-      if (queue.current[0]?.request) editor.send({ type: "retry", requestId: queue.current[0].request.requestId });
-      blocked.current = false; setMessage("");
+      const current = controller.current();
+      if (dialog && current) current.completionFocus = dialog;
+      if (current?.operationToken) runtime?.operations.recover(current.operationToken);
+      if (current?.request) editor.send({ type: "retry", requestId: current.request.requestId });
+      if (!controller.recover()) return;
+      setMessage("");
       if (dialog) dialog.focus({ preventScroll: true }); else focus();
-      void drain();
+      drain();
     },
   };
 }

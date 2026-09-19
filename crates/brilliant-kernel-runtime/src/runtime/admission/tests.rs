@@ -36,6 +36,42 @@ fn snapshot(runtime: &KernelRuntime) -> ScoreDocumentV1 {
 }
 
 #[test]
+fn batch_child_wraps_candidate_work_limit_and_cannot_continue_the_transaction() {
+    let initial = crate::store::tests::fixture();
+    let runtime = KernelRuntime::create(initial.clone()).unwrap();
+    let mut candidate = CandidateExecution::new(
+        TransactionOverlayV1::new(&runtime.store),
+        initial.id.clone(),
+    )
+    .unwrap();
+    candidate.set_work_limit_for_test(candidate.work_units_for_test());
+    let mut transaction = AdmissionTransaction {
+        branch: Some(Branch::Candidate(candidate)),
+        store: &runtime.store,
+        version: runtime.document_version,
+        failed_metrics: KernelStage3MetricsV1::default(),
+    };
+    let command = decode_admission_submit_request(
+        format!(r#"{{"apiVersion":1,"command":{}}}"#, batch(&[PITCH])).as_bytes(),
+    )
+    .unwrap()
+    .command;
+
+    let failure = transaction.dispatch(command, &typed).unwrap_err();
+    assert!(matches!(
+        failure,
+        CommandFailure::BatchChildRejected {
+            failed_command_index: 0,
+            failure: LeafFailure::ResourceLimitExceeded {
+                limit_kind: KernelStage3ResourceLimitKindV1::TransactionWorkUnits,
+                ..
+            }
+        }
+    ));
+    assert_eq!(snapshot(&runtime), initial);
+}
+
+#[test]
 fn typed_prefix_and_raw_suffix_publish_one_history_entry_and_replay_it() {
     let initial = crate::store::tests::fixture();
     let mut runtime = KernelRuntime::create(initial.clone()).unwrap();

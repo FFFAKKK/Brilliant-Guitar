@@ -35,7 +35,7 @@ export function resolveStaffPointerTarget(input: StaffPointerInput): StaffPointe
   const measureGeometry = interaction.measures.find((item) => item.measureId === measureId);
   const measure = view.measures.find((item) => item.id === measureId);
   if (!measureGeometry || !measure) return null;
-  const pitch = pitchAtY(y, measureGeometry.staffBottom, measureGeometry.lineSpacing);
+  const pitch = pitchAtY(y, measureGeometry.staffBottom, measureGeometry.lineSpacing, view.clef);
   const eventTargets = interaction.events.filter((item) => item.measureId === measureId)
     .map((item) => ({ kind: "event" as const, eventId: item.eventId,
       distance: Math.abs(item.x + item.width / 2 - x) }));

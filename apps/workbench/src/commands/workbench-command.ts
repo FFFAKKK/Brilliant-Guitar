@@ -1,4 +1,5 @@
 import type { KeyboardEvent } from "react";
+import { isNormalizedShortcut } from "../contracts/shortcut-settings.ts";
 
 export type WorkbenchCommandScope = "global" | "score";
 
@@ -7,6 +8,9 @@ export interface WorkbenchCommand {
   readonly label: string;
   readonly shortcut?: string;
   readonly shortcutLabel?: string;
+  /** Original contribution binding retained while a user override is active. */
+  readonly defaultShortcut?: string;
+  readonly defaultShortcutLabel?: string;
   readonly scope: WorkbenchCommandScope;
   readonly enabled: boolean;
   readonly run: () => void | Promise<void>;
@@ -17,9 +21,52 @@ export function normalizedShortcut(event: Pick<KeyboardEvent, "key" | "ctrlKey" 
   if (event.ctrlKey || event.metaKey) parts.push("Mod");
   if (event.altKey) parts.push("Alt");
   if (event.shiftKey) parts.push("Shift");
-  const key = event.key === " " ? "Space" : event.key.length === 1 ? event.key.toUpperCase() : event.key;
-  parts.push(key === "+" || key === "=" ? "Plus" : key === "-" || key === "_" ? "Minus" : key);
+  const aliases: Readonly<Record<string, string>> = {
+    " ": "Space", "+": "Plus", "=": "Plus", "-": "Minus", "_": "Minus", ",": "Comma", ".": "Period",
+    "/": "Slash", "\\": "Backslash", ";": "Semicolon", "'": "Quote", "[": "BracketLeft", "]": "BracketRight", "`": "Backquote",
+  };
+  const key = aliases[event.key] ?? (event.key.length === 1 ? event.key.toUpperCase() : event.key);
+  parts.push(key);
   return parts.join("+");
+}
+
+export function shortcutLabel(shortcut: string): string {
+  const labels: Readonly<Record<string, string>> = {
+    Mod: "Ctrl/⌘", Alt: "Alt", Shift: "Shift", Space: "Space", Plus: "＋", Minus: "−",
+    ArrowLeft: "←", ArrowRight: "→", ArrowUp: "↑", ArrowDown: "↓", Backspace: "Backspace",
+    Delete: "Delete", Enter: "Enter", Escape: "Esc", Tab: "Tab", PageUp: "Page Up", PageDown: "Page Down",
+    BracketLeft: "[", BracketRight: "]", Backquote: "`", Comma: ",", Period: ".", Slash: "/",
+    Backslash: "\\", Semicolon: ";", Quote: "'",
+  };
+  return shortcut.split("+").map((part) => labels[part] ?? part).join(" + ");
+}
+
+export function applyShortcutBindings(commands: readonly WorkbenchCommand[],
+  bindings: Readonly<Record<string, string | null>>): readonly WorkbenchCommand[] {
+  return commands.map((command) => {
+    const defaultShortcut = command.defaultShortcut ?? command.shortcut;
+    const defaultShortcutLabel = command.defaultShortcutLabel ?? command.shortcutLabel;
+    if (!Object.prototype.hasOwnProperty.call(bindings, command.id)) return {
+      ...command,
+      ...(defaultShortcut ? { defaultShortcut } : {}),
+      ...(defaultShortcutLabel ? { defaultShortcutLabel } : {}),
+    };
+    const configured = bindings[command.id];
+    const { shortcut: _shortcut, shortcutLabel: _shortcutLabel, ...base } = command;
+    if (configured === null) return {
+      ...base,
+      ...(defaultShortcut ? { defaultShortcut } : {}),
+      ...(defaultShortcutLabel ? { defaultShortcutLabel } : {}),
+    };
+    if (!configured || !isNormalizedShortcut(configured)) return command;
+    return {
+      ...base,
+      shortcut: configured,
+      shortcutLabel: shortcutLabel(configured),
+      ...(defaultShortcut ? { defaultShortcut } : {}),
+      ...(defaultShortcutLabel ? { defaultShortcutLabel } : {}),
+    };
+  });
 }
 
 export class WorkbenchCommandRouter {

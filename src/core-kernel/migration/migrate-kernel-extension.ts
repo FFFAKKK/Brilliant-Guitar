@@ -1,5 +1,5 @@
 import { captureStrictInput } from "../codec/strict-input-capture";
-import { hasIncompatibleContributionReads } from "../registry/contribution-reads";
+import { hasIncompatibleContributionReads, hasUnavailableContributionReads } from "../registry/contribution-reads";
 import { nativeExtensionMigrationFactoryV2 } from "../native/integrated-backend-selection";
 import { invokeScopedCallbackV1, type ScopedCallbackInvokerV1 } from "../module-sdk/scoped-invocation";
 import { decodeScoreDocument } from "../codec/decode-score-document";
@@ -350,6 +350,7 @@ export function validateExtensionMigrationModulesV1(
     if (view.compatibleExtensions.length === 0) {
       continue;
     }
+    if (hasUnavailableContributionReads(state, contribution)) return { ok: false, kind: "contract", contribution };
     if (hasIncompatibleContributionReads(document, contribution)) return { ok: false, kind: "contract", contribution };
     let raw: unknown;
     try {
@@ -478,7 +479,7 @@ export function migrateKernelExtension(
         report: report(),
       });
     }
-    const prepared = prepareExtensionMigrationEffectV1(decoded.value, request, contribution, effect);
+    const prepared = prepareExtensionMigrationEffectV1(decoded.value, request, contribution, effect, catalogState);
     if (!prepared.ok) return rejected(prepared.failure);
     const candidate = clone(decoded.value);
     const replacement: ExtensionBlock = {
@@ -529,6 +530,7 @@ export function migrateKernelExtension(
  * only an extension payload; it never replaces a document or owns a history. */
 export function prepareExtensionMigrationEffectV1(document: ScoreDocument, request: KernelExtensionMigrationRequestV1,
   contribution: CompiledDomainCommandContributionV1, effect: CompiledModuleEffectDefinitionV1,
+  state: KernelIntegratedCatalogState,
   invokeScoped: ScopedCallbackInvokerV1 = invokeScopedCallbackV1):
   { readonly ok: true; readonly schemaVersion: number; readonly payload: JsonObject } | { readonly ok: false; readonly failure: KernelExtensionMigrationFailure } {
     const target = targetBlock(document, request.namespace, request.owner);
@@ -537,6 +539,9 @@ export function prepareExtensionMigrationEffectV1(document: ScoreDocument, reque
     if (binding === undefined) {
       return { ok: false, failure: { code: "migration.assembly-mismatch" } };
     }
+    if (hasUnavailableContributionReads(state, contribution)) return { ok: false, failure: {
+      code: "migration.contribution-contract-violation", moduleId: contribution.moduleId, contributionId: contribution.contributionId,
+    } };
     if (hasIncompatibleContributionReads(document, contribution)) return { ok: false, failure: {
       code: "migration.contribution-contract-violation", moduleId: contribution.moduleId, contributionId: contribution.contributionId,
     } };

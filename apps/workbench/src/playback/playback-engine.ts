@@ -1,11 +1,6 @@
-import type { PlaybackPlanItem } from "./playback-plan.ts";
+import type { PluginPlaybackEngine, PluginPlaybackEvent } from "../plugins/plugin-sdk.ts";
 
-export interface PlaybackEngine {
-  activate(): Promise<void>;
-  now(): number;
-  start(items: readonly PlaybackPlanItem[], offsetSeconds: number): void;
-  stop(): void;
-}
+export interface PlaybackEngine extends PluginPlaybackEngine {}
 
 type AudioContextConstructor = new () => AudioContext;
 
@@ -29,7 +24,7 @@ export class WebAudioPlaybackEngine implements PlaybackEngine {
 
   now(): number { return this.#context?.currentTime ?? performance.now() / 1000; }
 
-  start(items: readonly PlaybackPlanItem[], offsetSeconds: number): void {
+  start(items: readonly PluginPlaybackEvent[], offsetSeconds: number): void {
     const context = this.#context;
     if (!context || context.state !== "running") throw new Error("音频设备尚未激活");
     this.stop();

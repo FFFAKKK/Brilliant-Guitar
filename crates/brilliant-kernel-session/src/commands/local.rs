@@ -27,20 +27,34 @@ pub(crate) fn dispatch(
         CoreCommandEnvelopeV1::EventSetNoteValue {
             target: ScoreEntityTargetV1::Event { event_id },
             note_value,
-        } => transaction.set_event_note_value(event_id, note_value),
+        } => KernelEffectV1::SetEventNoteValue {
+            event_id,
+            note_value,
+        }
+        .apply(transaction),
         CoreCommandEnvelopeV1::VoiceInsertNotesEvent {
             target: ScoreEntityTargetV1::Voice { voice_id },
             anchor,
             event,
-        } => transaction.insert_notes_event(voice_id, anchor, event),
+        } => KernelEffectV1::InsertNotesEvent {
+            voice_id,
+            anchor,
+            event,
+        }
+        .apply(transaction),
         CoreCommandEnvelopeV1::VoiceInsertRestEvent {
             target: ScoreEntityTargetV1::Voice { voice_id },
             anchor,
             event,
-        } => transaction.insert_rest_event(voice_id, anchor, event),
+        } => KernelEffectV1::InsertRestEvent {
+            voice_id,
+            anchor,
+            event,
+        }
+        .apply(transaction),
         CoreCommandEnvelopeV1::EventRemove {
             target: ScoreEntityTargetV1::Event { event_id },
-        } => transaction.remove_event(event_id),
+        } => KernelEffectV1::RemoveEvent { event_id }.apply(transaction),
         CoreCommandEnvelopeV1::DocumentSetMetadata { .. }
         | CoreCommandEnvelopeV1::NoteSetWrittenPitch { .. }
         | CoreCommandEnvelopeV1::EventSetNoteValue { .. }

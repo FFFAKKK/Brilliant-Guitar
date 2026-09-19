@@ -49,6 +49,7 @@ struct Assessment<'view, 'base> {
     overlay: &'view mut TransactionOverlayV1<'base>,
     work: IncrementalValidationWorkV1,
     diagnostics: DiagnosticCollector,
+    work_budget: Option<&'view crate::work_budget::TransactionWorkBudgetV1>,
 }
 
 /// Schedule from final surviving records, never the original forward commands.
@@ -59,11 +60,13 @@ pub(crate) fn validate_final_semantics(
     base_metadata: &ScoreMetadataV1,
     overlay: &mut TransactionOverlayV1<'_>,
     delta: FinalValidationDeltaV1<'_>,
+    work_budget: Option<&crate::work_budget::TransactionWorkBudgetV1>,
 ) -> Result<IncrementalValidationWorkV1, IncrementalValidationFailureV1> {
     let mut assessment = Assessment {
         overlay,
         work: IncrementalValidationWorkV1::default(),
         diagnostics: DiagnosticCollector::default(),
+        work_budget,
     };
     let result = assessment.run(base, base_metadata, &delta);
     let result = result.and_then(|()| {
@@ -83,6 +86,22 @@ pub(crate) fn validate_final_semantics(
 }
 
 impl Assessment<'_, '_> {
+    fn charge_rules(&mut self, units: u64) -> Result<(), Failure> {
+        self.work.rules_evaluated = self.work.rules_evaluated.saturating_add(units);
+        if let Some(budget) = self.work_budget {
+            budget.charge_metric_progress(units)?;
+        }
+        Ok(())
+    }
+
+    fn charge_dependency_reads(&mut self, units: u64) -> Result<(), Failure> {
+        self.work.dependency_reads = self.work.dependency_reads.saturating_add(units);
+        if let Some(budget) = self.work_budget {
+            budget.charge_metric_progress(units)?;
+        }
+        Ok(())
+    }
+
     fn run(
         &mut self,
         base: &dyn CoreBaseReadV1,
@@ -93,7 +112,7 @@ impl Assessment<'_, '_> {
             .metadata
             .filter(|candidate| candidate.tempo != base_metadata.tempo)
         {
-            self.work.rules_evaluated += 1;
+            self.charge_rules(1)?;
             if !tempo_is_valid(metadata.tempo.bpm.get()) {
                 self.diagnostics
                     .add(Location::Tempo, Code::TempoInvalid, None)?;
@@ -114,12 +133,20 @@ impl Assessment<'_, '_> {
     }
 
     fn order(&mut self, address: &Order) -> Result<Vec<StableId>, Failure> {
-        self.work.dependency_reads += 1;
+        self.charge_dependency_reads(1)?;
         let mut ids = Vec::new();
         let mut capacity_failed = false;
+        let mut budget_failure = None;
+        let work_budget = self.work_budget;
         self.overlay
             .visit_order(address, &mut |id| {
-                self.work.dependency_reads += 1;
+                self.work.dependency_reads = self.work.dependency_reads.saturating_add(1);
+                if let Some(budget) = work_budget
+                    && let Err(failure) = budget.charge_metric_progress(1)
+                {
+                    budget_failure = Some(failure);
+                    return false;
+                }
                 if ids.try_reserve(1).is_err() {
                     capacity_failed = true;
                     return false;
@@ -128,6 +155,9 @@ impl Assessment<'_, '_> {
                 true
             })
             .ok_or(Failure::InternalError)?;
+        if let Some(failure) = budget_failure {
+            return Err(failure);
+        }
         if capacity_failed {
             return Err(Failure::InternalError);
         }
@@ -135,7 +165,7 @@ impl Assessment<'_, '_> {
     }
 
     fn owner(&mut self, address: &Entity) -> Result<Owner, Failure> {
-        self.work.dependency_reads += 1;
+        self.charge_dependency_reads(1)?;
         self.overlay
             .read_owner(address)
             .ok_or(Failure::InternalError)
@@ -159,7 +189,7 @@ impl Assessment<'_, '_> {
     }
 
     fn check_note(&mut self, note: StableId) -> Result<(), Failure> {
-        self.work.dependency_reads += 1;
+        self.charge_dependency_reads(1)?;
         let Some(Value::NoteWrittenPitch(pitch)) =
             self.overlay.read_scalar(&Scalar::NoteWrittenPitch {
                 note_id: note.clone(),
@@ -167,7 +197,7 @@ impl Assessment<'_, '_> {
         else {
             return Err(Failure::InternalError);
         };
-        self.work.rules_evaluated += 1;
+        self.charge_rules(1)?;
         if !written_pitch_is_valid(&pitch) {
             let Owner::Event { event_id: event } = self.owner(&Entity::Note {
                 note_id: note.clone(),

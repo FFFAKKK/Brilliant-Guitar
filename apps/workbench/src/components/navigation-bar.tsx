@@ -88,3 +88,10 @@ export function NavigationBar({ groups, triggerRefs, documentTitle, documentStat
     </header>
   );
 }
+
+export function NavigationSettingsIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <path d="M12 8.2a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6Zm8 4.9v-2.2l-2.2-.7a7.2 7.2 0 0 0-.6-1.4l1.1-2-1.6-1.6-2 1.1a7.2 7.2 0 0 0-1.4-.6L12.6 3h-2.2l-.7 2.7a7.2 7.2 0 0 0-1.4.6l-2-1.1-1.6 1.6 1.1 2a7.2 7.2 0 0 0-.6 1.4l-2.2.7v2.2l2.2.7c.2.5.4 1 .6 1.4l-1.1 2 1.6 1.6 2-1.1c.4.3.9.5 1.4.6l.7 2.7h2.2l.7-2.7c.5-.2 1-.4 1.4-.6l2 1.1 1.6-1.6-1.1-2c.3-.4.5-.9.6-1.4l2.2-.7Z"
+      fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>;
+}

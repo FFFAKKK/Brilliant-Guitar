@@ -9,7 +9,10 @@ import {
 import { installNativeIntegratedBackendV2, type IntegratedNativeAddonV2 } from "../../../src/core-kernel/native/integrated-command-bus";
 import { GUITAR_COMMAND, GUITAR_NAMESPACE, minimalGuitarCatalog } from "../fixtures/minimal-guitar-module";
 
-const addon = require(resolve("target/integrated-v2/brilliant_kernel_node.node")) as IntegratedNativeAddonV2;
+const addon = require(resolve(
+  process.env.BRILLIANT_INTEGRATED_ADDON_PATH
+    ?? "target/integrated-v2/brilliant_kernel_node.node",
+)) as IntegratedNativeAddonV2;
 const opaqueBlock = { namespace: "fixture.uninstalled", owner: { kind: "score" as const }, schemaVersion: 19,
   payload: { retained: ["未知插件", "\ud800", { enabled: true }] } };
 function initialDocument(): ScoreDocument {

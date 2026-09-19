@@ -595,6 +595,8 @@ function isStage3CommandFailure(
           "effects",
           "affected-addresses",
           "changeset-logical-bytes",
+          "candidate-retained-bytes",
+          "transaction-work-units",
         ].includes(String(value.limitKind)) &&
         isSafeNonNegativeInteger(value.limit) &&
         isSafeNonNegativeInteger(value.actual)

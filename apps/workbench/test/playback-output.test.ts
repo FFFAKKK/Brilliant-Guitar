@@ -15,6 +15,13 @@ test("output registry starts with a playable built-in synthesizer", () => {
   assert.ok(registry.createEngine());
 });
 
+test("an unavailable platform contribution list still boots with the built-in output", () => {
+  const registry = new PlaybackOutputRegistry(undefined);
+  registry.replacePluginOutputs(undefined);
+  assert.deepEqual(registry.getSnapshot().outputs.map((output) => output.id), ["builtin-synth"]);
+  assert.ok(registry.createEngine());
+});
+
 test("SoundFont import validates the container, stores metadata, and keeps playback honest", async () => {
   const registry = new PlaybackOutputRegistry();
   const result = await registry.importSoundFont(soundFontFile());
@@ -50,4 +57,22 @@ test("removing an imported resource removes its output and falls back safely", a
   assert.equal(registry.getSnapshot().sampleBanks.length, 0);
   assert.equal(registry.getSnapshot().outputs.length, 1);
   assert.equal(registry.getSnapshot().activeId, "builtin-synth");
+});
+
+test("plugin output reconciliation keeps the built-in fallback and retires deactivated engines", async () => {
+  const pluginOutput = {
+    id: "test-midi-output",
+    kind: "midi-out" as const,
+    label: "测试 MIDI",
+    createEngine: () => ({ activate: async () => {}, now: () => 0, start() {}, stop() {} }),
+  };
+  const registry = new PlaybackOutputRegistry([pluginOutput]);
+  assert.deepEqual(registry.getSnapshot().outputs.map((output) => output.id), ["builtin-synth", "test-midi-output"]);
+  assert.equal((await registry.select(pluginOutput.id)).ok, true);
+
+  registry.replacePluginOutputs([]);
+
+  assert.equal(registry.getSnapshot().activeId, "builtin-synth");
+  assert.deepEqual(registry.getSnapshot().outputs.map((output) => output.id), ["builtin-synth"]);
+  assert.ok(registry.createEngine());
 });

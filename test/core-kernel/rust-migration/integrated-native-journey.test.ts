@@ -8,6 +8,7 @@ import { installNativeIntegratedBackendV2, readNativeRuleWarningPageV1, readNati
 import { createCoreScoreFixture } from "../fixtures/core-score";
 import { captureHostInstalledContributionsV1 } from "../../../src/core-kernel/native/integrated-catalog-capture";
 import type { IntegratedCommandBusCreationResult } from "../../../src/core-kernel/registry/integrated-contracts";
+import { kernelPluginDiagnostics } from "../../../src/core-kernel/errors/plugin-diagnostics";
 import { CVN6_MANIFEST, CVN6_REGISTRATION_ENTRIES, cvn6CallbackBehavior, cvn6CallbackCounts, resetCvn6Callbacks } from "../fixtures/cvn-6-synthetic-official-modules";
 import { buildCommandAdmissionOracle } from "./command-admission-oracle";
 
@@ -380,7 +381,7 @@ test("Native unknown UTF-16 extension data survives history branches and persist
   assert.deepEqual(events[1], events[0]);
 });
 
-test("Rust rejects tampered effect authority and sees preceding pitch changes in callback views", () => {
+test("Rust rejects tampered effect authority, ignores legacy affected hints and exposes precise causes", () => {
   resetCvn6Callbacks();
   for (const tamper of ["namespace", "owner", "affected", "none"]) {
     let sawOverlayPitch = false;
@@ -406,8 +407,96 @@ test("Rust rejects tampered effect authority and sees preceding pitch changes in
     const native = create(true, transport);
     const before = native.read();
     const result = native.submit(command());
-    if (tamper === "none") { assert.equal(result.status, "committed"); assert.ok(sawOverlayPitch); }
-    else { assert.equal(result.status, "rejected"); assert.deepEqual(native.read(), before); }
+    if (tamper === "none" || tamper === "affected") {
+      assert.equal(result.status, "committed");
+      assert.ok(sawOverlayPitch);
+    } else {
+      assert.equal(result.status, "rejected");
+      if (result.status === "rejected") {
+        assert.deepEqual(result.failure, {
+          code: "command.contribution-effect-rejected",
+          moduleId: "fixture.score.module",
+          contributionId: "fixture.score.contribution.v1",
+          effectIndex: 1,
+          effectKind: "fixture.score.replace",
+          target: tamper === "owner" ? { kind: "part", partId: "part-1" } : { kind: "score" },
+          failureCode: tamper === "owner" ? "command.target-mismatch" : "command.unknown-id",
+        });
+      }
+      assert.deepEqual(native.read(), before);
+    }
+  }
+});
+
+test("Native command bus records attributed Effect rejection without retaining document targets", () => {
+  resetCvn6Callbacks();
+  kernelPluginDiagnostics.clear();
+  const privateTarget = { kind: "note", noteId: "private-note-id" };
+  const transport: IntegratedNativeAddonV2 = {
+    ...addon,
+    createIntegratedKernelSessionV2(bytes, executor) {
+      const operate = addon.createIntegratedKernelSessionV2(bytes, executor);
+      return (request) => {
+        const input = JSON.parse(request.toString("utf8")) as {
+          operation?: unknown;
+          command?: { commandId?: unknown };
+        };
+        if (input.operation === "submit" && input.command?.commandId === "fixture.score.apply") {
+          return Buffer.from(JSON.stringify({
+            ok: false,
+            documentVersion: 0,
+            history: { undoDepth: 0, redoDepth: 0 },
+            failure: {
+              code: "command.contribution-effect-rejected",
+              moduleId: "fixture.score",
+              contributionId: "fixture.score.contribution",
+              effectIndex: 1,
+              effectKind: "fixture.score.effect",
+              target: privateTarget,
+              failureCode: "command.target-not-found",
+            },
+          }));
+        }
+        return operate(request);
+      };
+    },
+  };
+  try {
+    const native = create(true, transport);
+    const result = native.submit(command("score", "private-command-payload"));
+    assert.equal(result.status, "rejected");
+    if (result.status === "rejected") {
+      assert.equal(result.failure.code, "command.contribution-effect-rejected");
+    }
+    const entries = kernelPluginDiagnostics.list();
+    assert.equal(entries.length, 1);
+    assert.deepEqual(entries[0], {
+      reportId: entries[0]!.reportId,
+      occurredAt: entries[0]!.occurredAt,
+      code: "command.contribution-effect-rejected",
+      stage: "callback",
+      operation: "prepare",
+      moduleId: "fixture.score",
+      contributionId: "fixture.score.contribution",
+      effectIndex: 1,
+      effectKind: "fixture.score.effect",
+      failureCode: "command.target-not-found",
+      message: "插件请求的内核修改被拒绝",
+    });
+    const serialized = JSON.stringify(entries[0]);
+    assert.equal(serialized.includes("private-note-id"), false);
+    assert.equal(serialized.includes("private-command-payload"), false);
+
+    const ordinaryCoreFailure = native.submit({
+      commandVersion: 1,
+      commandId: "core.command.does-not-exist",
+      target: { kind: "document", documentId: "score-1" },
+      payload: {},
+    });
+    assert.equal(ordinaryCoreFailure.status, "rejected");
+    assert.equal(kernelPluginDiagnostics.list().length, 1);
+  } finally {
+    kernelPluginDiagnostics.clear();
   }
 });
 

@@ -1,15 +1,19 @@
-import { invoke, isTauri } from "@tauri-apps/api/core";
+import { Channel, invoke, isTauri } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { Window as TauriWindow } from "@tauri-apps/api/window";
 import type { ScoreEditRequest } from "../contracts/note-input";
 import type { NewScoreInput } from "../contracts/new-score";
 import type { CapabilityTransportRequest } from "../contracts/capability.ts";
-import { DEFAULT_APPLICATION_SETTINGS, isApplicationSettingsV1 } from "../contracts/application-settings.ts";
+import { DEFAULT_APPLICATION_SETTINGS, normalizeApplicationSettings } from "../contracts/application-settings.ts";
 import type { ApplicationSettingsV1 } from "../contracts/application-settings.ts";
 import { DEFAULT_WORKSPACE_CONFIGURATION, isWorkspaceConfigurationV1 } from "../contracts/workspace-configuration.ts";
 import type { WorkspaceConfigurationV1 } from "../contracts/workspace-configuration.ts";
 import { isWorkbenchIssue } from "../contracts/workbench-issue.ts";
 import type { WorkbenchIssue } from "../contracts/workbench-issue.ts";
+import type { AgentProviderDecideRequestV1 } from "../contracts/agent-provider-turn.ts";
+import type { PluginActivationDocumentV1, PluginActivationStoragePort } from "../plugins/plugin-activation-persistence.ts";
+import type { PluginSettingsDocument } from "../plugins/plugin-settings.ts";
+import type { PluginSettingsStoragePort } from "../plugins/plugin-settings-persistence.ts";
 
 export class WorkbenchRequestError extends Error {
   readonly status: number;
@@ -29,6 +33,7 @@ export class WorkbenchRequestError extends Error {
  */
 export interface WorkbenchHostBridge {
   invokeCapability(request: CapabilityTransportRequest): Promise<unknown>;
+  invokeAgentCapability(request: CapabilityTransportRequest): Promise<unknown>;
   read(workspaceId: string): Promise<unknown | null>;
   create(workspaceId: string, input: NewScoreInput, requestId: string, expectedDocumentId: string | null): Promise<unknown>;
   edit(workspaceId: string, input: ScoreEditRequest): Promise<unknown>;
@@ -42,6 +47,14 @@ export interface WorkbenchHostBridge {
   readApplicationSettings?(): Promise<unknown>;
   writeApplicationSettings?(settings: ApplicationSettingsV1): Promise<unknown>;
   resetApplicationSettings?(): Promise<unknown>;
+  readAgentProviderCredentialStatus?(providerId: string): Promise<unknown>;
+  setAgentProviderCredential?(providerId: string, secret: string): Promise<unknown>;
+  deleteAgentProviderCredential?(providerId: string): Promise<unknown>;
+  decideAgentProvider?(
+    request: AgentProviderDecideRequestV1,
+    signal?: AbortSignal | null,
+    observer?: ((event: unknown) => void) | null,
+  ): Promise<unknown>;
   readWorkspaceConfiguration?(workspaceId: string): Promise<unknown>;
   writeWorkspaceConfiguration?(workspaceId: string, configuration: WorkspaceConfigurationV1): Promise<unknown>;
   resetWorkspaceConfiguration?(workspaceId: string): Promise<unknown>;
@@ -57,6 +70,8 @@ type Invoke = <T>(command: string, args?: Record<string, unknown>) => Promise<T>
 type DesktopWindow = Pick<TauriWindow, "onCloseRequested" | "close">;
 type CurrentWindow = () => DesktopWindow;
 type SettingsStorage = Pick<Storage, "getItem" | "setItem">;
+type HostChannel = { onmessage: (message: unknown) => void };
+type CreateChannel = () => HostChannel;
 
 function browserSettingsStorage(): SettingsStorage | undefined {
   try { return globalThis.localStorage; } catch { return undefined; }
@@ -80,11 +95,17 @@ export class TauriWorkbenchHostBridge implements WorkbenchHostBridge {
   readonly nativeFiles = true;
   private readonly invoke: Invoke;
   private readonly currentWindow: CurrentWindow;
+  private readonly createChannel: CreateChannel;
   private forceClosing = false;
 
-  constructor(invokeCommand: Invoke = invoke, currentWindow: CurrentWindow = getCurrentWindow) {
+  constructor(
+    invokeCommand: Invoke = invoke,
+    currentWindow: CurrentWindow = getCurrentWindow,
+    createChannel: CreateChannel = () => new Channel<unknown>(),
+  ) {
     this.invoke = invokeCommand;
     this.currentWindow = currentWindow;
+    this.createChannel = createChannel;
   }
 
   private async call<T>(command: string, args: Record<string, unknown>, fallback: string): Promise<T> {
@@ -94,6 +115,10 @@ export class TauriWorkbenchHostBridge implements WorkbenchHostBridge {
 
   invokeCapability(request: CapabilityTransportRequest) {
     return this.call<unknown>("workbench_invoke_capability_v1", { request }, "无法调用应用能力");
+  }
+
+  invokeAgentCapability(request: CapabilityTransportRequest) {
+    return this.call<unknown>("workbench_agent_invoke_capability_v1", { request }, "无法调用 Agent 应用能力");
   }
 
   read(workspaceId: string) {
@@ -156,6 +181,44 @@ export class TauriWorkbenchHostBridge implements WorkbenchHostBridge {
     return this.call<unknown>("workbench_reset_settings_v1", {}, "无法恢复默认应用配置");
   }
 
+  readAgentProviderCredentialStatus(providerId: string) {
+    return this.call<unknown>("workbench_agent_provider_credential_status_v1", { providerId }, "无法读取 Provider 凭据状态");
+  }
+
+  setAgentProviderCredential(providerId: string, secret: string) {
+    return this.call<unknown>("workbench_agent_provider_set_credential_v1", { providerId, secret }, "无法保存 Provider 凭据");
+  }
+
+  deleteAgentProviderCredential(providerId: string) {
+    return this.call<unknown>("workbench_agent_provider_delete_credential_v1", { providerId }, "无法删除 Provider 凭据");
+  }
+
+  async decideAgentProvider(
+    request: AgentProviderDecideRequestV1,
+    signal?: AbortSignal | null,
+    observer?: ((event: unknown) => void) | null,
+  ): Promise<unknown> {
+    if (signal?.aborted) throw new DOMException("Agent Provider request cancelled", "AbortError");
+    const cancel = (): void => {
+      void this.invoke<boolean>("workbench_agent_provider_cancel_v1", {
+        runId: request.runId,
+        turnId: request.turnId,
+      }).catch(() => undefined);
+    };
+    signal?.addEventListener("abort", cancel, { once: true });
+    try {
+      const progress = this.createChannel();
+      progress.onmessage = observer ?? (() => undefined);
+      return await this.call<unknown>(
+        "workbench_agent_provider_decide_v1",
+        { request, progress },
+        "模型 Provider 暂时无法完成决策",
+      );
+    } finally {
+      signal?.removeEventListener("abort", cancel);
+    }
+  }
+
   readWorkspaceConfiguration(workspaceId: string) {
     return this.call<unknown>("workbench_read_workspace_configuration_v1", { workspaceId }, "无法读取工作区配置");
   }
@@ -193,6 +256,17 @@ export class BrowserWorkbenchHostBridge implements WorkbenchHostBridge {
       contractVersion: request.contractVersion,
       code: "capability.host-unsupported",
       message: "浏览器开发宿主尚未提供该应用能力",
+    };
+  }
+
+  async invokeAgentCapability(request: CapabilityTransportRequest): Promise<unknown> {
+    return {
+      status: "unavailable",
+      invocationId: request.invocationId,
+      capabilityId: request.capabilityId,
+      contractVersion: request.contractVersion,
+      code: "capability.agent-host-unsupported",
+      message: "浏览器开发宿主尚未提供 Agent 应用能力",
     };
   }
 
@@ -278,8 +352,8 @@ export class BrowserWorkbenchHostBridge implements WorkbenchHostBridge {
       settings: DEFAULT_APPLICATION_SETTINGS, persisted: false, recoveredFromInvalid: false,
     };
     try {
-      const settings: unknown = JSON.parse(value);
-      if (!isApplicationSettingsV1(settings)) throw new Error("invalid application settings");
+      const settings = normalizeApplicationSettings(JSON.parse(value));
+      if (settings === null) throw new Error("invalid application settings");
       return {
         settings,
         persisted: true,
@@ -299,6 +373,52 @@ export class BrowserWorkbenchHostBridge implements WorkbenchHostBridge {
   async resetApplicationSettings(): Promise<unknown> {
     this.settingsStorage?.setItem(BrowserWorkbenchHostBridge.SETTINGS_KEY, JSON.stringify(DEFAULT_APPLICATION_SETTINGS));
     return DEFAULT_APPLICATION_SETTINGS;
+  }
+
+  async readAgentProviderCredentialStatus(providerId: string): Promise<unknown> {
+    return {
+      providerId,
+      present: false,
+      status: "unavailable",
+      message: "系统凭据库仅在桌面宿主中可用",
+    };
+  }
+
+  async setAgentProviderCredential(_providerId: string, _secret: string): Promise<unknown> {
+    throw new WorkbenchRequestError("浏览器开发宿主不会保存 Provider 凭据", 501, {
+      code: "agent-credential.host-unsupported",
+      message: "浏览器开发宿主不会保存 Provider 凭据",
+      severity: "error",
+      source: "host",
+      target: { scope: "workbench" },
+      retryable: false,
+    });
+  }
+
+  async deleteAgentProviderCredential(_providerId: string): Promise<unknown> {
+    throw new WorkbenchRequestError("浏览器开发宿主没有可删除的 Provider 凭据", 501, {
+      code: "agent-credential.host-unsupported",
+      message: "浏览器开发宿主没有可删除的 Provider 凭据",
+      severity: "error",
+      source: "host",
+      target: { scope: "workbench" },
+      retryable: false,
+    });
+  }
+
+  async decideAgentProvider(
+    _request: AgentProviderDecideRequestV1,
+    _signal?: AbortSignal | null,
+    _observer?: ((event: unknown) => void) | null,
+  ): Promise<unknown> {
+    throw new WorkbenchRequestError("浏览器开发宿主不会转发模型请求", 501, {
+      code: "agent-provider.host-unsupported",
+      message: "浏览器开发宿主不会转发模型请求",
+      severity: "error",
+      source: "host",
+      target: { scope: "workbench" },
+      retryable: false,
+    });
   }
 
   async readWorkspaceConfiguration(workspaceId: string): Promise<unknown> {
@@ -325,5 +445,55 @@ export class BrowserWorkbenchHostBridge implements WorkbenchHostBridge {
   async resetWorkspaceConfiguration(workspaceId: string): Promise<unknown> {
     this.settingsStorage?.setItem(BrowserWorkbenchHostBridge.WORKSPACE_CONFIGURATION_PREFIX + workspaceId, JSON.stringify(DEFAULT_WORKSPACE_CONFIGURATION));
     return DEFAULT_WORKSPACE_CONFIGURATION;
+  }
+}
+
+/** Browser-only development storage for plugin activation intent. Desktop storage remains a host concern. */
+export class BrowserPluginActivationStorage implements PluginActivationStoragePort {
+  private static readonly KEY = "brilliant.workbench.plugin-activation.v1";
+  private static readonly INVALID_KEY = "brilliant.workbench.plugin-activation.invalid.v1";
+  private readonly storage: SettingsStorage | undefined;
+
+  constructor(storage: SettingsStorage | undefined = browserSettingsStorage()) {
+    this.storage = storage;
+  }
+
+  async read(): Promise<unknown> {
+    const value = this.storage?.getItem(BrowserPluginActivationStorage.KEY);
+    if (value === null || value === undefined) return {};
+    try { return JSON.parse(value); }
+    catch {
+      this.storage?.setItem(BrowserPluginActivationStorage.INVALID_KEY, value);
+      return {};
+    }
+  }
+
+  async write(document: PluginActivationDocumentV1): Promise<void> {
+    this.storage?.setItem(BrowserPluginActivationStorage.KEY, JSON.stringify(document));
+  }
+}
+
+/** Browser-only development storage for namespaced plugin settings. */
+export class BrowserPluginSettingsStorage implements PluginSettingsStoragePort {
+  private static readonly KEY = "brilliant.workbench.plugin-settings.v1";
+  private static readonly INVALID_KEY = "brilliant.workbench.plugin-settings.invalid.v1";
+  private readonly storage: SettingsStorage | undefined;
+
+  constructor(storage: SettingsStorage | undefined = browserSettingsStorage()) {
+    this.storage = storage;
+  }
+
+  async read(): Promise<unknown> {
+    const value = this.storage?.getItem(BrowserPluginSettingsStorage.KEY);
+    if (value === null || value === undefined) return {};
+    try { return JSON.parse(value); }
+    catch {
+      this.storage?.setItem(BrowserPluginSettingsStorage.INVALID_KEY, value);
+      return {};
+    }
+  }
+
+  async write(document: PluginSettingsDocument): Promise<void> {
+    this.storage?.setItem(BrowserPluginSettingsStorage.KEY, JSON.stringify(document));
   }
 }

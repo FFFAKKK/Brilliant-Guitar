@@ -5,6 +5,34 @@
   padding: 36px var(--space-2) var(--space-2); overflow: auto; scrollbar-width: none;
 }
 .note-input-dock::-webkit-scrollbar { display: none; }
+.note-control-surface { position: relative; flex: none; width: min(208px, 100%); min-width: 0; }
+.note-control-surface .note-entry-panel { width: 100%; }
+.note-control-preferences { position: absolute; z-index: 3; top: 3px; left: 3px; }
+.note-control-preferences > summary {
+  width: 18px; height: 18px; border-radius: 5px; display: grid; place-items: center;
+  color: var(--color-tertiary); cursor: pointer; list-style: none;
+}
+.note-control-preferences > summary::-webkit-details-marker { display: none; }
+.note-control-preferences > summary:hover, .note-control-preferences[open] > summary { color: var(--color-text); background: var(--color-hover); }
+.note-control-preferences > summary:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 1px; }
+.note-control-preferences > summary svg { width: 13px; height: 13px; }
+.note-control-preferences-popover {
+  position: absolute; top: 22px; left: 0; width: 192px; padding: 8px;
+  border: 1px solid var(--color-border); border-radius: var(--radius-menu);
+  background: var(--color-surface); box-shadow: var(--shadow-floating);
+}
+.note-preference-fields { display: grid; gap: 8px; }
+.note-preference-field { display: grid; gap: 4px; color: var(--color-secondary); font-size: 12px; }
+.note-preference-field select {
+  width: 100%; min-height: 32px; border: 1px solid var(--color-border-strong); border-radius: var(--radius-control);
+  padding: 0 8px; color: var(--color-text); background: var(--color-navigation);
+}
+.note-preference-field select:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 1px; }
+.note-control-more-settings {
+  width: 100%; margin-top: 8px; padding: 7px 8px; border: 0; border-radius: var(--radius-control);
+  color: var(--color-secondary); background: transparent; text-align: left; cursor: pointer;
+}
+.note-control-more-settings:hover { color: var(--color-text); background: var(--color-hover); }
 .note-input-dock[data-slot="bottom"] { padding: var(--space-1) 40px var(--space-1) var(--space-3); }
 .note-input-dock[data-slot="top"] { padding: var(--space-1) 40px var(--space-1); }
 .note-entry-panel {
@@ -74,6 +102,8 @@
 .note-entry-location-value { color: var(--color-secondary); font-variant-numeric: tabular-nums; animation: note-control-location 120ms var(--note-motion-ease); }
 .note-entry-location-divider { width: 1px; height: 10px; background: var(--color-border); }
 .note-entry-live { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.note-control-extensions { width: min(208px, 100%); display: flex; flex-direction: column; gap: var(--space-2); }
+.note-control-extension { min-width: 0; }
 @keyframes note-control-busy { to { transform: rotate(360deg); } }
 @keyframes note-control-symbol { from { opacity: .65; } to { opacity: 1; } }
 @keyframes note-control-location { from { opacity: .45; transform: translateY(1px); } to { opacity: 1; transform: translateY(0); } }
@@ -83,6 +113,7 @@
   width: min(520px, 100%); height: 48px; padding: var(--space-1) var(--space-2);
   display: grid; grid-template-columns: 104px 88px 176px minmax(120px, 1fr); align-items: center; gap: var(--space-2);
 }
+.note-input-dock:is([data-slot="top"], [data-slot="bottom"]) .note-control-surface { width: min(520px, 100%); }
 .note-input-dock:is([data-slot="top"], [data-slot="bottom"]) .note-entry-duration { height: 40px; grid-template-columns: 28px 40px 28px; justify-content: center; }
 .note-input-dock:is([data-slot="top"], [data-slot="bottom"]) .note-entry-current { height: 40px; }
 .note-input-dock:is([data-slot="top"], [data-slot="bottom"]) .note-entry-symbol,
@@ -97,6 +128,9 @@
 .note-input-dock:is([data-slot="top"], [data-slot="bottom"]) .note-entry-source { display: none; }
 .note-input-dock:is([data-slot="top"], [data-slot="bottom"]) .note-entry-location {
   margin-top: 0; padding: 0 0 0 var(--space-2); border-top: 0; border-left: 1px solid var(--color-border);
+}
+.note-input-dock:is([data-slot="top"], [data-slot="bottom"]) .note-control-extensions {
+  width: auto; min-width: 0; flex-direction: row; align-items: center;
 }
 
 /* The component responds to its dock width, not the application's window width. */

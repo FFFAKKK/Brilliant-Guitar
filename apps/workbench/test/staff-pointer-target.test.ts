@@ -10,7 +10,7 @@ const measure = (id: string, events: StaffMeasure["events"]): StaffMeasure => ({
   id, voiceId: `voice-${id}`, meter: { numerator: 4, denominator: 4 }, events, ruleWarnings: [],
 });
 const view = (...measures: StaffMeasure[]): StaffView => ({
-  kind: "staff", partId: "part", staffId: "staff", clef: "treble", measures,
+  kind: "staff", partId: "part", staffId: "staff", clef: "treble", tempoBpm: 96, keySignatureChanges: [], measures,
 });
 const geometry = (measureId: string, offsets: readonly number[], events: readonly { id: string; x: number }[] = []): NotationInteractionGeometry => ({
   measures: [{ measureId, x: 0, y: 0, width: 120, height: 80, staffBottom: 60, lineSpacing: 10 }],

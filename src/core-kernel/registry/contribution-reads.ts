@@ -2,7 +2,9 @@ import { captureStrictInput } from "../codec/strict-input-capture";
 import type { ExtensionBlock } from "../domain/extensions";
 import type { ScoreDocument } from "../domain/score-document";
 import type { CompiledDomainCommandContributionV1 } from "../module-sdk/contracts";
+import { decodeExtensionRuntimeRequirementV1 } from "./domain-catalog-codec";
 import type { KernelIntegratedCatalogState } from "./domain-catalog";
+import type { ExtensionRuntimeRequirementV1 } from "./integrated-contracts";
 import { readDenseArray, readExactDataRecord } from "./strict-codec";
 
 export interface ContributionExtensionReadV1 {
@@ -53,8 +55,48 @@ export function hasIncompatibleContributionReads(document: ScoreDocument, source
   return false;
 }
 
+/** A consumer with an absent declared provider cannot establish complete
+ * validation. Keep the session readable, but do not invoke that consumer until
+ * the authentic provider is installed again. */
+export function hasUnavailableContributionReads(
+  state: KernelIntegratedCatalogState,
+  source: CompiledDomainCommandContributionV1,
+): boolean {
+  const reads = contributionReads(source);
+  if (reads === undefined) return false;
+  for (let index = 0; index < reads.length; index += 1) {
+    const read = reads[index]!;
+    const provider = state.namespaceIndex[read.namespace];
+    if (provider === undefined || provider.moduleId !== read.provider.moduleId
+      || provider.contributionId !== read.provider.contributionId) return true;
+  }
+  return false;
+}
+
+export function captureContributionReadInventory(
+  input: unknown,
+): Readonly<Record<string, ExtensionRuntimeRequirementV1>> | undefined {
+  const captured = captureStrictInput(input);
+  if (captured.status !== "captured") return undefined;
+  const record = readExactDataRecord(captured.value, ["inventoryVersion", "requirements"]);
+  const rows = readDenseArray(record?.requirements);
+  if (record?.inventoryVersion !== 1 || rows === undefined || rows.length > 1024) return undefined;
+  const result = Object.create(null) as Record<string, ExtensionRuntimeRequirementV1>;
+  for (let index = 0; index < rows.length; index += 1) {
+    const requirement = decodeExtensionRuntimeRequirementV1(rows[index]);
+    if (requirement === undefined || requirement.supportedSchemaVersions.length > 256
+      || result[requirement.namespace] !== undefined) return undefined;
+    result[requirement.namespace] = requirement;
+  }
+  return freeze(result);
+}
+
 /** Declarations grant access to complete versioned blocks, not incremental field reads. */
-export function captureContributionReads(state: KernelIntegratedCatalogState, input: unknown): readonly ContributionExtensionReadV1[] | undefined {
+export function captureContributionReads(
+  state: KernelIntegratedCatalogState,
+  input: unknown,
+  knownProviders?: Readonly<Record<string, ExtensionRuntimeRequirementV1>>,
+): readonly ContributionExtensionReadV1[] | undefined {
   const captured = captureStrictInput(input);
   if (captured.status !== "captured") return undefined;
   const rows = readDenseArray(captured.value);
@@ -67,22 +109,27 @@ export function captureContributionReads(state: KernelIntegratedCatalogState, in
     const provider = readExactDataRecord(record?.provider, ["moduleId", "contributionId"]);
     const source = state.contributions.find(entry => entry.moduleId === reader?.moduleId && entry.contributionId === reader?.contributionId);
     const owner = typeof record?.namespace === "string" ? state.namespaceIndex[record.namespace] : undefined;
+    const requirement = typeof record?.namespace === "string"
+      ? owner?.extensionRequirements.find(entry => entry.namespace === record.namespace)
+        ?? knownProviders?.[record.namespace]
+      : undefined;
     const versions = readDenseArray(record?.supportedSchemaVersions);
     const kinds = readDenseArray(record?.ownerKinds);
-    if (record?.readVersion !== 1 || source === undefined || owner === undefined || owner === source
-      || owner.moduleId !== provider?.moduleId || owner.contributionId !== provider?.contributionId
+    if (record?.readVersion !== 1 || source === undefined || requirement === undefined
+      || (source.moduleId === provider?.moduleId && source.contributionId === provider?.contributionId)
+      || requirement.moduleId !== provider?.moduleId || requirement.contributionId !== provider?.contributionId
+      || (owner !== undefined && (owner.moduleId !== provider.moduleId || owner.contributionId !== provider.contributionId))
       || versions === undefined || kinds === undefined || kinds.length === 0 || kinds.length > 2
       || kinds.some((kind, index) => (kind !== "score" && kind !== "part") || kinds.indexOf(kind) !== index)) return undefined;
-    const requirement = owner.extensionRequirements.find(entry => entry.namespace === record.namespace);
     // Exact provider parity prevents silently hiding a provider-supported version
     // as an empty dependency. Narrower consumer version ranges need a new contract.
-    if (requirement === undefined || versions.length !== requirement.supportedSchemaVersions.length
+    if (versions.length !== requirement.supportedSchemaVersions.length
       || versions.some((version, index) => version !== requirement.supportedSchemaVersions[index])) return undefined;
     const key = `${source.moduleId}/${source.contributionId}/${record.namespace}`;
     if (seen.has(key)) return undefined;
     seen.add(key);
     result.push(freeze({ readVersion: 1, reader: freeze({ moduleId: source.moduleId, contributionId: source.contributionId }),
-      provider: freeze({ moduleId: owner.moduleId, contributionId: owner.contributionId }), namespace: requirement.namespace,
+      provider: freeze({ moduleId: requirement.moduleId, contributionId: requirement.contributionId }), namespace: requirement.namespace,
       supportedSchemaVersions: freeze([...requirement.supportedSchemaVersions]),
       ownerKinds: freeze([...(kinds as ("score" | "part")[])].sort()) }));
   }

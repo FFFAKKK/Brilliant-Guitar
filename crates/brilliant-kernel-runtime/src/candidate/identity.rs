@@ -12,7 +12,10 @@ use std::{
 use brilliant_core_types::{JsString, StableId};
 use brilliant_kernel_contracts::AffectedEntityIdV1;
 
-use super::{Candidate, CandidateOrder, Children, Entity, Failure, Kind, Occurrence, Site};
+use super::{
+    Candidate, CandidateOrder, Children, Entity, Failure, Kind, Occurrence,
+    RetainedBytesUpperBound, Site,
+};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub(super) struct JournalId(usize);
@@ -86,6 +89,14 @@ fn raw_identity(
 }
 
 impl IdentityRecorder {
+    pub(super) fn add_retained_bytes_upper_bound(&self, bound: &mut RetainedBytesUpperBound) {
+        bound.add_vec(&self.entries);
+        for entry in &self.entries {
+            bound.add_js_string(entry.identity.raw_id.as_js_string());
+        }
+        bound.add_map(&self.sources);
+    }
+
     pub(super) fn source_of(&self, id: JournalId) -> Option<&Occurrence> {
         self.entries.get(id.0).map(|entry| &entry.source)
     }
@@ -141,6 +152,7 @@ impl IdentityRecorder {
             .reservation
             .vec(Site::JournalBoundaries, &mut entries, self.entries.len())?;
         for recorded in self.entries {
+            candidate.charge_supplemental_work(1)?;
             let mut identity = recorded.identity;
             if candidate.visible(&recorded.source) {
                 identity.end = Some(boundary_for(
@@ -239,9 +251,11 @@ impl ContentLocators {
                 .reservation
                 .map(Site::JournalBoundaries, &mut by_id, children.len())?;
             let mut visited = 0;
+            candidate.charge_metric_progress(1)?;
             for child in children {
                 if candidate.visible(child) {
                     visited += 1;
+                    candidate.charge_metric_progress(1)?;
                     let key = ContentKey(raw_identity(candidate, child)?);
                     by_id
                         .entry(key)
@@ -249,8 +263,9 @@ impl ContentLocators {
                         .or_insert_with(|| Some(child.clone()));
                 }
             }
-            candidate.work.order_visits += 1;
-            candidate.work.visited_entries += visited;
+            candidate.work.order_visits = candidate.work.order_visits.saturating_add(1);
+            candidate.work.visited_entries = candidate.work.visited_entries.saturating_add(visited);
+            candidate.observe_work_budget()?;
             self.parts.insert(part.clone(), by_id);
         }
         self.parts
@@ -378,6 +393,7 @@ impl<'journal> ReplayBindings<'journal> {
             .reservation
             .map(Site::ReplayBindings, &mut reverse, manifest.entries.len())?;
         for (index, identity) in manifest.entries.iter().enumerate() {
+            candidate.charge_supplemental_work(1)?;
             let boundary = match side {
                 BoundarySide::SuffixStart => &identity.start,
                 BoundarySide::SuffixEnd => &identity.end,
@@ -441,6 +457,7 @@ impl<'journal> ReplayBindings<'journal> {
             assignments.len(),
         )?;
         for (id, source) in assignments {
+            candidate.charge_supplemental_work(1)?;
             let identity = self
                 .manifest
                 .entries
@@ -458,6 +475,7 @@ impl<'journal> ReplayBindings<'journal> {
             }
         }
         for (id, source) in assignments {
+            candidate.charge_supplemental_work(1)?;
             let identity = &self.manifest.entries[id.0];
             let owner = identity.owner.and_then(|owner| {
                 incoming
@@ -472,6 +490,7 @@ impl<'journal> ReplayBindings<'journal> {
             .reservation
             .map(Site::ReplayBindings, &mut self.reverse, assignments.len())?;
         for (id, source) in assignments {
+            candidate.charge_supplemental_work(1)?;
             self.entries[id.0] = Some(source.clone());
             self.reverse.insert(source.clone(), *id);
         }
@@ -493,6 +512,7 @@ impl<'journal> ReplayBindings<'journal> {
             return Err(Failure::InternalError);
         }
         for (index, source) in self.entries.iter().enumerate() {
+            candidate.charge_supplemental_work(1)?;
             if self.manifest.descends_from(JournalId(index), root)
                 && source
                     .as_ref()

@@ -6,7 +6,10 @@ import { installNativeIntegratedBackendV2, type IntegratedNativeAddonV2 } from "
 import { relationCatalog, relationshipDocument, reconcile, resetRelations, relationCalls, relationTrace,
   RELATION_MODULE, RELATION_CONTRIBUTION, INDEX_NAMESPACE, SUMMARY_NAMESPACE } from "../fixtures/layered-relationship-module";
 
-const addon = require(resolve("target/integrated-v2/brilliant_kernel_node.node")) as IntegratedNativeAddonV2;
+const addon = require(resolve(
+  process.env.BRILLIANT_INTEGRATED_ADDON_PATH
+    ?? "target/integrated-v2/brilliant_kernel_node.node",
+)) as IntegratedNativeAddonV2;
 function create(native: boolean, document = relationshipDocument(), catalog = relationCatalog(), inventory?: unknown) {
   const restore = native ? installNativeIntegratedBackendV2(addon) : () => {};
   try {

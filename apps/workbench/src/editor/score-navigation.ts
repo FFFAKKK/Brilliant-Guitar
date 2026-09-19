@@ -90,9 +90,22 @@ export function scoreEditPoints(view: StaffView): readonly ScoreEditPoint[] {
 
 /** Resolve the occupied beat beside an empty insertion boundary. */
 export function adjacentEventAtPoint(view: StaffView, current: ScoreEditPoint, direction: -1 | 1): string | null {
-  const normalized = normalizeScoreEditPoint(view, current), points = scoreEditPoints(view);
+  const normalized = normalizeScoreEditPoint(view, current);
+  if (direction > 0) {
+    const measureIndex = view.measures.findIndex((measure) => measure.id === normalized.measureId);
+    for (let index = Math.max(0, measureIndex); index < view.measures.length; index += 1) {
+      const measure = view.measures[index]!;
+      let offset = 0;
+      for (const event of measure.events) {
+        if (index > measureIndex || offset >= normalized.offsetUnits) return event.id;
+        offset += durationUnits(event.duration);
+      }
+    }
+    return null;
+  }
+  const points = scoreEditPoints(view);
   const index = pointIndex(view, normalized);
-  if (direction < 0 && normalized.anchor.kind === "after-event") return normalized.anchor.eventId;
+  if (normalized.anchor.kind === "after-event") return normalized.anchor.eventId;
   for (let offset = index + direction; offset >= 0 && offset < points.length; offset += direction) {
     const candidate = points[offset]!;
     if (candidate.anchor.kind === "after-event") return candidate.anchor.eventId;

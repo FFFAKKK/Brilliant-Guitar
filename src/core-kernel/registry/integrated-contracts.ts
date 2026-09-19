@@ -2,6 +2,7 @@ import type {
   CommandBusCreationFailure,
   CommandFailure,
   CommandFailureLeaf,
+  ScoreEntityTarget,
 } from "../commands/contracts";
 import type { ScoreDocument } from "../domain/score-document";
 import type {
@@ -132,6 +133,15 @@ export type KernelContributionFailure =
       readonly code: "command.contribution-contract-violation";
       readonly moduleId: string;
       readonly contributionId: string;
+    }
+  | {
+      readonly code: "command.contribution-effect-rejected";
+      readonly moduleId: string;
+      readonly contributionId: string;
+      readonly effectIndex: number;
+      readonly effectKind: string;
+      readonly target: ScoreEntityTarget | ExtensionOwner;
+      readonly failureCode: CommandFailureLeaf["code"];
     }
   | {
       readonly code: "command.contribution-internal-error";

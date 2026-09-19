@@ -1,0 +1,100 @@
+{
+  "kind": "bounded-regression-not-commercial-qualification",
+  "date": "2026-09-18",
+  "baseCommit": "837a22ea8ffe71d31382c2e253907a602acd9cd2",
+  "branch": "main",
+  "scope": "Exact incremental Foundation-semantic closure for stable scalar Candidate edits, including commit, undo and redo",
+  "verifiedBehavior": [
+    "Stable covered scalar edits perform zero full document scans and zero full semantic validations",
+    "Incremental rejection diagnostics match the full Foundation oracle in content, order, path and failure priority",
+    "Commit, undo and redo share the same incremental validation contract",
+    "Structural, identity, order, instrument, extension, frozen-prefix and unrepresentable-reference changes fall back to full validation",
+    "Local pitch validation rule and dependency-read counts do not grow after adding 64 unrelated Parts",
+    "Incremental eligibility is derived from Candidate state rather than caller assertions"
+  ],
+  "coveredScalarFields": [
+    "DocumentMetadata",
+    "MeasureDefinition",
+    "StaffDefinition",
+    "VoiceSequenceStart",
+    "EventNoteValue",
+    "NoteWrittenPitch"
+  ],
+  "verification": {
+    "nodeNative": {
+      "command": "$env:BRILLIANT_INTEGRATED_ADDON_PATH='target/candidate-incremental-addons/integrated-v2.node'; npm test",
+      "compiledFileCount": 132,
+      "manifestSha256": "d378c66e4b680185bb40574f7b1758b52399f685fcea753d1d2f762d7c39207d",
+      "total": 905,
+      "passed": 903,
+      "skipped": 2,
+      "failed": 0,
+      "durationMilliseconds": 89998.1441
+    },
+    "rustWorkspace": {
+      "command": "cargo test --workspace --all-features --locked --offline",
+      "passed": 648,
+      "ignored": 1,
+      "failed": 0
+    },
+    "runtimeCrate": {
+      "command": "cargo test -p brilliant-kernel-runtime --lib",
+      "passed": 380,
+      "ignored": 1,
+      "failed": 0
+    },
+    "focusedComplexityGuard": {
+      "test": "candidate::journal::execution::module::tests::local_pitch_validation_work_is_independent_of_unrelated_document_size",
+      "passed": 1,
+      "failed": 0,
+      "unrelatedPartsAdded": 64,
+      "fullDocumentScans": 0,
+      "fullSemanticValidations": 0,
+      "ruleAndDependencyCountsEqual": true
+    },
+    "checks": {
+      "typescriptNoEmit": "passed",
+      "cargoFmt": "passed",
+      "strictClippyAllTargetsAllFeatures": "passed",
+      "gitDiffCheck": "passed-with-existing-crlf-warnings-only"
+    }
+  },
+  "designedNodeSkips": [
+    "FinalizationRegistry journey requires Node to start with exposed GC",
+    "Stage 6 E2 scale journey requires BRILLIANT_RKP2_RUN_SCALE_E2=1 explicit stress authorization"
+  ],
+  "artifacts": [
+    {
+      "kind": "core-v1",
+      "path": "target/rkp-1-node/brilliant_kernel_node.node",
+      "bytes": 3590656,
+      "sha256": "3a28b90769efec11ecec8e8498082e521df3ef1aac6362d655aa358c341ac9a",
+      "standardPathUpdated": true
+    },
+    {
+      "kind": "integrated-v2",
+      "path": "target/candidate-incremental-addons/integrated-v2.node",
+      "bytes": 5029376,
+      "sha256": "e22724ee8e4ee382acd2e37e0b9ec8f94c4f8c571332b0600ff17d393d16b71d",
+      "standardPathUpdated": false,
+      "reason": "The standard addon was loaded by an active development Node process; validation used the isolated current-source artifact without interrupting that process"
+    },
+    {
+      "kind": "wasm-v1",
+      "path": "target/wasm-v1/brilliant_kernel_node.node",
+      "bytes": 6262784,
+      "sha256": "707027b69f7bc3d7654fcebcf7b43b8ceab60e064a46745e5c4369ea4cb8d8d1",
+      "standardPathUpdated": true
+    }
+  ],
+  "recoveryCopy": ".repo-archive/2026-09-18-kernel-candidate-incremental-before/",
+  "remaining": [
+    "Precise closure evidence for structural, identity, order, instrument and extension changes",
+    "Plugin callback selective scheduling after classification-cache and observable-version contracts converge",
+    "Whole-transaction CPU, memory and host-transfer qualification",
+    "Long-running soak, fuzz and failure-recovery qualification",
+    "Product p95 and p99 latency gates with real UI and business plugins",
+    "Multi-platform CI, signing, packaging and upgrade compatibility",
+    "Controlled Rust-default cutover and retirement of the obsolete TS transaction engine"
+  ]
+}

@@ -3,7 +3,7 @@ use brilliant_core_types::StableId;
 use brilliant_kernel_contracts::{
     KernelSelectorResultV1, KernelSelectorValueV1, KernelStage4FailureV1, ScoreEntityOwnershipV1,
     ScoreEntityTargetV1, ScoreOverviewV1, ScoreRangeSelectionV1, ScoreRangeV1,
-    SelectedScoreEntityV1, SelectorRequestV1,
+    ScoreStructureSummaryV1, SelectedScoreEntityV1, SelectorRequestV1,
 };
 use brilliant_score_foundation::{
     MeasureDefinitionV1, MusicSequenceV1, PartMeasureContentV1, PartV1, RhythmicContentV1,
@@ -106,10 +106,7 @@ impl<'a> SelectorContextV1<'a> {
     }
 
     fn overview(&mut self) -> Result<ScoreOverviewV1, KernelStage4FailureV1> {
-        let measure_count = i64::try_from(self.store.topology.measure_order.len())
-            .ok()
-            .and_then(|value| SafeInteger::new(value).ok())
-            .ok_or(KernelStage4FailureV1::ReadInvariantViolation)?;
+        let measure_count = safe_count(self.store.topology.measure_order.len())?;
         self.visit();
         self.returned(1);
         Ok(ScoreOverviewV1 {
@@ -117,6 +114,25 @@ impl<'a> SelectorContextV1<'a> {
             title: self.store.header.metadata.title.clone(),
             measure_count,
         })
+    }
+
+    fn structure(&mut self) -> Result<ScoreStructureSummaryV1, KernelStage4FailureV1> {
+        let staff_count = self
+            .store
+            .topology
+            .staff_order
+            .values()
+            .try_fold(0usize, |total, staffs| total.checked_add(staffs.len()))
+            .ok_or(KernelStage4FailureV1::ReadInvariantViolation)?;
+        let structure = ScoreStructureSummaryV1 {
+            document_id: self.store.header.id.clone(),
+            measure_count: safe_count(self.store.topology.measure_order.len())?,
+            part_count: safe_count(self.store.topology.part_order.len())?,
+            staff_count: safe_count(staff_count)?,
+        };
+        self.visit();
+        self.returned(1);
+        Ok(structure)
     }
 
     fn ownership(
@@ -667,6 +683,9 @@ pub(crate) fn select_from_store(
                 store.header.metadata.clone(),
             ))
         }
+        SelectorRequestV1::ScoreStructure => {
+            context.structure().map(KernelSelectorValueV1::Structure)
+        }
         SelectorRequestV1::ScoreEntity { address } => {
             context.entity(address).map(KernelSelectorValueV1::Entity)
         }
@@ -685,6 +704,13 @@ pub(crate) fn select_from_store(
         Err(failure) => KernelSelectorResultV1::Rejected(failure),
     };
     context.finish(result)
+}
+
+fn safe_count(value: usize) -> Result<SafeInteger, KernelStage4FailureV1> {
+    i64::try_from(value)
+        .ok()
+        .and_then(|value| SafeInteger::new(value).ok())
+        .ok_or(KernelStage4FailureV1::ReadInvariantViolation)
 }
 
 fn ordered_bounds<T: Copy + Eq>(

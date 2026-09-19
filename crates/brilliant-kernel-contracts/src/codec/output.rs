@@ -55,6 +55,8 @@ string_enum!(KernelStage3ResourceLimitKindV1 {
     Diagnostics => "diagnostics", InputDepth => "input-depth", InputProperties => "input-properties",
     BatchChildren => "batch-children", Effects => "effects", AffectedAddresses => "affected-addresses",
     ChangesetLogicalBytes => "changeset-logical-bytes",
+    CandidateRetainedBytes => "candidate-retained-bytes",
+    TransactionWorkUnits => "transaction-work-units",
 });
 string_enum!(MeasurePointKindV1 { Measure => "measure" });
 string_enum!(PartMeasurePointKindV1 { PartMeasure => "part-measure" });
@@ -133,6 +135,7 @@ impl LosslessEncode for KernelSelectorValueV1 {
         match self {
             Self::Overview(value) => value.write_lossless(writer),
             Self::Metadata(value) => value.write_lossless(writer),
+            Self::Structure(value) => value.write_lossless(writer),
             Self::Entity(value) => value.write_lossless(writer),
             Self::Ownership(value) => value.write_lossless(writer),
             Self::Range(value) => value.write_lossless(writer),
@@ -348,6 +351,17 @@ impl LosslessEncode for ScoreOverviewV1 {
         state.field("documentId", &self.document_id)?;
         state.field("title", &self.title)?;
         state.field("measureCount", &self.measure_count)?;
+        state.end()
+    }
+}
+
+impl LosslessEncode for ScoreStructureSummaryV1 {
+    fn write_lossless<W: Write + ?Sized>(&self, writer: &mut W) -> Result<(), LosslessJsonError> {
+        let mut state = LosslessObjectWriter::new(writer)?;
+        state.field("documentId", &self.document_id)?;
+        state.field("measureCount", &self.measure_count)?;
+        state.field("partCount", &self.part_count)?;
+        state.field("staffCount", &self.staff_count)?;
         state.end()
     }
 }

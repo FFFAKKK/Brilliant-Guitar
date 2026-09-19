@@ -11,6 +11,8 @@ import { moveUiComponent, reconcileUiLayout, restoreUiLayout, setUiComponentPres
 import type { UiComponentDefinition, UiPresentation, UiSlot } from "./plugin-contract.ts";
 import { selectDockItem as chooseDockItem } from "./shared-dock-selection.ts";
 import type { SharedDockSlot } from "./shared-dock-selection.ts";
+import { applyWorkspaceLayoutPreset, identifyWorkspaceLayoutPreset } from "./workspace-layout-presets.ts";
+import type { WorkspaceLayoutPresetId } from "./workspace-layout-presets.ts";
 
 const LEGACY_DOCK_LAYOUT_KEY = "brilliant.workbench.dock-layout.v2";
 const LEGACY_DOCK_VISIBILITY_KEY = "brilliant.workbench.dock-visibility.v1";
@@ -160,6 +162,8 @@ export function useWorkspaceConfiguration(
   const selectDockItem = useCallback((slot: SharedDockSlot, id: string, availableIds: readonly string[]) => update((current) => ({
     ...current, dock: { ...current.dock, selection: chooseDockItem(current.dock.selection, slot, id, availableIds) },
   })), [update]);
+  const applyLayoutPreset = useCallback((preset: WorkspaceLayoutPresetId) => update((current) =>
+    applyWorkspaceLayoutPreset(current, preset)), [update]);
   const reset = useCallback(() => {
     if (!readyRef.current) return;
     setSaving(true);
@@ -175,7 +179,8 @@ export function useWorkspaceConfiguration(
   }, [client, definitions, reportFailure]);
 
   return { configuration, layout, visibility: configuration.dock.visibility, uiLayout: configuration.uiLayout,
-    dockSelection: configuration.dock.selection, ready, saving, message, setLayout, toggleDock, move, hide, setPresentation,
+    dockSelection: configuration.dock.selection, layoutPreset: identifyWorkspaceLayoutPreset(configuration),
+    ready, saving, message, setLayout, toggleDock, move, hide, setPresentation, applyLayoutPreset,
     selectDockItem, setInspectorWidth: (width: number) => update((current) => ({
       ...current, inspectorWidth: clampInspectorWidth(width, window.innerWidth),
     })), reset };

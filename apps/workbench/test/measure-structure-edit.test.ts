@@ -96,3 +96,66 @@ test("the host rejects removing the final measure or targeting a stale measure w
       && error.issue?.code === "editor.measure-stale");
   assert.deepEqual(stale.service.read(stale.workspace), beforeStale);
 });
+
+test("meter-run changes only the contiguous original meter and is one undoable transaction", () => {
+  const f = fixture(4);
+  const exported = JSON.parse(f.service.exportDocument(f.workspace)) as {
+    measureDefinitions: Array<{ id: string; meter: { numerator: number; denominator: number } }>;
+  };
+  exported.measureDefinitions[2]!.meter = { numerator: 3, denominator: 4 };
+  f.replace(f.service.importDocument(f.workspace, exported));
+  const before = f.read(), measures = staffMeasures(before);
+
+  const changed = f.edit({ kind: "set-measure-meter", measureId: measures[0]!.id,
+    meter: { numerator: 6, denominator: 8 }, scope: "meter-run" });
+  assert.deepEqual(staffMeasures(changed).map((measure) => measure.meter), [
+    { numerator: 6, denominator: 8 },
+    { numerator: 6, denominator: 8 },
+    { numerator: 3, denominator: 4 },
+    { numerator: 4, denominator: 4 },
+  ]);
+  assert.equal(changed.undoDepth, before.undoDepth + 1);
+  assert.deepEqual(f.edit({ kind: "undo" }).notation, before.notation);
+});
+
+test("single-measure meter changes allow an overfull rule warning without changing events", () => {
+  const f = fixture(2);
+  const measure = staffMeasures(f.read())[1]!;
+  for (let index = 0; index < 4; index += 1) {
+    const current = staffMeasures(f.read()).find((item) => item.id === measure.id)!;
+    f.edit({ kind: "append", measureId: measure.id,
+      anchor: current.events.length ? { kind: "after-event", eventId: current.events.at(-1)!.id } : { kind: "start" },
+      duration: { base: 4, dots: 0 }, content: { kind: "rest" } });
+  }
+  const changed = f.edit({ kind: "set-measure-meter", measureId: measure.id,
+    meter: { numerator: 3, denominator: 4 }, scope: "measure" });
+  const changedMeasure = staffMeasures(changed).find((item) => item.id === measure.id)!;
+  assert.deepEqual(changedMeasure.meter, { numerator: 3, denominator: 4 });
+  assert.equal(changedMeasure.events.length, 4);
+  assert.equal(changedMeasure.ruleWarnings[0]?.code, "rule.sequence-exceeds-measure");
+});
+
+test("meter changes preserve pickup data even when the current staff projection cannot display it", () => {
+  const f = fixture(2);
+  const exported = JSON.parse(f.service.exportDocument(f.workspace)) as {
+    measureDefinitions: Array<{ id: string; meter: { numerator: number; denominator: number };
+      pickupDuration?: { numerator: number; denominator: number } }>;
+  };
+  const target = exported.measureDefinitions[0]!;
+  target.pickupDuration = { numerator: 1, denominator: 4 };
+  f.replace(f.service.importDocument(f.workspace, exported));
+  f.edit({ kind: "set-measure-meter", measureId: target.id,
+    meter: { numerator: 6, denominator: 8 }, scope: "measure" });
+  const roundTrip = JSON.parse(f.service.exportDocument(f.workspace)) as typeof exported;
+  assert.deepEqual(roundTrip.measureDefinitions[0]!.meter, { numerator: 6, denominator: 8 });
+  assert.deepEqual(roundTrip.measureDefinitions[0]!.pickupDuration, { numerator: 1, denominator: 4 });
+});
+
+test("meter editing rejects a stale measure without changing the document", () => {
+  const f = fixture(2), before = f.read();
+  assert.throws(() => f.edit({ kind: "set-measure-meter", measureId: "missing-measure",
+    meter: { numerator: 3, denominator: 4 }, scope: "measure" }),
+  (error: unknown) => error instanceof WorkbenchHostError && error.status === 409
+    && error.issue?.code === "editor.measure-stale");
+  assert.deepEqual(f.service.read(f.workspace), before);
+});

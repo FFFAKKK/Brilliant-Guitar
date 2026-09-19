@@ -8,16 +8,29 @@ import { projectNotation } from "./notation-projection.ts";
 import { projectPlaybackSource } from "./playback-projection.ts";
 import { prepareEventProperties } from "./event-properties-command.ts";
 import { decodeScoreDocument, encodeScoreDocumentJson } from "../.kernel/src/core-kernel/index.js";
-import type { CreateScoreDocumentInputV1, InsertMeasureCommand, IntegratedCommandBus, ScoreDocument, Voice } from "../.kernel/src/core-kernel/index.js";
+import type { CreateScoreDocumentInputV1, InsertMeasureCommand, IntegratedCommandBus, KernelIntegratedCatalog,
+  ScoreDocument, Voice } from "../.kernel/src/core-kernel/index.js";
 import { readNativeRuleWarningPageV1 } from "../.kernel/src/core-kernel/native/integrated-command-bus.js";
 import type { IntegratedNativeAddonV2, KernelRuleWarningV1 } from "../.kernel/src/core-kernel/native/integrated-command-bus.js";
 
 import { durationUnits, isScoreEditRequest } from "../src/contracts/note-input.ts";
-import type { ScoreEditRequest } from "../src/contracts/note-input.ts";
-import type { BatchCommand, DeleteRangeCommand, RemoveEventCommand, RemoveMeasureCommand, InsertNotesEventCommand, InsertRestEventCommand } from "../.kernel/src/core-kernel/index.js";
+import type { ScoreEditRequest, StaffClef } from "../src/contracts/note-input.ts";
+import type { BatchCommand, DeleteRangeCommand, RemoveEventCommand, RemoveMeasureCommand, SetMeasureDefinitionCommand,
+  InsertNotesEventCommand, InsertRestEventCommand, SetStaffDefinitionCommand } from "../.kernel/src/core-kernel/index.js";
 import type { WorkbenchIssue, WorkbenchIssueTarget } from "../src/contracts/workbench-issue.ts";
 import { restDurations } from "./rest-durations.ts";
 const require = createRequire(import.meta.url);
+let cachedWorkbenchModuleCatalog: KernelIntegratedCatalog | undefined;
+
+function compileWorkbenchModuleCatalog() {
+  if (cachedWorkbenchModuleCatalog) return cachedWorkbenchModuleCatalog;
+  const { compileKeySignatureModuleCatalogV1 } = require("../.kernel/src/first-party-modules/key-signature.js") as
+    typeof import("../.kernel/src/first-party-modules/key-signature.js");
+  const catalog = compileKeySignatureModuleCatalogV1();
+  if (!catalog.ok) throw new WorkbenchHostError("暂时无法初始化乐谱编辑环境", 503);
+  cachedWorkbenchModuleCatalog = catalog.catalog;
+  return cachedWorkbenchModuleCatalog;
+}
 
 export class WorkbenchHostError extends Error {
   readonly status: number;
@@ -36,9 +49,11 @@ function actionTarget(current: ScoreSessionRead, action: ScoreEditRequest["actio
   if (action.kind === "append") return { scope: "measure", measureId: action.measureId };
   if (action.kind === "delete-range") return { scope: "measure", measureId: action.range.measureId };
   if (action.kind === "paste-fragment") return { scope: "measure", measureId: action.measureId };
-  if (action.kind === "insert-measure" || action.kind === "remove-measure") {
+  if (action.kind === "insert-measure" || action.kind === "remove-measure" || action.kind === "set-measure-meter"
+    || action.kind === "set-key-signature") {
     return { scope: "measure", measureId: action.measureId };
   }
+  if (action.kind === "set-staff-clef") return { scope: "component", componentId: "score-properties" };
   if (action.kind === "delete-event" || action.kind === "set-event-properties") {
     if (current.notation.kind === "staff") {
       const measure = current.notation.measures.find((item) => item.events.some((event) => event.id === action.eventId));
@@ -46,6 +61,13 @@ function actionTarget(current: ScoreSessionRead, action: ScoreEditRequest["actio
     }
   }
   return { scope: "workbench" };
+}
+
+function coreClef(clef: StaffClef): SetStaffDefinitionCommand["payload"]["defaultClef"] {
+  if (clef === "bass") return { sign: "F", line: 4 };
+  if (clef === "alto") return { sign: "C", line: 3 };
+  if (clef === "tenor") return { sign: "C", line: 4 };
+  return { sign: "G", line: 2 };
 }
 
 function failureCode(failure: unknown): string {
@@ -75,12 +97,10 @@ function readRuleWarnings(bus: IntegratedCommandBus, documentId: string, documen
 /** Only public Core/SDK exports and the documented Native opt-in host adapter. */
 export function createScoreSession(input: NewScoreInput, nativeAddon?: IntegratedNativeAddonV2): IntegratedCommandBus {
   if (Object.keys(validateNewScoreInput(input)).length) throw new WorkbenchHostError("请检查标题和小节数");
-  const { createScoreDocument, CommandBus, CORE_KERNEL_STARTUP_MANIFEST } = require("../.kernel/src/core-kernel/index.js") as typeof import("../.kernel/src/core-kernel/index.js");
-  const { compileOfficialModuleCatalogV1 } = require("../.kernel/src/core-kernel/module-sdk/index.js") as typeof import("../.kernel/src/core-kernel/module-sdk/index.js");
+  const { createScoreDocument, CommandBus } = require("../.kernel/src/core-kernel/index.js") as typeof import("../.kernel/src/core-kernel/index.js");
   const { installNativeIntegratedBackendV2 } = require("../.kernel/src/core-kernel/native/integrated-command-bus.js") as typeof import("../.kernel/src/core-kernel/native/integrated-command-bus.js");
   const addon = nativeAddon ?? require(fileURLToPath(new URL("../../../target/integrated-v2/brilliant_kernel_node.node", import.meta.url))) as IntegratedNativeAddonV2;
-  const catalog = compileOfficialModuleCatalogV1(CORE_KERNEL_STARTUP_MANIFEST, []);
-  if (!catalog.ok) throw new WorkbenchHostError("暂时无法初始化乐谱编辑环境", 503);
+  const catalog = compileWorkbenchModuleCatalog();
   const documentId = randomUUID();
   const voice = (index: number): Voice => ({ id: `voice-${index}`, defaultStaffId: "staff-1", sequence: {
     start: { numerator: 0, denominator: 1 }, events: [],
@@ -96,7 +116,7 @@ export function createScoreSession(input: NewScoreInput, nativeAddon?: Integrate
   const open = (document: ScoreDocument) => {
     const restore = installNativeIntegratedBackendV2(addon);
     try {
-      const result = CommandBus.createIntegrated(document, catalog.catalog);
+      const result = CommandBus.createIntegrated(document, catalog);
       if (!result.ok) throw new WorkbenchHostError("无法建立乐谱编辑会话", 503);
       return result.value;
     } finally { restore(); }
@@ -125,15 +145,13 @@ export function createScoreSession(input: NewScoreInput, nativeAddon?: Integrate
 }
 
 function openScoreDocument(document: ScoreDocument, nativeAddon?: IntegratedNativeAddonV2): IntegratedCommandBus {
-  const { CommandBus, CORE_KERNEL_STARTUP_MANIFEST } = require("../.kernel/src/core-kernel/index.js") as typeof import("../.kernel/src/core-kernel/index.js");
-  const { compileOfficialModuleCatalogV1 } = require("../.kernel/src/core-kernel/module-sdk/index.js") as typeof import("../.kernel/src/core-kernel/module-sdk/index.js");
+  const { CommandBus } = require("../.kernel/src/core-kernel/index.js") as typeof import("../.kernel/src/core-kernel/index.js");
   const { installNativeIntegratedBackendV2 } = require("../.kernel/src/core-kernel/native/integrated-command-bus.js") as typeof import("../.kernel/src/core-kernel/native/integrated-command-bus.js");
   const addon = nativeAddon ?? require(fileURLToPath(new URL("../../../target/integrated-v2/brilliant_kernel_node.node", import.meta.url))) as IntegratedNativeAddonV2;
-  const catalog = compileOfficialModuleCatalogV1(CORE_KERNEL_STARTUP_MANIFEST, []);
-  if (!catalog.ok) throw new WorkbenchHostError("暂时无法初始化乐谱编辑环境", 503);
+  const catalog = compileWorkbenchModuleCatalog();
   const restore = installNativeIntegratedBackendV2(addon);
   try {
-    const result = CommandBus.createIntegrated(document, catalog.catalog);
+    const result = CommandBus.createIntegrated(document, catalog);
     if (!result.ok) throw new WorkbenchHostError("无法建立乐谱编辑会话", 422);
     return result.value;
   } finally { restore(); }
@@ -199,8 +217,11 @@ export class ScoreSessionService {
       throw new WorkbenchHostError(message, 409, undefined,
         issue("editor.version-conflict", message, actionTarget(current, request.action)));
     }
-    if (current.notation.kind !== "staff") throw new WorkbenchHostError("当前乐谱格式尚不支持编辑", 422);
     const action = request.action;
+    if (current.notation.kind !== "staff" && action.kind !== "set-measure-meter"
+      && action.kind !== "set-key-signature" && action.kind !== "set-staff-clef") {
+      throw new WorkbenchHostError("当前乐谱格式尚不支持编辑", 422);
+    }
     let result;
     if (action.kind === "undo") result = entry.bus.undo();
     else if (action.kind === "redo") result = entry.bus.redo();
@@ -321,6 +342,90 @@ export class ScoreSessionService {
       }
       const command: RemoveMeasureCommand = { commandVersion: 1, commandId: "core.measure.remove",
         target: { kind: "measure", measureId: action.measureId }, payload: {} };
+      const firstPart = doc.parts[0];
+      if (!firstPart) throw new WorkbenchHostError("当前乐谱没有可编辑声部", 422);
+      const cleanupFor = (partId: string) => ({
+        commandVersion: 1 as const,
+        commandId: "brilliant.notation.key-signature.set",
+        target: { kind: "part" as const, partId },
+        payload: { measureId: action.measureId, change: { kind: "inherit" as const } },
+      });
+      const firstCleanup = cleanupFor(firstPart.id);
+      const remainingCleanup = doc.parts.slice(1).map(part => cleanupFor(part.id));
+      result = entry.bus.submit({ commandVersion: 1, commandId: "core.transaction.batch",
+        target: { kind: "document", documentId: doc.id },
+        payload: { commands: [firstCleanup, ...remainingCleanup, command] } } satisfies BatchCommand);
+    }
+    else if (action.kind === "set-measure-meter") {
+      const read = entry.bus.read();
+      if (!read.ok) throw new WorkbenchHostError("暂时无法读取乐谱", 503);
+      const doc = read.value.snapshot.document;
+      const startIndex = doc.measureDefinitions.findIndex((measure) => measure.id === action.measureId);
+      if (startIndex < 0) {
+        const message = "目标小节已改变，请重新选择";
+        throw new WorkbenchHostError(message, 409, undefined,
+          issue("editor.measure-stale", message, actionTarget(current, action)));
+      }
+      const original = doc.measureDefinitions[startIndex]!.meter;
+      const definitions = [doc.measureDefinitions[startIndex]!];
+      if (action.scope === "meter-run") {
+        for (const definition of doc.measureDefinitions.slice(startIndex + 1)) {
+          if (definition.meter.numerator !== original.numerator
+            || definition.meter.denominator !== original.denominator) break;
+          definitions.push(definition);
+        }
+      }
+      const commands = definitions.map((definition): SetMeasureDefinitionCommand => ({
+        commandVersion: 1,
+        commandId: "core.measure.set-definition",
+        target: { kind: "measure", measureId: definition.id },
+        payload: {
+          meter: action.meter,
+          pickup: definition.pickupDuration
+            ? { kind: "duration", duration: definition.pickupDuration }
+            : { kind: "none" },
+        },
+      }));
+      const first = commands[0]!;
+      result = commands.length === 1 ? entry.bus.submit(first)
+        : entry.bus.submit({ commandVersion: 1, commandId: "core.transaction.batch",
+          target: { kind: "document", documentId: doc.id },
+          payload: { commands: [first, ...commands.slice(1)] } } satisfies BatchCommand);
+    }
+    else if (action.kind === "set-key-signature") {
+      const read = entry.bus.read();
+      if (!read.ok) throw new WorkbenchHostError("暂时无法读取乐谱", 503);
+      const doc = read.value.snapshot.document;
+      if (!doc.parts.some(part => part.id === action.partId)) {
+        const message = "目标声部已改变，请重新打开调号设置";
+        throw new WorkbenchHostError(message, 409, undefined,
+          issue("editor.part-stale", message, actionTarget(current, action)));
+      }
+      if (!doc.measureDefinitions.some(measure => measure.id === action.measureId)) {
+        const message = "目标小节已改变，请重新选择";
+        throw new WorkbenchHostError(message, 409, undefined,
+          issue("editor.measure-stale", message, actionTarget(current, action)));
+      }
+      result = entry.bus.submit({
+        commandVersion: 1,
+        commandId: "brilliant.notation.key-signature.set",
+        target: { kind: "part", partId: action.partId },
+        payload: { measureId: action.measureId, change: action.change },
+      });
+    }
+    else if (action.kind === "set-staff-clef") {
+      const read = entry.bus.read();
+      if (!read.ok) throw new WorkbenchHostError("暂时无法读取乐谱", 503);
+      const doc = read.value.snapshot.document;
+      const staff = doc.parts.flatMap((part) => part.staves).find((item) => item.id === action.staffId);
+      if (!staff) {
+        const message = "目标谱表已改变，请重新打开乐谱属性";
+        throw new WorkbenchHostError(message, 409, undefined,
+          issue("editor.staff-stale", message, actionTarget(current, action)));
+      }
+      const command: SetStaffDefinitionCommand = { commandVersion: 1, commandId: "core.staff.set-definition",
+        target: { kind: "staff", staffId: staff.id },
+        payload: { lineCount: staff.lineCount, defaultClef: coreClef(action.clef) } };
       result = entry.bus.submit(command);
     }
     else if (action.kind === "paste-fragment") {
@@ -374,6 +479,7 @@ export class ScoreSessionService {
         payload: { commands: [first, ...commands.slice(1)] } } satisfies BatchCommand);
     }
     else {
+      if (current.notation.kind !== "staff") throw new WorkbenchHostError("当前乐谱格式尚不支持编辑", 422);
       const read = entry.bus.read();
       if (!read.ok) throw new WorkbenchHostError("暂时无法读取乐谱", 503);
       const doc = read.value.snapshot.document, part = doc.parts[0]!;

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { RefObject } from "react";
-import { NavigationBar } from "./components/navigation-bar";
+import { NavigationBar, NavigationSettingsIcon } from "./components/navigation-bar";
 import { AboutDialog } from "./components/about-dialog";
 import { PreferencesDialog } from "./components/preferences-dialog";
 import { NewScoreDialog } from "./components/new-score-dialog";
@@ -16,25 +16,35 @@ import { useNoteOverview } from "./editor/use-note-overview";
 import { WorkbenchShell } from "./components/workbench-shell";
 import { vexflowRenderer } from "./notation/vexflow-renderer";
 import { usePaperZoom } from "./notation/use-paper-zoom";
+import { keySignatureFifthsAtMeasure } from "./notation/key-signature.ts";
 import { listUiComponentsInSlot } from "./ui/layout-state";
 import type { UiLayoutState } from "./ui/layout-state";
 import type { UiComponentDefinition, UiPresentation, UiSlot } from "./ui/plugin-contract";
 import type { SharedDockSlot } from "./ui/shared-dock-selection";
 import { useApplicationSettings } from "./ui/use-application-settings.ts";
 import { useWorkspaceConfiguration } from "./ui/use-workspace-configuration.ts";
-import { workbenchPluginDiagnostics, workbenchPlugins } from "./ui/workbench-plugins";
+import { setWorkbenchUserPluginEnabled, workbenchPluginDiagnostics, workbenchPluginPlatform } from "./ui/workbench-plugins";
+import { AGENT_ASSISTANT_PLUGIN_ID } from "./ui/first-party-plugins.ts";
 import { useWorkbenchSession } from "./workbench/use-workbench-session";
 import { useDocumentFiles } from "./workbench/use-document-files";
 import { WorkbenchFeedbackAnnouncer } from "./components/workbench-feedback-announcer.tsx";
 import { PluginDiagnosticDialog } from "./components/plugin-diagnostic-dialog.tsx";
 import { WorkbenchRuntimeProvider, useWorkbenchRuntime } from "./runtime/workbench-runtime.tsx";
 import { useWorkbenchCommands } from "./runtime/use-workbench-commands.ts";
+import { useDisposableResource } from "./runtime/use-disposable-resource.ts";
+import { applyShortcutBindings } from "./commands/workbench-command.ts";
 import type { WorkbenchCommand } from "./commands/workbench-command.ts";
 import { bindUiProjection } from "./ui/projection-registry.ts";
-import { HISTORY_PROJECTION, NOTE_CONTROL_PROJECTION, PAPER_ZOOM_PROJECTION, PLAYBACK_OUTPUT_PROJECTION, PLAYBACK_PROJECTION, STAFF_PROJECTION } from "./ui/first-party-plugin-projections.ts";
+import { AGENT_ASSISTANT_PROJECTION, HISTORY_PROJECTION, NOTE_CONTROL_PROJECTION, PAPER_ZOOM_PROJECTION, PLAYBACK_OUTPUT_PROJECTION, PLAYBACK_PROJECTION, STAFF_PROJECTION } from "./ui/first-party-plugin-projections.ts";
 import { usePlaybackSession } from "./playback/use-playback-session.ts";
+import { createAgentPluginRuntime } from "./agent/agent-plugin-runtime.ts";
+import { createAgentAssistantSession } from "./agent/agent-assistant-session.ts";
+import { AGENT_PROVIDER_DESCRIPTORS } from "./agent/agent-provider-catalog.ts";
+import { useAgentProviderCredential } from "./agent/use-agent-provider-credential.ts";
+import type { AgentWorkspaceScope } from "./agent/agent-contracts.ts";
+import type { MeterInput } from "./contracts/note-input.ts";
 
-const INSTALLED_COMPONENTS = workbenchPlugins.components.list();
+const INSTALLED_COMPONENTS = workbenchPluginPlatform.components().list();
 const SLOT_LABELS: Record<UiSlot, string> = {
   workspace: "中央工作区",
   top: "上方停靠区",
@@ -99,6 +109,8 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
   const [aboutOpen, setAboutOpen] = useState(false);
   const pluginDiagnostics = useSyncExternalStore(workbenchPluginDiagnostics.subscribe,
     workbenchPluginDiagnostics.list, workbenchPluginDiagnostics.list);
+  const pluginRuntimeSnapshot = useSyncExternalStore(workbenchPluginPlatform.subscribe,
+    workbenchPluginPlatform.getSnapshot, workbenchPluginPlatform.getSnapshot);
   const [pluginDiagnosticsOpen, setPluginDiagnosticsOpen] = useState(pluginDiagnostics.length > 0);
   const previousPluginDiagnosticCount = useRef(pluginDiagnostics.length);
   useEffect(() => {
@@ -108,27 +120,91 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
   const editMenuRef = useRef<HTMLButtonElement>(null);
   const fileMenuRef = useRef<HTMLButtonElement>(null);
   const helpMenuRef = useRef<HTMLButtonElement>(null);
+  const settingsButtonRef = useRef<HTMLButtonElement>(null);
   const score = useWorkbenchSession(runtime);
   const workspaceConfiguration = useWorkspaceConfiguration(score.client, INSTALLED_COMPONENTS, runtime);
   const { layout, setLayout, visibility, toggleDock, uiLayout, move, hide, setPresentation,
     dockSelection, selectDockItem } = workspaceConfiguration;
   const applicationSettings = useApplicationSettings(score.client, runtime);
   const { animationsEnabled, ruleWarningsVisible } = applicationSettings.settings.ui;
-  const { deleteTimePolicy } = applicationSettings.settings.editing;
-  const input = useScoreInput(score.session, score.client, score.setSession, scoreViewport, score.loadEpoch, deleteTimePolicy, runtime);
+  const { deleteTimePolicy, noteInput: noteInputPreferences } = applicationSettings.settings.editing;
+  const [agentComposition] = useState(() => {
+    const plugin = createAgentPluginRuntime(score.client);
+    const assistant = createAgentAssistantSession(plugin, score.client);
+    return {
+      plugin,
+      assistant,
+      dispose() {
+        assistant.dispose();
+        plugin.dispose();
+      },
+    };
+  });
+  const { plugin: agentPlugin, assistant: agentAssistant } = agentComposition;
+  useDisposableResource(agentComposition);
+  const selectedAgentProvider = useMemo(() => AGENT_PROVIDER_DESCRIPTORS.find(
+    (provider) => provider.id === applicationSettings.settings.agent.providerSelection?.providerId,
+  ), [applicationSettings.settings.agent.providerSelection?.providerId]);
+  const agentCredential = useAgentProviderCredential(
+    score.client,
+    applicationSettings.settings.agent.providerSelection?.providerId ?? null,
+    selectedAgentProvider?.credentialKind === "api-key",
+    runtime,
+  );
+  const agentPluginSnapshot = useSyncExternalStore(
+    agentPlugin.subscribe,
+    agentPlugin.getSnapshot,
+    agentPlugin.getSnapshot,
+  );
+  const agentAssistantSnapshot = useSyncExternalStore(
+    agentAssistant.subscribe,
+    agentAssistant.getSnapshot,
+    agentAssistant.getSnapshot,
+  );
+  useEffect(() => {
+    if (!applicationSettings.ready) return;
+    let cancelled = false;
+    void agentPlugin.setProviderSelection(applicationSettings.settings.agent.providerSelection)
+      .then(() => cancelled ? undefined : agentPlugin.setEnabled(applicationSettings.settings.agent.enabled));
+    return () => { cancelled = true; };
+  }, [agentPlugin, applicationSettings.ready, applicationSettings.settings.agent.enabled,
+    applicationSettings.settings.agent.providerSelection]);
+  useEffect(() => {
+    if (!applicationSettings.ready) return;
+    void setWorkbenchUserPluginEnabled(AGENT_ASSISTANT_PLUGIN_ID, agentPluginSnapshot.enabled);
+  }, [agentPluginSnapshot.enabled, applicationSettings.ready]);
+  const saveAgentCredential = useCallback(async (secret: string) => {
+    const saved = await agentCredential.save(secret);
+    if (saved) await agentPlugin.refresh();
+    return saved;
+  }, [agentCredential.save, agentPlugin]);
+  const deleteAgentCredential = useCallback(async () => {
+    const removed = await agentCredential.remove();
+    if (removed) await agentPlugin.refresh();
+    return removed;
+  }, [agentCredential.remove, agentPlugin]);
+  const input = useScoreInput(score.session, score.client, score.setSession, scoreViewport, score.loadEpoch, deleteTimePolicy,
+    noteInputPreferences, workbenchPluginPlatform.interactions(), runtime);
   const files = useDocumentFiles(score.session, score.client, score.replaceSession, vexflowRenderer,
     score.loading || Boolean(score.error) || input.pending > 0 || input.retryable, runtime);
   const notation = score.session?.notation;
+  const staffNotation = notation?.kind === "staff" ? notation : null;
   const inputAvailable = !score.loading && !score.error && notation?.kind === "staff";
   const paperZoom = usePaperZoom();
-  const playback = usePlaybackSession(score.session?.playbackSource ?? null);
+  const playbackOutputContributions = useMemo(() => workbenchPluginPlatform.playbackOutputs(), [pluginRuntimeSnapshot]);
+  const playback = usePlaybackSession(score.session?.playbackSource ?? null, playbackOutputContributions);
   const scoreMetadata = useMemo(() => score.session?.metadata ?? {
     title: score.session?.title ?? "未命名乐谱",
     authors: [] as readonly string[],
     tempoBpm: score.session?.playbackSource.kind === "ready" ? score.session.playbackSource.bpm : 96,
   }, [score.session?.metadata, score.session?.playbackSource, score.session?.title]);
   const blocked = !inputAvailable || input.retryable || files.working !== null;
-  const staffMeasureCount = notation?.kind === "staff" ? notation.measures.length : 0;
+  const staffMeasureCount = staffNotation?.measures.length ?? 0;
+  const initialMeasure = staffNotation?.measures[0];
+  const initialMeter = initialMeasure ? { numerator: initialMeasure.meter.numerator,
+    denominator: initialMeasure.meter.denominator as MeterInput["denominator"] } : undefined;
+  const initialKeySignature = staffNotation && initialMeasure
+    ? keySignatureFifthsAtMeasure(staffNotation, initialMeasure.id) : 0;
   const activeMeasureId = input.point?.measureId ?? null;
   const measureStructureEnabled = !blocked && input.pending === 0 && activeMeasureId !== null;
   const historyBlocked = blocked || input.pending > 0;
@@ -140,9 +216,26 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
     setHistoryActivity({ kind, sequence: historySequence.current });
     input.history(kind);
   }, [historyBlocked, input, score.session?.redoDepth, score.session?.undoDepth]);
-  const noteOverview = useNoteOverview(input, score.session, blocked, scoreViewport, score.loadEpoch);
+  const noteOverview = useNoteOverview(input, score.session, blocked, scoreViewport, workbenchPluginPlatform.interactions(), score.loadEpoch);
+  const agentWorkspace = useMemo<AgentWorkspaceScope>(() => {
+    const selectedMeasureId = noteOverview.selectedRange?.measureId ?? noteOverview.selectedMeasureId;
+    return {
+      workspaceId: score.client.getWorkspaceId(),
+      documentId: score.session?.documentId ?? null,
+      documentVersion: score.session?.documentVersion ?? null,
+      selection: score.session && selectedMeasureId
+        ? {
+            kind: "measure-range",
+            documentId: score.session.documentId,
+            documentVersion: score.session.documentVersion,
+            startMeasureId: selectedMeasureId,
+            endMeasureId: selectedMeasureId,
+          }
+        : null,
+    };
+  }, [noteOverview.selectedMeasureId, noteOverview.selectedRange?.measureId, score.client, score.session]);
   useEffect(() => { if (score.session) scoreViewport.current?.focus({ preventScroll: true }); }, [score.session?.documentId]);
-  const staffDefinition = workbenchPlugins.components.get("notation.staff-view");
+  const staffDefinition = workbenchPluginPlatform.components().get("notation.staff-view");
   const staffPlacement = listUiComponentsInSlot(uiLayout, "workspace").find((placement) => placement.componentId === staffDefinition?.id);
   const moveComponent = useCallback((componentId: string, slot: UiSlot, order?: number) =>
     aroundLayoutMutation(() => move(componentId, slot, order)), [aroundLayoutMutation, move]);
@@ -192,7 +285,7 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
       scope: "global" as const, enabled: true, run: () => setPluginDiagnosticsOpen(true) }] : []),
   ], [activeMeasureId, files, input, inspectLayout, measureStructureEnabled, pluginDiagnostics.length, resetLayout,
     score.session, staffMeasureCount, toggleWorkbenchDock, visibility]);
-  const pluginProjections = useMemo(() => workbenchPlugins.projections.snapshot([
+  const pluginProjections = useMemo(() => workbenchPluginPlatform.projections().snapshot([
     bindUiProjection(STAFF_PROJECTION, {
       notation: score.session?.notation ?? null,
       renderer: vexflowRenderer,
@@ -210,13 +303,23 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
         busy: blocked || input.pending > 0, selectedEventId: noteOverview.selectedEventId,
         selectedRange: noteOverview.selectedRange,
         measureCount: staffMeasureCount,
-        onSelectEvent: noteOverview.onSelectEvent, feedback: input.feedback, viewportRef: scoreViewport,
-        onLocate: noteOverview.onLocate, onInsertMeasure: input.insertMeasure, onRemoveMeasure: input.removeMeasure },
+        onInput: noteOverview.onStaffInput, feedback: input.feedback, viewportRef: scoreViewport,
+        onInsertMeasure: input.insertMeasure, onRemoveMeasure: input.removeMeasure,
+        onSetMeasureMeter: (measureId, meter, scope) => input.applyProperties({
+          kind: "set-measure-meter", measureId, meter, scope,
+        }, scoreViewport.current ?? undefined),
+        onSetKeySignature: (partId, measureId, change) => input.applyProperties({
+          kind: "set-key-signature", partId, measureId, change,
+        }, scoreViewport.current ?? undefined) },
     }),
     bindUiProjection(NOTE_CONTROL_PROJECTION, {
       viewModel: { value: noteOverview.value, position: noteOverview.position, disabled: noteOverview.disabled,
-        pending: noteOverview.pending > 0, message: noteOverview.message ?? "" },
-      actions: { change: noteOverview.change, focusScore: noteOverview.focusScore },
+        pending: noteOverview.pending > 0, message: noteOverview.message ?? "", canInsertRest: noteOverview.canInsertRest,
+        preferences: noteInputPreferences, preferencesReady: applicationSettings.ready },
+      actions: { input: noteOverview.onControlInput, focusScore: noteOverview.focusScore,
+        insertRest: noteOverview.insertRest, setRetention: applicationSettings.setNoteInputRetention,
+        setDefaultDuration: applicationSettings.setDefaultNoteInputDuration,
+        openApplicationSettings: () => setPreferencesOpen(true) },
     }),
     bindUiProjection(HISTORY_PROJECTION, { undoDepth: score.session?.undoDepth ?? 0, redoDepth: score.session?.redoDepth ?? 0,
       blocked: historyBlocked, activity: historyActivity, execute: dispatchHistory }),
@@ -236,16 +339,37 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
       select: async (id) => { await playback.outputs.select(id); },
       importSoundFont: async (file) => { await playback.outputs.importSoundFont(file); },
       removeSampleBank: (id) => playback.outputs.removeSampleBank(id) }),
+    bindUiProjection(AGENT_ASSISTANT_PROJECTION, {
+      runtime: agentPluginSnapshot,
+      session: agentAssistantSnapshot,
+      documentAvailable: score.session !== null,
+      selectionAvailable: agentWorkspace.selection !== null,
+      start: (goal) => agentAssistant.start(goal, agentWorkspace),
+      provideRequiredInput: (runId, requestId) => agentAssistant.provideRequiredInput(
+        runId,
+        requestId,
+        agentWorkspace,
+      ),
+      cancel: agentAssistant.cancel,
+      refresh: agentPlugin.refresh,
+      resume: agentPlugin.resume,
+    }),
   ]), [blocked, dispatchHistory, historyActivity, historyBlocked, input.duration, input.enabled, input.feedback, input.pending,
-    input.point, input.rest, inputAvailable, noteOverview.change, noteOverview.disabled, noteOverview.focusScore, noteOverview.message,
-    noteOverview.draftStep, noteOverview.onLocate, noteOverview.onSelectEvent, noteOverview.pending, noteOverview.position,
-    noteOverview.selectedEventId, noteOverview.selectedRange,
+    input.point, input.rest, inputAvailable, noteOverview.disabled, noteOverview.focusScore, noteOverview.message,
+    noteOverview.canInsertRest, noteOverview.draftStep, noteOverview.insertRest, noteOverview.onControlInput,
+    noteOverview.onStaffInput, noteOverview.pending, noteOverview.position,
+    noteOverview.selectedEventId, noteOverview.selectedMeasureId, noteOverview.selectedRange,
     noteOverview.value, paperZoom.fit, paperZoom.zoom, paperZoom.zoomIn, paperZoom.zoomOut, playback.outputSnapshot, playback.outputs,
-    playback.session, playback.snapshot, score.error, score.loading, staffMeasureCount,
-    ruleWarningsVisible, score.retry, score.session?.notation, score.session?.redoDepth, score.session?.undoDepth, scoreViewport]);
-  const pluginCommandContributions = useMemo(() => workbenchPlugins.resolveCommands(pluginProjections), [pluginProjections]);
-  const commandContributions = useMemo<readonly WorkbenchCommand[]>(() =>
-    [...hostCommandContributions, ...pluginCommandContributions], [hostCommandContributions, pluginCommandContributions]);
+    playback.session, playback.snapshot, score.client, score.error, score.loading, score.session, staffMeasureCount,
+    agentAssistant, agentAssistantSnapshot, agentPlugin, agentPluginSnapshot, agentWorkspace,
+    ruleWarningsVisible, score.retry, score.session?.notation, score.session?.redoDepth, score.session?.undoDepth, scoreViewport,
+    noteInputPreferences, applicationSettings.ready, applicationSettings.setDefaultNoteInputDuration,
+    applicationSettings.setNoteInputRetention]);
+  const pluginCommandContributions = useMemo(() => workbenchPluginPlatform.resolveCommands(pluginProjections),
+    [pluginProjections, pluginRuntimeSnapshot]);
+  const commandContributions = useMemo<readonly WorkbenchCommand[]>(() => applyShortcutBindings(
+    [...hostCommandContributions, ...pluginCommandContributions], applicationSettings.settings.shortcuts.bindings,
+  ), [applicationSettings.settings.shortcuts.bindings, hostCommandContributions, pluginCommandContributions]);
   useWorkbenchCommands(commandContributions);
   const commandsById = useMemo(() => new Map(commandContributions.map((command) => [command.id, command] as const)), [commandContributions]);
   const navigationAction = useCallback((id: string, movesFocus = false): NavigationAction => {
@@ -255,11 +379,12 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
       ...(movesFocus ? { movesFocus: true } : {}),
       ...(command.enabled ? { onSelect: () => { runtime.commands.execute(id); } } : {}) };
   }, [commandsById, runtime.commands]);
-  const componentViews = useMemo(() => workbenchPlugins.resolveViews(pluginProjections), [pluginProjections]);
+  const componentViews = useMemo(() => workbenchPluginPlatform.resolveViews(pluginProjections),
+    [pluginProjections, pluginRuntimeSnapshot]);
   const renderSlot = (slot: SharedDockSlot) => {
     // Unreviewed renderers stay registered without appearing in the normal workbench.
     const items = listUiComponentsInSlot(uiLayout, slot).flatMap((placement) => {
-      const definition = workbenchPlugins.components.get(placement.componentId);
+      const definition = workbenchPluginPlatform.components().get(placement.componentId);
       const contribution = componentViews.get(placement.componentId);
       if (!definition || (!contribution && !inspectLayout)) return [];
       return [{ id: placement.componentId, label: contribution?.label ?? definition.id,
@@ -332,7 +457,10 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
 
   return <>
     <WorkbenchShell
-    navigation={<NavigationBar groups={groups} triggerRefs={{ edit: editMenuRef, file: fileMenuRef, help: helpMenuRef }} />}
+    navigation={<NavigationBar groups={groups} triggerRefs={{ edit: editMenuRef, file: fileMenuRef, help: helpMenuRef }}
+      {...(score.session ? { documentTitle: files.name } : {})} documentState={files.state}
+      tools={<button ref={settingsButtonRef} type="button" className="navigation-tool-button"
+        aria-label="打开应用设置" title="应用设置" onClick={() => setPreferencesOpen(true)}><NavigationSettingsIcon /></button>} />}
     motionEnabled={animationsEnabled}
     onKeyDownCapture={(event) => {
       if (event.nativeEvent.isComposing || (event.target instanceof Element &&
@@ -359,17 +487,44 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
       animationsEnabled={animationsEnabled} onAnimationsChange={applicationSettings.setAnimationsEnabled}
       ruleWarningsVisible={ruleWarningsVisible} onRuleWarningsVisibleChange={applicationSettings.setRuleWarningsVisible}
       deleteTimePolicy={deleteTimePolicy} onDeleteTimePolicyChange={applicationSettings.setDeleteTimePolicy}
+      noteInputPreferences={noteInputPreferences} onNoteInputRetentionChange={applicationSettings.setNoteInputRetention}
+      onDefaultNoteInputDurationChange={applicationSettings.setDefaultNoteInputDuration}
+      agentEnabled={applicationSettings.settings.agent.enabled} onAgentEnabledChange={applicationSettings.setAgentEnabled}
+      agentProviderDescriptors={AGENT_PROVIDER_DESCRIPTORS}
+      agentProviderSelection={applicationSettings.settings.agent.providerSelection}
+      onAgentProviderSelectionChange={applicationSettings.setAgentProviderSelection}
+      agentCredential={agentCredential.snapshot} onSaveAgentCredential={saveAgentCredential}
+      onDeleteAgentCredential={deleteAgentCredential}
       settingsReady={applicationSettings.ready} settingsSaving={applicationSettings.saving}
       settingsMessage={applicationSettings.message} onReset={applicationSettings.reset}
-      returnFocusRef={editMenuRef} />
+      workspaceReady={workspaceConfiguration.ready} workspaceSaving={workspaceConfiguration.saving}
+      workspaceMessage={workspaceConfiguration.message} workspaceLayoutPreset={workspaceConfiguration.layoutPreset}
+      onWorkspaceLayoutPresetChange={workspaceConfiguration.applyLayoutPreset}
+      onResetWorkspaceLayout={resetLayout}
+      shortcutProfileName={applicationSettings.settings.shortcuts.profileName}
+      shortcutBindingCount={Object.keys(applicationSettings.settings.shortcuts.bindings).length}
+      onOpenShortcutSettings={() => { setPreferencesOpen(false); setShortcutsOpen(true); }}
+      returnFocusRef={settingsButtonRef} />
     <NewScoreDialog open={files.newScoreOpen} onOpenChange={files.setNewScoreOpen}
       onCreate={files.createScore} returnFocusRef={fileMenuRef} completionFocusRef={scoreViewport} />
     <SaveAsDialog open={files.saveAsOpen} onOpenChange={files.setSaveAsOpen}
       initialName={files.name} onSave={(name) => files.saveDocument(name)} returnFocusRef={fileMenuRef} />
-    {score.session && <ScorePropertiesDialog open={scorePropertiesOpen} onOpenChange={setScorePropertiesOpen}
-      metadata={scoreMetadata} measureCount={score.session.measureCount} saving={input.pending > 0 && !input.retryable}
+    {score.session && initialMeasure && initialMeter && <ScorePropertiesDialog open={scorePropertiesOpen} onOpenChange={setScorePropertiesOpen}
+      metadata={scoreMetadata} initialMeasureId={initialMeasure.id} initialMeter={initialMeter}
+      initialKeySignature={initialKeySignature}
+      initialStaffId={staffNotation?.staffId ?? ""} initialClef={staffNotation?.clef ?? "treble"}
+      measureCount={score.session.measureCount} saving={input.pending > 0 && !input.retryable}
       failure={input.feedbackTarget === "properties" ? input.feedback?.issue.message ?? input.message : ""}
-      onSave={(metadata) => input.applyProperties({ kind: "set-document-metadata", metadata }, scoreViewport.current ?? undefined)}
+      onSave={(changes) => input.applyPropertyChanges([
+        ...(changes.metadata ? [{ kind: "set-document-metadata" as const, metadata: changes.metadata }] : []),
+        ...(changes.meter ? [{ kind: "set-measure-meter" as const, measureId: initialMeasure.id,
+          meter: changes.meter, scope: "meter-run" as const }] : []),
+        ...(changes.keySignature !== undefined && staffNotation ? [{ kind: "set-key-signature" as const,
+          partId: staffNotation.partId, measureId: initialMeasure.id,
+          change: { kind: "set" as const, fifths: changes.keySignature } }] : []),
+        ...(changes.clef && staffNotation ? [{ kind: "set-staff-clef" as const,
+          staffId: staffNotation.staffId, clef: changes.clef }] : []),
+      ], scoreViewport.current ?? undefined)}
       returnFocusRef={fileMenuRef} completionFocusRef={scoreViewport} />}
     <UnsavedChangesDialog action={files.pendingAction} saving={files.working === "save"}
       onOpenChange={(open) => { if (!open && files.working !== "save") files.setPendingAction(null); }}
@@ -385,7 +540,13 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
     <WorkbenchFeedbackAnnouncer feedback={runtime.feedback.latest} />
     <PluginDiagnosticDialog diagnostics={pluginDiagnostics} open={pluginDiagnosticsOpen}
       onOpenChange={setPluginDiagnosticsOpen} />
-    <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} returnFocusRef={helpMenuRef} />
+    <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen}
+      commands={commandContributions} profileName={applicationSettings.settings.shortcuts.profileName}
+      storedBindings={applicationSettings.settings.shortcuts.bindings}
+      disabled={!applicationSettings.ready || applicationSettings.saving}
+      onBindingChange={applicationSettings.setShortcutBinding}
+      onImportTemplate={applicationSettings.importShortcutTemplate}
+      onReset={applicationSettings.resetShortcutBindings} returnFocusRef={settingsButtonRef} />
     <AboutDialog open={aboutOpen} onOpenChange={setAboutOpen} returnFocusRef={helpMenuRef} />
   </>;
 }

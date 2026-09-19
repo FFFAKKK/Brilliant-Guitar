@@ -45,7 +45,7 @@ export function createNativeExtensionMigrationV2(migrate: NativeExtensionMigrati
       if (input.operation !== "migrationPrepare" || request === undefined || contribution === undefined || effect === undefined) {
         return encodeIntegratedValueV2({ ok: false, failure: { code: "migration.assembly-mismatch" } });
       }
-      return encodeIntegratedValueV2(prepareExtensionMigrationEffectV1(input.document, request, contribution, effect, policy?.invoke));
+      return encodeIntegratedValueV2(prepareExtensionMigrationEffectV1(input.document, request, contribution, effect, state, policy?.invoke));
     });
     return parse(apply(bufferToString, bytes, ["utf8"]) as string) as NativeExtensionMigrationResultV2;
   };

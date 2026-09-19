@@ -53,7 +53,6 @@ const TERMINAL = new Set<AgentInvocationStatus>([
   "cancelled",
   "timed-out",
   "failed",
-  "outcome-unknown",
 ]);
 
 function reject(
@@ -116,7 +115,7 @@ export function reduceAgentInvocationState(
   if (state.status === "dispatched" && event.type === "invocation.started") {
     return { accepted: true, state: { status: "running" } };
   }
-  if ((state.status === "dispatched" || state.status === "running")
+  if ((state.status === "dispatched" || state.status === "running" || state.status === "outcome-unknown")
     && event.type === "invocation.succeeded") {
     return { accepted: true, state: { status: "succeeded" } };
   }

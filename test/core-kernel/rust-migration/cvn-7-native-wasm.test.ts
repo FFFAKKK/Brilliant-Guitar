@@ -152,10 +152,10 @@ test("V4 admits the frozen stress document and preserves it when an edit report 
   } finally { restore(); }
 });
 
-test("V4 module classification reuse follows structural commits, Batch, history and failed candidates", () => {
+test("V4 module classification reuse follows structural commits, Batch, history and failed Effects", () => {
   const fixture = createCvn7NativeWasmFixture(), initial = score();
-  const moduleEdit = (marker: string, octave = 4) =>
-    fixture.modules.createScoreCommand(initial.id, "note-1", { step: "D", alter: 0, octave }, marker);
+  const moduleEdit = (marker: string, noteId = "note-1") =>
+    fixture.modules.createScoreCommand(initial.id, noteId, { step: "D", alter: 0, octave: 4 }, marker);
   const meter = (numerator: number, denominator: number) => ({
     commandVersion: 1, commandId: "core.measure.set-definition",
     target: { kind: "measure", measureId: "measure-1" },
@@ -184,7 +184,7 @@ test("V4 module classification reuse follows structural commits, Batch, history 
       payload: { commands: [meter(4, 4), moduleEdit("batch")] },
     }, "committed", "supported");
     submit(moduleEdit("after-batch"), "committed", "supported");
-    submit(meter(3, 4), "rejected");
+    submit(meter(3, 3), "rejected");
     submit(moduleEdit("after-rejected-structure"), "committed", "supported");
     submit({
       commandVersion: 1, commandId: "core.part.set-instrument",
@@ -192,9 +192,8 @@ test("V4 module classification reuse follows structural commits, Batch, history 
       payload: { instrument: { name: "Octave", writtenToSounding: { diatonicSteps: 7, chromaticSemitones: 12 } } },
     }, "committed", "supported");
     const before = bus.read(), count = events.length;
-    // Written D8 is valid, but sounding D9 is not. Cached classification must
-    // never suppress the candidate's semantic diagnostics or commit the write.
-    submit(moduleEdit("invalid-sounding-pitch", 8), "rejected");
+    // A rejected Effect must not replace the committed classification cache.
+    submit(moduleEdit("missing-effect-target", "missing-note"), "rejected");
     assert.deepEqual(bus.read(), before);
     assert.equal(events.length, count);
     submit(moduleEdit("after-rejected-module"), "committed", "supported");

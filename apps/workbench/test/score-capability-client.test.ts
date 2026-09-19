@@ -43,6 +43,121 @@ test("browser development host reports capability unavailability instead of fabr
   assert.equal(result.code, "capability.host-unsupported");
 });
 
+test("score capability client reads metadata and structure through separate minimal contracts", async () => {
+  const calls: Array<{ capabilityId: string; input: unknown }> = [];
+  const client = new ScoreCapabilityClient({
+    async invokeCapability(request) {
+      calls.push({ capabilityId: request.capabilityId, input: request.input });
+      const data = request.capabilityId === "score.read-metadata"
+        ? {
+            documentId: "score-1",
+            documentVersion: 5,
+            title: "元数据",
+            authors: ["Brilliant"],
+            tempoBpm: 120,
+          }
+        : {
+            documentId: "score-1",
+            documentVersion: 5,
+            measureCount: 8,
+            partCount: 1,
+            staffCount: 2,
+          };
+      return {
+        status: "completed",
+        invocationId: request.invocationId,
+        capabilityId: request.capabilityId,
+        contractVersion: request.contractVersion,
+        data,
+      };
+    },
+  }, "11111111-1111-4111-8111-111111111111");
+
+  const metadata = await client.readMetadata();
+  const structure = await client.readStructure();
+  assert.equal(metadata.status, "completed");
+  assert.equal(structure.status, "completed");
+  assert.deepEqual(calls, [
+    { capabilityId: "score.read-metadata", input: {} },
+    { capabilityId: "score.read-structure", input: {} },
+  ]);
+});
+
+test("score capability client reads the version-bound internal measure index", async () => {
+  const calls: Array<{ capabilityId: string; input: unknown }> = [];
+  const client = new ScoreCapabilityClient({
+    async invokeCapability(request) {
+      calls.push({ capabilityId: request.capabilityId, input: request.input });
+      return {
+        status: "completed",
+        invocationId: request.invocationId,
+        capabilityId: request.capabilityId,
+        contractVersion: request.contractVersion,
+        data: {
+          documentId: "score-1",
+          documentVersion: 5,
+          measureIds: ["intro-a", "verse-x", "ending-z"],
+        },
+      };
+    },
+  }, "11111111-1111-4111-8111-111111111111");
+
+  const result = await client.readMeasureIndex({
+    expectedDocumentId: "score-1",
+    expectedDocumentVersion: 5,
+  });
+
+  assert.equal(result.status, "completed");
+  if (result.status === "completed") {
+    assert.deepEqual(result.data.measureIds, ["intro-a", "verse-x", "ending-z"]);
+  }
+  assert.deepEqual(calls, [{
+    capabilityId: "score.read-measure-index",
+    input: { expectedDocumentId: "score-1", expectedDocumentVersion: 5 },
+  }]);
+});
+
+test("score capability client sends a bounded measure range contract", async () => {
+  const inputs: unknown[] = [];
+  const client = new ScoreCapabilityClient({
+    async invokeCapability(request) {
+      inputs.push(request.input);
+      return {
+        status: "completed",
+        invocationId: request.invocationId,
+        capabilityId: request.capabilityId,
+        contractVersion: request.contractVersion,
+        data: {
+          documentId: "score-1",
+          documentVersion: 5,
+          startMeasureId: "measure-2",
+          endMeasureId: "measure-4",
+          measureCount: 3,
+          measures: ["measure-2", "measure-3", "measure-4"].map((measureId) => ({
+            measureId,
+            meter: { numerator: 4, denominator: 4 },
+            pickupDuration: null,
+          })),
+        },
+      };
+    },
+  }, "11111111-1111-4111-8111-111111111111");
+
+  const result = await client.readMeasureRange({
+    startMeasureId: "measure-2",
+    endMeasureId: "measure-4",
+    maxMeasures: 3,
+  });
+
+  assert.equal(result.status, "completed");
+  if (result.status === "completed") assert.equal(result.data.measureCount, 3);
+  assert.deepEqual(inputs, [{
+    startMeasureId: "measure-2",
+    endMeasureId: "measure-4",
+    maxMeasures: 3,
+  }]);
+});
+
 test("score capability client rejects malformed or mismatched gateway output", async () => {
   const workspaceId = "11111111-1111-4111-8111-111111111111";
   await assert.rejects(

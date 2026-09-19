@@ -389,9 +389,9 @@ mod tests {
         KernelEventCauseV1, KernelEventV1, KernelSelectorResultV1, KernelSelectorValueV1,
         KernelSessionCreateRequestV1, KernelStage3CommandFailureV1,
         KernelStage4MarkPersistedResultV1, KernelStage4MetricsV1, ScoreEntityTargetV1,
-        ScoreOverviewV1, ScoreRangeSelectionV1, ScoreStructureViolationV1, SelectedScoreEntityV1,
-        decode_create_request, decode_stage3_submit_request, encode_create_result,
-        encode_read_result,
+        ScoreOverviewV1, ScoreRangeSelectionV1, ScoreStructureSummaryV1,
+        ScoreStructureViolationV1, SelectedScoreEntityV1, decode_create_request,
+        decode_stage3_submit_request, encode_create_result, encode_read_result,
     };
 
     use super::*;
@@ -1294,7 +1294,7 @@ mod tests {
     }
 
     #[test]
-    fn all_seven_stage4_selector_families_are_version_coherent_and_index_backed() {
+    fn all_eight_stage4_selector_families_are_version_coherent_and_index_backed() {
         let mut session = local_session();
         let overview = r#"{"apiVersion":1,"operation":{"kind":"select","selector":{"selectorId":"core.selector.score-overview"}}}"#;
         let KernelStage4OperationResultV1::Select(result) = operate(&mut session, overview) else {
@@ -1331,6 +1331,32 @@ mod tests {
             result.value.selection,
             KernelSelectorResultV1::Ok(KernelSelectorValueV1::Metadata(metadata))
                 if metadata.title == "Local"
+        ));
+
+        let structure = r#"{"apiVersion":1,"operation":{"kind":"select","selector":{"selectorId":"core.selector.score-structure"}}}"#;
+        let KernelStage4OperationResultV1::Select(result) = operate(&mut session, structure) else {
+            panic!("structure selector result");
+        };
+        assert_eq!(result.value.document_version.get(), 0);
+        assert_eq!(
+            result.value.stage4_metrics.full_snapshot_materializations,
+            0
+        );
+        assert_eq!(result.value.stage4_metrics.selector_records_visited, 1);
+        assert_eq!(result.value.stage4_metrics.selector_records_returned, 1);
+        assert!(matches!(
+            result.value.selection,
+            KernelSelectorResultV1::Ok(KernelSelectorValueV1::Structure(
+                ScoreStructureSummaryV1 {
+                    document_id,
+                    measure_count,
+                    part_count,
+                    staff_count,
+                }
+            )) if document_id.as_js_string() == "score-local"
+                && measure_count.get() == 1
+                && part_count.get() == 1
+                && staff_count.get() == 1
         ));
 
         let entity = r#"{"apiVersion":1,"operation":{"kind":"select","selector":{"selectorId":"core.selector.score-entity","address":{"kind":"note","noteId":"note-1"}}}}"#;

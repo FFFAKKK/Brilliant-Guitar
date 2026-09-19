@@ -1,7 +1,9 @@
 //! Module effects share the candidate journal, but retain module segment facts.
 use super::*;
+use brilliant_kernel_contracts::SequenceAnchorV1;
 use brilliant_score_foundation::{
-    ExtensionBlockV1, ExtensionOwnerV1, ScoreDocumentV1, ScoreMetadataV1, WrittenPitchV1,
+    ExtensionBlockV1, ExtensionOwnerV1, NoteValueV1, ScoreDocumentV1, ScoreMetadataV1,
+    WrittenPitchV1,
 };
 #[cfg(test)]
 mod tests;
@@ -16,13 +18,16 @@ impl CandidateExecution<'_> {
     pub(crate) fn integrated_contribution_context(
         &mut self,
     ) -> Result<ScoreDocumentV1<JsString>, Failure> {
-        self.recorder.candidate.integrated_contribution_context()
+        let result = self.recorder.candidate.integrated_contribution_context();
+        self.conclude_operation(result)
     }
 
     pub(crate) fn integrated_document(&mut self) -> Result<ScoreDocumentV1<JsString>, Failure> {
-        self.recorder
+        let result = self
+            .recorder
             .candidate
-            .integrated_document(&|id| Ok(id.clone()))
+            .integrated_document(&|id| Ok(id.clone()));
+        self.conclude_operation(result)
     }
 
     pub(crate) fn contains_entity(&mut self, entity: &Entity) -> bool {
@@ -48,6 +53,14 @@ impl CandidateExecution<'_> {
         self.recorder.steps.len()
     }
 
+    pub(crate) fn module_affected(
+        &mut self,
+        first: usize,
+    ) -> Result<Vec<AffectedEntityAddressV1>, Failure> {
+        let result = self.recorder.module_affected(first);
+        self.conclude_operation(result)
+    }
+
     pub(crate) fn module_pitch(
         &mut self,
         note_id: &StableId,
@@ -62,10 +75,7 @@ impl CandidateExecution<'_> {
                 .replace_scalar(&owner, Value::NoteWrittenPitch(pitch))?;
             Ok(())
         })();
-        if result.is_err() {
-            self.recorder.candidate.reservation.abort();
-        }
-        result
+        self.conclude_operation(result)
     }
 
     pub(crate) fn module_metadata(
@@ -82,10 +92,85 @@ impl CandidateExecution<'_> {
                 .replace_scalar(&owner, Value::DocumentMetadata(metadata))?;
             Ok(())
         })();
-        if result.is_err() {
-            self.recorder.candidate.reservation.abort();
-        }
-        result
+        self.conclude_operation(result)
+    }
+
+    pub(crate) fn module_event_note_value(
+        &mut self,
+        event_id: &StableId,
+        note_value: NoteValueV1,
+    ) -> Result<(), Failure> {
+        let result = (|| {
+            let owner = self
+                .recorder
+                .candidate
+                .resolve(Kind::Event, event_id.as_js_string())?;
+            self.recorder
+                .replace_scalar(&owner, Value::EventNoteValue(note_value))?;
+            Ok(())
+        })();
+        self.conclude_operation(result)
+    }
+
+    pub(crate) fn module_event_remove(&mut self, event_id: &StableId) -> Result<(), Failure> {
+        let result = self.recorder.remove_event(event_id.as_js_string());
+        self.conclude_operation(result)
+    }
+
+    pub(crate) fn module_insert_event(
+        &mut self,
+        voice_id: &StableId,
+        anchor: SequenceAnchorV1,
+        event: RhythmicEventV1,
+        expected_notes: bool,
+    ) -> Result<(), Failure> {
+        let result = (|| {
+            let voice = self
+                .recorder
+                .candidate
+                .resolve(Kind::Voice, voice_id.as_js_string())?;
+            let content_matches = matches!(
+                (&event.content, expected_notes),
+                (RhythmicContentV1::Notes { .. }, true) | (RhythmicContentV1::Rest, false)
+            );
+            if !content_matches {
+                return Err(Failure::InvalidEnvelope);
+            }
+            let after = match anchor {
+                SequenceAnchorV1::Start => None,
+                SequenceAnchorV1::AfterEvent { event_id } => Some(event_id.as_js_string().clone()),
+            };
+            let content = match event.content {
+                RhythmicContentV1::Rest => RhythmicContentV1::Rest,
+                RhythmicContentV1::Notes { notes: source } => {
+                    let mut notes = Vec::new();
+                    self.recorder.candidate.reservation.vec(
+                        Site::JournalOperations,
+                        &mut notes,
+                        source.len(),
+                    )?;
+                    notes.extend(source.into_iter().map(|note| {
+                        brilliant_score_foundation::ScoreNoteV1 {
+                            id: note.id.as_js_string().clone(),
+                            written_pitch: note.written_pitch,
+                        }
+                    }));
+                    RhythmicContentV1::Notes { notes }
+                }
+            };
+            self.recorder.insert_event(
+                &voice,
+                RhythmicEventV1 {
+                    id: event.id.as_js_string().clone(),
+                    duration: event.duration,
+                    staff_id: event.staff_id.map(|id| id.as_js_string().clone()),
+                    content,
+                },
+                after.as_ref(),
+            )?;
+            Ok(())
+        })();
+        self.conclude_operation(result)
     }
 
     pub(crate) fn module_extension(
@@ -105,10 +190,7 @@ impl CandidateExecution<'_> {
             self.recorder.edit_extension(namespace, &owner, block)?;
             Ok(())
         })();
-        if result.is_err() {
-            self.recorder.candidate.reservation.abort();
-        }
-        result
+        self.conclude_operation(result)
     }
 
     pub(crate) fn end_module(
@@ -116,13 +198,9 @@ impl CandidateExecution<'_> {
         first: usize,
         child_index: usize,
         source: ModuleSegmentSource,
-        affected: &[AffectedEntityAddressV1],
     ) -> Result<(), Failure> {
-        let result = self.end_module_inner(first, child_index, source, affected);
-        if result.is_err() {
-            self.recorder.candidate.reservation.abort();
-        }
-        result
+        let result = self.end_module_inner(first, child_index, source);
+        self.conclude_operation(result)
     }
 
     fn end_module_inner(
@@ -130,7 +208,6 @@ impl CandidateExecution<'_> {
         first: usize,
         child_index: usize,
         source: ModuleSegmentSource,
-        affected: &[AffectedEntityAddressV1],
     ) -> Result<(), Failure> {
         self.recorder.candidate.reservation.ensure_active()?;
         let count = self
@@ -142,6 +219,7 @@ impl CandidateExecution<'_> {
         if count == 0 {
             return Ok(());
         }
+        let affected = self.recorder.module_affected(first)?;
         let map = crate::runtime::map_change_set_build_failure;
         self.accounting.add_prepared_effects(count).map_err(map)?;
         let mut raw = Vec::new();
@@ -155,7 +233,7 @@ impl CandidateExecution<'_> {
         let affected_start = self.affected.len();
         let operations = self
             .recorder
-            .charge_module_segment(first, &mut self.accounting, affected, &mut self.affected)
+            .charge_module_segment(first, &mut self.accounting, &affected, &mut self.affected)
             .map_err(map)?;
         self.operation_count = self
             .operation_count
@@ -186,6 +264,6 @@ impl CandidateExecution<'_> {
             effect_count: count,
         });
         self.changed = true;
-        Ok(())
+        self.ensure_retained_bytes_within_limit()
     }
 }

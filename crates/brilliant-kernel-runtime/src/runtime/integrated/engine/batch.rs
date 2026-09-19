@@ -58,11 +58,10 @@ impl IntegratedKernelRuntimeV2 {
                     field(definition, "commandId").ok() == field(raw, "commandId").ok()
                 });
                 if is_module {
-                    let start = transaction.begin_module();
                     let prepared =
                         environment.prepare(raw, &mut transaction, &mut projections, executor)?;
                     transaction
-                        .end_module(start, index, prepared.source, &prepared.affected)
+                        .end_module(prepared.effect_start, index, prepared.source)
                         .map_err(|error| value(&error).unwrap_or_else(|_| internal()))
                 } else {
                     let command = decode_captured_admission_command(captured)

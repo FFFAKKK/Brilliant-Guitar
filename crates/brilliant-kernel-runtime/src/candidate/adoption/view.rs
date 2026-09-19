@@ -72,6 +72,16 @@ impl Candidate<'_> {
 }
 
 impl StableCandidateView<'_> {
+    pub(super) fn final_record_for(
+        &self,
+        address: &Entity,
+    ) -> Result<StableRecordV1, TransactionPrepareFailureV1> {
+        let source = self
+            .occurrence(address)
+            .ok_or(TransactionPrepareFailureV1::LocalInvariant)?;
+        self.final_record(&source)
+    }
+
     pub(super) fn occurrence(&self, address: &Entity) -> Option<Occurrence> {
         self.candidate.borrow().final_occurrence(address)
     }

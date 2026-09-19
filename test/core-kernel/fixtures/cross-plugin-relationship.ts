@@ -12,6 +12,12 @@ export const indexSource = { moduleId: "fixture.index.module", contributionId: "
 export const summarySource = { moduleId: "fixture.summary.module", contributionId: "fixture.summary.contribution" };
 export const crossReads = [{ readVersion: 1, reader: summarySource, provider: indexSource,
   namespace: INDEX, supportedSchemaVersions: [1, 2], ownerKinds: ["part"] }];
+export const crossInventory = { inventoryVersion: 1, requirements: [
+  { requirementVersion: 1, namespace: INDEX, ...indexSource,
+    supportedSchemaVersions: [1, 2], requiredForWrite: true },
+  { requirementVersion: 1, namespace: SUMMARY, ...summarySource,
+    supportedSchemaVersions: [1, 2], requiredForWrite: true },
+] };
 export const crossTrace: { plugin: string; phase: string; view: DomainContributionReadViewV1 }[] = [];
 export let crossForeignWrite = false;
 export function setCrossForeignWrite(value: boolean): void { crossForeignWrite = value; }
@@ -121,18 +127,33 @@ function makePlugin(summary: boolean) {
   }));
   return defined(defineDomainCommandRegistrationEntryV1({ kind: "domain-command", registrationEntryId: "kernel.domain-commands.v1", ownerModuleId: source.moduleId, contributions: [contribution] }));
 }
-const entries = [makePlugin(false), makePlugin(true)];
-export function crossCatalog(withReads = true, declarations: unknown = crossReads) {
+const indexEntry = makePlugin(false), summaryEntry = makePlugin(true);
+const entries = [indexEntry, summaryEntry];
+function compileCrossBase(
+  sources: readonly { readonly moduleId: string; readonly contributionId: string }[],
+  registrations: readonly ReturnType<typeof makePlugin>[],
+) {
   const manifest = { startupManifestVersion: 1, modules: [
     { moduleId: "core.commands", origin: "official", runtime: "builtin", trustLevel: "system-trusted", apiVersion: 1, capabilities: ["command:register"], registrationEntryIds: ["core.commands.v1"] },
     { moduleId: "core.selectors", origin: "official", runtime: "builtin", trustLevel: "system-trusted", apiVersion: 1, capabilities: ["selector:register"], registrationEntryIds: ["core.selectors.v1"] },
-    ...[indexSource, summarySource].map(source => ({ moduleId: source.moduleId, origin: "official", runtime: "internal-module", trustLevel: "system-trusted", apiVersion: 1,
+    ...sources.map(source => ({ moduleId: source.moduleId, origin: "official", runtime: "internal-module", trustLevel: "system-trusted", apiVersion: 1,
       capabilities: ["command:register", "command:execute", "score:read", "event:subscribe"], registrationEntryIds: ["kernel.domain-commands.v1"] })),
   ] };
-  const compiled = compileOfficialModuleCatalogV1(manifest, entries);
+  const compiled = compileOfficialModuleCatalogV1(manifest, [...registrations]);
   if (!compiled.ok) throw new Error(JSON.stringify(compiled));
-  if (!withReads) return compiled.catalog;
-  const result = compileContributionReadCatalogV1(compiled.catalog, declarations);
+  return compiled.catalog;
+}
+export function crossCatalog(withReads = true, declarations: unknown = crossReads) {
+  const base = compileCrossBase([indexSource, summarySource], entries);
+  if (!withReads) return base;
+  const result = compileContributionReadCatalogV1(base, declarations);
+  if (!result.ok) throw new Error(JSON.stringify(result));
+  return result.catalog;
+}
+export function crossCatalogWithoutIndex(withReads = true, declarations: unknown = crossReads) {
+  const base = compileCrossBase([summarySource], [summaryEntry]);
+  if (!withReads) return base;
+  const result = compileContributionReadCatalogV1(base, declarations, crossInventory);
   if (!result.ok) throw new Error(JSON.stringify(result));
   return result.catalog;
 }

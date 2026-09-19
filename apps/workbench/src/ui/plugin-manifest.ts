@@ -8,6 +8,7 @@ export interface UiPluginManifest {
   readonly version: string;
   readonly apiVersion: typeof WORKBENCH_PLUGIN_API_VERSION;
   readonly runtime: "internal-module";
+  readonly activation: "always" | "user";
   readonly requires: Readonly<{
     capabilities: readonly WorkbenchCapabilityId[];
     projections: readonly string[];
@@ -15,6 +16,10 @@ export interface UiPluginManifest {
   readonly contributes: Readonly<{
     views: readonly string[];
     commands: readonly string[];
+    interactions: readonly string[];
+    componentExtensions: readonly string[];
+    readonly instruments?: readonly string[];
+    readonly playbackOutputs?: readonly string[];
   }>;
 }
 
@@ -33,13 +38,17 @@ export function isUiPluginManifest(value: unknown): value is UiPluginManifest {
     || typeof candidate.name !== "string" || candidate.name.length === 0
     || typeof candidate.version !== "string" || !semanticVersion.test(candidate.version)
     || candidate.apiVersion !== WORKBENCH_PLUGIN_API_VERSION
-    || candidate.runtime !== "internal-module") return false;
+    || candidate.runtime !== "internal-module"
+    || (candidate.activation !== "always" && candidate.activation !== "user")) return false;
   const requires = candidate.requires;
   if (typeof requires !== "object" || requires === null
     || !uniqueStrings(requires.capabilities) || !uniqueStrings(requires.projections)) return false;
   const contributes = candidate.contributes;
   return typeof contributes === "object" && contributes !== null
-    && uniqueStrings(contributes.views) && uniqueStrings(contributes.commands);
+    && uniqueStrings(contributes.views) && uniqueStrings(contributes.commands) && uniqueStrings(contributes.interactions)
+    && uniqueStrings(contributes.componentExtensions)
+    && (contributes.instruments === undefined || uniqueStrings(contributes.instruments))
+    && (contributes.playbackOutputs === undefined || uniqueStrings(contributes.playbackOutputs));
 }
 
 /** Immutable service directory exposed by the host during plugin installation. */

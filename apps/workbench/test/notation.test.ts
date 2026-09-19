@@ -21,6 +21,7 @@ test("notation uses the real atomic Native read and rendering preparation never 
   assert.equal(view.kind, "staff");
   if (view.kind !== "staff") return;
   assert.equal(view.staffId, document.parts[0]?.staves[0]?.id);
+  assert.equal(view.tempoBpm, document.metadata.tempo.bpm);
   assert.deepEqual(view.measures.map((measure) => measure.id), document.measureDefinitions.map((measure) => measure.id));
   // Content lookup uses stable IDs rather than coincidental array order.
   const reordered: ScoreDocument = { ...document, parts: document.parts.map((part) => ({
@@ -37,7 +38,7 @@ test("notation uses the real atomic Native read and rendering preparation never 
   assert.equal(result.documentVersion, 0);
 });
 
-test("rests are projected while unsupported staff structures remain explicit", () => {
+test("rests and conventional clefs are projected while unsupported staff structures remain explicit", () => {
   const { document } = readDocument(1);
   const withRest: ScoreDocument = { ...document, parts: document.parts.map((part) => ({ ...part,
     measureContents: part.measureContents.map((content) => ({ ...content,
@@ -54,7 +55,13 @@ test("rests are projected while unsupported staff structures remain explicit", (
   const bass: ScoreDocument = { ...document, parts: document.parts.map((part) => ({ ...part,
     staves: part.staves.map((staff) => ({ ...staff, defaultClef: { sign: "F", line: 4 } })),
   })) };
-  assert.equal(projectNotation(bass).kind, "unsupported");
+  const bassView = projectNotation(bass);
+  assert.equal(bassView.kind, "staff");
+  if (bassView.kind === "staff") assert.equal(bassView.clef, "bass");
+  const unsupportedClef: ScoreDocument = { ...document, parts: document.parts.map((part) => ({ ...part,
+    staves: part.staves.map((staff) => ({ ...staff, defaultClef: { sign: "G", line: 1 } })),
+  })) };
+  assert.equal(projectNotation(unsupportedClef).kind, "unsupported");
   const missing: ScoreDocument = { ...document, parts: document.parts.map((part) => ({ ...part, measureContents: [] })) };
   assert.equal(projectNotation(missing).kind, "unsupported");
 });
@@ -91,6 +98,9 @@ test("meter changes follow document data while malformed transport projections a
   assert.deepEqual(layoutStaff(view, 1120).measures.map((item) => item.showMeter), [true, false, true, false]);
   assert.equal(view.measures[2]?.meter.numerator, 3);
   assert.ok(isNotationView(view));
+  assert.ok(!isNotationView({ ...view, tempoBpm: 0 }));
+  assert.ok(!isNotationView({ ...view, tempoBpm: Number.NaN }));
+  assert.ok(!isNotationView({ ...view, tempoBpm: Number.POSITIVE_INFINITY }));
   assert.ok(!isNotationView({ ...view, measures: [] }));
   assert.ok(!isNotationView({ ...view, measures: [view.measures[0], view.measures[0]] }));
   assert.ok(!isNotationView({ ...view, measures: [{ id: "bad", meter: { numerator: 4, denominator: 0 } }] }));

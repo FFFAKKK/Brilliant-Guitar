@@ -1,5 +1,6 @@
 import type { PlaybackEngine } from "./playback-engine.ts";
 import { WebAudioPlaybackEngine } from "./playback-engine.ts";
+import type { PluginPlaybackOutputContribution } from "../plugins/plugin-sdk.ts";
 
 export type PlaybackOutputKind = "builtin-synth" | "sample-bank" | "midi-out";
 export type PlaybackSampleBankFormat = "sf2" | "sf3";
@@ -51,24 +52,33 @@ export interface PlaybackOutputSelectionResult {
   readonly diagnostic: PlaybackOutputDiagnostic | null;
 }
 
-const BUILTIN_OUTPUT_ID = "builtin-synth";
+export const BUILTIN_OUTPUT_ID = "builtin-synth";
 const MAX_SAMPLE_BANK_BYTES = 512 * 1024 * 1024;
 const SOUNDFONT_ENGINE_PENDING: PlaybackOutputDiagnostic = {
   code: "playback.soundfont-engine-pending",
   message: "音源文件已识别，SoundFont 采样播放引擎将在下一阶段接入",
 };
 
-const builtinRegistration = (): PlaybackOutputRegistration => ({
-  descriptor: {
-    id: BUILTIN_OUTPUT_ID,
-    kind: "builtin-synth",
-    label: "内置合成器",
-    available: true,
-    diagnostic: null,
-    resourceId: null,
-  },
+export const BUILTIN_SYNTH_PLAYBACK_OUTPUT: PluginPlaybackOutputContribution = Object.freeze({
+  id: BUILTIN_OUTPUT_ID,
+  kind: "builtin-synth",
+  label: "内置合成器",
   createEngine: () => new WebAudioPlaybackEngine(),
 });
+
+function pluginRegistration(contribution: PluginPlaybackOutputContribution): PlaybackOutputRegistration {
+  return {
+    descriptor: {
+      id: contribution.id,
+      kind: contribution.kind,
+      label: contribution.label,
+      available: true,
+      diagnostic: null,
+      resourceId: null,
+    },
+    createEngine: contribution.createEngine,
+  };
+}
 
 function extension(name: string): string {
   const index = name.lastIndexOf(".");
@@ -90,20 +100,40 @@ function resourceId(file: LocalSampleBankFile): string {
 export class PlaybackOutputRegistry {
   readonly #listeners = new Set<() => void>();
   readonly #registrations = new Map<string, PlaybackOutputRegistration>();
+  readonly #pluginOutputIds = new Set<string>();
   readonly #resources = new Map<string, PlaybackSampleBankResource>();
   #activeId = BUILTIN_OUTPUT_ID;
   #pending = false;
   #diagnostic: PlaybackOutputDiagnostic | null = null;
   #snapshot: PlaybackOutputSnapshot;
 
-  constructor(registrations: readonly PlaybackOutputRegistration[] = [builtinRegistration()]) {
-    for (const registration of registrations) this.#registrations.set(registration.descriptor.id, registration);
-    if (!this.#registrations.has(BUILTIN_OUTPUT_ID)) throw new Error("Playback output registry requires the built-in synthesizer");
+  constructor(contributions: readonly PluginPlaybackOutputContribution[] = []) {
+    this.#replacePluginOutputs(contributions);
     this.#snapshot = this.#buildSnapshot();
   }
 
   getSnapshot = (): PlaybackOutputSnapshot => this.#snapshot;
   subscribe = (listener: () => void): (() => void) => { this.#listeners.add(listener); return () => this.#listeners.delete(listener); };
+
+  replacePluginOutputs(contributions: readonly PluginPlaybackOutputContribution[] = []): void {
+    this.#replacePluginOutputs(contributions);
+    this.#publish();
+  }
+
+  #replacePluginOutputs(contributions: readonly PluginPlaybackOutputContribution[]): void {
+    const available = contributions.some((contribution) => contribution.id === BUILTIN_OUTPUT_ID)
+      ? contributions : [BUILTIN_SYNTH_PLAYBACK_OUTPUT, ...contributions];
+    const ids = available.map((contribution) => contribution.id);
+    if (new Set(ids).size !== ids.length) throw new Error("Playback output contributions contain duplicate IDs");
+    for (const id of this.#pluginOutputIds) this.#registrations.delete(id);
+    this.#pluginOutputIds.clear();
+    for (const contribution of available) {
+      if (this.#registrations.has(contribution.id)) throw new Error(`Playback output conflicts with a sample resource: ${contribution.id}`);
+      this.#registrations.set(contribution.id, pluginRegistration(contribution));
+      this.#pluginOutputIds.add(contribution.id);
+    }
+    if (!this.#registrations.has(this.#activeId)) this.#activeId = BUILTIN_OUTPUT_ID;
+  }
 
   #buildSnapshot(): PlaybackOutputSnapshot {
     return Object.freeze({
@@ -195,6 +225,8 @@ export class PlaybackOutputRegistry {
   }
 }
 
-export function createPlaybackOutputRegistry(): PlaybackOutputRegistry {
-  return new PlaybackOutputRegistry();
+export function createPlaybackOutputRegistry(
+  contributions: readonly PluginPlaybackOutputContribution[] = [],
+): PlaybackOutputRegistry {
+  return new PlaybackOutputRegistry(contributions);
 }

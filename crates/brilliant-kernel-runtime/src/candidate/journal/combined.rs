@@ -79,7 +79,7 @@ impl CombinedHistory {
                 StableId::new(id.clone()).map_err(|_| Failure::InternalError)
             })
             .map_err(FinalizationFailure::Command)?;
-        let validated = candidate.validate_final()?;
+        let validated = candidate.validate_final_against(store)?;
         if document.id != store.header.id {
             return Err(FinalizationFailure::Command(Failure::InternalError));
         }
@@ -175,7 +175,7 @@ impl CombinedHistory {
                 self.suffix
                     .replay(&mut candidate, Direction::Forward)
                     .map_err(FinalizationFailure::Command)?;
-                let (plan, _) = candidate.validate_final()?.prepare_commit(
+                let (plan, _) = candidate.validate_final_against(store)?.prepare_commit(
                     store,
                     version,
                     suffix_operations,
@@ -186,7 +186,7 @@ impl CombinedHistory {
                 let prefix =
                     replay_overlay_on_base(store, &self.prefix.arena, &self.prefix.inverse)?;
                 let (plan, _) = Candidate::new(prefix, document_id)
-                    .validate_final()?
+                    .validate_final_against(store)?
                     .prepare_commit(store, version, 0)?;
                 Ok(plan)
             }
@@ -205,7 +205,7 @@ impl CombinedHistory {
                 )
                 .map_err(FinalizationFailure::Command)?;
                 if self.prefix.forward.is_empty() && self.prefix.inverse.is_empty() {
-                    let (plan, _) = candidate.validate_final()?.prepare_commit(
+                    let (plan, _) = candidate.validate_final_against(store)?.prepare_commit(
                         store,
                         version,
                         suffix_operations,
@@ -220,7 +220,7 @@ impl CombinedHistory {
                     replay_overlay_on_base(&boundary, &self.prefix.arena, &self.prefix.inverse)?;
                 let final_candidate = Candidate::new(inverse, document_id);
                 let (plan, _) = final_candidate
-                    .validate_final()?
+                    .validate_final_against(store)?
                     .prepare_commit_with_prior(
                         store,
                         version,

@@ -4,7 +4,7 @@ import type { StaffView } from "../src/contracts/notation.ts";
 import { resolveScorePosition } from "../src/editor/score-position.ts";
 
 const score: StaffView = {
-  kind: "staff", partId: "part", staffId: "staff", clef: "treble",
+  kind: "staff", partId: "part", staffId: "staff", clef: "treble", tempoBpm: 96, keySignatureChanges: [],
   measures: [
     { id: "measure-1", voiceId: "voice-1", meter: { numerator: 4, denominator: 4 }, ruleWarnings: [], events: [
       { id: "event-1", duration: { base: 4, dots: 0 }, content: { kind: "note", pitch: { step: "C", octave: 4, alter: 0 } } },

@@ -79,6 +79,68 @@ enum Occurrence {
     Added(usize),
 }
 
+/// Deterministic retained-memory envelope for one unpublished candidate.
+///
+/// This deliberately overcharges collection bucket headroom and shared UTF-16
+/// allocations. It is a portable admission bound, not an allocator/RSS probe.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+struct RetainedBytesUpperBound {
+    bytes: u64,
+}
+
+impl RetainedBytesUpperBound {
+    fn add_bytes(&mut self, bytes: u64) {
+        self.bytes = self.bytes.saturating_add(bytes);
+    }
+
+    fn add_product(&mut self, count: usize, unit: usize, multiplier: u64) {
+        let value = u64::try_from(count)
+            .ok()
+            .and_then(|count| {
+                u64::try_from(unit)
+                    .ok()
+                    .and_then(|unit| count.checked_mul(unit))
+            })
+            .and_then(|bytes| bytes.checked_mul(multiplier))
+            .unwrap_or(u64::MAX);
+        self.add_bytes(value);
+    }
+
+    fn add_value<T>(&mut self) {
+        self.add_bytes(u64::try_from(std::mem::size_of::<T>()).unwrap_or(u64::MAX));
+    }
+
+    fn add_vec<T>(&mut self, values: &Vec<T>) {
+        self.add_product(values.capacity(), std::mem::size_of::<T>(), 1);
+    }
+
+    fn add_map<K, V>(&mut self, values: &HashMap<K, V>) {
+        // HashMap does not expose raw bucket bytes. Two payload widths plus one
+        // machine word per reported slot conservatively cover bucket slack,
+        // control bytes and alignment for the supported standard allocator.
+        let unit = std::mem::size_of::<(K, V)>().saturating_add(std::mem::size_of::<usize>());
+        self.add_product(values.capacity(), unit, 2);
+    }
+
+    fn add_set<T>(&mut self, values: &HashSet<T>) {
+        let unit = std::mem::size_of::<T>().saturating_add(std::mem::size_of::<usize>());
+        self.add_product(values.capacity(), unit, 2);
+    }
+
+    fn add_js_string(&mut self, value: &JsString) {
+        let payload = u64::try_from(value.len())
+            .ok()
+            .and_then(|units| units.checked_mul(2))
+            .and_then(|bytes| bytes.checked_add(32))
+            .unwrap_or(u64::MAX);
+        self.add_bytes(payload);
+    }
+
+    fn finish(self) -> u64 {
+        self.bytes
+    }
+}
+
 impl Occurrence {
     fn prefix(entity: Entity) -> Self {
         Self::Prefix(Arc::new(entity))
@@ -300,16 +362,65 @@ struct Candidate<'a> {
     work: Work,
     mutation_work: MutationWork,
     read_work: Cell<ReadWork>,
+    work_budget: crate::work_budget::TransactionWorkBudgetV1,
     reservation: Reservation,
 }
 
 impl<'a> Candidate<'a> {
+    fn retained_bytes_upper_bound(&self) -> u64 {
+        let mut bound = RetainedBytesUpperBound::default();
+        bound.add_value::<Self>();
+        bound.add_vec(&self.nodes);
+        for node in &self.nodes {
+            bound.add_js_string(&node.raw_id);
+            if let Some(staff_id) = &node.staff_id {
+                bound.add_js_string(staff_id);
+            }
+        }
+
+        bound.add_map(&self.added);
+        for ids in self.added.values() {
+            bound.add_map(ids);
+            for (id, indices) in ids {
+                bound.add_js_string(id);
+                bound.add_vec(indices);
+            }
+        }
+        bound.add_set(&self.id_pool);
+        for id in &self.id_pool {
+            bound.add_js_string(id);
+        }
+        bound.add_map(&self.orders);
+        for order in self.orders.values() {
+            bound.add_vec(order);
+        }
+        bound.add_set(&self.hidden);
+        bound.add_map(&self.values);
+        bound.add_map(&self.instruments);
+        bound.add_map(&self.staff_references);
+        for id in self.staff_references.values().flatten() {
+            bound.add_js_string(id);
+        }
+        bound.add_map(&self.staff_referrers_by_id);
+        for (id, owners) in &self.staff_referrers_by_id {
+            bound.add_js_string(id);
+            bound.add_map(owners);
+            for referrers in owners.values() {
+                bound.add_vec(referrers);
+            }
+        }
+        self.extension_state
+            .add_retained_bytes_upper_bound(&mut bound);
+        bound.finish()
+    }
+
     /// Cursor/field read attempts and successful record writes are counted at
     /// their actual sites; reservation requests are deliberately excluded.
-    fn record_read(&self) {
+    fn record_read(&self) -> bool {
         let mut work = self.read_work.get();
         work.entity_reads = work.entity_reads.saturating_add(1);
         self.read_work.set(work);
+        self.observe_work_budget().is_ok()
     }
 
     pub(crate) fn attempt_metrics(&self) -> brilliant_kernel_contracts::KernelStage3MetricsV1 {
@@ -341,6 +452,14 @@ impl<'a> Candidate<'a> {
     }
 
     fn new(prefix: TransactionOverlayV1<'a>, document_id: StableId) -> Self {
+        Self::new_with_budget(prefix, document_id, Default::default())
+    }
+
+    fn new_with_budget(
+        prefix: TransactionOverlayV1<'a>,
+        document_id: StableId,
+        work_budget: crate::work_budget::TransactionWorkBudgetV1,
+    ) -> Self {
         Self {
             prefix,
             extension_state: extensions::ExtensionState::default(),
@@ -358,8 +477,26 @@ impl<'a> Candidate<'a> {
             work: Work::default(),
             mutation_work: MutationWork::default(),
             read_work: Cell::default(),
+            work_budget,
             reservation: Reservation::default(),
         }
+    }
+
+    fn observe_work_budget(&self) -> Result<(), Failure> {
+        self.work_budget.observe_metrics(&self.attempt_metrics())
+    }
+
+    fn ensure_work_budget(&self) -> Result<(), Failure> {
+        self.observe_work_budget()?;
+        self.work_budget.ensure_active()
+    }
+
+    fn charge_metric_progress(&self, units: u64) -> Result<(), Failure> {
+        self.work_budget.charge_metric_progress(units)
+    }
+
+    fn charge_supplemental_work(&self, units: u64) -> Result<(), Failure> {
+        self.work_budget.charge_supplemental(units)
     }
 
     fn raw_id<'b>(&'b self, occurrence: &'b Occurrence) -> Option<&'b JsString> {
@@ -382,6 +519,9 @@ impl<'a> Candidate<'a> {
         let mut work = self.read_work.get();
         work.owner_index_lookups = work.owner_index_lookups.saturating_add(1);
         self.read_work.set(work);
+        if self.observe_work_budget().is_err() {
+            return None;
+        }
         match occurrence {
             Occurrence::Added(index) => Some(self.nodes.get(*index)?.owner.clone()),
             Occurrence::PrefixContent { part, .. } => Some(Occurrence::Prefix(part.clone())),
@@ -466,6 +606,9 @@ impl<'a> Candidate<'a> {
         let mut work = self.read_work.get();
         work.entity_index_lookups = work.entity_index_lookups.saturating_add(1);
         self.read_work.set(work);
+        if self.observe_work_budget().is_err() {
+            return matches;
+        }
         if let Ok(id) = StableId::new(raw_id)
             && let Some(entity) = self.prefix.resolve_entity_address(&id)
             && Kind::of(&entity) == kind
@@ -508,10 +651,16 @@ impl<'a> Candidate<'a> {
             return None;
         }
         let mut visited = 0;
+        if self.charge_metric_progress(1).is_err() {
+            return None;
+        }
         let result = if let Some(children) = self.orders.get(order) {
             for child in children {
                 if self.visible_child_of(child, &order.owner) {
                     visited += 1;
+                    if self.charge_metric_progress(1).is_err() {
+                        break;
+                    }
                     if !visitor(child, self.raw_id(child)?) {
                         break;
                     }
@@ -526,12 +675,19 @@ impl<'a> Candidate<'a> {
                     return true;
                 }
                 visited += 1;
+                if self.charge_metric_progress(1).is_err() {
+                    return false;
+                }
                 visitor(&child, id.as_js_string())
             })
         };
-        self.work.order_visits += 1;
-        self.work.visited_entries += visited;
-        result
+        self.work.order_visits = self.work.order_visits.saturating_add(1);
+        self.work.visited_entries = self.work.visited_entries.saturating_add(visited);
+        if self.observe_work_budget().is_err() {
+            None
+        } else {
+            result
+        }
     }
 
     fn copy_order_for_write(&mut self, order: &CandidateOrder) -> Result<(), Failure> {
@@ -557,15 +713,21 @@ impl<'a> Candidate<'a> {
         self.reservation.ensure_active()?;
         visited.ok_or(Failure::InternalError)?;
         self.reservation.map(Site::Orders, &mut self.orders, 1)?;
-        self.work.prefix_order_copies += 1;
-        self.work.copied_entries += children.len() as u64;
+        self.work.prefix_order_copies = self.work.prefix_order_copies.saturating_add(1);
+        self.work.copied_entries = self
+            .work
+            .copied_entries
+            .saturating_add(children.len() as u64);
         self.orders.insert(order.clone(), children);
         self.mutation_work.record_writes = self.mutation_work.record_writes.saturating_add(1);
+        self.observe_work_budget()?;
         Ok(())
     }
 
     fn read_value(&mut self, occurrence: &Occurrence) -> Option<Value> {
-        self.record_read();
+        if !self.record_read() {
+            return None;
+        }
         if !self.visible(occurrence) {
             return None;
         }
@@ -576,7 +738,9 @@ impl<'a> Candidate<'a> {
     /// it is the document root), so repeating the full ancestor walk adds no
     /// information. This remains private to detached/assessment traversals.
     fn read_visible_value(&mut self, occurrence: &Occurrence) -> Option<Value> {
-        self.record_read();
+        if !self.record_read() {
+            return None;
+        }
         self.read_value_record(occurrence)
     }
 
@@ -616,7 +780,9 @@ impl<'a> Candidate<'a> {
     }
 
     fn read_instrument(&mut self, part: &Occurrence) -> Option<InstrumentDescriptorV1> {
-        self.record_read();
+        if !self.record_read() {
+            return None;
+        }
         if !self.visible(part) {
             return None;
         }
@@ -624,7 +790,9 @@ impl<'a> Candidate<'a> {
     }
 
     fn read_visible_instrument(&mut self, part: &Occurrence) -> Option<InstrumentDescriptorV1> {
-        self.record_read();
+        if !self.record_read() {
+            return None;
+        }
         self.read_instrument_record(part)
     }
 
@@ -664,7 +832,9 @@ impl<'a> Candidate<'a> {
 
     // Replay can assign retained sources before their ancestor is restored.
     fn retained_staff_reference(&self, occurrence: &Occurrence) -> Option<Option<JsString>> {
-        self.record_read();
+        if !self.record_read() {
+            return None;
+        }
         if let Some(value) = self.staff_references.get(occurrence) {
             return Some(value.clone());
         }
@@ -702,7 +872,9 @@ impl<'a> Candidate<'a> {
     }
 
     fn read_content_kind(&mut self, event: &Occurrence) -> Option<EventContentKind> {
-        self.record_read();
+        if !self.record_read() {
+            return None;
+        }
         if !self.visible(event) {
             return None;
         }
@@ -710,7 +882,9 @@ impl<'a> Candidate<'a> {
     }
 
     fn read_visible_content_kind(&mut self, event: &Occurrence) -> Option<EventContentKind> {
-        self.record_read();
+        if !self.record_read() {
+            return None;
+        }
         self.read_content_kind_record(event)
     }
 
@@ -751,6 +925,9 @@ impl<'a> Candidate<'a> {
         let mut visits = self.staff_reference_visits.get();
         if let Ok(id) = StableId::new(raw_id) {
             for reference in self.prefix.list_references_to(&id) {
+                if self.charge_supplemental_work(1).is_err() {
+                    break;
+                }
                 visits.prefix_addresses += 1;
                 let source = match reference {
                     Reference::VoiceDefaultStaff { voice_id } => {
@@ -774,6 +951,9 @@ impl<'a> Candidate<'a> {
         if let Some(owners) = self.staff_referrers_by_id.get(raw_id) {
             let mut collect = |sources: &Vec<Occurrence>| {
                 for source in sources {
+                    if self.charge_supplemental_work(1).is_err() {
+                        break;
+                    }
                     visits.candidate_edges += 1;
                     if self.visible(source) {
                         result.push(source.clone());

@@ -1,6 +1,6 @@
 import type { ScoreEditRequest } from "../contracts/note-input";
 import type { NewScoreInput } from "../contracts/new-score";
-import { DEFAULT_APPLICATION_SETTINGS, isApplicationSettingsSnapshotV1, isApplicationSettingsV1 } from "../contracts/application-settings.ts";
+import { DEFAULT_APPLICATION_SETTINGS, isApplicationSettingsV1, normalizeApplicationSettingsSnapshot } from "../contracts/application-settings.ts";
 import type { ApplicationSettingsSnapshotV1, ApplicationSettingsV1 } from "../contracts/application-settings.ts";
 import { DEFAULT_WORKSPACE_CONFIGURATION, isWorkspaceConfigurationSnapshotV1, isWorkspaceConfigurationV1 } from "../contracts/workspace-configuration.ts";
 import type { WorkspaceConfigurationSnapshotV1, WorkspaceConfigurationV1 } from "../contracts/workspace-configuration.ts";
@@ -10,7 +10,30 @@ import { isWorkspaceId } from "../contracts/workspace-id.ts";
 import { createWorkbenchHostBridge } from "./workbench-host-bridge.ts";
 import type { WorkbenchHostBridge } from "./workbench-host-bridge.ts";
 import { ScoreCapabilityClient } from "./score-capability-client.ts";
-import type { CapabilityResult, ScoreSummaryV1 } from "../contracts/capability.ts";
+import type {
+  CapabilityResult,
+  CapabilityTransportRequest,
+  ScoreMeasureIndexInputV1,
+  ScoreMeasureIndexV1,
+  ScoreMeasureRangeInputV1,
+  ScoreMeasureRangeV1,
+  ScoreMetadataV1,
+  ScoreStructureV1,
+  ScoreSummaryV1,
+} from "../contracts/capability.ts";
+import { isAgentProviderId } from "../contracts/agent-provider-settings.ts";
+import { isAgentProviderCredentialSecret, isAgentProviderCredentialSnapshot,
+  unavailableAgentProviderCredential } from "../contracts/agent-provider-credential.ts";
+import type { AgentProviderCredentialSnapshot } from "../contracts/agent-provider-credential.ts";
+import {
+  isAgentProviderDecisionEnvelopeV1,
+  isAgentProviderStreamEventV1,
+} from "../contracts/agent-provider-turn.ts";
+import type {
+  AgentProviderDecideRequestV1,
+  AgentProviderDecisionEnvelopeV1,
+  AgentProviderStreamEventV1,
+} from "../contracts/agent-provider-turn.ts";
 export { WorkbenchRequestError } from "./workbench-host-bridge.ts";
 
 const SESSION_WORKSPACE_KEY = "brilliant.workbench.session.v1";
@@ -66,6 +89,35 @@ export class WorkbenchClient {
 
   readScoreSummary(): Promise<CapabilityResult<ScoreSummaryV1>> {
     return this.scoreCapabilities.readSummary();
+  }
+
+  readScoreMetadata(): Promise<CapabilityResult<ScoreMetadataV1>> {
+    return this.scoreCapabilities.readMetadata();
+  }
+
+  readScoreStructure(): Promise<CapabilityResult<ScoreStructureV1>> {
+    return this.scoreCapabilities.readStructure();
+  }
+
+  readScoreMeasureIndex(
+    input: ScoreMeasureIndexInputV1,
+  ): Promise<CapabilityResult<ScoreMeasureIndexV1>> {
+    return this.scoreCapabilities.readMeasureIndex(input);
+  }
+
+  readScoreMeasureRange(
+    input: ScoreMeasureRangeInputV1,
+  ): Promise<CapabilityResult<ScoreMeasureRangeV1>> {
+    return this.scoreCapabilities.readMeasureRange(input);
+  }
+
+  getWorkspaceId(): string {
+    return this.workspaceId;
+  }
+
+  invokeAgentCapability(request: CapabilityTransportRequest): Promise<unknown> {
+    if (request.workspaceId !== this.workspaceId) throw new Error("Agent Capability 工作区不匹配");
+    return this.bridge.invokeAgentCapability(request);
   }
 
   private session(value: unknown | null, requiredMessage?: string): ScoreSessionRead | null {
@@ -142,8 +194,9 @@ export class WorkbenchClient {
       settings: DEFAULT_APPLICATION_SETTINGS, persisted: false, recoveredFromInvalid: false,
     };
     const value = await this.bridge.readApplicationSettings();
-    if (!isApplicationSettingsSnapshotV1(value)) throw new Error("应用配置读取结果无效");
-    return value;
+    const snapshot = normalizeApplicationSettingsSnapshot(value);
+    if (snapshot === null) throw new Error("应用配置读取结果无效");
+    return snapshot;
   }
 
   async writeApplicationSettings(settings: ApplicationSettingsV1): Promise<ApplicationSettingsV1> {
@@ -158,6 +211,66 @@ export class WorkbenchClient {
     if (!this.bridge.resetApplicationSettings) return DEFAULT_APPLICATION_SETTINGS;
     const value = await this.bridge.resetApplicationSettings();
     if (!isApplicationSettingsV1(value)) throw new Error("默认应用配置结果无效");
+    return value;
+  }
+
+  async readAgentProviderCredentialStatus(providerId: string): Promise<AgentProviderCredentialSnapshot> {
+    if (!isAgentProviderId(providerId)) throw new Error("模型 Provider 标识无效");
+    if (!this.bridge.readAgentProviderCredentialStatus) return unavailableAgentProviderCredential(providerId);
+    const value = await this.bridge.readAgentProviderCredentialStatus(providerId);
+    if (!isAgentProviderCredentialSnapshot(value) || value.providerId !== providerId) {
+      throw new Error("Provider 凭据状态结果无效");
+    }
+    return value;
+  }
+
+  async setAgentProviderCredential(providerId: string, secret: string): Promise<AgentProviderCredentialSnapshot> {
+    if (!isAgentProviderId(providerId)) throw new Error("模型 Provider 标识无效");
+    if (!isAgentProviderCredentialSecret(secret)) throw new Error("Provider 凭据格式无效");
+    if (!this.bridge.setAgentProviderCredential) throw new Error("当前宿主不支持系统凭据库");
+    const value = await this.bridge.setAgentProviderCredential(providerId, secret);
+    if (!isAgentProviderCredentialSnapshot(value) || value.providerId !== providerId || !value.present) {
+      throw new Error("Provider 凭据保存结果无效");
+    }
+    return value;
+  }
+
+  async deleteAgentProviderCredential(providerId: string): Promise<AgentProviderCredentialSnapshot> {
+    if (!isAgentProviderId(providerId)) throw new Error("模型 Provider 标识无效");
+    if (!this.bridge.deleteAgentProviderCredential) throw new Error("当前宿主不支持系统凭据库");
+    const value = await this.bridge.deleteAgentProviderCredential(providerId);
+    if (!isAgentProviderCredentialSnapshot(value) || value.providerId !== providerId || value.present) {
+      throw new Error("Provider 凭据删除结果无效");
+    }
+    return value;
+  }
+
+  async decideAgentProvider(
+    request: AgentProviderDecideRequestV1,
+    signal?: AbortSignal | null,
+    observer?: ((event: AgentProviderStreamEventV1) => void) | null,
+  ): Promise<AgentProviderDecisionEnvelopeV1> {
+    if (!isAgentProviderId(request.providerId)) throw new Error("模型 Provider 标识无效");
+    if (!this.bridge.decideAgentProvider) throw new Error("当前宿主不支持模型 Provider");
+    let streamError: Error | null = null;
+    const value = await this.bridge.decideAgentProvider(request, signal, (event) => {
+      if (streamError !== null) return;
+      if (!isAgentProviderStreamEventV1(event)
+        || event.runId !== request.runId
+        || event.turnId !== request.turnId) {
+        streamError = new Error("模型 Provider 流式事件无效");
+        return;
+      }
+      try {
+        observer?.(event);
+      } catch {
+        // Streaming progress is non-authoritative and cannot fail the Provider turn.
+      }
+    });
+    if (streamError !== null) throw streamError;
+    if (!isAgentProviderDecisionEnvelopeV1(value)
+      || value.providerId !== request.providerId
+      || value.modelId !== request.modelId) throw new Error("模型 Provider 决策结果无效");
     return value;
   }
 

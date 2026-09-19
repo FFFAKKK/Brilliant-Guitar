@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DEFAULT_APPLICATION_SETTINGS, readLegacyApplicationSettings } from "../contracts/application-settings.ts";
-import type { ApplicationSettingsV1 } from "../contracts/application-settings.ts";
-import type { DeleteTimePolicy } from "../contracts/note-input.ts";
+import type { ApplicationSettingsV1, NoteInputRetention } from "../contracts/application-settings.ts";
+import type { AgentProviderSelection } from "../contracts/agent-provider-settings.ts";
+import type { DeleteTimePolicy, InputDuration } from "../contracts/note-input.ts";
+import { DEFAULT_SHORTCUT_SETTINGS, isNormalizedShortcut, isShortcutCommandId } from "../contracts/shortcut-settings.ts";
+import type { ShortcutTemplateV1 } from "../contracts/shortcut-settings.ts";
 import type { WorkbenchTaskRuntime } from "../runtime/workbench-runtime.tsx";
 import type { WorkbenchClient } from "../services/workbench-client.ts";
 import { issueFromError } from "../workbench/issue-from-error.ts";
@@ -97,6 +100,34 @@ export function useApplicationSettings(client: WorkbenchClient, runtime?: Workbe
     setDeleteTimePolicy: (deleteTimePolicy: DeleteTimePolicy) => update((current) => ({
       ...current, editing: { ...current.editing, deleteTimePolicy },
     })),
+    setNoteInputRetention: (retention: NoteInputRetention) => update((current) => ({
+      ...current, editing: { ...current.editing, noteInput: { ...current.editing.noteInput, retention } },
+    })),
+    setDefaultNoteInputDuration: (defaultDuration: InputDuration) => update((current) => ({
+      ...current, editing: { ...current.editing, noteInput: { ...current.editing.noteInput, defaultDuration } },
+    })),
+    setAgentEnabled: (enabled: boolean) => update((current) => ({
+      ...current, agent: { ...current.agent, enabled },
+    })),
+    setAgentProviderSelection: (providerSelection: AgentProviderSelection | null) => update((current) => ({
+      ...current, agent: { ...current.agent, providerSelection },
+    })),
+    setShortcutBinding: (commandId: string, shortcut: string | null | undefined) => {
+      if (!isShortcutCommandId(commandId) || (shortcut !== null && shortcut !== undefined && !isNormalizedShortcut(shortcut))) return;
+      update((current) => {
+        const bindings = { ...current.shortcuts.bindings };
+        if (shortcut === undefined) delete bindings[commandId];
+        else bindings[commandId] = shortcut;
+        return { ...current, shortcuts: {
+          profileName: Object.keys(bindings).length === 0 ? DEFAULT_SHORTCUT_SETTINGS.profileName : "自定义",
+          bindings,
+        } };
+      });
+    },
+    importShortcutTemplate: (template: ShortcutTemplateV1) => update((current) => ({
+      ...current, shortcuts: { profileName: template.name, bindings: template.bindings },
+    })),
+    resetShortcutBindings: () => update((current) => ({ ...current, shortcuts: DEFAULT_SHORTCUT_SETTINGS })),
     reset,
   };
 }

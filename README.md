@@ -12,6 +12,7 @@
 - `crates/`：七个 Rust crate，依次承担基础类型、乐谱规则、扩展协议、边界合同、运行时、会话与 Node 桥。
 - `test/`：行为回归、TS/Rust 差分、原生入口和历史资格检查。
 - `docs/kernel-commercial-completion.md`：功能进度及验证记录。
+- `docs/kernel-transaction-work-budget-2026-09-19.md`：整笔 Rust 事务的确定性工作量上限、原子失败语义与验证证据。
 - `docs/kernel-extension-completion-plan.md`：尚未完成的扩展与组合会话计划。
 - `.trellis/spec/`：工程约定；任务和日志目录保留历史，不代表当前全部待办。
 
@@ -43,6 +44,17 @@ npm test
 ```
 
 以上原生产物复制命令针对 Windows；首次安装 Rust 依赖时需要联网运行 Cargo，之后才可使用 `--offline`。`npm test` 包含原生测试，必须先构建匹配当前源码的 addon。不要在测试运行时覆盖 addon 或清理构建目录。
+
+如果正在运行的桌面或 Node 进程占用了 `target/integrated-v2/brilliant_kernel_node.node`，不要让 `npm test` 继续读取该目录中的旧文件。可以把刚构建的 V2 产物放到独立验证路径，并显式选择它：
+
+```powershell
+New-Item -ItemType Directory -Force target/kernel-commercial-current | Out-Null
+Copy-Item target/release/brilliant_kernel_node.dll target/kernel-commercial-current/integrated-v2.node
+$env:BRILLIANT_INTEGRATED_ADDON_PATH = 'target/kernel-commercial-current/integrated-v2.node'
+npm test
+```
+
+`BRILLIANT_INTEGRATED_ADDON_PATH` 只覆盖 Integrated V2 测试产物；构建顺序仍应保证复制的是带 `integrated-bridge-v2` feature 的最新 DLL。验证记录必须保存实际路径、大小和 SHA-256，不能用旧 addon 的失败判断当前 Rust 源码状态。
 
 三个 addon 分别保留：`rkp-1-node` 是冻结的五入口 Core V1 产物，`integrated-v2` 是增加私有组合会话和独立扩展迁移入口的七入口实验产物，`wasm-v1` 再增加受限 WASM 编译执行入口。按上面的顺序分别构建、复制，不能互相覆盖。V2 已接通真实 SDK 插件命令、独立 Core 编辑、跨域 Batch 和显式扩展迁移；WASM 支持宿主显式绑定到真实贡献者，仍未完成商业资格或产品默认切换。见 [当前插件 Native 闭环](docs/kernel-native-integrated-v2.md) 和 [WASM 执行与绑定](docs/kernel-wasm-executor-v1.md)。
 

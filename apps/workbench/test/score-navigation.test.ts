@@ -5,7 +5,7 @@ import { adjacentEventAtPoint, defaultScoreEditPoint, edgeScoreEditPoint, editPo
   jumpScoreEditPoint, moveScoreEditPoint, normalizeScoreEditPoint, previousEventAtPoint, scoreEditPoints } from "../src/editor/score-navigation.ts";
 
 const score: StaffView = {
-  kind: "staff", partId: "part", staffId: "staff", clef: "treble",
+  kind: "staff", partId: "part", staffId: "staff", clef: "treble", tempoBpm: 96, keySignatureChanges: [],
   measures: [
     { id: "measure-1", voiceId: "voice-1", meter: { numerator: 4, denominator: 4 }, ruleWarnings: [], events: [
       { id: "event-1", duration: { base: 4, dots: 0 }, content: { kind: "note", pitch: { step: "C", octave: 4, alter: 0 } } },
@@ -31,6 +31,8 @@ test("navigation exposes real boundaries and remaining beat slots in musical ord
   assert.equal(adjacentEventAtPoint(score, atTail, -1), "event-2");
   assert.equal(adjacentEventAtPoint(score, points[0]!, 1), "event-1");
   assert.equal(adjacentEventAtPoint(score, points[1]!, 1), "event-2");
+  assert.equal(adjacentEventAtPoint(score, points[3]!, 1), "event-3");
+  assert.equal(adjacentEventAtPoint(score, points.at(-1)!, 1), null);
 });
 
 test("event, measure and score navigation share one semantic edit point", () => {
@@ -55,7 +57,7 @@ test("backspace lookup crosses measure boundaries and normalization repairs stal
 });
 
 test("an empty 4/4 measure offers four editable beat positions without document events", () => {
-  const empty: StaffView = { kind: "staff", partId: "part", staffId: "staff", clef: "treble",
+  const empty: StaffView = { kind: "staff", partId: "part", staffId: "staff", clef: "treble", tempoBpm: 96, keySignatureChanges: [],
     measures: [{ id: "empty", voiceId: "voice", meter: { numerator: 4, denominator: 4 }, events: [], ruleWarnings: [] }] };
   const points = scoreEditPoints(empty);
   assert.deepEqual(points.map((point) => point.offsetUnits), [0, 16, 32, 48]);
@@ -65,7 +67,7 @@ test("an empty 4/4 measure offers four editable beat positions without document 
 
 test("full and overfull measure tails remain keyboard-addressable before navigation enters the next measure", () => {
   const make = (events: StaffView["measures"][number]["events"]): StaffView => ({
-    kind: "staff", partId: "part", staffId: "staff", clef: "treble", measures: [
+    kind: "staff", partId: "part", staffId: "staff", clef: "treble", tempoBpm: 96, keySignatureChanges: [], measures: [
       { id: "current", voiceId: "current-voice", meter: { numerator: 4, denominator: 4 }, events, ruleWarnings: [] },
       { id: "next", voiceId: "next-voice", meter: { numerator: 4, denominator: 4 }, events: [], ruleWarnings: [] },
     ],

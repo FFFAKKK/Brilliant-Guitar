@@ -1,5 +1,5 @@
 import { CORE_COMPILED_REGISTRATION_ENTRIES } from "./builtins";
-import { bindContributionReads, captureContributionReads } from "./contribution-reads";
+import { bindContributionReads, captureContributionReadInventory, captureContributionReads } from "./contribution-reads";
 import {
   buildRegistryCandidate,
   createRegistryAssemblyState,
@@ -1183,11 +1183,28 @@ export function getKernelIntegratedCatalogState(
 }
 
 /** Additive startup composition: never mutate a catalog or a live assembly. */
-export function compileContributionReadCatalogV1(base: KernelIntegratedCatalog, input: unknown): OfficialModuleCatalogCompilationResultV1 {
+export function compileContributionReadCatalogV1(
+  base: KernelIntegratedCatalog,
+  input: unknown,
+): OfficialModuleCatalogCompilationResultV1;
+export function compileContributionReadCatalogV1(
+  base: KernelIntegratedCatalog,
+  input: unknown,
+  knownRequirements: unknown,
+): OfficialModuleCatalogCompilationResultV1;
+export function compileContributionReadCatalogV1(
+  base: KernelIntegratedCatalog,
+  input: unknown,
+  knownRequirements?: unknown,
+): OfficialModuleCatalogCompilationResultV1 {
   try {
     const state = getKernelIntegratedCatalogState(base);
     if (state === undefined) return invalidStartup();
-    const reads = captureContributionReads(state, input);
+    const providers = arguments.length >= 3
+      ? captureContributionReadInventory(knownRequirements)
+      : undefined;
+    if (arguments.length >= 3 && providers === undefined) return invalidStartup();
+    const reads = captureContributionReads(state, input, providers);
     if (reads === undefined) return invalidStartup();
     const contributions = state.contributions.map(source => {
       const copy = freezeCatalogData({ ...source });

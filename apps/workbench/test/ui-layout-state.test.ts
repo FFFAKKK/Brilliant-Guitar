@@ -19,6 +19,7 @@ test("layout reconciliation installs valid defaults and rejects unknown persiste
     ["playback.transport", "top"],
     ["notation.paper-zoom", "top"],
     ["playback.output", "right"],
+    ["agent.recovery-panel", "right"],
     ["notation.note-input", "left"],
   ]);
 });
@@ -30,6 +31,8 @@ test("an older saved layout gains horizontal history and zoom tools without movi
   ] });
   assert.deepEqual(listUiComponentsInSlot(older, "top").map((item) => item.componentId),
     ["notation.history-control", "playback.transport", "notation.paper-zoom"]);
+  assert.deepEqual(listUiComponentsInSlot(older, "right").map((item) => item.componentId),
+    ["playback.output", "agent.recovery-panel"]);
   assert.equal(listUiComponentsInSlot(older, "left")[0]?.componentId, "notation.note-input");
 });
 

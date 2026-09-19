@@ -7,7 +7,10 @@ import { createCoreScoreFixture } from "../fixtures/core-score";
 import { crossCatalog, crossCommand, indexSource } from "../fixtures/cross-plugin-relationship";
 import { createModuleKernelIssueV1 } from "../../../src/core-kernel/module-sdk/index";
 
-const addon = require(resolve("target/integrated-v2/brilliant_kernel_node.node")) as IntegratedNativeAddonV2;
+const addon = require(resolve(
+  process.env.BRILLIANT_INTEGRATED_ADDON_PATH
+    ?? "target/integrated-v2/brilliant_kernel_node.node",
+)) as IntegratedNativeAddonV2;
 const catalog = crossCatalog();
 function create(mutate: (reply: any) => void) {
   let active = false;

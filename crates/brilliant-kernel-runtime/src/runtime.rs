@@ -47,8 +47,13 @@ use crate::{
     selectors::select_from_store,
     session_projection::{ProjectionPrepareFailureV1, SessionProjectionStateV1},
     store::{LiveScoreStore, LiveStoreBuildFailure, build_live_score_store},
-    transaction::{TransactionPrepareFailureV1, apply_stored_operations, commit_change_set},
+    transaction::{
+        TransactionPrepareFailureV1, apply_stored_operations, commit_change_set_with_work_budget,
+    },
 };
+
+#[cfg(test)]
+use crate::transaction::commit_change_set;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum KernelRuntimeCreateFailure {
@@ -62,11 +67,12 @@ pub enum KernelRuntimeReadFailure {
     InternalInvariant,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct KernelStage3PreparedV1 {
     change_set: ChangeSetV1,
     attempt_metrics: KernelStage3MetricsV1,
     integrated_affected: Option<Vec<AffectedEntityAddressV1>>,
+    work_budget: crate::work_budget::TransactionWorkBudgetV1,
 }
 
 #[expect(
@@ -87,6 +93,8 @@ impl KernelStage3PreparedV1 {
 /// One isolated command transaction. Dropping it publishes no live state.
 pub struct KernelStage3TransactionV1<'a> {
     overlay: TransactionOverlayV1<'a>,
+    document_id: StableId,
+    work_budget: crate::work_budget::TransactionWorkBudgetV1,
 }
 
 #[derive(Clone, Copy)]
@@ -472,6 +480,8 @@ impl KernelRuntime {
     pub fn begin_stage3_transaction(&self) -> KernelStage3TransactionV1<'_> {
         KernelStage3TransactionV1 {
             overlay: TransactionOverlayV1::new(&self.store),
+            document_id: self.store.header.id.clone(),
+            work_budget: Default::default(),
         }
     }
 
@@ -544,9 +554,14 @@ impl KernelRuntime {
             .map_err(|_| KernelStage4FailureV1::HistoryInvariantViolation)?;
 
         let committed = match prepared {
-            PreparedMutationV1::Typed(value) => self
-                .commit_stage3_change_set(value.change_set)
-                .map(HistoryPayloadV1::Typed),
+            PreparedMutationV1::Typed(value) => commit_change_set_with_work_budget(
+                &mut self.store,
+                &mut self.document_version,
+                &mut self.committed_metrics,
+                value.change_set,
+                value.work_budget,
+            )
+            .map(HistoryPayloadV1::Typed),
             PreparedMutationV1::Candidate(value) => match value.plan {
                 Some(plan) => {
                     let history = Arc::new(value.history);
@@ -897,6 +912,7 @@ impl KernelRuntime {
         }
     }
 
+    #[cfg(test)]
     pub(crate) fn commit_stage3_change_set(
         &mut self,
         change_set: ChangeSetV1,
@@ -996,9 +1012,22 @@ fn map_projection_failure(failure: ProjectionPrepareFailureV1) -> KernelStage4Fa
     }
 }
 
-impl KernelStage3TransactionV1<'_> {
+impl<'a> KernelStage3TransactionV1<'a> {
     pub fn attempt_metrics(&self) -> KernelStage3MetricsV1 {
         overlay_attempt_metrics(&self.overlay)
+    }
+
+    pub(crate) fn ensure_work_budget(&self) -> Result<(), KernelStage3CommandFailureLeafV1> {
+        self.work_budget.observe_metrics(&self.attempt_metrics())
+    }
+
+    pub(crate) fn into_candidate_parts(
+        self,
+    ) -> (
+        TransactionOverlayV1<'a>,
+        crate::work_budget::TransactionWorkBudgetV1,
+    ) {
+        (self.overlay, self.work_budget)
     }
 
     pub fn begin_batch(
@@ -1016,6 +1045,7 @@ impl KernelStage3TransactionV1<'_> {
         let operation_count = self.overlay.operation_count();
         let segment = self.overlay.begin_segment();
         execute(self)?;
+        self.ensure_work_budget()?;
         if self.overlay.operation_count() == operation_count {
             return Ok(());
         }
@@ -1026,11 +1056,13 @@ impl KernelStage3TransactionV1<'_> {
 
     pub fn finish(self) -> Result<KernelStage3PreparedV1, KernelStage3CommandFailureLeafV1> {
         let attempt_metrics = overlay_attempt_metrics(&self.overlay);
+        self.work_budget.observe_metrics(&attempt_metrics)?;
         let change_set = self.overlay.finish().map_err(map_overlay_failure)?;
         Ok(KernelStage3PreparedV1 {
             change_set,
             attempt_metrics,
             integrated_affected: None,
+            work_budget: self.work_budget,
         })
     }
 
@@ -2621,7 +2653,8 @@ impl KernelStage3TransactionV1<'_> {
                 .overlay
                 .add_prepared_effects(1)
                 .map_err(map_overlay_failure),
-        }
+        }?;
+        self.ensure_work_budget()
     }
 }
 
@@ -3813,5 +3846,76 @@ mod tests {
             transpose_written_pitch_v1(&pitch, &alter_overflow),
             Err(PitchTranspositionErrorV1::DerivedPitchAlterOutOfRange)
         );
+    }
+
+    #[test]
+    fn typed_transaction_work_limit_rejects_without_publishing_and_resets_next_time() {
+        let document = crate::store::tests::fixture();
+        let runtime = KernelRuntime::create(document.clone()).unwrap();
+        let mut transaction = runtime.begin_stage3_transaction();
+        transaction.work_budget.set_limit(0);
+        let mut metadata = document.metadata.clone();
+        metadata.title = "typed work limit".into();
+
+        let failure = transaction
+            .set_document_metadata(document.id.clone(), metadata.clone())
+            .unwrap_err();
+        assert!(matches!(
+            failure,
+            KernelStage3CommandFailureLeafV1::ResourceLimitExceeded {
+                limit_kind: KernelStage3ResourceLimitKindV1::TransactionWorkUnits,
+                limit: 0,
+                actual,
+            } if actual > 0
+        ));
+        assert_eq!(transaction.finish().unwrap_err(), failure);
+        assert_eq!(runtime.store.export_document().unwrap(), document);
+
+        let mut fresh = runtime.begin_stage3_transaction();
+        fresh
+            .set_document_metadata(document.id.clone(), metadata)
+            .unwrap();
+        assert!(fresh.finish().is_ok());
+    }
+
+    #[test]
+    fn typed_final_validation_shares_the_preparation_work_budget() {
+        let document = crate::store::tests::fixture();
+        let mut runtime = KernelRuntime::create(document.clone()).unwrap();
+        let mut metadata = document.metadata.clone();
+        metadata.title = "final validation budget".into();
+        let command = CoreCommandEnvelopeV1::DocumentSetMetadata {
+            target: ScoreEntityTargetV1::Document {
+                document_id: document.id.clone(),
+            },
+            metadata: metadata.clone(),
+        };
+        let mut transaction = runtime.begin_stage3_transaction();
+        transaction
+            .set_document_metadata(document.id.clone(), metadata)
+            .unwrap();
+        let used = transaction.work_budget.used();
+        transaction.work_budget.set_limit(used);
+        let prepared = transaction.finish().unwrap();
+
+        let result = runtime
+            .commit_stage4_transaction(command, prepared)
+            .unwrap();
+        let KernelStage4CommandResultV1::Rejected { failure, .. } = result else {
+            panic!("final validation must exhaust the shared work budget")
+        };
+        assert!(matches!(
+            failure,
+            KernelStage4FailureV1::Command(
+                brilliant_kernel_contracts::KernelStage3CommandFailureV1::Leaf(
+                    KernelStage3CommandFailureLeafV1::ResourceLimitExceeded {
+                        limit_kind: KernelStage3ResourceLimitKindV1::TransactionWorkUnits,
+                        ..
+                    }
+                )
+            )
+        ));
+        assert_eq!(runtime.store.export_document().unwrap(), document);
+        assert_eq!(runtime.document_version, DocumentVersionV1::initial());
     }
 }

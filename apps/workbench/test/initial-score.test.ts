@@ -7,7 +7,7 @@ import { readyPlaybackSource } from "./playback-fixture.ts";
 
 const session: ScoreSessionRead = {
   documentId: "document", title: "", measureCount: 1, documentVersion: 0, undoDepth: 0, redoDepth: 0,
-  notation: { kind: "staff", partId: "part", staffId: "staff", clef: "treble",
+  notation: { kind: "staff", partId: "part", staffId: "staff", clef: "treble", tempoBpm: 96, keySignatureChanges: [],
     measures: [{ id: "measure", voiceId: "voice", events: [], meter: { numerator: 4, denominator: 4 }, ruleWarnings: [] }] },
   playbackSource: readyPlaybackSource("document", 0),
 };

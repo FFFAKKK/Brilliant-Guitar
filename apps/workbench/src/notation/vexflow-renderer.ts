@@ -5,6 +5,7 @@ import { eventNoteSpec } from "./vexflow-note-spec.ts";
 import { loadEngravingEngine } from "./engraving-engine.ts";
 import { overfullEventIds } from "./overfull-events.ts";
 import { describeMeasureRuleWarnings } from "./rule-warning-description.ts";
+import { keySignatureAlterForStep, keySignatureSpec } from "./key-signature.ts";
 
 export const vexflowRenderer: NotationRenderer = {
   async render(layout, theme, signal) {
@@ -34,7 +35,13 @@ export const vexflowRenderer: NotationRenderer = {
       // Adjacent measures share one barline, rather than drawing it twice.
       if (!item.beginsSystem) stave.setBegBarType(BarlineType.NONE);
       if (item.beginsSystem) stave.addClef(layout.clef);
+      if (item.showKeySignature) stave.addKeySignature(keySignatureSpec(item.keySignatureFifths),
+        item.keySignatureFifths !== item.previousKeySignatureFifths
+          ? keySignatureSpec(item.previousKeySignatureFifths) : undefined);
       if (item.showMeter) stave.addTimeSignature(`${item.measure.meter.numerator}/${item.measure.meter.denominator}`);
+      if (item.number === 1 && item.beginsSystem) {
+        stave.setTempo({ duration: "q", bpm: layout.tempoBpm }, -30);
+      }
       stave.setContext(context).draw();
       const capacity = 64 * item.measure.meter.numerator / item.measure.meter.denominator;
       const used = item.measure.events.reduce((sum, event) => sum + durationUnits(event.duration), 0);
@@ -46,11 +53,12 @@ export const vexflowRenderer: NotationRenderer = {
       const accidentalState = new Map<string, number>();
       const notes = item.measure.events.map((event) => {
         const pitch = event.content.kind === "note" ? event.content.pitch : null;
-        const note = new StaveNote(eventNoteSpec(event));
+        const note = new StaveNote(eventNoteSpec(event, layout.clef));
         if (event.duration.dots) Dot.buildAndAttach([note]);
         if (pitch) {
           const key = `${pitch.step}/${pitch.octave}`;
-          if ((accidentalState.get(key) ?? 0) !== pitch.alter) note.addModifier(new Accidental(pitch.alter === 1 ? "#" : pitch.alter === -1 ? "b" : "n"), 0);
+          const inherited = accidentalState.get(key) ?? keySignatureAlterForStep(item.keySignatureFifths, pitch.step);
+          if (inherited !== pitch.alter) note.addModifier(new Accidental(pitch.alter === 1 ? "#" : pitch.alter === -1 ? "b" : "n"), 0);
           accidentalState.set(key, pitch.alter);
         }
         note.setAttribute("id", `event-${event.id}`);

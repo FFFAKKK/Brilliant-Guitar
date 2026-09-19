@@ -11,12 +11,21 @@ import "./styles/preferences.css";
 import "./styles/playback-transport.css";
 import "./styles/component-placement.css";
 import "./styles/playback-output.css";
+import "./styles/agent-recovery.css";
+import { initializeWorkbenchPluginPreview } from "./ui/workbench-plugins.ts";
 
 const root = document.getElementById("root");
 if (!root) throw new Error("Missing workbench root element");
+const rootElement = root;
 
-createRoot(root).render(
-  <StrictMode>
-    <WorkbenchApp />
-  </StrictMode>,
-);
+function mount(): void {
+  createRoot(rootElement).render(
+    <StrictMode>
+      <WorkbenchApp />
+    </StrictMode>,
+  );
+}
+
+void Promise.resolve()
+  .then(initializeWorkbenchPluginPreview)
+  .then(mount, mount);

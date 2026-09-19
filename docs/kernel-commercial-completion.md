@@ -450,7 +450,7 @@ remain implemented. Occurrence final assessment intentionally uses the shared
 complete Foundation rules; this functional integration does not claim that
 candidate assessment has become incremental or commercially qualified.
 
-The kernel is **not functionally complete**. S2.1a supplies strict extension
+At this checkpoint the kernel was **not functionally complete**. S2.1a supplies strict extension
 requirement validation and an explicit TS wire decoder, checked against 144 real
 TS observations. S2.1b adds authenticated SDK metadata capture, a Rust host
 catalog projection, canonical inventory/cache and availability reads from actual
@@ -467,8 +467,9 @@ are now wired in that integrated session. Detached extension migration is also
 wired through a separate V2 function. Bounded Wasm execution and authentic
 contribution binding are now connected. Explicit cross-plugin block reads also
 work through TS, Native and Wasm, with an independent two-plugin index/summary
-consumer. S2 remains incomplete: dependency-aware degraded assembly and precise
-dependency closures need work. Module callback views and assessment currently
+consumer. At that checkpoint S2 remained incomplete: dependency-aware degraded
+assembly and precise dependency closures needed work. The degraded-assembly gap
+is closed by the 2026-09-18 section below. Module callback views and assessment currently
 use complete projections; incremental equivalence and full resource/portability
 qualification are not claimed.
 See [the S2 plan](kernel-extension-completion-plan.md). The product default remains
@@ -2324,3 +2325,134 @@ after this closeout without the owner's renewed instruction.
 这轮提升了大文档 Candidate 路径的可用性，但没有完成商业性能资格。下一阶段
 仍需真实业务插件/UI 端到端延迟预算、正式 p95/p99、多平台发布验证，以及在
 保持完整诊断等价的前提下评估 Candidate 语义依赖闭包增量化。
+
+### 缺失依赖安全降级装配 — 2026-09-18
+
+跨插件读取现在允许 provider 已被可信 inventory 认证、但当前未安装的恢复场景。
+派生 catalog 仍要求 reader 真实安装，provider 的 module、contribution、namespace
+和完整 schema 版本必须由显式 inventory 精确证明；未知 provider 或 namespace 继续
+在启动阶段关闭失败。该 metadata 只证明身份和兼容合同，不会安装或执行 provider。
+
+文档可在此状态下以只读模式打开，原始 extension 数据完整保留。依赖不完整的
+consumer 不执行 validate/classify/prepare/transform；所有写入在读取用户命令前以
+`command.required-contribution-unavailable` 拒绝。独立迁移同样不能绕过边界，会在
+consumer 回调前返回 `migration.contribution-contract-violation`。provider 恢复后继续
+使用原有完整验证路径。TS 与 Rust/Native 已建立相同合同。
+
+最终验证：Node/Native **905 项，903 通过、2 项按环境设计跳过、0 失败**；Rust
+workspace 全 feature **642 通过、1 ignored、0 失败**；跨插件聚焦回归 9/9，Rust
+解码聚焦回归 1/1。严格 tsc、fmt、Clippy `-D warnings` 和 diff check 全部通过。
+新 addon 为 `target/integrated-degraded-next/brilliant_kernel_node.node`，5,020,672
+bytes，SHA-256 `35583f2763d6629a6d847ed8cc84232167807301309aa7e5f25a4146405054db`。
+
+本轮关闭了此前明确的“缺失依赖时自动安全降级装配”功能缺口。按当前范围，内核
+核心逻辑完整度约 **98%–99%**，商业可用候选成熟度约 **95%–96%**；这不是正式
+商业发布结论。剩余重点转为精确依赖闭包/增量等价、整笔事务 CPU/内存资格、
+soak/fuzz 与故障恢复、p95/p99 产品延迟、多平台 CI/签名/打包/升级，以及 Rust
+默认切换和旧 TS 事务引擎退役。详细合同与证据见
+`docs/kernel-degraded-assembly-2026-09-18.md` 和
+`docs/evidence/kernel-degraded-assembly-2026-09-18.json`。
+
+### Candidate 精确标量依赖闭包与增量等价 — 2026-09-18
+
+Candidate 最终语义验证现在区分“可证明局部的稳定标量变化”和“可能改变文档
+拓扑或可观察插件状态的变化”。元数据、拍号、Staff 定义、Voice 起点、Event
+时值和书写音高等已覆盖标量编辑复用 Rust 现有增量语义调度器；首次提交、
+Undo 和 Redo 使用同一合同。合法局部编辑不再触发 Foundation 全文扫描，非法
+局部编辑仍返回与完整 Foundation oracle 完全相同的诊断内容、顺序、路径和
+失败优先级。
+
+增量资格由 Candidate 的真实数据状态决定，不依赖调用者提示。新增/删除节点、
+顺序、乐器、扩展状态、frozen prefix、不可稳定表示的引用，以及未进入已验证
+标量闭包的字段均自动回退完整 Foundation 验证。此回退是当前安全边界，不属于
+性能失败。新增复杂度护栏证明：同一局部音高编辑在增加 64 个无关 Part 后，
+`full_document_scans` 和 `full_semantic_validations` 仍为 0，规则评估数与依赖读取数
+保持不变。
+
+最终验证：Node/Native **905 项，903 通过、2 项按设计跳过、0 失败**；Rust
+workspace 全 feature **648 通过、1 ignored、0 失败**；runtime crate **380 通过、
+1 ignored、0 失败**。严格 tsc、fmt、Clippy `-D warnings` 和 diff check 全部通过。
+Core、Integrated、WASM 三个 release addon 均从当前源码构建并参与验证；活跃开发
+进程占用了标准 Integrated 文件，因此本轮使用独立路径
+`target/candidate-incremental-addons/integrated-v2.node`，没有中断桌面开发会话。
+
+本轮关闭了 Candidate 稳定标量闭包的“每次完整扫描”和诊断增量等价缺口。按
+当前范围，微内核核心逻辑完整度约 **99%**，商业候选成熟度约 **96%–97%**；
+仍不能据此声明正式商业发布。结构、身份、排序和扩展编辑继续使用完整验证。
+插件 callback 的选择性调度也未纳入本轮，因为 callback 仍能观察完整
+`coreDocument`、`documentVersion` 和完整 module classification；在分类缓存与版本
+语义收敛前跳过 callback 会改变可观察结果，并与插件平台职责相交。
+
+剩余商业资格集中在整笔事务 CPU/内存上限、长时间 soak/fuzz 与故障恢复、真实
+产品 p95/p99、多平台 CI/签名/打包/升级，以及受控 Rust 默认切换和旧 TS 事务
+引擎退役。详细合同与证据见
+`docs/kernel-candidate-incremental-validation-2026-09-18.md` 和
+`docs/evidence/kernel-candidate-incremental-validation-2026-09-18.json`。
+
+### Candidate 保留内存资源闭环 — 2026-09-18
+
+Candidate 现在拥有独立于 `changeset-logical-bytes` 的确定性保留内存信封。
+V1 使用 512 MiB 上限，按容器 capacity、哈希桶余量、UTF-16 共享存储、
+Candidate/Journal/Identity/Extension 状态和动态载荷保守计费。溢出关闭失败；真实
+allocator `try_reserve` 失败仍保持 `internal-error`，两类故障不混淆。
+
+信封在 Candidate 创建、每个有效 Core/Module 执行段和最终准备前检查。超限返回
+`candidate-retained-bytes`，候选事务随即终止，不能被子调用吞掉继续执行，也不会
+发布 Store、history、version 或事件。Rust、lossless codec、TypeScript 严格解码和
+Native smoke 合同已经同步。
+
+Rust workspace 全 feature **652 通过、1 ignored、0 失败**，workspace Clippy
+`-D warnings`、TypeScript typecheck、资源聚焦测试和 diff check 通过。使用当前源码
+重建 Core V1、Integrated V2 和 WASM addon 后，完整 Node/Native/Wasm 套件 **907 项，
+905 通过、2 项按设计跳过、0 失败**；此前 13 个 integrated/plugin 失败全部消失。
+
+根因是标准 `target/integrated-v2` 文件被运行中进程占用，完整测试默认读取了
+2026-09-17 的陈旧 addon，而上一轮只重建了冻结的五入口 Core V1 产物。当前 V2
+另存为 `target/kernel-commercial-current/integrated-v2.node`，5,037,568 bytes，
+SHA-256 `5918135aafe6b95dafcb1367872c0d57edcc2a24149ec698215ddfbd240d7414`；
+WASM 产物也从最终源码重建为 6,270,464 bytes，SHA-256
+`4435ec9a25166cd79f269fd9559eef784189b7a93de2f65cd40dbf2a29769055`。
+README 已记录占用时的独立路径和环境变量流程；不能再用旧二进制失败判断当前源码。
+
+这一项关闭了“整笔 Candidate 无独立可预测保留内存上限”的高优先级缺口。内核
+核心逻辑完整度仍约 **99%**；全套绿色恢复后，当前商业候选成熟度约 **97%**，
+但仍不是正式商业发布结论。剩余高优先级转为整笔事务 CPU 时间预算、长时间
+soak/fuzz 与故障恢复、真实产品 p95/p99、多平台 CI/签名/打包/升级，以及受控
+Rust 默认切换和旧 TS 事务引擎退役。详细合同与证据见
+`docs/kernel-candidate-retained-memory-2026-09-18.md` 和
+`docs/evidence/kernel-candidate-retained-memory-2026-09-18.json`。
+
+### 整笔事务确定性工作量预算 — 2026-09-19
+
+Rust 微内核现在为每笔 Typed 或 Candidate 事务维护同一个确定性工作量预算。
+V1 上限为 8,388,608 work units，聚合语义规则、依赖读取、实体和索引访问、
+时间比较、overlay/ChangeSet/affected/index 工作，并补充计入身份绑定、扩展遍历、
+最终 delta、Journal 重放和提交准备。长循环先预扣、指标发布后抵扣，因此可以在
+循环内终止而不会重复计费。
+
+预算跨 Core 命令、Batch 子命令、Typed → Candidate 切换、插件 Effect、最终语义
+验证和提交准备保持粘性。精确上限允许，第一单位超出返回
+`command.resource-limit-exceeded` / `transaction-work-units`。失败不能被子命令吞掉，
+也不会发布 Store、history、document version 或事件；下一笔事务重新获得预算。
+预算与已准备事务均不可克隆，避免复制计数器或重复消费同一准备结果。
+
+Rust Serde、lossless codec、TypeScript 联合、严格解码器和 Native smoke 已同步。
+Rust workspace 全 feature **658 通过、1 ignored、0 失败**，workspace Clippy
+`-D warnings`、TypeScript typecheck/build、定向 rustfmt 和 RKP-3 合同审计通过。
+使用当前源码重建 Core、Integrated 和 WASM addon 后，完整 Node/Native/Wasm 套件
+**907 项，905 通过、2 项按设计跳过、0 失败**。
+
+本轮产物分别为：Core 3,614,720 bytes，SHA-256
+`70485d13e0bb217141c46ec6011214bf7f3361829a2c3a815b31233e528304a0`；
+Integrated 5,056,512 bytes，SHA-256
+`d531500d819bdd4f14d779a32b366d7a43f3567b8e749743c27230a22aa2a715`；
+WASM 6,289,408 bytes，SHA-256
+`1341b1fc85c7f6896210f2855f1faa30d202ae4e85ecbb1d1327836a3c267fde`。
+
+这项工作关闭了“整笔事务缺少确定性计算上限”的高优先级缺口。内核核心逻辑
+完整度仍约 **99%**，商业候选成熟度约 **97%–98%**，仍不能宣布正式商业发布。
+TypeScript 插件回调 CPU 抢占属于插件平台 worker/进程/WASM 沙箱；内核剩余资格
+重点是长时间 soak/fuzz、崩溃恢复、真实产品 p95/p99、多平台 CI/签名/打包/升级，
+以及受控 Rust 默认切换。详细合同与证据见
+`docs/kernel-transaction-work-budget-2026-09-19.md` 和
+`docs/evidence/kernel-transaction-work-budget-2026-09-19.json`。

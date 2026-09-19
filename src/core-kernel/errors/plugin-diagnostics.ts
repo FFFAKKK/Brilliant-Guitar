@@ -28,6 +28,7 @@ export type KernelPluginDiagnosticCode =
   | "command.required-contribution-incompatible"
   | "command.contribution-semantic-invalid"
   | "command.contribution-contract-violation"
+  | "command.contribution-effect-rejected"
   | "command.contribution-internal-error"
   | "wasm.invalid-addon"
   | "wasm.assembly-mismatch"
@@ -46,6 +47,9 @@ export interface KernelPluginDiagnostic {
   readonly operation: KernelPluginDiagnosticOperation;
   readonly moduleId?: string;
   readonly contributionId?: string;
+  readonly effectIndex?: number;
+  readonly effectKind?: string;
+  readonly failureCode?: string;
   readonly message: string;
 }
 
@@ -54,6 +58,9 @@ export interface KernelPluginDiagnosticContext {
   readonly operation: KernelPluginDiagnosticOperation;
   readonly moduleId?: string;
   readonly contributionId?: string;
+  readonly effectIndex?: number;
+  readonly effectKind?: string;
+  readonly failureCode?: string;
 }
 
 const MAX_ENTRIES = 128;
@@ -70,7 +77,8 @@ function reportId(): string {
 function normalizeCode(value: string): KernelPluginDiagnosticCode {
   if (value === "command.assembly-mismatch" || value === "command.invalid-requirement-inventory"
     || value === "command.required-contribution-unavailable" || value === "command.required-contribution-incompatible"
-    || value === "command.contribution-semantic-invalid" || value === "command.contribution-contract-violation" || value === "command.contribution-internal-error"
+    || value === "command.contribution-semantic-invalid" || value === "command.contribution-contract-violation"
+    || value === "command.contribution-effect-rejected" || value === "command.contribution-internal-error"
     || value === "wasm.invalid-addon" || value === "wasm.assembly-mismatch" || value === "wasm.invalid-binding" || value === "wasm.incomplete-binding"
     || value === "wasm.invalid-result" || value === "wasm.core-read-contract"
     || value === "wasm.execution-failed") return value;
@@ -85,6 +93,7 @@ function messageForCode(code: KernelPluginDiagnosticCode): string {
     case "command.required-contribution-incompatible": return "插件不支持乐谱所需的扩展版本";
     case "command.contribution-semantic-invalid": return "插件拒绝了当前乐谱状态";
     case "command.contribution-contract-violation": return "插件返回结果违反内核协议";
+    case "command.contribution-effect-rejected": return "插件请求的内核修改被拒绝";
     case "command.contribution-internal-error": return "插件执行时发生内部错误";
     case "wasm.invalid-addon": return "WASM 内核桥接组件无效";
     case "wasm.assembly-mismatch": return "WASM 插件与当前内核装配不匹配";
@@ -114,6 +123,9 @@ export class KernelPluginDiagnosticLog {
       operation: input.context.operation,
       ...(input.context.moduleId === undefined ? {} : { moduleId: input.context.moduleId }),
       ...(input.context.contributionId === undefined ? {} : { contributionId: input.context.contributionId }),
+      ...(input.context.effectIndex === undefined ? {} : { effectIndex: input.context.effectIndex }),
+      ...(input.context.effectKind === undefined ? {} : { effectKind: input.context.effectKind }),
+      ...(input.context.failureCode === undefined ? {} : { failureCode: input.context.failureCode }),
       message: messageForCode(code),
     });
     this.#entries.push(entry);

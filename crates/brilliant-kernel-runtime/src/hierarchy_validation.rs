@@ -25,7 +25,7 @@ impl Assessment<'_, '_> {
         }
         staffs.sort_unstable_by(|left, right| left.id.as_js_string().cmp(right.id.as_js_string()));
         for staff in staffs {
-            self.work.rules_evaluated += 1;
+            self.charge_rules(1)?;
             if staff.line_count.get() <= 0 {
                 let Owner::Part { part_id: part } = self.owner(&Entity::Staff {
                     staff_id: staff.id.clone(),
@@ -65,9 +65,9 @@ impl Assessment<'_, '_> {
         }
         targets.sort_unstable_by(|left, right| left.as_js_string().cmp(right.as_js_string()));
         for staff in targets {
-            self.work.dependency_reads += 1;
+            self.charge_dependency_reads(1)?;
             for address in base.list_references_to(staff) {
-                self.work.dependency_reads += 1;
+                self.charge_dependency_reads(1)?;
                 insert_reference(&mut references, &address)?;
             }
         }
@@ -84,22 +84,33 @@ impl Assessment<'_, '_> {
     }
 
     fn order_is_empty(&mut self, order: &Order) -> Result<bool, Failure> {
-        self.work.dependency_reads += 1;
+        self.charge_dependency_reads(1)?;
         let mut empty = true;
+        let mut budget_failure = None;
+        let work_budget = self.work_budget;
         self.overlay
             .visit_order(order, &mut |_| {
-                self.work.dependency_reads += 1;
+                self.work.dependency_reads = self.work.dependency_reads.saturating_add(1);
+                if let Some(budget) = work_budget
+                    && let Err(failure) = budget.charge_metric_progress(1)
+                {
+                    budget_failure = Some(failure);
+                    return false;
+                }
                 empty = false;
                 false
             })
             .ok_or(Failure::InternalError)?;
-        self.work.rules_evaluated += 1;
+        if let Some(failure) = budget_failure {
+            return Err(failure);
+        }
+        self.charge_rules(1)?;
         Ok(empty)
     }
 
-    fn owner_exists(&mut self, entity: &Entity) -> bool {
-        self.work.dependency_reads += 1;
-        self.overlay.read_owner(entity).is_some()
+    fn owner_exists(&mut self, entity: &Entity) -> Result<bool, Failure> {
+        self.charge_dependency_reads(1)?;
+        Ok(self.overlay.read_owner(entity).is_some())
     }
 
     fn check_required_order(&mut self, order: &Order) -> Result<(), Failure> {
@@ -112,7 +123,7 @@ impl Assessment<'_, '_> {
             Order::Staffs { part_id } => {
                 if !self.owner_exists(&Entity::Part {
                     part_id: part_id.clone(),
-                }) {
+                })? {
                     return Ok(());
                 }
                 (
@@ -128,9 +139,9 @@ impl Assessment<'_, '_> {
             } => {
                 if !self.owner_exists(&Entity::Part {
                     part_id: part_id.clone(),
-                }) || !self.owner_exists(&Entity::Measure {
+                })? || !self.owner_exists(&Entity::Measure {
                     measure_id: measure_id.clone(),
-                }) {
+                })? {
                     return Ok(());
                 }
                 (
@@ -142,7 +153,7 @@ impl Assessment<'_, '_> {
                 )
             }
             Order::Notes { event_id } => {
-                self.work.dependency_reads += 1;
+                self.charge_dependency_reads(1)?;
                 if self.overlay.read_event_content_kind(event_id) != Some(EventContentKind::Notes) {
                     return Ok(());
                 }
@@ -178,7 +189,7 @@ impl Assessment<'_, '_> {
     }
 
     fn check_staff_reference(&mut self, address: Reference) -> Result<(), Failure> {
-        self.work.dependency_reads += 1;
+        self.charge_dependency_reads(1)?;
         let Some(value) = self.overlay.read_reference(&address) else {
             return Ok(());
         };
@@ -203,8 +214,8 @@ impl Assessment<'_, '_> {
             }
             _ => return Err(Failure::InternalError),
         };
-        self.work.dependency_reads += 1;
-        self.work.rules_evaluated += 1;
+        self.charge_dependency_reads(1)?;
+        self.charge_rules(1)?;
         if self.overlay.read_owner(&Entity::Staff { staff_id: staff })
             != Some(Owner::Part {
                 part_id: route.part.clone(),

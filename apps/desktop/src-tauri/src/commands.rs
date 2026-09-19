@@ -1,12 +1,21 @@
-use tauri::{AppHandle, State};
+use std::sync::Arc;
+
+use tauri::{AppHandle, State, ipc::Channel};
 use tauri_plugin_dialog::DialogExt;
+use uuid::Uuid;
 
 use crate::{
+    agent_credential::{AgentCredentialStoreError, AgentProviderCredentialStatusV1},
+    agent_provider::{
+        AgentProviderDecideRequestV1, AgentProviderDecisionEnvelopeV1, AgentProviderError,
+        AgentProviderProgressObserver, AgentProviderStreamEventV1,
+    },
     agent_store::{
         AgentRunRecoverySummaryV1, AgentRunStoreCommitInputV1, AgentRunStoreCommitResultV1,
         AgentRunStoreEntryV1,
     },
     capability::{CapabilityCaller, CapabilityInvocation, CapabilityResult},
+    capability_receipt::{CapabilityReceiptBeginV1, CapabilityReceiptLookupV1},
     diagnostics::{PluginDiagnosticInput, PluginDiagnosticRecord},
     document_io::{
         atomic_write, normalize_save_path, prepare_recovery_path, quarantine_recovery,
@@ -21,6 +30,7 @@ use crate::{
     state::AppState,
     workspace_configuration::{WorkspaceConfigurationSnapshotV1, WorkspaceConfigurationV1},
 };
+use zeroize::Zeroizing;
 
 #[tauri::command]
 pub fn workbench_agent_run_load_v1(
@@ -82,6 +92,191 @@ fn agent_store_error(error: std::io::Error) -> HostError {
     }
 }
 
+#[tauri::command(async)]
+pub fn workbench_agent_provider_credential_status_v1(
+    state: State<'_, AppState>,
+    provider_id: String,
+) -> Result<AgentProviderCredentialStatusV1, HostError> {
+    let present = state
+        .agent_credentials
+        .status(&provider_id)
+        .map_err(agent_credential_error)?;
+    Ok(AgentProviderCredentialStatusV1::new(provider_id, present))
+}
+
+#[tauri::command(async)]
+pub fn workbench_agent_provider_set_credential_v1(
+    state: State<'_, AppState>,
+    provider_id: String,
+    secret: String,
+) -> Result<AgentProviderCredentialStatusV1, HostError> {
+    let secret = Zeroizing::new(secret);
+    state
+        .agent_credentials
+        .set(&provider_id, secret.as_str())
+        .map_err(agent_credential_error)?;
+    Ok(AgentProviderCredentialStatusV1::new(provider_id, true))
+}
+
+#[tauri::command(async)]
+pub fn workbench_agent_provider_delete_credential_v1(
+    state: State<'_, AppState>,
+    provider_id: String,
+) -> Result<AgentProviderCredentialStatusV1, HostError> {
+    state
+        .agent_credentials
+        .delete(&provider_id)
+        .map_err(agent_credential_error)?;
+    Ok(AgentProviderCredentialStatusV1::new(provider_id, false))
+}
+
+#[tauri::command]
+pub async fn workbench_agent_provider_decide_v1(
+    state: State<'_, AppState>,
+    request: AgentProviderDecideRequestV1,
+    progress: Channel<AgentProviderStreamEventV1>,
+) -> Result<AgentProviderDecisionEnvelopeV1, HostError> {
+    let run_id = request.run_id.clone();
+    let turn_id = request.turn_id.clone();
+    let cancellation = state
+        .agent_provider_cancellations
+        .begin(&run_id, &turn_id)
+        .map_err(agent_provider_error)?;
+    let secret = state
+        .agent_credentials
+        .read_secret(&request.provider_id)
+        .map_err(agent_credential_error)
+        .and_then(|value| {
+            value.ok_or_else(|| agent_provider_error(AgentProviderError::AuthenticationRequired))
+        });
+    let observer = Some(Arc::new(move |event| {
+        let _ = progress.send(event);
+    }) as AgentProviderProgressObserver);
+    let result = match secret {
+        Ok(secret) => tokio::select! {
+            result = state.agent_providers.decide_with_observer(secret.as_str(), request, observer) => result,
+            () = cancellation.notified() => Err(AgentProviderError::Cancelled),
+        },
+        Err(error) => {
+            state
+                .agent_provider_cancellations
+                .complete(&run_id, &turn_id);
+            return Err(error);
+        }
+    };
+    state
+        .agent_provider_cancellations
+        .complete(&run_id, &turn_id);
+    result.map_err(agent_provider_error)
+}
+
+#[tauri::command]
+pub fn workbench_agent_provider_cancel_v1(
+    state: State<'_, AppState>,
+    run_id: String,
+    turn_id: String,
+) -> Result<bool, HostError> {
+    state
+        .agent_provider_cancellations
+        .cancel(&run_id, &turn_id)
+        .map_err(agent_provider_error)
+}
+
+fn agent_credential_error(error: AgentCredentialStoreError) -> HostError {
+    match error {
+        AgentCredentialStoreError::InvalidProviderId => settings_error(
+            "agent-credential.invalid-provider",
+            "模型 Provider 标识无效",
+            422,
+            false,
+        ),
+        AgentCredentialStoreError::InvalidSecret => settings_error(
+            "agent-credential.invalid-secret",
+            "Provider 凭据格式无效",
+            422,
+            false,
+        ),
+        AgentCredentialStoreError::Unavailable => settings_error(
+            "agent-credential.unavailable",
+            "系统凭据库当前不可用",
+            503,
+            true,
+        ),
+    }
+}
+
+fn agent_provider_error(error: AgentProviderError) -> HostError {
+    let (code, message, status, retryable) = match error {
+        AgentProviderError::InvalidRequest => (
+            "agent-provider.invalid-request",
+            "模型 Provider 请求无效",
+            422,
+            false,
+        ),
+        AgentProviderError::AuthenticationRequired => (
+            "agent-provider.authentication-required",
+            "OpenAI API Key 缺失或无效",
+            401,
+            false,
+        ),
+        AgentProviderError::Timeout => (
+            "agent-provider.timeout",
+            "模型 Provider 请求超时",
+            504,
+            true,
+        ),
+        AgentProviderError::RateLimited => (
+            "agent-provider.rate-limited",
+            "模型 Provider 当前请求过多，请稍后重试",
+            429,
+            true,
+        ),
+        AgentProviderError::ModelUnavailable => (
+            "agent-provider.model-unavailable",
+            "所选模型当前不可用或项目无权访问",
+            404,
+            false,
+        ),
+        AgentProviderError::ProviderUnavailable => (
+            "agent-provider.unavailable",
+            "模型 Provider 当前不可用",
+            503,
+            true,
+        ),
+        AgentProviderError::RequestRejected => (
+            "agent-provider.request-rejected",
+            "模型 Provider 拒绝了本次请求",
+            422,
+            false,
+        ),
+        AgentProviderError::ResponseIncomplete => (
+            "agent-provider.response-incomplete",
+            "模型 Provider 未完成本回合决策",
+            502,
+            true,
+        ),
+        AgentProviderError::ResponseInvalid => (
+            "agent-provider.response-invalid",
+            "模型 Provider 返回了无法验证的决策",
+            502,
+            false,
+        ),
+        AgentProviderError::ResponseTooLarge => (
+            "agent-provider.response-too-large",
+            "模型 Provider 响应超过安全限制",
+            502,
+            false,
+        ),
+        AgentProviderError::Cancelled => (
+            "agent-provider.cancelled",
+            "模型 Provider 请求已取消",
+            499,
+            false,
+        ),
+    };
+    settings_error(code, message, status, retryable)
+}
+
 #[tauri::command]
 pub fn workbench_invoke_capability_v1(
     state: State<'_, AppState>,
@@ -90,6 +285,83 @@ pub fn workbench_invoke_capability_v1(
     let invocation = CapabilityInvocation::from_transport(request, CapabilityCaller::Ui);
     let service = locked(state.inner())?;
     Ok(crate::capability::invoke(&service, invocation))
+}
+
+#[tauri::command]
+pub fn workbench_agent_invoke_capability_v1(
+    state: State<'_, AppState>,
+    request: CapabilityTransportRequest,
+) -> Result<CapabilityResult, HostError> {
+    let invocation = CapabilityInvocation::from_transport(request, CapabilityCaller::Agent);
+    if Uuid::parse_str(&invocation.invocation_id).is_err() {
+        return Ok(CapabilityResult::Rejected {
+            invocation_id: invocation.invocation_id,
+            capability_id: invocation.capability_id,
+            contract_version: invocation.contract_version,
+            code: "capability.invalid-invocation-id".into(),
+            message: "调用标识无效".into(),
+        });
+    }
+    match state
+        .capability_receipts
+        .begin(&invocation)
+        .map_err(capability_receipt_error)?
+    {
+        CapabilityReceiptBeginV1::Replay(result) => return Ok(result),
+        CapabilityReceiptBeginV1::Pending => {
+            return Ok(CapabilityResult::Unavailable {
+                invocation_id: invocation.invocation_id,
+                capability_id: invocation.capability_id,
+                contract_version: invocation.contract_version,
+                code: "capability.outcome-pending".into(),
+                message: "原能力调用结果仍在核对中".into(),
+            });
+        }
+        CapabilityReceiptBeginV1::Started => {}
+    }
+    let service = locked(state.inner())?;
+    let result = crate::capability::invoke(&service, invocation.clone());
+    drop(service);
+    state
+        .capability_receipts
+        .resolve(&invocation, result.clone())
+        .map_err(capability_receipt_error)?;
+    Ok(result)
+}
+
+#[tauri::command]
+pub fn workbench_agent_invocation_receipt_v1(
+    state: State<'_, AppState>,
+    request: CapabilityTransportRequest,
+) -> Result<CapabilityReceiptLookupV1, HostError> {
+    let invocation = CapabilityInvocation::from_transport(request, CapabilityCaller::Agent);
+    state
+        .capability_receipts
+        .lookup(&invocation)
+        .map_err(capability_receipt_error)
+}
+
+fn capability_receipt_error(error: std::io::Error) -> HostError {
+    match error.kind() {
+        std::io::ErrorKind::InvalidInput => settings_error(
+            "capability-receipt.invalid-invocation-id",
+            "能力调用标识无效",
+            422,
+            false,
+        ),
+        std::io::ErrorKind::InvalidData => settings_error(
+            "capability-receipt.identity-conflict",
+            "能力调用回执与原调用不一致",
+            409,
+            false,
+        ),
+        _ => settings_error(
+            "capability-receipt.unavailable",
+            "暂时无法访问能力调用回执",
+            503,
+            true,
+        ),
+    }
 }
 
 #[tauri::command]

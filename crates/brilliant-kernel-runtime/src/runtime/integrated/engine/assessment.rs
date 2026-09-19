@@ -47,7 +47,6 @@ pub(super) fn decode_reads(input: &Value, assembly: &ResolvedHostAssemblyV1) -> 
         let namespace = string(field(row, "namespace")?)?;
         if reader == provider
             || !assembly.has_installed_owner(&reader.0, &reader.1)
-            || !assembly.has_installed_owner(&provider.0, &provider.1)
             || !seen.insert((reader.0, reader.1, namespace.clone()))
         {
             return Err(internal());
@@ -106,6 +105,21 @@ impl IntegratedKernelRuntimeV2 {
                 ("moduleId", value(&requirement.module_id)?),
                 ("contributionId", value(&requirement.contribution_id)?),
             ]);
+            let mut unavailable_dependency = false;
+            for row in self
+                .assessment_reads
+                .iter()
+                .filter(|row| field(row, "reader").ok() == Some(&source))
+            {
+                let provider = source_pair(field(row, "provider")?)?;
+                if !self.assembly.has_installed_owner(&provider.0, &provider.1) {
+                    unavailable_dependency = true;
+                    break;
+                }
+            }
+            if unavailable_dependency {
+                continue;
+            }
             let incompatible = self
                 .assessment_reads
                 .iter()
@@ -250,6 +264,35 @@ pub(super) fn validate_failure(error: Value, sources: &[Value]) -> Value {
             }
             return Ok(());
         }
+        if tag(&error, "code", "command.contribution-effect-rejected") {
+            if !exact(
+                &error,
+                &[
+                    "code",
+                    "moduleId",
+                    "contributionId",
+                    "effectIndex",
+                    "effectKind",
+                    "target",
+                    "failureCode",
+                ],
+            ) || !sources.iter().any(|source| {
+                field(source, "moduleId").ok() == field(&error, "moduleId").ok()
+                    && field(source, "contributionId").ok() == field(&error, "contributionId").ok()
+            }) || integer(field(&error, "effectIndex")?).is_none()
+                || !valid_registry_id(
+                    string(field(&error, "effectKind")?)?
+                        .code_units()
+                        .iter()
+                        .copied(),
+                )
+                || !valid_effect_target(field(&error, "target")?)
+                || !valid_effect_failure_code(string(field(&error, "failureCode")?)?)
+            {
+                return Err(internal());
+            }
+            return Ok(());
+        }
         if tag(&error, "code", "command.contribution-contract-violation")
             || tag(&error, "code", "command.contribution-internal-error")
         {
@@ -286,6 +329,50 @@ pub(super) fn validate_failure(error: Value, sources: &[Value]) -> Value {
         Err(internal())
     })();
     if checked.is_ok() { error } else { internal() }
+}
+
+fn valid_effect_failure_code(code: &JsString) -> bool {
+    [
+        "command.semantic-invalid",
+        "command.invalid-envelope",
+        "command.unsupported-version",
+        "command.unknown-id",
+        "command.target-mismatch",
+        "command.target-not-found",
+        "command.anchor-not-found",
+        "command.anchor-wrong-owner",
+        "command.anchor-self-reference",
+        "command.reference-conflict",
+        "command.invalid-range",
+        "command.range-endpoint-not-found",
+        "command.range-owner-mismatch",
+        "command.range-transform-invalid",
+        "command.batch-empty",
+        "command.batch-nested",
+        "command.resource-limit-exceeded",
+        "command.version-overflow",
+        "command.internal-error",
+        "stage3.local-invariant-rejected",
+    ]
+    .iter()
+    .any(|candidate| code.eq_ascii(candidate))
+}
+
+fn valid_effect_target(target: &Value) -> bool {
+    if exact(target, &["kind"]) && tag(target, "kind", "score") {
+        return true;
+    }
+    [
+        ("document", "documentId"),
+        ("measure", "measureId"),
+        ("part", "partId"),
+        ("staff", "staffId"),
+        ("voice", "voiceId"),
+        ("event", "eventId"),
+        ("note", "noteId"),
+    ]
+    .iter()
+    .any(|(kind, id)| point(target, kind, &[*id]))
 }
 
 pub(super) fn validate_issue(issue: &Value, source: &Value) -> Result<()> {

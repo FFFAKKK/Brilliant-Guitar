@@ -141,6 +141,53 @@ pub struct ScoreSummaryV1 {
     pub measure_count: usize,
 }
 
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScoreMetadataV1 {
+    pub document_id: String,
+    pub document_version: u64,
+    pub title: String,
+    pub authors: Vec<String>,
+    pub tempo_bpm: f64,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScoreStructureV1 {
+    pub document_id: String,
+    pub document_version: u64,
+    pub measure_count: usize,
+    pub part_count: usize,
+    pub staff_count: usize,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScoreMeasureIndexV1 {
+    pub document_id: String,
+    pub document_version: u64,
+    pub measure_ids: Vec<String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScoreMeasureRangeMeasureV1 {
+    pub measure_id: String,
+    pub meter: Meter,
+    pub pickup_duration: Option<ExactFraction>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScoreMeasureRangeV1 {
+    pub document_id: String,
+    pub document_version: u64,
+    pub start_measure_id: String,
+    pub end_measure_id: String,
+    pub measure_count: usize,
+    pub measures: Vec<ScoreMeasureRangeMeasureV1>,
+}
+
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct CapabilityTransportRequest {

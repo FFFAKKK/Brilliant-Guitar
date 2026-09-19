@@ -7,7 +7,10 @@ import { installNativeIntegratedBackendV2, type IntegratedNativeAddonV2 } from "
 import { CVN6_MANIFEST, CVN6_REGISTRATION_ENTRIES, cvn6CallbackBehavior, cvn6CallbackCounts, resetCvn6Callbacks } from "../fixtures/cvn-6-synthetic-official-modules";
 import { createCoreScoreFixture } from "../fixtures/core-score";
 
-const addon = require(resolve("target/integrated-v2/brilliant_kernel_node.node")) as IntegratedNativeAddonV2;
+const addon = require(resolve(
+  process.env.BRILLIANT_INTEGRATED_ADDON_PATH
+    ?? "target/integrated-v2/brilliant_kernel_node.node",
+)) as IntegratedNativeAddonV2;
 function catalog() {
   const result = compileOfficialModuleCatalogV1(CVN6_MANIFEST, CVN6_REGISTRATION_ENTRIES);
   assert.ok(result.ok);

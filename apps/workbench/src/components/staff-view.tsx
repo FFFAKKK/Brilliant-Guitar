@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, MouseEvent, PointerEvent, RefObject } from "react";
-import type { EventDuration, InputPitch } from "../contracts/note-input";
+import type { EventDuration, InputPitch, KeySignatureChangeInput, MeterChangeScope, MeterInput } from "../contracts/note-input";
 import type { NotationView, StaffView as StaffNotation } from "../contracts/notation";
 import { rhythmCaretCenterY } from "../notation/notation-renderer";
 import type { NotationInteractionGeometry, NotationRenderer } from "../notation/notation-renderer";
@@ -13,12 +13,17 @@ import { yForPitch } from "../notation/input-position";
 import { noteheadSymbol } from "../notation/music-symbols.ts";
 import { useHostedUiComponent } from "./ui-component-host";
 import type { ScoreEditPoint } from "../editor/score-navigation";
+import type { StaffPointerSignal } from "../editor/staff-input-adapter.ts";
 import { resolveStaffPointerTarget } from "../editor/staff-pointer-target.ts";
 import { resolveStaffRangeGeometry } from "../editor/staff-range-geometry.ts";
 import type { WorkbenchFeedback } from "../feedback/workbench-feedback";
 import { LatestWorkbenchTask } from "../workbench/latest-task.ts";
 import type { PlaybackSnapshot } from "../playback/playback-session.ts";
 import { MeasureContextMenu } from "./measure-context-menu.tsx";
+import { pointerLocateSignal, pointerSelectSignal } from "../input/input-signal.ts";
+import { MeasureMeterDialog } from "./measure-meter-dialog.tsx";
+import { KeySignatureDialog } from "./key-signature-dialog.tsx";
+import { keySignatureFifthsAtMeasure } from "../notation/key-signature.ts";
 
 export interface StaffEditing {
   readonly point: ScoreEditPoint | null;
@@ -26,13 +31,14 @@ export interface StaffEditing {
   readonly previewDuration: EventDuration;
   readonly previewRest: boolean;
   readonly viewportRef: RefObject<HTMLDivElement | null>;
-  readonly onLocate: (point: ScoreEditPoint, pitch: InputPitch, writeNow: boolean) => void;
+  readonly onInput: (signal: StaffPointerSignal) => void;
   readonly selectedEventId?: string | null;
   readonly selectedRange?: { readonly measureId: string; readonly eventIds: readonly string[] } | null;
-  readonly onSelectEvent?: (eventId: string, extend?: boolean) => void;
   readonly measureCount: number;
   readonly onInsertMeasure?: (measureId: string, position: "before" | "after") => void;
   readonly onRemoveMeasure?: (measureId: string) => void;
+  readonly onSetMeasureMeter?: (measureId: string, meter: MeterInput, scope: MeterChangeScope) => boolean;
+  readonly onSetKeySignature?: (partId: string, measureId: string, change: KeySignatureChangeInput) => boolean;
   readonly busy?: boolean;
   readonly feedback?: WorkbenchFeedback | null;
 }
@@ -46,6 +52,10 @@ function anchorForPoint(geometry: NotationInteractionGeometry | null, point: Sco
 type StaffHover = { readonly kind: "caret"; readonly x: number; readonly y: number; readonly spacing: number;
   readonly pitch: InputPitch } | { readonly kind: "event"; readonly eventId: string; readonly x: number; readonly y: number;
   readonly width: number; readonly height: number };
+
+const CLEF_LABELS: Readonly<Record<StaffNotation["clef"], string>> = {
+  treble: "高音谱表", bass: "低音谱表", alto: "中音谱表", tenor: "次中音谱表",
+};
 
 function playbackHeadGeometry(geometry: NotationInteractionGeometry | null, layout: StaffLayout,
   playback: PlaybackSnapshot | undefined) {
@@ -79,6 +89,10 @@ function EngravedPage({ layout, renderer, number, editing, view, showRuleWarning
   const [hover, setHover] = useState<StaffHover | null>(null);
   const [measureMenu, setMeasureMenu] = useState<Readonly<{ measureId: string; measureNumber: number;
     x: number; y: number }> | null>(null);
+  const [meterDialog, setMeterDialog] = useState<Readonly<{ measureId: string; measureNumber: number }> | null>(null);
+  const [keySignatureDialog, setKeySignatureDialog] = useState<Readonly<{
+    measureId: string; measureNumber: number;
+  }> | null>(null);
   const [attempt, setAttempt] = useState(0);
   const renderTask = useRef(new LatestWorkbenchTask());
   useEffect(() => {
@@ -127,6 +141,7 @@ function EngravedPage({ layout, renderer, number, editing, view, showRuleWarning
   // the ghost note preview and must not drag this focus marker above/below the staff.
   const focusCenterY = cursor ? rhythmCaretCenterY(cursor) : 0;
   const playbackHead = playbackHeadGeometry(interaction, layout, playback);
+  const meterDialogMeasure = meterDialog ? view.measures.find((measure) => measure.id === meterDialog.measureId) : null;
   useEffect(() => {
     focusElement.current?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }, [cursor?.x, focusCenterY, range?.x, selection?.x, selection?.y]);
@@ -151,8 +166,8 @@ function EngravedPage({ layout, renderer, number, editing, view, showRuleWarning
   function locate(event: MouseEvent<HTMLDivElement>, writeNow: boolean) {
     if (!editing) return;
     const target = pointerTarget(event, writeNow);
-    if (target?.kind === "event") editing.onSelectEvent?.(target.eventId, event.shiftKey);
-    if (target?.kind === "caret") editing.onLocate(target.point, target.pitch, writeNow);
+    if (target?.kind === "event") editing.onInput(pointerSelectSignal(target.eventId, event.shiftKey));
+    if (target?.kind === "caret") editing.onInput(pointerLocateSignal({ point: target.point, pitch: target.pitch }, writeNow));
   }
   function openMeasureMenu(event: MouseEvent<HTMLDivElement>) {
     if (!editing || editing.busy) return;
@@ -185,7 +200,7 @@ function EngravedPage({ layout, renderer, number, editing, view, showRuleWarning
     const measure = interaction?.measures.find((item) => item.measureId === target.point.measureId);
     if (!anchor || !measure) { setHover(null); return; }
     const next: StaffHover = { kind: "caret", x: anchor.x,
-      y: yForPitch(target.pitch, measure.staffBottom, measure.lineSpacing), spacing: measure.lineSpacing, pitch: target.pitch };
+      y: yForPitch(target.pitch, measure.staffBottom, measure.lineSpacing, view.clef), spacing: measure.lineSpacing, pitch: target.pitch };
     setHover((current) => current?.kind === "caret" && current.x === next.x && current.y === next.y
       && current.pitch.step === next.pitch.step && current.pitch.octave === next.pitch.octave ? current : next);
   }
@@ -195,7 +210,7 @@ function EngravedPage({ layout, renderer, number, editing, view, showRuleWarning
       onClick={(event) => locate(event, false)} onDoubleClick={(event) => locate(event, true)}
       onContextMenu={openMeasureMenu}
       role={status === "ready" ? "img" : undefined}
-      aria-label={`第 ${number} 页，高音谱表，${layout.measures.length} 个小节${ruleWarningCount ? `，${ruleWarningCount} 个节拍提示，${ruleWarningDescription}` : ""}`} />
+      aria-label={`第 ${number} 页，${CLEF_LABELS[view.clef]}，${layout.measures.length} 个小节${ruleWarningCount ? `，${ruleWarningCount} 个节拍提示，${ruleWarningDescription}` : ""}`} />
     {status === "ready" && interaction && <svg className="staff-interaction-overlay" viewBox={`0 0 ${layout.width} ${layout.height}`}
       preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
       {range && <rect className="score-range-selection" x={range.x} y={range.y}
@@ -231,8 +246,26 @@ function EngravedPage({ layout, renderer, number, editing, view, showRuleWarning
       measureNumber={measureMenu.measureNumber} canRemove={editing.measureCount > 1}
       onInsertBefore={() => editing.onInsertMeasure?.(measureMenu.measureId, "before")}
       onInsertAfter={() => editing.onInsertMeasure?.(measureMenu.measureId, "after")}
+      onChangeMeter={() => setMeterDialog({ measureId: measureMenu.measureId, measureNumber: measureMenu.measureNumber })}
+      onChangeKeySignature={() => setKeySignatureDialog({
+        measureId: measureMenu.measureId, measureNumber: measureMenu.measureNumber,
+      })}
       onRemove={() => editing.onRemoveMeasure?.(measureMenu.measureId)}
       onClose={() => setMeasureMenu(null)} />}
+    {meterDialog && meterDialogMeasure && editing && <MeasureMeterDialog open onOpenChange={(open) => {
+      if (!open) setMeterDialog(null);
+    }} measureId={meterDialog.measureId} measureNumber={meterDialog.measureNumber}
+      meter={{ numerator: meterDialogMeasure.meter.numerator,
+        denominator: meterDialogMeasure.meter.denominator as MeterInput["denominator"] }}
+      saving={Boolean(editing.busy)} failure={editing.feedback?.issue.message ?? ""}
+      onSave={(meter, scope) => editing.onSetMeasureMeter?.(meterDialog.measureId, meter, scope) ?? false} />}
+    {keySignatureDialog && editing && <KeySignatureDialog open onOpenChange={(open) => {
+      if (!open) setKeySignatureDialog(null);
+    }} measureId={keySignatureDialog.measureId} measureNumber={keySignatureDialog.measureNumber}
+      effectiveFifths={keySignatureFifthsAtMeasure(view, keySignatureDialog.measureId)}
+      hasChange={Boolean(view.keySignatureChanges?.some(change => change.measureId === keySignatureDialog.measureId))}
+      saving={Boolean(editing.busy)} failure={editing.feedback?.issue.message ?? ""}
+      onSave={(change) => editing.onSetKeySignature?.(view.partId, keySignatureDialog.measureId, change) ?? false} />}
     {status === "loading" && <div className="staff-paper-message" role="status">正在绘制谱面…</div>}
     {status === "error" && <div className="staff-paper-message" role="alert">谱面显示失败
       <button type="button" onClick={() => setAttempt((value) => value + 1)}>重新绘制</button>

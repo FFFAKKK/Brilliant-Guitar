@@ -1,5 +1,5 @@
 import { captureStrictInput } from "../codec/strict-input-capture";
-import { contributionReads, hasIncompatibleContributionReads, type ContributionDependencyViewV1 } from "../registry/contribution-reads";
+import { contributionReads, hasIncompatibleContributionReads, hasUnavailableContributionReads, type ContributionDependencyViewV1 } from "../registry/contribution-reads";
 import { invokeScopedCallbackV1, type ScopedCallbackInvokerV1 } from "../module-sdk/scoped-invocation";
 import { nativeIntegratedFactoryV2, nativeIntegratedAssemblyV2 } from "../native/integrated-backend-selection";
 import { decodeScoreDocument } from "../codec/decode-score-document";
@@ -65,11 +65,14 @@ import type {
   ModuleKernelIssue,
 } from "../registry/integrated-contracts";
 import {
+  isSafeRegistryId,
   readDenseArray,
   readExactDataRecord,
 } from "../registry/strict-codec";
 import type {
   BatchCommand,
+  CommandFailure,
+  CommandFailureLeaf,
   CommandResult,
   CoreCommandEnvelope,
   ScoreEntityTarget,
@@ -594,6 +597,78 @@ function contractFailure(
   });
 }
 
+function ownDataValue(value: unknown, key: string): unknown {
+  if (typeof value !== "object" || value === null || isArray(value)) {
+    return undefined;
+  }
+  const descriptor = reflectGetOwnPropertyDescriptor(value, key);
+  return descriptor !== undefined && "value" in descriptor && descriptor.enumerable
+    ? descriptor.value
+    : undefined;
+}
+
+function effectProvenance(request: unknown): {
+  readonly effectKind: string;
+  readonly target: ScoreEntityTarget | ExtensionOwner;
+} | undefined {
+  const requestKind = ownDataValue(request, "requestKind");
+  if (!isSafeRegistryId(requestKind)) {
+    return undefined;
+  }
+  if (requestKind === "module.extension") {
+    const effectKind = ownDataValue(request, "effectKind");
+    const owner = decodeOwner(ownDataValue(request, "owner"));
+    return isSafeRegistryId(effectKind) && owner !== undefined
+      ? { effectKind, target: owner }
+      : undefined;
+  }
+  const rawTarget = ownDataValue(request, "target");
+  const kind = targetKind(rawTarget);
+  const target = kind === undefined ? undefined : decodeTarget(rawTarget, kind);
+  return target === undefined ? undefined : { effectKind: requestKind, target };
+}
+
+function effectFailure(
+  contribution: CompiledDomainCommandContributionV1,
+  effectIndex: number,
+  provenance: {
+    readonly effectKind: string;
+    readonly target: ScoreEntityTarget | ExtensionOwner;
+  },
+  failureCode: CommandFailureLeaf["code"],
+): Extract<
+  KernelContributionFailure,
+  { readonly code: "command.contribution-effect-rejected" }
+> {
+  return freeze({
+    code: "command.contribution-effect-rejected" as const,
+    moduleId: contribution.moduleId,
+    contributionId: contribution.contributionId,
+    effectIndex,
+    effectKind: provenance.effectKind,
+    target: clone(provenance.target),
+    failureCode,
+  });
+}
+
+function attributedEffectFailure(
+  contribution: CompiledDomainCommandContributionV1,
+  effectIndex: number,
+  request: unknown,
+  failureCode: CommandFailureLeaf["code"],
+): KernelContributionFailure {
+  const provenance = effectProvenance(request);
+  return provenance === undefined
+    ? contractFailure(contribution)
+    : effectFailure(contribution, effectIndex, provenance, failureCode);
+}
+
+function commandFailureLeafCode(failure: CommandFailure): CommandFailureLeaf["code"] {
+  return failure.code === "command.batch-child-rejected"
+    ? "command.internal-error"
+    : failure.code;
+}
+
 function internalFailure(
   contribution: CompiledDomainCommandContributionV1,
 ): Extract<
@@ -769,7 +844,9 @@ function runPipelineAfterCoreValidation(
       continue;
     }
     const view = callbackView(document, documentVersion, contribution);
-    if (view.compatibleExtensions.length === 0 || hasIncompatibleContributionReads(document, contribution)) {
+    if (view.compatibleExtensions.length === 0
+      || hasUnavailableContributionReads(assembly.catalogState, contribution)
+      || hasIncompatibleContributionReads(document, contribution)) {
       continue;
     }
     views[views.length] = { contribution, view };
@@ -1252,6 +1329,7 @@ function applyModuleRequests(
       readonly document: ScoreDocument;
       readonly forward?: NonEmptyCoreEffectSet;
       readonly inverse?: NonEmptyCoreEffectSet;
+      readonly affected: readonly ScoreAddress[];
     }
   | { readonly ok: false; readonly failure: KernelCommandFailure } {
   if (requests.length > MAX_EFFECTS) {
@@ -1268,23 +1346,35 @@ function applyModuleRequests(
   let candidate = document;
   const forward: CoreEffect[] = [];
   const inverse: CoreEffect[] = [];
+  const affected: ScoreAddress[] = [];
+  const affectedSeen = reflectApply(objectCreate, Object, [null]) as Record<string, true>;
 
-  function applyPreparedEffects(effects: readonly CoreEffect[]): boolean {
-    if (effects.length === 0) {
+  function appendAffected(address: ScoreAddress): boolean {
+    const key = addressKey(address);
+    if (affectedSeen[key] === true) {
       return true;
+    }
+    affectedSeen[key] = true;
+    affected[affected.length] = clone(address);
+    return affected.length <= MAX_AFFECTED_ADDRESSES;
+  }
+
+  function applyPreparedEffects(effects: readonly CoreEffect[]): CommandFailure | undefined {
+    if (effects.length === 0) {
+      return undefined;
     }
     const segment = effects as [CoreEffect, ...CoreEffect[]];
     let segmentInverse: NonEmptyCoreEffectSet;
     if (options.candidateIsIsolated) {
       const applied = applyCoreEffectSetToCandidate(candidate, segment);
       if (!applied.ok) {
-        return false;
+        return applied.failure;
       }
       segmentInverse = applied.inverse;
     } else {
       const applied = applyCoreEffectSet(candidate, segment);
       if (!applied.ok) {
-        return false;
+        return applied.failure;
       }
       candidate = applied.document;
       segmentInverse = applied.inverse;
@@ -1301,32 +1391,52 @@ function applyModuleRequests(
         reflectApply(arrayUnshift, inverse, [inverseEffect]);
       }
     }
-    return true;
+    return undefined;
   }
 
   for (let index = 0; index < requests.length; index += 1) {
     const request = requests[index];
-    const coreRecord = readExactDataRecord(request, [
-      "requestVersion",
-      "requestKind",
-      "target",
-      "writtenPitch",
-    ]);
+    const requestKind = ownDataValue(request, "requestKind");
+    const reject = (failureCode: CommandFailureLeaf["code"]): {
+      readonly ok: false;
+      readonly failure: KernelContributionFailure;
+    } => ({
+      ok: false,
+      failure: attributedEffectFailure(contribution, index, request, failureCode),
+    });
     let effect: CoreEffect | undefined;
-    if (coreRecord?.requestKind === "core.note.replace-written-pitch") {
+    let affectedAddress: ScoreAddress;
+    if (requestKind === "core.note.replace-written-pitch") {
+      const requestVersion = ownDataValue(request, "requestVersion");
+      if (!isSafeInteger(requestVersion)) {
+        return reject("command.invalid-envelope");
+      }
+      if (requestVersion !== 1) {
+        return reject("command.unsupported-version");
+      }
+      const coreRecord = readExactDataRecord(request, [
+        "requestVersion",
+        "requestKind",
+        "target",
+        "writtenPitch",
+      ]);
+      if (coreRecord === undefined) {
+        return reject("command.invalid-envelope");
+      }
+      const actualKind = targetKind(coreRecord.target);
+      if (actualKind === undefined) {
+        return reject("command.invalid-envelope");
+      }
+      if (actualKind !== "note") {
+        return reject("command.target-mismatch");
+      }
       const target = decodeTarget(coreRecord.target, "note");
-      const resolved = target?.kind === "note"
-        ? resolveScoreEntityTarget(candidate, target)
-        : undefined;
-      if (
-        coreRecord.requestVersion !== 1 ||
-        target?.kind !== "note" ||
-        resolved === undefined ||
-        !resolved.ok ||
-        resolved.value.kind !== "note" ||
-        !isWrittenPitch(coreRecord.writtenPitch)
-      ) {
-        return { ok: false, failure: contractFailure(contribution) };
+      if (target?.kind !== "note" || !isWrittenPitch(coreRecord.writtenPitch)) {
+        return reject("command.invalid-envelope");
+      }
+      const resolved = resolveScoreEntityTarget(candidate, target);
+      if (!resolved.ok || resolved.value.kind !== "note") {
+        return reject("command.target-not-found");
       }
       if (deepEqual(resolved.value.note.writtenPitch, coreRecord.writtenPitch)) {
         continue;
@@ -1336,22 +1446,76 @@ function applyModuleRequests(
         noteId: target.noteId,
         value: clone(coreRecord.writtenPitch),
       };
-      if (!applyPreparedEffects([effect])) {
-        return { ok: false, failure: { code: "command.internal-error" } };
-      }
-      continue;
+      affectedAddress = target;
     } else {
-      const owned = moduleEffectForRequest(request, contribution);
-      if (owned === undefined || !ownerExists(candidate, owned.owner)) {
-        return { ok: false, failure: contractFailure(contribution) };
+      if (requestKind !== "module.extension") {
+        return reject("command.unknown-id");
       }
-      const binding = getModuleEffectDefinitionBinding(owned.definition);
+      const requestVersion = ownDataValue(request, "requestVersion");
+      if (!isSafeInteger(requestVersion)) {
+        return reject("command.invalid-envelope");
+      }
+      if (requestVersion !== 1) {
+        return reject("command.unsupported-version");
+      }
+      const record = readExactDataRecord(request, [
+        "requestVersion",
+        "requestKind",
+        "effectKind",
+        "namespace",
+        "owner",
+        "payload",
+      ]);
+      if (
+        record === undefined ||
+        typeof record.effectKind !== "string" ||
+        typeof record.namespace !== "string" ||
+        typeof record.payload !== "object" ||
+        record.payload === null ||
+        isArray(record.payload) ||
+        !isJsonValue(record.payload)
+      ) {
+        return reject("command.invalid-envelope");
+      }
+      let definition: CompiledModuleEffectDefinitionV1 | undefined;
+      for (let effectIndex = 0; effectIndex < contribution.effects.length; effectIndex += 1) {
+        const candidateDefinition = contribution.effects[effectIndex];
+        if (
+          candidateDefinition?.descriptor.effectKind === record.effectKind &&
+          candidateDefinition.descriptor.namespace === record.namespace &&
+          candidateDefinition.descriptor.source.moduleId === contribution.moduleId &&
+          candidateDefinition.descriptor.source.contributionId === contribution.contributionId
+        ) {
+          definition = candidateDefinition;
+          break;
+        }
+      }
+      if (definition === undefined) {
+        return reject("command.unknown-id");
+      }
+      const owner = decodeOwner(record.owner);
+      if (owner === undefined) {
+        return reject("command.invalid-envelope");
+      }
+      if (!ownerExists(candidate, owner)) {
+        return reject("command.target-not-found");
+      }
+      let ownerAllowed = false;
+      for (let ownerIndex = 0; ownerIndex < definition.descriptor.ownerKinds.length; ownerIndex += 1) {
+        if (definition.descriptor.ownerKinds[ownerIndex] === owner.kind) {
+          ownerAllowed = true;
+        }
+      }
+      if (!ownerAllowed) {
+        return reject("command.target-mismatch");
+      }
+      const binding = getModuleEffectDefinitionBinding(definition);
       if (binding === undefined) {
         return { ok: false, failure: contractFailure(contribution) };
       }
       let decodedRaw: unknown;
       try {
-        decodedRaw = invoke(binding.decode, [owned.payload]);
+        decodedRaw = invoke(binding.decode, [record.payload]);
       } catch {
         return { ok: false, failure: internalFailure(contribution) };
       }
@@ -1362,13 +1526,13 @@ function applyModuleRequests(
       if (decoded?.status !== "decoded") {
         return { ok: false, failure: contractFailure(contribution) };
       }
-      const current = currentBlock(candidate, owned.definition.descriptor.namespace, owned.owner);
+      const current = currentBlock(candidate, definition.descriptor.namespace, owner);
       const view = callbackView(candidate, documentVersion, contribution);
       let transformedRaw: unknown;
       try {
         transformedRaw = invoke(binding.transform, [freeze({
           view,
-          owner: clone(owned.owner),
+          owner: clone(owner),
           currentBlock: current === undefined ? undefined : clone(current.block),
           payload: decoded.payload,
         })]);
@@ -1377,7 +1541,7 @@ function applyModuleRequests(
       }
       const transformedCapture = captureStrictInput(transformedRaw);
       if (transformedCapture.status !== "captured") {
-        return { ok: false, failure: contractFailure(contribution) };
+        return reject("command.invalid-envelope");
       }
       const transformed = transformedCapture.value;
       const remove = readExactDataRecord(transformed, ["status"]);
@@ -1405,27 +1569,27 @@ function applyModuleRequests(
         }
         effect = {
           kind: "remove-extension-block",
-          namespace: owned.definition.descriptor.namespace,
-          owner: clone(owned.owner),
+          namespace: definition.descriptor.namespace,
+          owner: clone(owner),
         };
-      } else if (
-        replace?.status === "replace" &&
-        typeof replace.schemaVersion === "number" &&
-        isSafeInteger(replace.schemaVersion) &&
-        replace.schemaVersion > 0 &&
-        includesVersion(
-          owned.definition.descriptor.supportedSchemaVersions,
-          replace.schemaVersion,
-        ) &&
-        typeof replace.payload === "object" &&
-        replace.payload !== null &&
-        !isArray(replace.payload) &&
-        isJsonValue(replace.payload)
-      ) {
+      } else if (replace?.status === "replace") {
+        if (
+          !isSafeInteger(replace.schemaVersion) ||
+          replace.schemaVersion <= 0 ||
+          typeof replace.payload !== "object" ||
+          replace.payload === null ||
+          isArray(replace.payload) ||
+          !isJsonValue(replace.payload)
+        ) {
+          return reject("command.invalid-envelope");
+        }
+        if (!includesVersion(definition.descriptor.supportedSchemaVersions, replace.schemaVersion)) {
+          return reject("command.unsupported-version");
+        }
         const block: ExtensionBlock = freeze({
-          namespace: owned.definition.descriptor.namespace,
+          namespace: definition.descriptor.namespace,
           schemaVersion: replace.schemaVersion,
-          owner: clone(owned.owner),
+          owner: clone(owner),
           payload: clone(replace.payload as JsonObject),
         });
         if (current !== undefined && deepEqual(current.block, block)) {
@@ -1444,24 +1608,48 @@ function applyModuleRequests(
               value: block,
             };
       } else {
-        return { ok: false, failure: contractFailure(contribution) };
+        return reject("command.invalid-envelope");
       }
+      affectedAddress = owner.kind === "score"
+        ? { kind: "document", documentId: candidate.id }
+        : { kind: "part", partId: owner.partId };
     }
-    if (!applyPreparedEffects([effect])) {
-      return { ok: false, failure: { code: "command.internal-error" } };
+    const applyFailure = applyPreparedEffects([effect]);
+    if (applyFailure !== undefined) {
+      return reject(commandFailureLeafCode(applyFailure));
+    }
+    if (!appendAffected(affectedAddress)) {
+      return {
+        ok: false,
+        failure: {
+          code: "command.resource-limit-exceeded",
+          limitKind: "affected-addresses",
+          limit: MAX_AFFECTED_ADDRESSES,
+          actual: MAX_AFFECTED_ADDRESSES + 1,
+        },
+      };
     }
   }
+  reflectApply(arraySort, affected, [
+    (left: ScoreAddress, right: ScoreAddress) => {
+      const leftKey = addressKey(left);
+      const rightKey = addressKey(right);
+      return leftKey < rightKey ? -1 : leftKey > rightKey ? 1 : 0;
+    },
+  ]);
+  const frozenAffected = freeze(affected);
   if (
     forward.length === 0 ||
     (!options.preserveEffectiveSequence && deepEqual(candidate, document))
   ) {
-    return { ok: true, document };
+    return { ok: true, document, affected: frozenAffected };
   }
   return {
     ok: true,
     document: candidate,
     forward: freezeCoreEffectSet(forward as [CoreEffect, ...CoreEffect[]]),
     inverse: freezeCoreEffectSet(inverse as [CoreEffect, ...CoreEffect[]]),
+    affected: frozenAffected,
   };
 }
 
@@ -1587,7 +1775,6 @@ function prepareModuleOperation(
   ) {
     return { ok: false, failure: contractFailure(contribution) };
   }
-  const affected = affectedResult.value;
   const applied = applyModuleRequests(
     state.document,
     state.documentVersion,
@@ -1598,12 +1785,6 @@ function prepareModuleOperation(
   if (!applied.ok) {
     return applied;
   }
-  for (let index = 0; index < affected.length; index += 1) {
-    const address = affected[index];
-    if (address === undefined || !targetExists(applied.document, address)) {
-      return { ok: false, failure: contractFailure(contribution) };
-    }
-  }
   return {
     ok: true,
     value: applied.forward === undefined
@@ -1612,7 +1793,7 @@ function prepareModuleOperation(
           command,
           source,
           document: applied.document,
-          affected,
+          affected: applied.affected,
         }
       : {
           status: "changed",
@@ -1621,7 +1802,7 @@ function prepareModuleOperation(
           document: applied.document,
           forward: applied.forward,
           inverse: applied.inverse as NonEmptyCoreEffectSet,
-          affected,
+          affected: applied.affected,
         },
   };
 }

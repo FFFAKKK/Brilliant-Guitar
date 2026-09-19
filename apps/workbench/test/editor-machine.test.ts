@@ -5,8 +5,8 @@ import { ScoreSessionService } from "../host/score-session.ts";
 import { initialEditorState, transitionEditor } from "../src/editor/editor-machine.ts";
 import { defaultScoreEditPoint, eventStartPoint } from "../src/editor/score-navigation.ts";
 import type { ScoreEditPoint } from "../src/editor/score-navigation.ts";
-import { scoreIntentToAction } from "../src/editor/score-edit-intent.ts";
-import { resolveStaffKey, staffIntentToAction } from "../src/editor/staff-input-adapter.ts";
+import { scoreIntentToAction } from "../src/application/edit/score-edit-intent.ts";
+import { staffInputAdapter } from "../src/editor/staff-input-adapter.ts";
 
 test("one editor state preserves its selected target across rejection and retry", () => {
   const point = { partId: "part", staffId: "staff", measureId: "measure",
@@ -17,18 +17,18 @@ test("one editor state preserves its selected target across rejection and retry"
   assert.equal(state.composition.kind, "composing");
   state = transitionEditor(state, { type: "select", eventId: "note-1", point });
   assert.equal(state.composition.kind, "idle");
-  state = transitionEditor(state, { type: "submit", operation: "update", requestId: "request-1" });
+  state = transitionEditor(state, { type: "submit", operation: "update-event", requestId: "request-1" });
   state = transitionEditor(state, { type: "reject", requestId: "request-1", retryable: true });
   assert.equal(state.target.kind, "event");
   state = transitionEditor(state, { type: "locate", point: other });
   state = transitionEditor(state, { type: "point-updated", point: other });
-  state = transitionEditor(state, { type: "submit", operation: "delete", requestId: "request-2" });
+  state = transitionEditor(state, { type: "submit", operation: "delete-event", requestId: "request-2" });
   assert.equal(state.target.kind, "event");
   assert.equal(state.transaction.kind, "failed");
   state = transitionEditor(state, { type: "retry", requestId: "request-1" });
   state = transitionEditor(state, { type: "commit", requestId: "request-1" });
   assert.deepEqual(state.target, { kind: "event", eventId: "note-1", point });
-  state = transitionEditor(state, { type: "submit", operation: "delete", requestId: "request-2" });
+  state = transitionEditor(state, { type: "submit", operation: "delete-event", requestId: "request-2" });
   state = transitionEditor(state, { type: "commit", requestId: "request-2", target: { kind: "caret", point } });
   assert.equal(state.target.kind, "caret");
   assert.equal(state.transaction.kind, "idle");
@@ -38,7 +38,7 @@ test("one editor state preserves its selected target across rejection and retry"
   documentState = transitionEditor(documentState, { type: "commit", requestId: "request-3" });
   assert.equal(documentState.target.kind, "unavailable");
   let rejected = transitionEditor(initialEditorState<ScoreEditPoint, string>(point),
-    { type: "submit", operation: "insert", requestId: "request-4" });
+    { type: "submit", operation: "insert-event", requestId: "request-4" });
   rejected = transitionEditor(rejected, { type: "reject", requestId: "request-4", retryable: false });
   rejected = transitionEditor(rejected, { type: "dismiss-failure" });
   rejected = transitionEditor(rejected, { type: "compose", methodId: "staff.pitch", draft: "C" });
@@ -54,10 +54,10 @@ test("staff input translates a completed pitch into the existing kernel edit pat
   assert.deepEqual(scoreIntentToAction({ kind: "history", direction: "undo" }, null), { kind: "undo" });
   assert.deepEqual(scoreIntentToAction({ kind: "document", action: { kind: "set-title", title: "Test" } }, null),
     { kind: "set-title", title: "Test" });
-  const draft = resolveStaffKey(null, "C");
-  const completed = resolveStaffKey(draft.draft, "5");
+  const draft = staffInputAdapter.advance(null, "C");
+  const completed = staffInputAdapter.advance(draft.draft, "5");
   assert.deepEqual(completed.pitch, { step: "C", octave: 5 });
-  const insert = staffIntentToAction({ kind: "insert", event: { duration: { base: 4, dots: 0 },
+  const insert = scoreIntentToAction({ kind: "insert-event", event: { duration: { base: 4, dots: 0 },
     content: { kind: "note", pitch: { ...completed.pitch!, alter: 0 } } } }, point);
   assert.ok(insert);
   read = service.edit(workspace, { requestId: randomUUID(), documentId: read.documentId,
@@ -68,7 +68,7 @@ test("staff input translates a completed pitch into the existing kernel edit pat
   assert.equal(inserted.content.kind, "note");
   assert.ok(eventStartPoint(read.notation, inserted.id));
 
-  const update = staffIntentToAction({ kind: "update", eventId: inserted.id, properties: {
+  const update = scoreIntentToAction({ kind: "update-event", eventId: inserted.id, properties: {
     duration: { base: 8, dots: 0 }, content: { kind: "note", pitch: { step: "B", octave: 4, alter: 0 } },
   } }, point);
   assert.ok(update);
@@ -81,9 +81,9 @@ test("staff input translates a completed pitch into the existing kernel edit pat
   assert.deepEqual(changed.duration, { base: 8, dots: 0 });
   assert.deepEqual(changed.content, { kind: "note", pitch: { step: "B", octave: 4, alter: 0 } });
 
-  const deletion = staffIntentToAction({ kind: "delete", eventId: inserted.id }, point);
+  const deletion = scoreIntentToAction({ kind: "delete-event", eventId: inserted.id }, point);
   assert.deepEqual(deletion, { kind: "delete-event", eventId: inserted.id, timePolicy: "preserve" });
-  assert.deepEqual(staffIntentToAction({ kind: "delete", eventId: inserted.id }, point, "collapse"),
+  assert.deepEqual(scoreIntentToAction({ kind: "delete-event", eventId: inserted.id }, point, "collapse"),
     { kind: "delete-event", eventId: inserted.id, timePolicy: "collapse" });
   read = service.edit(workspace, { requestId: randomUUID(), documentId: read.documentId,
     expectedVersion: read.documentVersion, action: deletion });

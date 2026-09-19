@@ -24,7 +24,7 @@ test("accidental display distinguishes blank, sharp, flat and required natural s
   assert.equal(accidentalForEvent(measure, "flat"), "flat");
   assert.equal(alterForAccidental("none", 1), 1);
   assert.equal(alterForAccidental("natural", 1), 0);
-  const view: StaffView = { kind: "staff", partId: "p1", staffId: "s1", clef: "treble", measures: [measure] };
+  const view: StaffView = { kind: "staff", partId: "p1", staffId: "s1", clef: "treble", tempoBpm: 96, keySignatureChanges: [], measures: [measure] };
   const point = { partId: "p1", staffId: "s1", measureId: "m1", voiceId: "v1", preferredPitch: null } as const;
   assert.equal(inheritedAlterAtPoint(view, { ...point, anchor: { kind: "start" }, offsetUnits: 0 }, { step: "C", octave: 5 }), 0);
   assert.equal(inheritedAlterAtPoint(view, { ...point, anchor: { kind: "after-event", eventId: "sharp" }, offsetUnits: 8 }, { step: "C", octave: 5 }), 1);

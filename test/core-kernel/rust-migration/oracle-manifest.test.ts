@@ -37,6 +37,7 @@ const ACTIVE_RKP0_AUTHORITY_PATH = ".trellis/tasks/08-15-rkp-0-authority-contrac
 const MATRIX_PATH = ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/research/oracle-scenario-matrix.md";
 const SDK_MATRIX_PATH = ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/research/sdk-surface-migration-matrix.md";
 const FAILURE_LEDGER_PATH = ".trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/research/official-run-failure-ledger.jsonl";
+const RKP0_AUTHORITY_ARCHIVE_COMMIT = "312fde925029a37917cc7465eb5dc56162b0dab6";
 const BOUNDED_REPAIR_BASE = "6073b2a9c4478d5313d4a4206324eaf0c0dfa1ef";
 const BOUNDED_REPAIR_CANDIDATE = "9bc53901a0e205a99865b21c56dc80ff1112f3a7";
 
@@ -48,8 +49,8 @@ const RAW_FIXTURES = [
 
 function readText(path: string): string { return readFileSync(resolve(path), "utf8"); }
 function parseTrustedJson(text: string): Record<string, unknown> { return JSON.parse(text) as Record<string, unknown>; }
-function readTrackedBlob(path: string): string {
-  return execFileSync("git", ["show", `HEAD:${path}`], { encoding: "utf8" });
+function readTrackedBlob(path: string, revision = "HEAD"): string {
+  return execFileSync("git", ["show", `${revision}:${path}`], { encoding: "utf8" });
 }
 
 function expectThrow(callback: () => void, label: string): void {
@@ -104,9 +105,11 @@ test("RKP0-MANIFEST verifies canonical scenario hashes, whole-file hash, and aut
   }
   assert.equal(manifest.qualificationV2ContractSha256, sha256(readFileSync(resolve(QUALIFICATION_PATH))));
   assert.equal(manifest.scenarioSpecification.file, MATRIX_PATH);
-  assert.equal(manifest.scenarioSpecification.sha256, sha256(readTrackedBlob(MATRIX_PATH)));
+  assert.equal(manifest.scenarioSpecification.sha256,
+    sha256(readTrackedBlob(MATRIX_PATH, RKP0_AUTHORITY_ARCHIVE_COMMIT)));
   assert.equal(manifest.sdkSurfaceSpecification.file, SDK_MATRIX_PATH);
-  assert.equal(manifest.sdkSurfaceSpecification.sha256, sha256(readTrackedBlob(SDK_MATRIX_PATH)));
+  assert.equal(manifest.sdkSurfaceSpecification.sha256,
+    sha256(readTrackedBlob(SDK_MATRIX_PATH, RKP0_AUTHORITY_ARCHIVE_COMMIT)));
 });
 
 test("RKP0-MANIFEST decoders accept raw text only and reject exact-shape drift", () => {

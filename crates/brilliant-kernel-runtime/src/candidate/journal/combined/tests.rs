@@ -321,10 +321,10 @@ fn suffix_only_inverse_preserves_final_validation_without_an_intermediate_reader
             .commit(&mut store, &mut version, &mut metrics)
             .unwrap();
         assert_eq!(&store.export_document().unwrap(), expected_document);
-        assert_eq!(metrics.full_semantic_validations, 1);
+        assert_eq!(metrics.full_semantic_validations, 0);
         assert_eq!(
-            metrics.full_document_scans, 1,
-            "only the required final semantic walk"
+            metrics.full_document_scans, 0,
+            "stable scalar history uses the incremental dependency closure"
         );
         indices_are_complete(&store);
     }

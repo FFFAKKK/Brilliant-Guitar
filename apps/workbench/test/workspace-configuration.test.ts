@@ -12,6 +12,8 @@ test("workspace configuration accepts the versioned default document", () => {
   ["notation.history-control", "playback.transport", "notation.paper-zoom"]);
   assert.equal(DEFAULT_WORKSPACE_CONFIGURATION.uiLayout.placements
     .find((placement) => placement.componentId === "playback.output")?.slot, "right");
+  assert.equal(DEFAULT_WORKSPACE_CONFIGURATION.uiLayout.placements
+    .find((placement) => placement.componentId === "agent.recovery-panel")?.slot, "right");
   assert.equal(isWorkspaceConfigurationSnapshotV1({
     configuration: DEFAULT_WORKSPACE_CONFIGURATION, persisted: true, recoveredFromInvalid: false,
   }), true);

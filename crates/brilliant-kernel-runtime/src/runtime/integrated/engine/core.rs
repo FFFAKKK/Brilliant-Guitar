@@ -44,9 +44,13 @@ impl IntegratedKernelRuntimeV2 {
                     &changes.forward,
                 )
                 .map_err(|_| internal())?;
-                let document = KernelStage3TransactionV1 { overlay }
-                    .integrated_projection(&id)
-                    .map_err(|failure| value(&failure).unwrap_or_else(|_| internal()))?;
+                let document = KernelStage3TransactionV1 {
+                    overlay,
+                    document_id: id.clone(),
+                    work_budget: Default::default(),
+                }
+                .integrated_projection(&id)
+                .map_err(|failure| value(&failure).unwrap_or_else(|_| internal()))?;
                 (
                     document,
                     !changes.forward.is_empty(),

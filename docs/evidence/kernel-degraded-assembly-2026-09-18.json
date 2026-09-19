@@ -1,0 +1,69 @@
+{
+  "kind": "bounded-regression-not-commercial-qualification",
+  "date": "2026-09-18",
+  "baseCommit": "837a22ea8ffe71d31382c2e253907a602acd9cd2",
+  "branch": "main",
+  "scope": "Safe read-only assembly when an authenticated cross-plugin read provider is temporarily not installed",
+  "verifiedBehavior": [
+    "The absent provider must be authenticated by an exact explicit inventory requirement",
+    "Unknown providers and namespaces still fail catalog publication",
+    "The document and opaque extension data remain readable without dependent consumer callbacks",
+    "Validation availability stays incomplete and write availability stays read-only",
+    "Writes reject before command decoding with command.required-contribution-unavailable",
+    "Detached TS and Native migration reject before consumer execution",
+    "Restoring the provider uses the existing complete validation path"
+  ],
+  "verification": {
+    "nodeNative": {
+      "command": "$env:BRILLIANT_INTEGRATED_ADDON_PATH=(Resolve-Path 'target/integrated-degraded-next/brilliant_kernel_node.node').Path; node 'dist/test/test-infrastructure/run-compiled-tests.js'",
+      "compiledFileCount": 132,
+      "manifestSha256": "d378c66e4b680185bb40574f7b1758b52399f685fcea753d1d2f762d7c39207d",
+      "total": 905,
+      "passed": 903,
+      "skipped": 2,
+      "failed": 0,
+      "durationMilliseconds": 97058.943
+    },
+    "rustWorkspace": {
+      "command": "cargo test --workspace --all-features --locked --offline --quiet",
+      "passed": 642,
+      "ignored": 1,
+      "failed": 0
+    },
+    "focusedCrossPluginTsNative": {
+      "total": 9,
+      "passed": 9,
+      "failed": 0
+    },
+    "focusedRustDeclarationDecoder": {
+      "total": 1,
+      "passed": 1,
+      "failed": 0
+    },
+    "checks": {
+      "typescriptNoEmit": "passed",
+      "cargoFmt": "passed",
+      "strictClippyAllTargetsAllFeatures": "passed",
+      "gitDiffCheck": "passed"
+    }
+  },
+  "designedNodeSkips": [
+    "FinalizationRegistry journey requires Node to start with exposed GC",
+    "Stage 6 E2 scale journey requires BRILLIANT_RKP2_RUN_SCALE_E2=1 explicit stress authorization"
+  ],
+  "artifact": {
+    "path": "target/integrated-degraded-next/brilliant_kernel_node.node",
+    "bytes": 5020672,
+    "sha256": "35583f2763d6629a6d847ed8cc84232167807301309aa7e5f25a4146405054db"
+  },
+  "recoveryCopy": ".repo-archive/2026-09-18-kernel-degraded-assembly-before/",
+  "remaining": [
+    "Precise dependency closure and incremental-equivalence evidence",
+    "Whole-transaction CPU and memory qualification",
+    "Long-running soak, fuzz and failure-recovery qualification",
+    "Product p95 and p99 latency gates",
+    "Multi-platform CI, signing, packaging and upgrade compatibility",
+    "Controlled Rust-default cutover and retirement of the obsolete TS transaction engine",
+    "Product integration with the plugin platform after its interface work resumes"
+  ]
+}

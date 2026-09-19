@@ -12,6 +12,18 @@ export interface DocumentMetadataInput {
   readonly authors: readonly string[];
   readonly tempoBpm: number;
 }
+export const METER_DENOMINATORS = [1, 2, 4, 8, 16, 32, 64] as const;
+export interface MeterInput {
+  readonly numerator: number;
+  readonly denominator: typeof METER_DENOMINATORS[number];
+}
+export const STAFF_CLEFS = ["treble", "bass", "alto", "tenor"] as const;
+export type StaffClef = typeof STAFF_CLEFS[number];
+export const KEY_SIGNATURE_FIFTHS = [-7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7] as const;
+export type KeySignatureFifths = typeof KEY_SIGNATURE_FIFTHS[number];
+export type KeySignatureChangeInput = { readonly kind: "set"; readonly fifths: KeySignatureFifths }
+  | { readonly kind: "inherit" };
+export type MeterChangeScope = "meter-run" | "measure";
 export type DeleteTimePolicy = "preserve" | "collapse";
 export interface ScoreEventRange {
   readonly measureId: string;
@@ -29,6 +41,11 @@ export type ScoreEditAction = { readonly kind: "undo" } | { readonly kind: "redo
       readonly fragment: import("./score-clipboard.ts").ScoreClipboardFragmentV1 }
   | { readonly kind: "insert-measure"; readonly measureId: string; readonly position: MeasureInsertPosition }
   | { readonly kind: "remove-measure"; readonly measureId: string }
+  | { readonly kind: "set-measure-meter"; readonly measureId: string; readonly meter: MeterInput;
+      readonly scope: MeterChangeScope }
+  | { readonly kind: "set-key-signature"; readonly partId: string; readonly measureId: string;
+      readonly change: KeySignatureChangeInput }
+  | { readonly kind: "set-staff-clef"; readonly staffId: string; readonly clef: StaffClef }
   | { readonly kind: "set-event-properties"; readonly eventId: string; readonly properties: EventProperties }
   | { readonly kind: "set-document-metadata"; readonly metadata: DocumentMetadataInput }
   | { readonly kind: "set-title"; readonly title: string } | {
@@ -67,6 +84,12 @@ export function isScoreEditRequest(v: unknown): v is ScoreEditRequest {
     || (a.kind === "insert-measure" && typeof a.measureId === "string" && !!a.measureId
       && (a.position === "before" || a.position === "after"))
     || (a.kind === "remove-measure" && typeof a.measureId === "string" && !!a.measureId)
+    || (a.kind === "set-measure-meter" && typeof a.measureId === "string" && !!a.measureId
+      && isMeterInput(a.meter) && (a.scope === "meter-run" || a.scope === "measure"))
+    || (a.kind === "set-key-signature" && typeof a.partId === "string" && !!a.partId
+      && typeof a.measureId === "string" && !!a.measureId && isKeySignatureChangeInput(a.change))
+    || (a.kind === "set-staff-clef" && typeof a.staffId === "string" && !!a.staffId
+      && (STAFF_CLEFS as readonly unknown[]).includes(a.clef))
     || (a.kind === "set-event-properties" && typeof a.eventId === "string" && !!a.eventId && isEventProperties(a.properties))
     || (a.kind === "set-document-metadata" && isDocumentMetadataInput(a.metadata))
     || (a.kind === "set-title" && typeof a.title === "string" && a.title.trim().length <= 120)
@@ -74,6 +97,17 @@ export function isScoreEditRequest(v: unknown): v is ScoreEditRequest {
       && isInputSequenceAnchor(a.anchor)
       && (a.offsetUnits === undefined || (typeof a.offsetUnits === "number" && Number.isSafeInteger(a.offsetUnits) && a.offsetUnits >= 0))
       && isInputDuration(a.duration) && isInputContent(a.content));
+}
+function isKeySignatureChangeInput(value: unknown): value is KeySignatureChangeInput {
+  if (!record(value)) return false;
+  return value.kind === "inherit" || (value.kind === "set"
+    && (KEY_SIGNATURE_FIFTHS as readonly unknown[]).includes(value.fifths));
+}
+export function isMeterInput(value: unknown): value is MeterInput {
+  return record(value) && typeof value.numerator === "number" && Number.isSafeInteger(value.numerator)
+    && value.numerator >= 1 && value.numerator <= 32
+    && typeof value.denominator === "number"
+    && (METER_DENOMINATORS as readonly number[]).includes(value.denominator);
 }
 export function isDocumentMetadataInput(value: unknown): value is DocumentMetadataInput {
   if (!record(value) || typeof value.title !== "string" || value.title.trim().length > 120

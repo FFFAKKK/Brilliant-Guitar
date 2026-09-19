@@ -131,6 +131,16 @@ fn boundary_and_command_failure_wire_order_matches_serde() {
             limit: 1,
             actual: 2,
         },
+        ResourceLimitExceeded {
+            limit_kind: KernelStage3ResourceLimitKindV1::CandidateRetainedBytes,
+            limit: 536_870_912,
+            actual: 536_870_913,
+        },
+        ResourceLimitExceeded {
+            limit_kind: KernelStage3ResourceLimitKindV1::TransactionWorkUnits,
+            limit: 8_388_608,
+            actual: 8_388_609,
+        },
         VersionOverflow,
         InternalError,
         LocalInvariantRejected,
@@ -288,6 +298,12 @@ fn selectors_preserve_tags_flattening_and_range_field_order() {
             measure_count: SafeInteger::new(2).unwrap(),
         }),
         KernelSelectorValueV1::Metadata(document().metadata),
+        KernelSelectorValueV1::Structure(ScoreStructureSummaryV1 {
+            document_id: StableId::new("score/structure").unwrap(),
+            measure_count: SafeInteger::new(8).unwrap(),
+            part_count: SafeInteger::new(2).unwrap(),
+            staff_count: SafeInteger::new(3).unwrap(),
+        }),
         KernelSelectorValueV1::Entity(SelectedScoreEntityV1::Document(document())),
         KernelSelectorValueV1::Ownership(ScoreEntityOwnershipV1::Note {
             document_id: StableId::new("d").unwrap(),
@@ -343,6 +359,21 @@ fn score_overview_preserves_utf16_titles_losslessly() {
     assert_eq!(
         String::from_utf8(encoded(&overview)).unwrap(),
         r#"{"documentId":"score/overview","title":"\ud800/\udc00","measureCount":2}"#
+    );
+}
+
+#[test]
+fn score_structure_summary_has_a_small_stable_wire_shape() {
+    let structure = KernelSelectorValueV1::Structure(ScoreStructureSummaryV1 {
+        document_id: StableId::new("score/structure").unwrap(),
+        measure_count: SafeInteger::new(8).unwrap(),
+        part_count: SafeInteger::new(2).unwrap(),
+        staff_count: SafeInteger::new(3).unwrap(),
+    });
+
+    assert_eq!(
+        String::from_utf8(encoded(&structure)).unwrap(),
+        r#"{"documentId":"score/structure","measureCount":8,"partCount":2,"staffCount":3}"#
     );
 }
 

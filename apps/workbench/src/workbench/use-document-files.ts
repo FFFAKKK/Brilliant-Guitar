@@ -29,7 +29,8 @@ export function useDocumentFiles(session: ScoreSessionRead | null, client: Workb
   const saved = checkpointMatches(session, checkpoint);
   const dirty = hasUnsavedDocument(session, checkpoint);
   const name = session && checkpoint?.documentId === session.documentId ? checkpoint.name : fileStem(session?.title ?? "");
-  const state = working === "save" ? "saving" : saveFailure ? "error" : saved ? "saved" : "unsaved";
+  const state: "saving" | "error" | "saved" | "unsaved" = working === "save"
+    ? "saving" : saveFailure ? "error" : saved ? "saved" : "unsaved";
 
   function remember(value: SavedFileCheckpoint | null) {
     setCheckpoint(value);

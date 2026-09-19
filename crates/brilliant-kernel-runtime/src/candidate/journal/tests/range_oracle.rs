@@ -31,7 +31,7 @@ fn text(value: &LosslessJsonValue) -> String {
 fn document(value: &LosslessJsonValue) -> ScoreDocumentV1 {
     decode_lossless_score_document_value(decode_lossless_json(&text(value)).unwrap()).unwrap()
 }
-fn execute(recorder: &mut Recorder<'_>, wire: &str) {
+fn execute(recorder: &mut Recorder<'_>, wire: &str) -> bool {
     let request = format!("{{\"apiVersion\":1,\"command\":{wire}}}");
     let command = decode_admission_submit_request(request.as_bytes())
         .unwrap()
@@ -44,6 +44,7 @@ fn execute(recorder: &mut Recorder<'_>, wire: &str) {
             recorder
                 .delete_range_command(document_id.as_js_string(), &range)
                 .unwrap();
+            true
         }
         CoreCommandEnvelopeV1::RangeTransposeWrittenPitch {
             target: ScoreEntityTargetV1::Document { document_id },
@@ -53,6 +54,7 @@ fn execute(recorder: &mut Recorder<'_>, wire: &str) {
             recorder
                 .transpose_range_command(document_id.as_js_string(), &range, &transposition)
                 .unwrap();
+            false
         }
         _ => panic!("outside bounded range oracle"),
     }
@@ -71,8 +73,9 @@ fn eight_ts_range_commands_match_real_store_adoption_and_combined_history() {
             TransactionOverlayV1::new(&store),
             initial.id.clone(),
         ));
+        let mut requires_full_validation = false;
         for command in list(field(case, "commandsJson")) {
-            execute(&mut recorder, &text(command));
+            requires_full_validation |= execute(&mut recorder, &text(command));
         }
         let (plan, history) = recorder
             .prepare_combined_commit(&store, DocumentVersionV1::initial())
@@ -154,7 +157,11 @@ fn eight_ts_range_commands_match_real_store_adoption_and_combined_history() {
                 "{label} stage {stage}"
             );
             assert_eq!(version.get(), stage as u64 + 1);
-            assert_eq!(metrics.full_semantic_validations, 1);
+            assert_eq!(
+                metrics.full_semantic_validations,
+                u64::from(requires_full_validation),
+                "{label} stage {stage}"
+            );
             let (rebuilt, _) = rebuild_indices_from_store(&store).unwrap();
             assert_eq!(
                 normalized_index_projection(&store, &store.indices).unwrap(),

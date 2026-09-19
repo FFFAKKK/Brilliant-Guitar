@@ -1,38 +1,54 @@
 import { useEffect, useRef, useState } from "react";
 import type { KeyboardEvent, RefObject } from "react";
 import type { ScoreSessionRead } from "../contracts/score-session";
-import type { InputPitch } from "../contracts/note-input";
 import type { ReturnTypeOfScoreInput } from "./score-input-types";
-import { resolveNoteOverview, selectedNoteAction, stepNoteDuration, toggleNoteDot } from "./note-overview";
+import { resolveNoteOverview, selectedNoteAction } from "./note-overview";
 import type { NoteChange, NoteControlChange } from "./note-overview";
 import { resolveScoreSelection } from "./score-selection";
 import { resolveScorePosition } from "./score-position";
-import { adjacentEventAtPoint, eventEndPoint, eventStartPoint, measureStartPoint,
-  moveScoreEditPoint, previousEventAtPoint } from "./score-navigation";
+import { eventStartPoint } from "./score-navigation";
 import { accidentalForEvent, alterForAccidental, inheritedAlterBeforeEvent } from "./accidental-state";
 import { createScoreClipboardFragment } from "../contracts/score-clipboard.ts";
 import { ScoreClipboard } from "./score-clipboard.ts";
-import { resolveScoreEventRange, selectScoreEventRange, singleEventRange, stepScoreEventRange } from "./range-selection.ts";
+import { resolveScoreEventRange, selectScoreEventRange, singleEventRange } from "./range-selection.ts";
 import type { ScoreEventRangeSelection } from "./range-selection.ts";
+import type { StaffPointerSignal } from "./staff-input-adapter.ts";
+import type { ControlChangeSignal } from "../input/input-signal.ts";
+import { keyPressSignal } from "../input/input-signal.ts";
+import type { StaffNavigationContext, StaffNavigationResolution } from "./staff-navigation-policy.ts";
+import type { StaffEditKeyContext, StaffEditKeyResolution } from "./staff-edit-key-policy.ts";
+import type { NotationInteractionRegistry } from "../input/notation-interaction-registry.ts";
+import { keySignatureAlterForStep, keySignatureFifthsAtMeasure } from "../notation/key-signature.ts";
 
 /** Feature interaction shared by the score and its tool. The visual host remains headless. */
 export function useNoteOverview(input: ReturnTypeOfScoreInput, session: ScoreSessionRead | null,
-  blocked: boolean, focusRef: RefObject<HTMLDivElement | null>, _loadEpoch = 0) {
+  blocked: boolean, focusRef: RefObject<HTMLDivElement | null>, interactions: NotationInteractionRegistry,
+  _loadEpoch = 0) {
   const view = session?.notation.kind === "staff" ? session.notation : null;
   const [rangeSelection, setRangeSelection] = useState<ScoreEventRangeSelection | null>(null);
   const clipboard = useRef(new ScoreClipboard());
   const selection = resolveScoreSelection(session, input.selectedEventId);
   const inputMeasure = session?.notation.kind === "staff" ? session.notation.measures.find((measure) => measure.id === input.measureId) : undefined;
-  const selectedAccidental = selection.event && selection.measure ? accidentalForEvent(selection.measure, selection.event.id) : "none";
+  const selectedBaseline = view && selection.measure && selection.event?.content.kind === "note"
+    ? keySignatureAlterForStep(keySignatureFifthsAtMeasure(view, selection.measure.id), selection.event.content.pitch.step) : 0;
+  const selectedAccidental = selection.event && selection.measure
+    ? accidentalForEvent(selection.measure, selection.event.id, selectedBaseline) : "none";
   const resolved = resolveNoteOverview({ ...input, pitch: input.previewPitch }, selection.event,
     selection.measure?.meter ?? inputMeasure?.meter, selectedAccidental);
-  const activeStep = selection.event?.content.kind === "note" && input.editorState.composition.kind === "composing"
-    && input.editorState.composition.methodId === "staff.pitch" ? input.editorState.composition.draft : null;
-  const value = activeStep && resolved.pitch ? { ...resolved,
+  // Composition belongs to the editing session, not to the current selection.
+  // Keeping it visible at a caret or on a rest lets Backspace cancel the draft
+  // before any event-deletion policy is considered.
+  const activeStep = interactions.readDraft<NonNullable<ReturnTypeOfScoreInput["draft"]>>(
+    "staff", input.editorState.composition,
+  );
+  const value = activeStep && selection.event?.content.kind === "note" && resolved.pitch ? { ...resolved,
     pitch: { ...resolved.pitch, step: activeStep, octave: null } } : resolved;
   const position = session?.notation.kind === "staff"
     ? resolveScorePosition(session.notation, input.point, selection.id) : null;
   const selectedRange = view ? resolveScoreEventRange(view, rangeSelection) : null;
+  const selectedRangeContract = selectedRange ? { measureId: selectedRange.measure.id,
+    voiceId: selectedRange.measure.voiceId, startEventId: selectedRange.events[0]!.id,
+    endEventId: selectedRange.events.at(-1)!.id } : null;
   useEffect(() => { setRangeSelection(null); }, [session?.documentId, _loadEpoch]);
   useEffect(() => {
     if (rangeSelection && (!selectedRange || !input.selectedEventId)) setRangeSelection(null);
@@ -69,11 +85,11 @@ export function useNoteOverview(input: ReturnTypeOfScoreInput, session: ScoreSes
       if (input.pending) return;
       const concrete: NoteChange = change.kind === "accidental" && selection.measure && selection.event.content.kind === "note"
         ? { kind: "alter", value: alterForAccidental(change.value,
-          inheritedAlterBeforeEvent(selection.measure, selection.event.id, selection.event.content.pitch)) }
+          inheritedAlterBeforeEvent(selection.measure, selection.event.id, selection.event.content.pitch, selectedBaseline)) }
         : change.kind === "accidental" ? { kind: "alter", value: 0 } : change;
       const action = selectedNoteAction(selection.event, concrete);
       if (action?.kind === "set-event-properties") input.applyProperties(action, completionFocus);
-      if (action?.kind === "delete-event") input.deleteEvent(action.eventId);
+      if (action?.kind === "delete-event") input.deleteEvent(action.eventId, action.timePolicy);
     } else {
       if (change.kind === "duration" && change.value.base !== 32) input.setDuration(change.value);
       if (change.kind === "accidental") input.setAccidental(change.value, completionFocus);
@@ -81,11 +97,26 @@ export function useNoteOverview(input: ReturnTypeOfScoreInput, session: ScoreSes
       if (change.kind === "rest") input.setRest(change.value);
     }
   }
+  function onControlInput(signal: ControlChangeSignal<NoteControlChange>, completionFocus?: HTMLElement) {
+    if (signal.control !== signal.value.kind) return;
+    change(signal.value, completionFocus);
+  }
+  function onStaffInput(signal: StaffPointerSignal) {
+    if (blocked || input.pending) return;
+    setRangeSelection(null);
+    if (signal.kind === "pointer-select") {
+      selectEvent(signal.target, signal.extend);
+      focus();
+      return;
+    }
+    input.locate(signal.position.point, signal.position.pitch, signal.writeNow);
+  }
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (event.defaultPrevented) return;
     if ((event.target as HTMLElement).closest("input, select, textarea, button") || event.nativeEvent.isComposing) return;
-    const modifier = event.ctrlKey || event.metaKey;
-    const key = event.key.toLowerCase();
+    const signal = keyPressSignal(event);
+    const modifier = signal.modifiers.includes("ctrl") || signal.modifiers.includes("meta");
+    const key = signal.key.toLowerCase();
     if (modifier && !event.altKey && (key === "c" || key === "x" || key === "v")) {
       event.preventDefault();
       if (key === "c") void copySelection();
@@ -94,147 +125,72 @@ export function useNoteOverview(input: ReturnTypeOfScoreInput, session: ScoreSes
       return;
     }
     if (blocked) return;
-    if (view && (event.key === "ArrowLeft" || event.key === "ArrowRight") && !event.altKey) {
+    const navigation = view ? interactions.navigate<StaffNavigationContext, StaffNavigationResolution>("staff", signal,
+      { view, point: input.point, selectedEventId: selection.id, rangeSelection, composingPitch: Boolean(activeStep) }) : null;
+    if (navigation) {
       event.preventDefault();
       if (input.pending) return;
-      input.cancelComposition();
-      const direction = event.key === "ArrowLeft" ? -1 : 1;
-      if (event.shiftKey && !event.ctrlKey && !event.metaKey) {
-        const next = stepScoreEventRange(view, rangeSelection, selection.id, direction);
-        if (next) {
-          setRangeSelection(next);
-          focusEvent(next.focusEventId);
-        }
+      if (navigation.cancelComposition) input.cancelComposition();
+      const action = navigation.action;
+      if (!action) return;
+      if (action.kind === "clear-range") { setRangeSelection(null); focus(); return; }
+      if (action.kind === "cancel-composition") { input.cancelComposition(); focus(); return; }
+      if (action.kind === "select-range") {
+        setRangeSelection(action.selection);
+        focusEvent(action.selection.focusEventId);
         return;
       }
-      if (event.ctrlKey || event.metaKey) {
-        const currentMeasureId = selection.measure?.id ?? input.point?.measureId;
-        const index = view.measures.findIndex((measure) => measure.id === currentMeasureId);
-        const target = view.measures[Math.max(0, Math.min(view.measures.length - 1, index + direction))];
-        const first = target?.events[0];
-        if (first) selectEvent(first.id);
-        else if (target) input.setEditPoint(measureStartPoint(view, target, input.point?.preferredPitch ?? null));
-        return;
-      }
-      if (selection.event) {
-        const events = view.measures.flatMap((measure) => measure.events);
-        const index = events.findIndex((item) => item.id === selection.event?.id);
-        const next = events[index + direction];
-        const measure = selection.measure;
-        const atMeasureEdge = measure && (direction > 0 ? measure.events.at(-1)?.id : measure.events[0]?.id) === selection.event.id;
-        const enterMeasureTail = direction > 0 && atMeasureEdge && measure;
-        if (enterMeasureTail) {
-          const point = eventEndPoint(view, selection.event.id, input.point?.preferredPitch ?? null);
-          if (point) input.setEditPoint(point);
-        } else if (next) selectEvent(next.id);
-        else if (direction > 0 && measure) {
-          const measureIndex = view.measures.findIndex((item) => item.id === measure.id);
-          const following = view.measures[measureIndex + 1];
-          if (following) input.setEditPoint(measureStartPoint(view, following, input.point?.preferredPitch ?? null));
-        }
-      } else if (input.point) {
-        const adjacent = adjacentEventAtPoint(view, input.point, direction);
-        if (adjacent) selectEvent(adjacent);
-        else input.setEditPoint(moveScoreEditPoint(view, input.point, direction));
-      }
-      return;
-    }
-    if (event.key === "Escape" && selectedRange) {
-      event.preventDefault();
       setRangeSelection(null);
-      focus();
+      if (action.kind === "select-event") selectEvent(action.eventId);
+      else input.setEditPoint(action.point);
       return;
     }
-    if (view && (event.key === "Home" || event.key === "End") && !event.altKey) {
+    const editKey = view ? interactions.edit<StaffEditKeyContext, StaffEditKeyResolution>("staff", signal,
+      { view, point: input.point, selectedEvent: selection.event ?? null,
+        selectedMeasureId: selection.measure?.id ?? null, canDelete: selection.canDelete, activeStep,
+        selectedRange: selectedRangeContract, overview: value }) : null;
+    if (editKey?.handled) {
       event.preventDefault();
-      if (input.pending) return;
-      input.cancelComposition();
-      const score = event.ctrlKey || event.metaKey;
-      const currentId = selection.measure?.id ?? input.point?.measureId;
-      const current = view.measures.find((measure) => measure.id === currentId) ?? view.measures[0]!;
-      const measure = score ? event.key === "Home" ? view.measures[0]! : view.measures.at(-1)! : current;
-      const target = event.key === "Home" ? measure.events[0] : measure.events.at(-1);
-      if (target) selectEvent(target.id);
-      else input.setEditPoint(measureStartPoint(view, measure, input.point?.preferredPitch ?? null));
-      return;
-    }
-    if (selection.event && !event.ctrlKey && !event.metaKey && !event.altKey) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        if (activeStep) input.cancelComposition();
-        else {
-          const point = view ? eventStartPoint(view, selection.event.id, input.point?.preferredPitch ?? null) : null;
-          if (point) input.setEditPoint(point);
-        }
-        focus(); return;
-      }
-      if (event.key === "Delete" || event.key === "Backspace") {
-        event.preventDefault();
-        if (!event.repeat && !input.pending && selection.canDelete) {
-          input.deleteEvent(selection.event.id);
-        } else if (!event.repeat && !input.pending && selection.measure) {
-          input.rejectEdit("这个休止符维持当前小节的节拍位置，不能直接移除", {
-            measureId: selection.measure.id, eventId: selection.event.id, componentId: "score",
-          });
-        }
-        return;
-      }
-      if (["+", "=", "-", "_", "."].includes(event.key)) {
-        event.preventDefault();
-        if (!event.repeat) change({ kind: "duration", value: event.key === "." ? toggleNoteDot(value.duration)
-          : stepNoteDuration(value.duration, event.key === "+" || event.key === "=" ? 1 : -1, value.rest) });
-        return;
-      }
-      if (/^[2-6]$/.test(event.key) && activeStep && selection.event.content.kind === "note") {
-        event.preventDefault();
-        if (!event.repeat && !input.pending) change({ kind: "pitch", value: {
-          ...selection.event.content.pitch, step: activeStep, octave: Number(event.key),
-        } });
-        return;
-      }
-      if (/^[a-g]$/i.test(event.key) && selection.event.content.kind === "note") {
-        event.preventDefault();
-        if (!event.repeat && !input.pending) input.composePitchStep(event.key.toUpperCase() as InputPitch["step"]);
-        return;
-      }
-      if (/^r$/i.test(event.key)) {
-        event.preventDefault();
-        if (!event.repeat && !input.pending) { input.cancelComposition(); change({ kind: "rest", value: true }); }
-        return;
-      }
-    }
-    if (view && !selection.event && event.key === "Backspace") {
-      event.preventDefault();
-      if (!event.repeat && !input.pending && input.point) {
-        const previous = previousEventAtPoint(view, input.point);
-        if (previous) { input.setEditPoint(previous.start); input.deleteEvent(previous.id); }
+      if (input.pending || !editKey.action) return;
+      const action = editKey.action;
+      if (action.kind === "delete-event") {
+        if (action.locateFirst) input.setEditPoint(action.locateFirst);
+        input.deleteEvent(action.eventId);
+      } else if (action.kind === "delete-range") {
+        setRangeSelection(null);
+        input.deleteRange(action.range);
+      } else if (action.kind === "cancel-composition") {
+        input.cancelComposition();
+      } else if (action.kind === "reject-delete") {
+        input.rejectEdit("这个休止符维持当前小节的节拍位置，不能直接移除", {
+          measureId: action.measureId, eventId: action.eventId, componentId: "score",
+        });
+      } else if (action.kind === "compose-pitch") {
+        input.composePitchStep(action.step);
+      } else {
+        if (action.change.kind === "rest") input.cancelComposition();
+        change(action.change);
       }
       return;
     }
-    if (view && !selection.event && event.key === "Delete") {
-      event.preventDefault();
-      if (!event.repeat && !input.pending && input.point) {
-        const next = adjacentEventAtPoint(view, input.point, 1);
-        if (next) input.deleteEvent(next);
-      }
-      return;
-    }
-    input.keyboard(event, !input.enabled && !event.ctrlKey && !event.metaKey && !event.altKey && /^[a-gr]$/i.test(event.key));
+    input.keyboard(event, !input.enabled && !modifier && !signal.modifiers.includes("alt") && /^[a-gr]$/i.test(signal.key));
+  }
+  function insertRest() {
+    if (blocked || input.pending || !view) return;
+    const firstEventId = selectedRange?.events[0]?.id ?? selection.id;
+    const target = firstEventId ? eventStartPoint(view, firstEventId, input.point?.preferredPitch ?? null) : input.point;
+    if (!target) return;
+    setRangeSelection(null);
+    input.insertRestAt(target);
   }
   return { value, position, disabled: blocked || (!!selection.event && input.pending > 0), pending: input.pending,
     message: input.message || input.draftMessage, retryable: input.retryable, retry: input.retry,
-    change, draftStep: activeStep ?? input.draft, selectedEventId: selection.id,
+    onControlInput, draftStep: activeStep ?? input.draft, selectedEventId: selection.id,
+    selectedMeasureId: selection.measure?.id ?? null,
     selectedRange: selectedRange ? { measureId: selectedRange.measure.id, eventIds: selectedRange.eventIds } : null,
+    insertRest, canInsertRest: Boolean(view && input.point && !blocked && !input.pending),
     onKeyDown,
     focusScore: input.activate,
-    onSelectEvent: (id: string, extend = false) => {
-      if (blocked || input.pending) return;
-      selectEvent(id, extend); focus();
-    },
-    onLocate: (point: Parameters<typeof input.locate>[0], pitch: InputPitch, writeNow: boolean) => {
-      if (blocked || input.pending) return;
-      setRangeSelection(null);
-      input.locate(point, pitch, writeNow);
-    },
+    onStaffInput,
   };
 }

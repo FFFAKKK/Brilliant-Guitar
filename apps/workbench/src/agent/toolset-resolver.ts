@@ -63,6 +63,7 @@ export interface ToolsetResolverInput {
   readonly policy: RunPolicySnapshot;
   readonly intent: AgentTaskIntent;
   readonly hasDocument: boolean;
+  readonly rangeBudget: number;
   readonly catalog: readonly AgentCapabilityDescriptor[];
 }
 
@@ -110,9 +111,15 @@ export class ToolsetResolver {
       policyVersion: input.policy.policyVersion,
       capabilityIds,
       toolDescriptors,
+      rangeBudget: input.rangeBudget,
     });
     const toolsetHash = hash(identity);
     const inputValidators = new Map(descriptors.map((descriptor) => [descriptor.id, descriptor.validateInput]));
+    const rangeEstimators = new Map(descriptors
+      .filter((descriptor) => descriptor.estimateRangeUnits !== undefined)
+      .map((descriptor) => [descriptor.id, descriptor.estimateRangeUnits!]));
+    const rangeBudget = Number.isSafeInteger(input.rangeBudget) && input.rangeBudget >= 0
+      ? input.rangeBudget : 0;
     const snapshot: ToolsetSnapshot = {
       snapshotId: `toolset:${toolsetHash}`,
       policyVersion: input.policy.policyVersion,
@@ -121,6 +128,6 @@ export class ToolsetResolver {
       toolDescriptors,
       maxCalls: input.policy.maxToolsPerTurn,
     };
-    return { snapshot, omitted, inputValidators };
+    return { snapshot, omitted, inputValidators, rangeBudget, rangeEstimators };
   }
 }

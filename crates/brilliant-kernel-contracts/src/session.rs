@@ -385,6 +385,8 @@ pub enum SelectorRequestV1 {
     ScoreOverview,
     #[serde(rename = "core.selector.score-metadata")]
     ScoreMetadata,
+    #[serde(rename = "core.selector.score-structure")]
+    ScoreStructure,
     #[serde(rename = "core.selector.score-entity")]
     ScoreEntity { address: ScoreEntityTargetV1 },
     #[serde(rename = "core.selector.score-entity-ownership")]
@@ -869,10 +871,20 @@ pub struct ScoreOverviewV1 {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScoreStructureSummaryV1 {
+    pub document_id: StableId,
+    pub measure_count: SafeInteger,
+    pub part_count: SafeInteger,
+    pub staff_count: SafeInteger,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 #[serde(untagged)]
 pub enum KernelSelectorValueV1 {
     Overview(ScoreOverviewV1),
     Metadata(ScoreMetadataV1),
+    Structure(ScoreStructureSummaryV1),
     Entity(SelectedScoreEntityV1),
     Ownership(ScoreEntityOwnershipV1),
     Range(ScoreRangeSelectionV1),

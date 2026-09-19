@@ -1,16 +1,18 @@
+import { documentStatusModel } from "./document-status-model.ts";
+import type { DocumentSaveState } from "./document-status-model.ts";
+
 interface Props {
   readonly title?: string | undefined;
-  readonly state?: "unsaved" | "saved" | "saving" | "error" | undefined;
+  readonly state?: DocumentSaveState | undefined;
 }
 
-const LABELS = { unsaved: "未保存", saved: "已保存", saving: "保存中…", error: "保存失败" } as const;
-
 export function DocumentStatus({ title, state = "unsaved" }: Props) {
-  if (!title) return null;
+  const model = documentStatusModel(title, state);
+  if (!model) return null;
   return (
-    <div className="document-status" title={title} aria-label={`文档：${title}，${LABELS[state]}`}>
-      <span className="document-title">{title}</span>
-      <span className={`document-state document-state-${state}`}>{LABELS[state]}</span>
+    <div className="document-status" title={model.title} aria-label={model.ariaLabel} role="status" aria-live="polite">
+      <span className="document-title">{model.title}</span>
+      <span className={model.stateClassName}>{model.label}</span>
     </div>
   );
 }

@@ -391,7 +391,7 @@ test("cumulative segment budgets accept 131072, reject 131073, and deduplicate s
   assert.deepEqual(affected, beforeOverflow);
 });
 
-test("batch effect aggregation accepts 131072 and attributes 131073 to the child", () => {
+test("batch effect aggregation accepts 131072, reports the precise Effect failure, and attributes 131073 to the child", () => {
   const bus = resourceProbeBus();
   const events: IntegratedKernelEvent[] = [];
   bus.subscribe((event: IntegratedKernelEvent) => events.push(event));
@@ -402,10 +402,15 @@ test("batch effect aggregation accepts 131072 and attributes 131073 to the child
   if (atLimit.status === "rejected") {
     assert.equal(atLimit.failure.code, "command.batch-child-rejected");
     if (atLimit.failure.code === "command.batch-child-rejected") {
-      assert.equal(
-        atLimit.failure.failure.code,
-        "command.contribution-contract-violation",
-      );
+      assert.deepEqual(atLimit.failure.failure, {
+        code: "command.contribution-effect-rejected",
+        moduleId: "fixture.batch.module",
+        contributionId: "fixture.batch.contribution.v1",
+        effectIndex: 0,
+        effectKind: "core.note.replace-written-pitch",
+        target: { kind: "note", noteId: "missing-note" },
+        failureCode: "command.target-not-found",
+      });
     }
   }
   assert.deepEqual(bus.read(), before);
@@ -429,27 +434,26 @@ test("batch effect aggregation accepts 131072 and attributes 131073 to the child
   assert.deepEqual(events, []);
 });
 
-test("batch affected aggregation accepts 131072 and attributes 131073 to the child", () => {
+test("batch validates legacy affected capacity but derives the committed affected set from Effects", () => {
   const bus = resourceProbeBus();
-  const events: IntegratedKernelEvent[] = [];
-  bus.subscribe((event: IntegratedKernelEvent) => events.push(event));
-  const before = bus.read();
+  const committedEvents: Array<{
+    readonly affectedEntities: readonly unknown[];
+  }> = [];
+  bus.subscribe((event: IntegratedKernelEvent) => {
+    if (event.eventType === "core.document.committed") committedEvents.push(event);
+  });
 
   const atLimit = bus.submit(batch([resourceProbe(1, 131_072, false)]));
-  assert.equal(atLimit.status, "rejected");
-  if (atLimit.status === "rejected") {
-    assert.equal(atLimit.failure.code, "command.batch-child-rejected");
-    if (atLimit.failure.code === "command.batch-child-rejected") {
-      assert.equal(
-        atLimit.failure.failure.code,
-        "command.contribution-contract-violation",
-      );
-    }
-  }
-  assert.deepEqual(bus.read(), before);
-  assert.deepEqual(events, []);
+  assert.equal(atLimit.status, "committed");
+  assert.deepEqual(committedEvents.at(-1)?.affectedEntities, [
+    { kind: "note", noteId: "note-1" },
+  ]);
 
-  const overLimit = bus.submit(batch([resourceProbe(1, 131_073, false)]));
+  const overLimitBus = resourceProbeBus();
+  const overLimitEvents: IntegratedKernelEvent[] = [];
+  overLimitBus.subscribe((event: IntegratedKernelEvent) => overLimitEvents.push(event));
+  const beforeOverflow = overLimitBus.read();
+  const overLimit = overLimitBus.submit(batch([resourceProbe(1, 131_073, false)]));
   assert.equal(overLimit.status, "rejected");
   if (overLimit.status === "rejected") {
     assert.deepEqual(overLimit.failure, {
@@ -463,8 +467,8 @@ test("batch affected aggregation accepts 131072 and attributes 131073 to the chi
       },
     });
   }
-  assert.deepEqual(bus.read(), before);
-  assert.deepEqual(events, []);
+  assert.deepEqual(overLimitBus.read(), beforeOverflow);
+  assert.deepEqual(overLimitEvents, []);
 });
 
 test("synchronous String replacement cannot disguise a non-index child property", () => {

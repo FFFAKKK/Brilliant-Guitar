@@ -100,9 +100,13 @@ impl KernelRuntime {
         let overlay =
             crate::transaction::replay_overlay_on_base(&self.store, &changes.arena, operations)
                 .map_err(|_| KernelStage4FailureV1::HistoryInvariantViolation)?;
-        KernelStage3TransactionV1 { overlay }
-            .integrated_projection(&self.store.header.id)
-            .map_err(|failure| KernelStage4FailureV1::Command(failure.into()))
+        KernelStage3TransactionV1 {
+            overlay,
+            document_id: self.store.header.id.clone(),
+            work_budget: Default::default(),
+        }
+        .integrated_projection(&self.store.header.id)
+        .map_err(|failure| KernelStage4FailureV1::Command(failure.into()))
     }
 }
 
@@ -203,14 +207,16 @@ impl KernelStage3TransactionV1<'_> {
         if failed {
             return Err(invalid());
         }
-        Ok(ScoreDocumentV1 {
+        let document = ScoreDocumentV1 {
             schema_version: "brilliant-score-1".into(),
             id: document_id.clone(),
             metadata,
             measure_definitions,
             parts,
             extensions,
-        })
+        };
+        self.ensure_work_budget()?;
+        Ok(document)
     }
 
     /// Authority is checked by the integrated session before this typed effect.
@@ -254,13 +260,80 @@ impl KernelStage3TransactionV1<'_> {
                 self.overlay.insert_extension(anchor, value)
             }
         };
-        self.complete_single_effect(mutation)
+        match mutation.map_err(map_overlay_failure)? {
+            OverlayMutationV1::NoOp => Ok(()),
+            OverlayMutationV1::Changed => {
+                let owner_address = match owner {
+                    ExtensionOwnerV1::Score => StableEntityAddressV1::Document {
+                        document_id: self.document_id.clone(),
+                    },
+                    ExtensionOwnerV1::Part { part_id } => StableEntityAddressV1::Part { part_id },
+                };
+                self.overlay
+                    .record_affected(owner_address)
+                    .map_err(map_overlay_failure)?;
+                self.overlay
+                    .add_prepared_effects(1)
+                    .map_err(map_overlay_failure)
+            }
+        }?;
+        self.ensure_work_budget()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn module_affected_tracks_extension_order_changes_and_filters_transient_edits() {
+        let initial = crate::store::tests::fixture();
+        let runtime = KernelRuntime::create(initial.clone()).unwrap();
+        let first = initial.extensions[0].clone();
+
+        let mut reordered = runtime.begin_stage3_transaction();
+        let start = reordered.overlay.affected_order().len();
+        reordered
+            .set_integrated_extension(first.namespace.clone(), first.owner.clone(), None)
+            .unwrap();
+        reordered
+            .set_integrated_extension(
+                first.namespace.clone(),
+                first.owner.clone(),
+                Some(first.clone()),
+            )
+            .unwrap();
+        assert!(reordered.overlay.module_net_changed().unwrap());
+        assert_eq!(
+            reordered.overlay.module_affected_since(start).unwrap(),
+            vec![StableEntityAddressV1::Document {
+                document_id: initial.id.clone(),
+            }]
+        );
+
+        let mut transient = runtime.begin_stage3_transaction();
+        let start = transient.overlay.affected_order().len();
+        let mut block = first;
+        block.namespace = "example.transient".into();
+        transient
+            .set_integrated_extension(
+                block.namespace.clone(),
+                block.owner.clone(),
+                Some(block.clone()),
+            )
+            .unwrap();
+        transient
+            .set_integrated_extension(block.namespace, block.owner, None)
+            .unwrap();
+        assert!(!transient.overlay.module_net_changed().unwrap());
+        assert!(
+            transient
+                .overlay
+                .module_affected_since(start)
+                .unwrap()
+                .is_empty()
+        );
+    }
 
     #[test]
     fn module_net_comparison_matches_full_documents_after_each_reversible_effect() {

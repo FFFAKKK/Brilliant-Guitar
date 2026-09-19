@@ -75,6 +75,17 @@ fn anchor(entry: Option<&LedgerEntry>) -> Result<StableAnchorV1, Failure> {
     })
 }
 impl ExtensionLedger {
+    pub(super) fn add_retained_bytes_upper_bound(&self, bound: &mut RetainedBytesUpperBound) {
+        bound.add_vec(&self.entries);
+        for entry in &self.entries {
+            bound.add_value::<ExtensionBlockV1>();
+            bound.add_js_string(&entry.value.namespace);
+            if let ExtensionOwnerV1::Part { part_id } = &entry.value.owner {
+                bound.add_js_string(part_id.as_js_string());
+            }
+        }
+    }
+
     pub(super) fn remove(&mut self, blocks: &[Block]) {
         // Part removal already verified an ordered subset. Walk once rather
         // than comparing every retained extension with every recorded death.

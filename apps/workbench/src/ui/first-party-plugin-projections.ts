@@ -4,6 +4,11 @@ import type { StaffViewProps } from "../components/staff-view.tsx";
 import { defineUiProjection } from "./projection-registry.ts";
 import type { PlaybackSnapshot } from "../playback/playback-session.ts";
 import type { LocalSampleBankFile, PlaybackOutputSnapshot } from "../playback/playback-output.ts";
+import type { ControlChangeSignal } from "../input/input-signal.ts";
+import type { AgentPluginRuntimeSnapshot } from "../agent/agent-plugin-runtime.ts";
+import type { AgentAssistantSessionSnapshot } from "../agent/agent-assistant-session.ts";
+import type { NoteInputPreferencesV1, NoteInputRetention } from "../contracts/application-settings.ts";
+import type { InputDuration } from "../contracts/note-input.ts";
 
 export interface NoteControlProjection {
   readonly viewModel: Readonly<{
@@ -12,10 +17,17 @@ export interface NoteControlProjection {
     disabled: boolean;
     pending: boolean;
     message: string;
+    canInsertRest: boolean;
+    preferences: NoteInputPreferencesV1;
+    preferencesReady: boolean;
   }>;
   readonly actions: Readonly<{
-    change(change: NoteControlChange, completionFocus?: HTMLElement): void;
+    input(signal: ControlChangeSignal<NoteControlChange>, completionFocus?: HTMLElement): void;
     focusScore(): void;
+    insertRest(): void;
+    setRetention(value: NoteInputRetention): void;
+    setDefaultDuration(value: InputDuration): void;
+    openApplicationSettings(): void;
   }>;
 }
 
@@ -54,12 +66,25 @@ export interface PlaybackOutputProjection {
   removeSampleBank(id: string): void;
 }
 
+export interface AgentAssistantPanelProjection {
+  readonly runtime: AgentPluginRuntimeSnapshot;
+  readonly session: AgentAssistantSessionSnapshot;
+  readonly documentAvailable: boolean;
+  readonly selectionAvailable: boolean;
+  start(goal: string): Promise<boolean>;
+  provideRequiredInput(runId: string, requestId: string): Promise<boolean>;
+  cancel(): void;
+  refresh(): Promise<void>;
+  resume(runId: string): Promise<boolean>;
+}
+
 export const STAFF_PROJECTION = defineUiProjection<StaffProjection>("score.staff-view");
 export const NOTE_CONTROL_PROJECTION = defineUiProjection<NoteControlProjection>("score.note-control");
 export const HISTORY_PROJECTION = defineUiProjection<HistoryProjection>("score.history");
 export const PAPER_ZOOM_PROJECTION = defineUiProjection<PaperZoomProjection>("view.paper-zoom");
 export const PLAYBACK_PROJECTION = defineUiProjection<PlaybackControlProjection>("playback.transport");
 export const PLAYBACK_OUTPUT_PROJECTION = defineUiProjection<PlaybackOutputProjection>("playback.output");
+export const AGENT_ASSISTANT_PROJECTION = defineUiProjection<AgentAssistantPanelProjection>("agent.assistant");
 
 export const FIRST_PARTY_UI_PROJECTIONS = [
   STAFF_PROJECTION,
@@ -68,4 +93,5 @@ export const FIRST_PARTY_UI_PROJECTIONS = [
   PAPER_ZOOM_PROJECTION,
   PLAYBACK_PROJECTION,
   PLAYBACK_OUTPUT_PROJECTION,
+  AGENT_ASSISTANT_PROJECTION,
 ] as const;

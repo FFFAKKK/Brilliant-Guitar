@@ -74,6 +74,20 @@ pub(crate) struct ChangeSetAccountingV1 {
 }
 
 impl ChangeSetAccountingV1 {
+    pub(crate) fn retained_bytes_upper_bound(&self) -> u64 {
+        let fixed = u64::try_from(std::mem::size_of::<Self>()).unwrap_or(u64::MAX);
+        let bucket = std::mem::size_of::<(RawAffectedKindV1, JsString)>()
+            .checked_add(std::mem::size_of::<usize>())
+            .and_then(|size| size.checked_mul(2))
+            .and_then(|size| u64::try_from(size).ok())
+            .unwrap_or(u64::MAX);
+        let buckets = u64::try_from(self.affected.capacity())
+            .ok()
+            .and_then(|capacity| capacity.checked_mul(bucket))
+            .unwrap_or(u64::MAX);
+        fixed.saturating_add(buckets)
+    }
+
     #[cfg(test)]
     pub(crate) fn charge_test_only(&mut self, amount: u64) -> Outcome {
         self.budget.charge(amount)

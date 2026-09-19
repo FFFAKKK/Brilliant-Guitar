@@ -5,13 +5,18 @@ import { CommandBus, createKernelRegistry, migrateKernelExtension, replayKernelC
 import { compileContributionReadCatalogV1, type DomainContributionDependencyReadViewV1 } from "../../../src/core-kernel/module-sdk/extension-reads";
 import { installNativeIntegratedBackendV2, type IntegratedNativeAddonV2 } from "../../../src/core-kernel/native/integrated-command-bus";
 import { relationshipDocument } from "../fixtures/layered-relationship-module";
-import { crossCatalog, crossCommand, crossReads, crossTrace, INDEX, SUMMARY, indexSource, summarySource, setCrossForeignWrite } from "../fixtures/cross-plugin-relationship";
+import { crossCatalog, crossCatalogWithoutIndex, crossCommand, crossInventory, crossReads, crossTrace, INDEX, SUMMARY, indexSource, summarySource, setCrossForeignWrite } from "../fixtures/cross-plugin-relationship";
 
-const addon = require(resolve("target/integrated-v2/brilliant_kernel_node.node")) as IntegratedNativeAddonV2;
-function create(native: boolean, catalog = crossCatalog(), initial = relationshipDocument()) {
+const addon = require(resolve(
+  process.env.BRILLIANT_INTEGRATED_ADDON_PATH
+    ?? "target/integrated-v2/brilliant_kernel_node.node",
+)) as IntegratedNativeAddonV2;
+function create(native: boolean, catalog = crossCatalog(), initial = relationshipDocument(), inventory?: unknown) {
   const restore = native ? installNativeIntegratedBackendV2(addon) : () => {};
   try {
-    const result = CommandBus.createIntegrated(initial, catalog);
+    const result = inventory === undefined
+      ? CommandBus.createIntegrated(initial, catalog)
+      : CommandBus.createIntegrated(initial, catalog, inventory);
     assert.ok(result.ok, JSON.stringify(result));
     return result.value;
   } finally { restore(); }
@@ -158,6 +163,63 @@ test("Read declarations capture immutable exact identity, version and owner scop
   const scoreOnly = crossCatalog(true, [{ ...row, ownerKinds: ["score"] }]);
   const filtered = create(true, scoreOnly);
   assert.equal(filtered.submit(rebuild()).status, "rejected");
+});
+
+test("Missing declared providers open as read-only without invoking dependent consumers", () => {
+  const complete = create(false);
+  assert.equal(complete.submit(rebuild()).status, "committed");
+  const document = snapshot(complete);
+  const base = crossCatalogWithoutIndex(false);
+  assert.equal(compileContributionReadCatalogV1(base, crossReads).ok, false,
+    "an absent provider needs authenticated inventory metadata");
+  const degradedCatalog = crossCatalogWithoutIndex();
+  for (const native of [false, true]) {
+    crossTrace.length = 0;
+    const bus = create(native, degradedCatalog, document, crossInventory);
+    assert.deepEqual(crossTrace, [], "dependent validation must wait for the provider");
+    const read = bus.read();
+    assert.ok(read.ok);
+    assert.equal(read.value.writeAvailability.status, "read-only");
+    assert.equal(read.value.validationAvailability.status, "incomplete");
+    if (read.value.validationAvailability.status === "incomplete") {
+      assert.deepEqual(read.value.validationAvailability.facts.map(fact => [fact.namespace, fact.reason]), [
+        [INDEX, "required-contribution-unavailable"],
+        [INDEX, "required-contribution-unavailable"],
+      ]);
+    }
+    assert.deepEqual(read.value.snapshot.document, document);
+    const before = bus.read();
+    const rejected = bus.submit(crossCommand(true));
+    assert.equal(rejected.status, "rejected");
+    if (rejected.status === "rejected") {
+      assert.equal(rejected.failure.code, "command.required-contribution-unavailable");
+    }
+    assert.deepEqual(bus.read(), before);
+    assert.deepEqual(crossTrace, []);
+  }
+});
+
+test("Detached migration rejects a consumer whose declared provider is absent", () => {
+  const complete = create(false);
+  assert.equal(complete.submit(rebuild()).status, "committed");
+  const initial: ScoreDocument = { ...snapshot(complete), extensions: snapshot(complete).extensions.map(block =>
+    block.namespace === SUMMARY ? { ...block, schemaVersion: 1 } : block) };
+  const request = { migrationVersion: 1, ...summarySource, namespace: SUMMARY,
+    effectKind: `${SUMMARY}.replace`, owner: { kind: "score" as const },
+    sourceSchemaVersion: 1, targetSchemaVersion: 2, payload: { clear: false } };
+  const catalog = crossCatalogWithoutIndex();
+  for (const native of [false, true]) {
+    crossTrace.length = 0;
+    const restore = native ? installNativeIntegratedBackendV2(addon) : () => {};
+    try {
+      const result = migrateKernelExtension(initial, request, catalog);
+      assert.equal(result.status, "rejected");
+      if (result.status === "rejected") {
+        assert.equal(result.failure.code, "migration.contribution-contract-violation");
+      }
+    } finally { restore(); }
+    assert.deepEqual(crossTrace, []);
+  }
 });
 
 test("Detached migration uses the same dependency projection and never grants foreign writes", () => {

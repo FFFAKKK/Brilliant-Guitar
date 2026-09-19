@@ -66,10 +66,11 @@ function rejection(
 
 export function validateDecision(
   value: unknown,
-  toolset: Pick<ToolsetResolutionResult, "snapshot" | "inputValidators">,
+  toolset: Pick<ToolsetResolutionResult,
+    "snapshot" | "inputValidators" | "rangeBudget" | "rangeEstimators">,
   runState: AgentRunState,
 ): ValidatedActions {
-  const { snapshot, inputValidators } = toolset;
+  const { snapshot, inputValidators, rangeBudget, rangeEstimators } = toolset;
   const decision = parseDecision(value);
   if (decision === null) return {
     acceptedActions: [],
@@ -133,6 +134,23 @@ export function validateDecision(
     if (!inputValid) {
       rejected.push(rejection(call.callId, "invalid-input", "工具输入不符合能力合同"));
       continue;
+    }
+    const estimateRangeUnits = rangeEstimators.get(call.capabilityId);
+    if (estimateRangeUnits !== undefined) {
+      let rangeUnits: number | null = null;
+      try {
+        rangeUnits = estimateRangeUnits(call.input);
+      } catch {
+        rangeUnits = null;
+      }
+      if (rangeUnits === null || !Number.isSafeInteger(rangeUnits) || rangeUnits < 0) {
+        rejected.push(rejection(call.callId, "invalid-input", "工具范围输入无法估算"));
+        continue;
+      }
+      if (rangeUnits > rangeBudget) {
+        rejected.push(rejection(call.callId, "range-budget-exceeded", "工具读取范围超出本次任务预算"));
+        continue;
+      }
     }
     accepted.push({
       kind: "tool-call",

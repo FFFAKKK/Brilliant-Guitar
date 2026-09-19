@@ -4,7 +4,7 @@ import type { ScoreEditRequest } from "../src/contracts/note-input.ts";
 import type { NewScoreInput } from "../src/contracts/new-score.ts";
 import type { ScoreSessionRead } from "../src/contracts/score-session.ts";
 import { WorkbenchClient, resolveWorkbenchWorkspaceId } from "../src/services/workbench-client.ts";
-import { BrowserWorkbenchHostBridge, TauriWorkbenchHostBridge, WorkbenchRequestError } from "../src/services/workbench-host-bridge.ts";
+import { BrowserPluginActivationStorage, BrowserPluginSettingsStorage, BrowserWorkbenchHostBridge, TauriWorkbenchHostBridge, WorkbenchRequestError } from "../src/services/workbench-host-bridge.ts";
 import type { WorkbenchHostBridge } from "../src/services/workbench-host-bridge.ts";
 import type { CloseRequestedEvent, Window as TauriWindow } from "@tauri-apps/api/window";
 import { DEFAULT_APPLICATION_SETTINGS } from "../src/contracts/application-settings.ts";
@@ -22,7 +22,7 @@ const session: ScoreSessionRead = {
     kind: "staff",
     partId: "part-1",
     staffId: "staff-1",
-    clef: "treble",
+    clef: "treble", tempoBpm: 96, keySignatureChanges: [],
     measures: [{ id: "measure-1", voiceId: "voice-1", meter: { numerator: 4, denominator: 4 }, events: [], ruleWarnings: [] }],
   },
   playbackSource: readyPlaybackSource("score-host-bridge", 0, ["measure-1"]),
@@ -73,6 +73,10 @@ test("workbench client can use a non-HTTP desktop host bridge", async () => {
       status: "unavailable", invocationId: request.invocationId, capabilityId: request.capabilityId,
       contractVersion: request.contractVersion, code: "capability.test-unavailable", message: "not used",
     }; },
+    async invokeAgentCapability(request) { calls.push("agent-capability"); return {
+      status: "unavailable", invocationId: request.invocationId, capabilityId: request.capabilityId,
+      contractVersion: request.contractVersion, code: "capability.test-unavailable", message: "not used",
+    }; },
     async read() { calls.push("read"); return null; },
     async create(_workspaceId: string, _input: NewScoreInput) { calls.push("create"); return session; },
     async edit(_workspaceId: string, _input: ScoreEditRequest) { calls.push("edit"); return session; },
@@ -112,6 +116,75 @@ test("browser settings use one versioned document and preserve invalid source te
     settings: DEFAULT_APPLICATION_SETTINGS, persisted: false, recoveredFromInvalid: true,
   });
   assert.equal(values.get("brilliant.workbench.application-settings.invalid.v1"), "{broken-json");
+});
+
+test("browser settings migrate pre-Agent v1 documents with the plugin disabled", async () => {
+  const storage = memoryStorage();
+  storage.setItem("brilliant.workbench.application-settings.v1", JSON.stringify({
+    schemaVersion: 1,
+    ui: { animationsEnabled: false, ruleWarningsVisible: true },
+    editing: { deleteTimePolicy: "collapse" },
+  }));
+  const bridge = new BrowserWorkbenchHostBridge(storage);
+  assert.deepEqual(await bridge.readApplicationSettings(), {
+    settings: {
+      schemaVersion: 1,
+      ui: { animationsEnabled: false, ruleWarningsVisible: true },
+      editing: { deleteTimePolicy: "collapse",
+        noteInput: { retention: "rhythm", defaultDuration: { base: 4, dots: 0 } } },
+      agent: { enabled: false, providerSelection: null },
+      shortcuts: { profileName: "官方默认", bindings: {} },
+    },
+    persisted: true,
+    recoveredFromInvalid: false,
+  });
+});
+
+test("browser plugin activation storage keeps a versioned document and isolates invalid JSON", async () => {
+  const storage = memoryStorage();
+  const activation = new BrowserPluginActivationStorage(storage);
+  assert.deepEqual(await activation.read(), {});
+  const document = { schemaVersion: 1 as const, enabledPluginIds: ["brilliant.instrument.guitar"] };
+  await activation.write(document);
+  assert.deepEqual(await activation.read(), document);
+
+  storage.setItem("brilliant.workbench.plugin-activation.v1", "{broken-json");
+  assert.deepEqual(await activation.read(), {});
+  assert.equal(storage.getItem("brilliant.workbench.plugin-activation.invalid.v1"), "{broken-json");
+});
+
+test("browser plugin settings storage preserves namespaced documents and isolates invalid JSON", async () => {
+  const storage = memoryStorage();
+  const settings = new BrowserPluginSettingsStorage(storage);
+  assert.deepEqual(await settings.read(), {});
+  const document = {
+    "brilliant.instrument.guitar": { schemaVersion: 1, value: { tuning: "standard" } },
+  };
+  await settings.write(document);
+  assert.deepEqual(await settings.read(), document);
+
+  storage.setItem("brilliant.workbench.plugin-settings.v1", "{broken-json");
+  assert.deepEqual(await settings.read(), {});
+  assert.equal(storage.getItem("brilliant.workbench.plugin-settings.invalid.v1"), "{broken-json");
+});
+
+test("browser preview reports credential storage as unavailable and never persists a secret", async () => {
+  const values = new Map<string, string>();
+  const bridge = new BrowserWorkbenchHostBridge({
+    getItem(key: string) { return values.get(key) ?? null; },
+    setItem(key: string, value: string) { values.set(key, value); },
+  });
+  const client = new WorkbenchClient(bridge);
+
+  assert.deepEqual(await client.readAgentProviderCredentialStatus("provider.example"), {
+    providerId: "provider.example",
+    present: false,
+    status: "unavailable",
+    message: "系统凭据库仅在桌面宿主中可用",
+  });
+  await assert.rejects(() => client.setAgentProviderCredential("provider.example", "secret-token"),
+    /浏览器开发宿主不会保存/);
+  assert.equal([...values.values()].some((value) => value.includes("secret-token")), false);
 });
 
 test("browser workspace configuration is isolated by workspace identity and preserves invalid source text", async () => {
@@ -197,7 +270,7 @@ test("tauri bridge sends versioned commands without HTTP and preserves structure
 test("tauri settings commands keep configuration outside score requests", async () => {
   const calls: Array<{ command: string; args?: Record<string, unknown> }> = [];
   const changed = { ...DEFAULT_APPLICATION_SETTINGS,
-    editing: { deleteTimePolicy: "collapse" as const } };
+    editing: { ...DEFAULT_APPLICATION_SETTINGS.editing, deleteTimePolicy: "collapse" as const } };
   const invoke = async <T>(command: string, args?: Record<string, unknown>): Promise<T> => {
     calls.push({ command, ...(args ? { args } : {}) });
     if (command === "workbench_read_settings_v1") return {
@@ -216,6 +289,62 @@ test("tauri settings commands keep configuration outside score requests", async 
     { command: "workbench_write_settings_v1", args: { settings: changed } },
     { command: "workbench_reset_settings_v1", args: {} },
   ]);
+});
+
+test("tauri credential commands expose status but never return the secret", async () => {
+  const calls: Array<{ command: string; args?: Record<string, unknown> }> = [];
+  let present = false;
+  const invoke = async <T>(command: string, args?: Record<string, unknown>): Promise<T> => {
+    calls.push({ command, ...(args ? { args } : {}) });
+    if (command === "workbench_agent_provider_credential_status_v1") return {
+      providerId: args?.providerId, present, status: present ? "configured" : "missing",
+      message: present ? "Provider 凭据已保存在系统凭据库" : "尚未配置 Provider 凭据",
+    } as T;
+    if (command === "workbench_agent_provider_set_credential_v1") {
+      present = true;
+      return { providerId: args?.providerId, present: true, status: "configured",
+        message: "Provider 凭据已保存在系统凭据库" } as T;
+    }
+    if (command === "workbench_agent_provider_delete_credential_v1") {
+      present = false;
+      return { providerId: args?.providerId, present: false, status: "missing",
+        message: "尚未配置 Provider 凭据" } as T;
+    }
+    throw new Error("unexpected command");
+  };
+  const client = new WorkbenchClient(new TauriWorkbenchHostBridge(invoke));
+
+  assert.equal((await client.readAgentProviderCredentialStatus("provider.example")).present, false);
+  const saved = await client.setAgentProviderCredential("provider.example", "secret-token");
+  assert.deepEqual(saved, { providerId: "provider.example", present: true, status: "configured",
+    message: "Provider 凭据已保存在系统凭据库" });
+  assert.equal(Object.values(saved).includes("secret-token"), false);
+  assert.equal((await client.deleteAgentProviderCredential("provider.example")).present, false);
+  assert.deepEqual(calls, [
+    { command: "workbench_agent_provider_credential_status_v1", args: { providerId: "provider.example" } },
+    { command: "workbench_agent_provider_set_credential_v1",
+      args: { providerId: "provider.example", secret: "secret-token" } },
+    { command: "workbench_agent_provider_delete_credential_v1", args: { providerId: "provider.example" } },
+  ]);
+});
+
+test("credential client rejects invalid identifiers, secrets, and secret-bearing responses", async () => {
+  const client = new WorkbenchClient({
+    async invokeCapability() { return null; },
+    async invokeAgentCapability() { return null; },
+    async read() { return null; },
+    async create() { return null; },
+    async edit() { return null; },
+    async exportDocument() { return ""; },
+    async importDocument() { return null; },
+    async setAgentProviderCredential(providerId) {
+      return { providerId, present: true, status: "configured", message: "已配置", secret: "leaked" };
+    },
+  });
+
+  await assert.rejects(() => client.readAgentProviderCredentialStatus("Invalid Provider"), /标识无效/);
+  await assert.rejects(() => client.setAgentProviderCredential("provider.example", " line-break"), /格式无效/);
+  await assert.rejects(() => client.setAgentProviderCredential("provider.example", "secret-token"), /结果无效/);
 });
 
 test("tauri workspace configuration commands remain workspace-scoped", async () => {

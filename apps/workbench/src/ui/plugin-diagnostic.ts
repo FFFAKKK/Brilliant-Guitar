@@ -29,7 +29,8 @@ export interface UiPluginIdentity {
 }
 
 export interface UiPluginFailureSubject {
-  readonly kind: "plugin" | "capability" | "projection" | "component" | "command";
+  readonly kind: "plugin" | "capability" | "projection" | "component" | "command" | "interaction"
+    | "component-extension" | "extension-point" | "instrument" | "playback-output";
   readonly id: string;
   readonly ownerPluginId?: string;
 }

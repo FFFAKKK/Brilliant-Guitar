@@ -69,7 +69,7 @@ export type NoteControlChange = Exclude<NoteChange, { readonly kind: "alter" }>
 /** Preserve the selected event's identity, spelling and other properties. Core validates timing. */
 export function selectedNoteAction(event: StaffEvent, change: NoteChange): ScoreEditAction | null {
   if (change.kind === "rest") return event.content.kind === "note" && change.value
-    ? { kind: "delete-event", eventId: event.id } : null;
+    ? { kind: "delete-event", eventId: event.id, timePolicy: "preserve" } : null;
   if ((change.kind === "alter" || change.kind === "pitch") && event.content.kind === "rest") return null;
   const content = change.kind === "alter" && event.content.kind === "note"
     ? { kind: "note" as const, pitch: { ...event.content.pitch, alter: change.value } }

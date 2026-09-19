@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-09-18",
+  "scope": "kernel-candidate-retained-memory-v1",
+  "limitBytes": 536870912,
+  "wireLimitKind": "candidate-retained-bytes",
+  "nativeArtifacts": [
+    {
+      "kind": "core-v1",
+      "path": "target/rkp-1-node/brilliant_kernel_node.node",
+      "bytes": 3597824,
+      "sha256": "2efb0d6de0f4f5f4d49e9acfb97c927a862c61b12e4e0f39f4e8501279ad1089"
+    },
+    {
+      "kind": "integrated-v2",
+      "path": "target/kernel-commercial-current/integrated-v2.node",
+      "bytes": 5037568,
+      "sha256": "5918135aafe6b95dafcb1367872c0d57edcc2a24149ec698215ddfbd240d7414",
+      "standardDestinationStatus": "locked-by-running-process",
+      "standardDestinationWasNotOverwritten": true
+    },
+    {
+      "kind": "wasm-v1",
+      "path": "target/wasm-v1/brilliant_kernel_node.node",
+      "bytes": 6270464,
+      "sha256": "4435ec9a25166cd79f269fd9559eef784189b7a93de2f65cd40dbf2a29769055"
+    }
+  ],
+  "checks": [
+    {
+      "command": "cargo test --workspace --all-features --locked --offline",
+      "status": "passed",
+      "passed": 652,
+      "ignored": 1,
+      "failed": 0
+    },
+    {
+      "command": "cargo clippy --workspace --all-targets --all-features --locked --offline -- -D warnings",
+      "status": "passed"
+    },
+    {
+      "command": "npm run typecheck",
+      "status": "passed"
+    },
+    {
+      "command": "node --test target/codex-candidate-retained-test/test/core-kernel/candidate-retained-resource.test.js",
+      "status": "passed",
+      "passed": 2,
+      "failed": 0
+    },
+    {
+      "command": "$env:BRILLIANT_INTEGRATED_ADDON_PATH='target/kernel-commercial-current/integrated-v2.node'; npm test",
+      "status": "passed",
+      "total": 907,
+      "passed": 905,
+      "skipped": 2,
+      "failed": 0,
+      "compiledTestFiles": 133,
+      "compiledTestManifestSha256": "f58e879f6a0f65423411e7977d2d06e9976aebd1196b4fbe4f60d73806efcff8"
+    },
+    {
+      "command": "node --test focused integrated-native-journey, cross-plugin-reads and layered-relationship-native with the rebuilt addon",
+      "status": "passed",
+      "passed": 41,
+      "failed": 0,
+      "note": "The earlier 13 failures reproduced only with the stale 2026-09-17 target/integrated-v2 artifact."
+    },
+    {
+      "command": "cargo fmt --all -- --check",
+      "status": "blocked-by-pre-existing-worktree-diff",
+      "files": [
+        "crates/brilliant-kernel-runtime/src/selectors.rs",
+        "crates/brilliant-kernel-session/src/session.rs"
+      ]
+    },
+    {
+      "command": "git diff --check",
+      "status": "passed"
+    }
+  ]
+}

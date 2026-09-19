@@ -9,7 +9,25 @@ export interface UiComponentViewContribution {
   readonly label: string;
   readonly icon?: ReactNode;
   readonly inlineZone?: InlineDockZone;
+  render(projections: UiProjectionReader, host: UiViewHostContext): ReactNode;
+}
+
+/** Plugin-owned content rendered inside a component-owned extension point. */
+export interface UiComponentExtensionContribution {
+  readonly id: string;
+  readonly extensionPoint: string;
+  readonly order?: number;
   render(projections: UiProjectionReader): ReactNode;
+}
+
+export interface UiResolvedComponentExtension {
+  readonly id: string;
+  readonly order: number;
+  render(): ReactNode;
+}
+
+export interface UiViewHostContext {
+  extensions(extensionPoint: string): readonly UiResolvedComponentExtension[];
 }
 
 /** A render-ready contribution scoped to one projection snapshot. */

@@ -1,5 +1,5 @@
 import { isEventProperties } from "./note-input.ts";
-import type { InputContent, EventDuration } from "./note-input.ts";
+import type { InputContent, EventDuration, StaffClef } from "./note-input.ts";
 /** A disposable read projection, never an editable document or a Core schema. */
 export interface StaffEvent { readonly id: string; readonly duration: EventDuration; readonly content: InputContent }
 export interface ExactFraction { readonly numerator: number; readonly denominator: number }
@@ -16,12 +16,20 @@ export interface StaffMeasure {
   readonly meter: { readonly numerator: number; readonly denominator: number };
   readonly ruleWarnings: readonly StaffRuleWarning[];
 }
+export interface KeySignatureChangeView {
+  readonly measureId: string;
+  readonly measureIndex: number;
+  readonly fifths: number;
+}
 
 export interface StaffView {
   readonly kind: "staff";
   readonly partId: string;
   readonly staffId: string;
-  readonly clef: "treble";
+  readonly clef: StaffClef;
+  readonly tempoBpm: number;
+  /** Absent only for older in-process projection clients; current hosts always emit the sparse list. */
+  readonly keySignatureChanges?: readonly KeySignatureChangeView[];
   readonly measures: readonly StaffMeasure[];
 }
 
@@ -47,11 +55,13 @@ export function isNotationView(value: unknown): value is NotationView {
   if (typeof value !== "object" || value === null) return false;
   const view = value as Record<string, unknown>;
   if (view.kind === "unsupported") return typeof view.message === "string" && view.message.length > 0;
-  if (view.kind !== "staff" || view.clef !== "treble"
+  if (view.kind !== "staff" || !["treble", "bass", "alto", "tenor"].includes(view.clef as string)
     || typeof view.partId !== "string" || !view.partId || typeof view.staffId !== "string" || !view.staffId
+    || typeof view.tempoBpm !== "number" || !Number.isFinite(view.tempoBpm) || view.tempoBpm <= 0
+    || (view.keySignatureChanges !== undefined && !Array.isArray(view.keySignatureChanges))
     || !Array.isArray(view.measures) || !view.measures.length) return false;
   const ids = new Set<string>();
-  return view.measures.every((measure: unknown) => {
+  const measuresValid = view.measures.every((measure: unknown) => {
     if (typeof measure !== "object" || measure === null) return false;
     const item = measure as Record<string, unknown>;
     if (typeof item.id !== "string" || !item.id || ids.has(item.id) || typeof item.voiceId !== "string" || !item.voiceId
@@ -69,5 +79,20 @@ export function isNotationView(value: unknown): value is NotationView {
     const meter = item.meter as Record<string, unknown>;
     return typeof meter.numerator === "number" && Number.isInteger(meter.numerator) && meter.numerator >= 1 && meter.numerator <= 32
       && typeof meter.denominator === "number" && [1, 2, 4, 8, 16, 32, 64].includes(meter.denominator);
+  });
+  if (!measuresValid) return false;
+  const measures = view.measures as readonly Record<string, unknown>[];
+  let previousIndex = -1;
+  return (view.keySignatureChanges ?? []).every((raw: unknown) => {
+    if (typeof raw !== "object" || raw === null) return false;
+    const change = raw as Record<string, unknown>;
+    if (typeof change.measureId !== "string" || !change.measureId
+      || typeof change.measureIndex !== "number" || !Number.isSafeInteger(change.measureIndex)
+      || change.measureIndex <= previousIndex || change.measureIndex >= measures.length
+      || measures[change.measureIndex]?.id !== change.measureId
+      || typeof change.fifths !== "number" || !Number.isSafeInteger(change.fifths)
+      || change.fifths < -7 || change.fifths > 7) return false;
+    previousIndex = change.measureIndex;
+    return true;
   });
 }

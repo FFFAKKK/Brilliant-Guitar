@@ -8,10 +8,15 @@ This adds explicit startup read grants, not new notation fields or write APIs.
 ## Startup contract
 
 The opt-in `src/core-kernel/module-sdk/extension-reads.ts` subpath exports
-`compileContributionReadCatalogV1(baseCatalog, declarations)` and its data/view
-types. It returns the existing catalog compilation result shape. The frozen V1
-index (8 runtime / 34 type exports), nine-field contribution ABI and application
-index remain unchanged. Existing callers keep the exact original view shape.
+`compileContributionReadCatalogV1(baseCatalog, declarations)` and the additive
+`compileContributionReadCatalogV1(baseCatalog, declarations, knownInventory)`
+overload. Both return the existing catalog compilation result shape. The third
+argument is used only when a declared provider is known to the authenticated
+host inventory but is not installed in the current catalog. It authenticates
+identity, namespace and supported schema versions; it does not install or
+execute that provider. The frozen V1 index (8 runtime / 34 type exports),
+nine-field contribution ABI and application index remain unchanged. Existing
+callers keep the exact original view shape.
 
 The trusted composition root supplies a dense roster of 1–1024 declarations:
 
@@ -27,14 +32,17 @@ const derived = compileContributionReadCatalogV1(baseCatalog, [{
 ```
 
 Every field is exact data, detached before validation. The base catalog and
-reader must be authentic, and the namespace must belong to the named installed
-provider. Self-reads use the original own-extension view and are not new grants.
-Duplicate reader/namespace rows, unknown identities/namespaces, extra fields,
-accessors, sparse arrays and invalid owner/version lists fail closed at
-`registry.invalid-startup-input`. Schema versions must exactly match the
-provider's frozen supported versions. A narrower consumer range is deliberately
-not silently interpreted as an empty read; it needs an explicit compatibility
-contract before being supported.
+reader must be authentic. The namespace must belong either to the named
+installed provider or to the same provider in an explicit `inventoryVersion: 1`
+inventory. Inventory requirements use the existing exact
+`ExtensionRuntimeRequirementV1` decoder; duplicate namespaces, unknown
+providers, mismatched installed owners and malformed inventories fail closed at
+`registry.invalid-startup-input`. Self-reads use the original own-extension view
+and are not new grants. Duplicate reader/namespace rows, extra fields, accessors,
+sparse arrays and invalid owner/version lists also fail closed. Schema versions
+must exactly match the provider's frozen supported versions. A narrower consumer
+range is deliberately not silently interpreted as an empty read; it needs an
+explicit compatibility contract before being supported.
 
 The roster is host authorization, not a guest assertion. Publication creates a
 new authentic catalog and fresh contribution identities. The original catalog,
@@ -75,11 +83,18 @@ Detached migration that needs such a read rejects with the existing
 absence of a block yields an empty array; its business meaning remains the
 consumer's validation responsibility.
 
-A missing provider prevents publishing the declared catalog. This compiler does
-not yet automatically disable dependent plugins or construct a recovery catalog.
-Existing Core/known-inventory read-only reopening remains available to the host;
-automatic dependency-aware degraded assembly remains follow-up work. No dynamic
-plugin package loader or read grant inferred from a namespace string is added.
+A missing provider can publish a degraded catalog only when the trusted host
+supplies its exact requirement in the explicit inventory. Session assembly uses
+that same inventory to report the existing `required-contribution-unavailable`
+facts. The document opens read-only, opaque extension blocks remain losslessly
+available, and consumers that read the missing provider do not run
+validate/classify/prepare/transform callbacks. Writes reject before reading the
+user command with `command.required-contribution-unavailable`. Detached migration
+rejects before the consumer callback with
+`migration.contribution-contract-violation`. Restoring the provider reuses the
+ordinary complete validation path. No dynamic plugin package loader, implicit
+provider inference, callback order change or read grant inferred from a namespace
+string is added.
 
 ## Evidence and remaining work
 
@@ -91,7 +106,7 @@ stored history and replay, actual migration, future-version gating and reciproca
 reads. An actual compiled Wasm guest separately reads a declared Part extension
 after an earlier Batch child updates it, and fails without the grant.
 
-Remaining commercial work includes dependency-aware degraded assembly,
-read-declaration/validation scheduling completeness, aggregate resource limits,
-platform and performance qualification. The host currently projects full Core
-documents and copies authorized blocks; no hot-path efficiency claim is made.
+Remaining commercial work includes precise read dependency closure and
+incremental-equivalence proof, aggregate resource limits, platform and
+performance qualification. The host currently projects full Core documents and
+copies authorized blocks; no hot-path efficiency claim is made.

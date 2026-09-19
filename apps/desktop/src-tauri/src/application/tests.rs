@@ -30,21 +30,120 @@ fn create_read_and_close_session() {
     assert_eq!(created.measure_count, 2);
     assert_eq!(created.document_version, 0);
     match &created.playback_source {
-        PlaybackSourceProjection::Ready { projection_version, document_id, document_version, bpm,
-            written_to_sounding, measures } => {
+        PlaybackSourceProjection::Ready {
+            projection_version,
+            document_id,
+            document_version,
+            bpm,
+            written_to_sounding,
+            measures,
+        } => {
             assert_eq!(*projection_version, 1);
             assert_eq!(document_id, &created.document_id);
             assert_eq!(*document_version, created.document_version);
             assert_eq!(*bpm, 96.0);
-            assert_eq!(*written_to_sounding, PlaybackTransposition { diatonic_steps: 0, chromatic_semitones: 0 });
+            assert_eq!(
+                *written_to_sounding,
+                PlaybackTransposition {
+                    diatonic_steps: 0,
+                    chromatic_semitones: 0
+                }
+            );
             assert_eq!(measures.len(), 2);
             assert!(measures.iter().all(|measure| measure.events.is_empty()));
         }
-        PlaybackSourceProjection::Unsupported { code, .. } => panic!("unexpected playback projection: {code}"),
+        PlaybackSourceProjection::Unsupported { code, .. } => {
+            panic!("unexpected playback projection: {code}")
+        }
     }
     assert!(service.read(&workspace_id).expect("read").is_some());
     assert!(service.close(&workspace_id).expect("close"));
     assert!(service.read(&workspace_id).expect("read closed").is_none());
+}
+
+#[test]
+fn measure_index_tracks_structural_edits_undo_and_redo_by_document_version() {
+    let workspace_id = id();
+    let mut service = ScoreSessionService::default();
+    let created = service
+        .create(CreateScoreRequest {
+            workspace_id: workspace_id.clone(),
+            input: NewScoreInput {
+                title: "索引测试".into(),
+                measure_count: 1,
+            },
+            request_id: id(),
+            expected_document_id: None,
+        })
+        .expect("create score");
+    let initial = service
+        .read_measure_index(
+            &workspace_id,
+            &created.document_id,
+            created.document_version,
+        )
+        .expect("read initial index")
+        .expect("initial index");
+    assert_eq!(initial.measure_ids, vec!["measure-1"]);
+
+    let inserted = edit(
+        &mut service,
+        &workspace_id,
+        &created,
+        ScoreEditAction::Append {
+            measure_id: "measure-1".into(),
+            anchor: InputSequenceAnchor::Start,
+            offset_units: None,
+            duration: EventDuration { base: 1, dots: 0 },
+            content: InputContent::Note {
+                pitch: crate::dto::InputPitch {
+                    step: PitchStep::C,
+                    octave: 4,
+                    alter: 0,
+                },
+            },
+        },
+    );
+    let inserted_index = service
+        .read_measure_index(
+            &workspace_id,
+            &inserted.document_id,
+            inserted.document_version,
+        )
+        .expect("read inserted index")
+        .expect("inserted index");
+    assert_eq!(inserted_index.measure_ids.len(), 2);
+    assert_eq!(inserted_index.measure_ids[0], "measure-1");
+    assert_eq!(
+        service
+            .read_measure_index(
+                &workspace_id,
+                &created.document_id,
+                created.document_version,
+            )
+            .expect_err("stale index rejected")
+            .status,
+        409
+    );
+
+    let undone = edit(
+        &mut service,
+        &workspace_id,
+        &inserted,
+        ScoreEditAction::Undo,
+    );
+    let undone_index = service
+        .read_measure_index(&workspace_id, &undone.document_id, undone.document_version)
+        .expect("read undone index")
+        .expect("undone index");
+    assert_eq!(undone_index.measure_ids, vec!["measure-1"]);
+
+    let redone = edit(&mut service, &workspace_id, &undone, ScoreEditAction::Redo);
+    let redone_index = service
+        .read_measure_index(&workspace_id, &redone.document_id, redone.document_version)
+        .expect("read redone index")
+        .expect("redone index");
+    assert_eq!(redone_index.measure_ids, inserted_index.measure_ids);
 }
 
 fn create(service: &mut ScoreSessionService) -> (String, ScoreSessionRead) {
@@ -135,13 +234,28 @@ fn edit_retry_version_conflict_and_history_match_host_contract() {
     assert_eq!(first_measure_events(&changed).len(), 1);
     assert_eq!(changed.undo_depth, 1);
     match &changed.playback_source {
-        PlaybackSourceProjection::Ready { document_version, measures, .. } => {
+        PlaybackSourceProjection::Ready {
+            document_version,
+            measures,
+            ..
+        } => {
             assert_eq!(*document_version, changed.document_version);
             assert_eq!(measures[0].events.len(), 1);
-            assert_eq!(measures[0].events[0].duration, ExactFraction { numerator: 1, denominator: 4 });
-            assert!(matches!(measures[0].events[0].content, PlaybackSourceContent::Note { .. }));
+            assert_eq!(
+                measures[0].events[0].duration,
+                ExactFraction {
+                    numerator: 1,
+                    denominator: 4
+                }
+            );
+            assert!(matches!(
+                measures[0].events[0].content,
+                PlaybackSourceContent::Note { .. }
+            ));
         }
-        PlaybackSourceProjection::Unsupported { code, .. } => panic!("unexpected playback projection: {code}"),
+        PlaybackSourceProjection::Unsupported { code, .. } => {
+            panic!("unexpected playback projection: {code}")
+        }
     }
 
     let stale = ScoreEditRequest {
@@ -166,14 +280,25 @@ fn edit_retry_version_conflict_and_history_match_host_contract() {
 
     let undone = edit(&mut service, &workspace_id, &changed, ScoreEditAction::Undo);
     assert!(first_measure_events(&undone).is_empty());
-    assert!(matches!(&undone.playback_source, PlaybackSourceProjection::Ready { measures, .. }
-        if measures[0].events.is_empty()));
+    assert!(
+        matches!(&undone.playback_source, PlaybackSourceProjection::Ready { measures, .. }
+        if measures[0].events.is_empty())
+    );
     assert_eq!(undone.redo_depth, 1);
     let redone = edit(&mut service, &workspace_id, &undone, ScoreEditAction::Redo);
     assert_eq!(redone.notation, changed.notation);
     match (&redone.playback_source, &changed.playback_source) {
-        (PlaybackSourceProjection::Ready { document_version: redone_version, measures: redone_measures, .. },
-         PlaybackSourceProjection::Ready { measures: changed_measures, .. }) => {
+        (
+            PlaybackSourceProjection::Ready {
+                document_version: redone_version,
+                measures: redone_measures,
+                ..
+            },
+            PlaybackSourceProjection::Ready {
+                measures: changed_measures,
+                ..
+            },
+        ) => {
             assert_eq!(*redone_version, redone.document_version);
             assert_eq!(redone_measures, changed_measures);
         }

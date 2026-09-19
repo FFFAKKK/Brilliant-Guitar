@@ -76,6 +76,39 @@ test("context builder keeps the highest-priority duplicate and reports mixed ver
   assert.deepEqual(result.versionWarnings[0]?.versions, [4, 5]);
 });
 
+test("workspace context exposes selection availability without leaking authoritative endpoints", () => {
+  const result = new ContextBuilder().build({
+    runId: "run-selection",
+    goal: "读取当前选中的小节",
+    turnInput: null,
+    runState: state,
+    workspace: {
+      workspaceId: "workspace-1",
+      documentId: "score-1",
+      documentVersion: 5,
+      selection: {
+        kind: "measure-range",
+        documentId: "score-1",
+        documentVersion: 5,
+        startMeasureId: "private-start",
+        endMeasureId: "private-end",
+      },
+    },
+    items: [],
+    budget: { ...budget, tokenBudget: 200 },
+    now: 10,
+  });
+
+  const workspaceItem = result.contextItems.find((item) => item.contextItemId === "workspace.scope");
+  assert.deepEqual(workspaceItem?.content, {
+    workspaceId: "workspace-1",
+    documentId: "score-1",
+    documentVersion: 5,
+    selectionAvailable: true,
+  });
+  assert.equal(JSON.stringify(workspaceItem).includes("private-start"), false);
+});
+
 test("context builder preserves required facts while trimming optional items by budget", () => {
   const result = new ContextBuilder().build({
     runId: "run-2",
@@ -97,12 +130,95 @@ test("context builder preserves required facts while trimming optional items by 
   assert.equal(result.omittedItems.some((value) => value.reason === "token-budget"), true);
 });
 
+test("context builder keeps only the newest task history turns before general budgets", () => {
+  const result = new ContextBuilder().build({
+    runId: "run-history",
+    goal: "继续分析",
+    turnInput: null,
+    runState: state,
+    workspace: { workspaceId: "workspace-1", documentId: "score-1", documentVersion: 5, selection: null },
+    items: [
+      item({
+        contextItemId: "history-old",
+        kind: "task-history",
+        sourceType: "task-history",
+        sourceId: "submission-old",
+        documentVersion: 3,
+        trustLevel: "derived",
+        priority: "low",
+        createdAt: 1,
+      }),
+      item({
+        contextItemId: "history-middle",
+        kind: "task-history",
+        sourceType: "task-history",
+        sourceId: "submission-middle",
+        documentVersion: 4,
+        trustLevel: "derived",
+        priority: "low",
+        createdAt: 2,
+      }),
+      item({
+        contextItemId: "history-new",
+        kind: "task-history",
+        sourceType: "task-history",
+        sourceId: "submission-new",
+        documentVersion: 5,
+        trustLevel: "derived",
+        priority: "low",
+        createdAt: 3,
+      }),
+    ],
+    budget: { ...budget, tokenBudget: 200, historyTurnBudget: 2 },
+    now: 10,
+  });
+
+  assert.deepEqual(result.contextItems
+    .filter((value) => value.kind === "task-history")
+    .map((value) => value.contextItemId), ["history-middle", "history-new"]);
+  assert.equal(result.omittedItems.some(
+    (value) => value.contextItemId === "history-old" && value.reason === "history-turn-budget",
+  ), true);
+  assert.deepEqual(result.versionWarnings.map((value) => value.code), ["version-mixed", "version-mismatch"]);
+});
+
+test("task history cannot displace required current context", () => {
+  const result = new ContextBuilder().build({
+    runId: "run-history-priority",
+    goal: "继续分析",
+    turnInput: null,
+    runState: state,
+    workspace: { workspaceId: "workspace-1", documentId: "score-1", documentVersion: 5, selection: null },
+    items: [
+      item({ contextItemId: "required-current", priority: "required", documentVersion: 5 }),
+      item({
+        contextItemId: "history",
+        kind: "task-history",
+        sourceType: "task-history",
+        sourceId: "submission-history",
+        trustLevel: "derived",
+        priority: "low",
+        createdAt: 2,
+      }),
+    ],
+    budget: { ...budget, tokenBudget: 200, itemCountBudget: 4, historyTurnBudget: 4 },
+    now: 10,
+  });
+
+  assert.equal(result.contextItems.some((value) => value.contextItemId === "required-current"), true);
+  assert.equal(result.contextItems.some((value) => value.contextItemId === "history"), false);
+  assert.equal(result.omittedItems.some(
+    (value) => value.contextItemId === "history" && value.reason === "item-count-budget",
+  ), true);
+});
+
 test("toolset resolver never exposes a capability outside the run policy or task intent", () => {
   const result = new ToolsetResolver().resolve({
     runState: state,
     policy: policy({ maxToolsPerTurn: 3 }),
     intent: { kind: "read", requestedCapabilityIds: [], scope: "document" },
     hasDocument: true,
+    rangeBudget: budget.rangeBudget,
     catalog: FIRST_PARTY_CAPABILITY_CATALOG,
   });
 
@@ -116,6 +232,7 @@ test("toolset resolver never exposes a capability outside the run policy or task
     policy: policy({ allowedCapabilityIds: [] }),
     intent: { kind: "read", requestedCapabilityIds: [], scope: "document" },
     hasDocument: true,
+    rangeBudget: budget.rangeBudget,
     catalog: FIRST_PARTY_CAPABILITY_CATALOG,
   });
   assert.deepEqual(hidden.snapshot.capabilityIds, []);
@@ -128,6 +245,7 @@ test("decision validator rejects guessed tools and invalid inputs, while finish 
     policy: policy({ maxToolsPerTurn: 3 }),
     intent: { kind: "read", requestedCapabilityIds: [], scope: "document" },
     hasDocument: true,
+    rangeBudget: budget.rangeBudget,
     catalog: FIRST_PARTY_CAPABILITY_CATALOG,
   });
 
@@ -159,6 +277,7 @@ test("toolset resolver and decision validator stop when the run is waiting", () 
     policy: policy(),
     intent: { kind: "read", requestedCapabilityIds: [], scope: "document" },
     hasDocument: true,
+    rangeBudget: budget.rangeBudget,
     catalog: FIRST_PARTY_CAPABILITY_CATALOG,
   });
   assert.deepEqual(resolved.snapshot.capabilityIds, []);
@@ -177,6 +296,7 @@ test("descriptor input validators remain internal while model-visible descriptor
     policy: policy(),
     intent: { kind: "read", requestedCapabilityIds: [], scope: "document" },
     hasDocument: true,
+    rangeBudget: budget.rangeBudget,
     catalog: [{
       ...descriptor,
       validateInput() { throw new Error("validator defect"); },
@@ -187,4 +307,50 @@ test("descriptor input validators remain internal while model-visible descriptor
     calls: [{ callId: "read", capabilityId: "score.read-summary", contractVersion: 1, input: {} }],
   }, throwingToolset, state);
   assert.equal(rejected.rejectedActions[0]?.code, "invalid-input");
+});
+
+test("semantic range capability validates references and defers authoritative size checks", () => {
+  const resolved = new ToolsetResolver().resolve({
+    runState: state,
+    policy: policy({
+      allowedCapabilityIds: ["score.read-measures"],
+      maxCostClass: "range",
+    }),
+    intent: {
+      kind: "read",
+      requestedCapabilityIds: ["score.read-measures"],
+      scope: "range",
+    },
+    hasDocument: true,
+    rangeBudget: 4,
+    catalog: FIRST_PARTY_CAPABILITY_CATALOG,
+  });
+
+  assert.deepEqual(resolved.snapshot.capabilityIds, ["score.read-measures"]);
+  assert.equal(resolved.rangeEstimators.has("score.read-measures"), false);
+  const accepted = validateDecision({
+    kind: "tool-calls",
+    calls: [{
+      callId: "range-ok",
+      capabilityId: "score.read-measures",
+      contractVersion: 1,
+      input: { reference: { kind: "ordinal-range", startOrdinal: 1, endOrdinal: 8 } },
+    }],
+  }, resolved, state);
+  assert.equal(accepted.acceptedActions.length, 1);
+
+  const rejected = validateDecision({
+    kind: "tool-calls",
+    calls: [{
+      callId: "range-invalid",
+      capabilityId: "score.read-measures",
+      contractVersion: 1,
+      input: { reference: { kind: "ordinal-range", startOrdinal: 0, endOrdinal: 8 } },
+    }],
+  }, resolved, state);
+  assert.equal(rejected.acceptedActions.length, 0);
+  assert.equal(rejected.rejectedActions[0]?.code, "invalid-input");
+  assert.equal(FIRST_PARTY_CAPABILITY_CATALOG.some(
+    (descriptor) => descriptor.id === "score.read-measure-range",
+  ), false);
 });

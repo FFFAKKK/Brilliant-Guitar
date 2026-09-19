@@ -7,8 +7,9 @@ export type EditComposition<Draft> =
   | { readonly kind: "idle" }
   | { readonly kind: "composing"; readonly methodId: string; readonly draft: Draft };
 
-export type EditOperationKind = "insert" | "update" | "delete" | "delete-range" | "paste"
-  | "insert-measure" | "remove-measure" | "history" | "document";
+export type EditOperationKind = "insert-event" | "update-event" | "delete-event" | "delete-range" | "paste"
+  | "insert-measure" | "remove-measure" | "set-measure-meter" | "set-key-signature" | "set-staff-clef"
+  | "history" | "document";
 
 export type EditTransaction =
   | { readonly kind: "idle" }
@@ -27,10 +28,8 @@ export interface EventDraft<Duration, Content> {
   readonly content: Content;
 }
 
-export type EditIntent<Event, Properties> =
-  | { readonly kind: "insert"; readonly event: Event }
-  | { readonly kind: "update"; readonly eventId: string; readonly properties: Properties }
-  | { readonly kind: "delete"; readonly eventId: string };
+/** @deprecated New input adapters should import these contracts from src/input. */
+export type { EditIntent } from "../input/edit-intent.ts";
 
 export type EditorEvent<Point, Draft> =
   | { readonly type: "reset"; readonly point: Point | null }

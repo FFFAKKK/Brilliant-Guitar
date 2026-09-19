@@ -29,6 +29,7 @@ export const DEFAULT_COMPONENT_PLACEMENTS: readonly UiComponentPlacement[] = [
   { componentId: "playback.transport", slot: "top", presentation: "panel", order: 1, visible: true },
   { componentId: "notation.paper-zoom", slot: "top", presentation: "panel", order: 2, visible: true },
   { componentId: "playback.output", slot: "right", presentation: "panel", order: 0, visible: true },
+  { componentId: "agent.recovery-panel", slot: "right", presentation: "panel", order: 1, visible: true },
 ];
 
 const definitionMap = (definitions: readonly UiComponentDefinition[]) =>

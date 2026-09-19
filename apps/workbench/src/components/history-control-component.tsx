@@ -27,12 +27,11 @@ function HistoryButton({ kind, depth, blocked, activity, onHistory }: {
 }) {
   const undo = kind === "undo";
   const label = undo ? "撤销" : "重做";
-  const shortcut = undo ? "Ctrl/⌘ + Z" : "Ctrl/⌘ + Shift + Z";
   const disabled = blocked || depth === 0;
   const activated = activity?.kind === kind;
   return <button type="button" className="history-control-button"
-    aria-label={`${label}，可${label} ${depth} 步`} aria-keyshortcuts={undo ? "Control+Z Meta+Z" : "Control+Shift+Z Meta+Shift+Z"}
-    title={`${label} · ${shortcut}（${depth} 步）`} disabled={disabled} data-available={!disabled || undefined}
+    aria-label={`${label}，可${label} ${depth} 步`} title={`${label}（${depth} 步）`}
+    disabled={disabled} data-available={!disabled || undefined}
     onClick={() => onHistory(kind)}>
     <span className="history-control-glyph" data-activated={activated || undefined}
       key={activated ? `${kind}:${activity.sequence}` : kind}>

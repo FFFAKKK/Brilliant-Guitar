@@ -167,7 +167,8 @@ impl AdmissionTransaction<'_> {
                 };
                 if !eligibility::needs_candidate(&stable, &mut value.overlay)? {
                     if batch_child.is_none() {
-                        return dispatch_typed(value, stable);
+                        dispatch_typed(value, stable)?;
+                        return value.ensure_work_budget();
                     }
                     let operation_count = value.overlay.operation_count();
                     let segment = value.overlay.begin_segment();
@@ -176,6 +177,7 @@ impl AdmissionTransaction<'_> {
                         .begin_deferred_segment()
                         .map_err(map_overlay_failure)?;
                     dispatch_typed(value, stable)?;
+                    value.ensure_work_budget()?;
                     value
                         .overlay
                         .end_deferred_segment()
@@ -196,7 +198,12 @@ impl AdmissionTransaction<'_> {
         let Some(Branch::Typed(value)) = self.branch.take() else {
             return Err(LeafFailure::InternalError);
         };
-        let execution = CandidateExecution::new(value.overlay, self.store.header.id.clone())?;
+        let (overlay, work_budget) = value.into_candidate_parts();
+        let execution = CandidateExecution::new_with_budget(
+            overlay,
+            self.store.header.id.clone(),
+            work_budget,
+        )?;
         self.branch = Some(Branch::Candidate(execution));
         let Some(Branch::Candidate(value)) = &mut self.branch else {
             return Err(LeafFailure::InternalError);

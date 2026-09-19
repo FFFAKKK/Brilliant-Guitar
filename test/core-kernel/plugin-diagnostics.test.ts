@@ -35,3 +35,38 @@ test("the process log records stable conflict codes with a report id", () => {
   assert.equal(kernelPluginDiagnostics.list().at(-1)?.reportId, entry.reportId);
   kernelPluginDiagnostics.clear();
 });
+
+test("effect rejection diagnostics retain attribution without target or payload data", () => {
+  const log = new KernelPluginDiagnosticLog();
+  const context = {
+    stage: "callback" as const,
+    operation: "prepare" as const,
+    moduleId: "fixture.module",
+    contributionId: "fixture.contribution",
+    effectIndex: 3,
+    effectKind: "fixture.effect.apply",
+    failureCode: "command.target-not-found",
+    target: { kind: "note", noteId: "private-note-id" },
+    payload: { private: "score-content" },
+  };
+  const entry = log.append({
+    code: "command.contribution-effect-rejected",
+    context,
+  });
+  assert.deepEqual(entry, {
+    reportId: entry.reportId,
+    occurredAt: entry.occurredAt,
+    code: "command.contribution-effect-rejected",
+    stage: "callback",
+    operation: "prepare",
+    moduleId: "fixture.module",
+    contributionId: "fixture.contribution",
+    effectIndex: 3,
+    effectKind: "fixture.effect.apply",
+    failureCode: "command.target-not-found",
+    message: "插件请求的内核修改被拒绝",
+  });
+  const serialized = JSON.stringify(entry);
+  assert.equal(serialized.includes("private-note-id"), false);
+  assert.equal(serialized.includes("score-content"), false);
+});

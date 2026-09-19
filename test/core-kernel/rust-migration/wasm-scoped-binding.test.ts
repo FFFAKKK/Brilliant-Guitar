@@ -303,7 +303,10 @@ test("Actual Wasm guest consumes only declared foreign dependency data from the 
 
 test("Wasm bridge is an isolated eight-export artifact and validates its binary boundary", () => {
   const legacy = require(resolve("target/rkp-1-node/brilliant_kernel_node.node"));
-  const integrated = require(resolve("target/integrated-v2/brilliant_kernel_node.node"));
+  const integrated = require(resolve(
+    process.env.BRILLIANT_INTEGRATED_ADDON_PATH
+      ?? "target/integrated-v2/brilliant_kernel_node.node",
+  ));
   assert.equal(Object.keys(legacy).length, 5);
   assert.equal(Object.keys(integrated).length, 7);
   assert.deepEqual(Object.keys(addon).sort(), [...Object.keys(integrated), "createWasmModuleExecutorV1"].sort());

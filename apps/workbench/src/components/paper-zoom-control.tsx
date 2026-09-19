@@ -26,14 +26,14 @@ export function PaperZoomControl({ zoom, enabled, onZoomIn, onZoomOut, onFit }: 
   return <div className="paper-zoom-control" role="group" aria-label="谱面缩放">
     <div className="paper-zoom-steps">
       <button type="button" className="paper-zoom-button" disabled={!enabled || zoom <= PAPER_ZOOM.min}
-        onClick={onZoomOut} aria-label="缩小谱面" aria-keyshortcuts="Control+- Meta+-" title="缩小谱面 · Ctrl/⌘ + −">−</button>
+        onClick={onZoomOut} aria-label="缩小谱面" title="缩小谱面">−</button>
       <output className="paper-zoom-value" aria-label={`谱面倍率 ${zoom}%，相对整页适配`} title="相对整页适配的倍率">
         {zoom}%
       </output>
       <button type="button" className="paper-zoom-button" disabled={!enabled || zoom >= PAPER_ZOOM.max}
-        onClick={onZoomIn} aria-label="放大谱面" aria-keyshortcuts="Control++ Meta++" title="放大谱面 · Ctrl/⌘ + ＋">＋</button>
+        onClick={onZoomIn} aria-label="放大谱面" title="放大谱面">＋</button>
     </div>
     <button type="button" className="paper-zoom-fit" disabled={!enabled} aria-label="适配整页"
-      aria-keyshortcuts="Control+0 Meta+0" title="适配整页 · Ctrl/⌘ + 0" onClick={onFit}><FitPageIcon /></button>
+      title="适配整页" onClick={onFit}><FitPageIcon /></button>
   </div>;
 }

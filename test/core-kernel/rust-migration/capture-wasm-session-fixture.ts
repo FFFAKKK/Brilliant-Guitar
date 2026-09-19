@@ -10,7 +10,10 @@ import { createCoreScoreFixture } from "../fixtures/core-score";
 import { CVN6_MANIFEST, CVN6_REGISTRATION_ENTRIES } from "../fixtures/cvn-6-synthetic-official-modules";
 
 if (require.main === module && process.argv[2] === "--write") {
-  const addon = require(resolve("target/integrated-v2/brilliant_kernel_node.node")) as IntegratedNativeAddonV2;
+  const addon = require(resolve(
+    process.env.BRILLIANT_INTEGRATED_ADDON_PATH
+      ?? "target/integrated-v2/brilliant_kernel_node.node",
+  )) as IntegratedNativeAddonV2;
   const compiled = compileOfficialModuleCatalogV1(CVN6_MANIFEST, CVN6_REGISTRATION_ENTRIES);
   assert.ok(compiled.ok);
   let initial = "";

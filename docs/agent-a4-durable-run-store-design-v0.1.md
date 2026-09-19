@@ -1,7 +1,7 @@
 # AI Agent A4 Durable Run Store 设计 v0.1
 
 日期：2026-09-18  
-状态：设计阶段  
+状态：Durable Store 与第一版恢复协调器已实现
 前置：[A3 Run Core 设计与实施](agent-a3-run-core-design-v0.1.md) · [AI Agent 控制面设计](agent-control-plane-design-v0.1.md)
 
 ## 1. A4 要解决什么
@@ -148,13 +148,13 @@ app-data/
   agent/
     runs/
       <run-id>/
-        snapshot.v1.json
-        events.v1.jsonl
-        invalid/
+        run.v1.json
+        run.v1.json.invalid-<uuid>
 ```
 
-这样可以让单个 Run 独立恢复和隔离，事件适合追加，Snapshot 可以原子替换。第一版不
-引入数据库，等 Run 数量和查询需求证明文件存储不足后再评估 SQLite。
+当前第一版把 Snapshot 和事件历史放在同一个 `run.v1.json` 中，一次原子替换同时提交
+两者。这样可以避免 Snapshot 已替换、事件文件尚未写完的半提交状态。等 Run 数量和
+查询需求证明文件存储不足后，再评估独立事件日志或 SQLite。
 
 ## 6. Store Port
 
@@ -326,14 +326,21 @@ Capability Gateway 和宿主 Store 仍应位于 Rust 侧。
 ## 12. A4 实施顺序
 
 ```text
-1. 定义 Rust 可序列化 Run/Event DTO
-2. 实现内存 Store Port 测试替身
-3. 实现 Rust Durable Run Store
-4. 实现 Tauri load/commit/list-recoverable 命令
-5. 给 AgentRunController 注入 Durable Store Port
-6. 测试崩溃边界、序号冲突、损坏隔离和恢复分类
-7. 再考虑最小 Agent UI 状态投影
+1. [完成] 定义 Rust 可序列化 Run/Event DTO
+2. [完成] 实现内存 Store Port 测试替身
+3. [完成] 实现 Rust Durable Run Store
+4. [完成] 实现 Tauri load/commit/list-recoverable/quarantine 命令
+5. [完成] 给 AgentRunController 注入 Durable Store Port
+6. [完成] 持久化 invocation.dispatched 和 outcome-recorded 边界
+7. [完成] 实现第一版恢复协调器和 Capability Receipt 核对流程
+8. [未开始] 最小 Agent UI 状态投影
 ```
+
+当前实现已经能在每个 Run 状态事件上提交检查点，并在 Capability 真正发出前保存
+`invocation.dispatched`。因此，崩溃后可以识别“可能已经产生副作用”的 Invocation，
+而不是把它误判成从未执行。第一版恢复协调器现在会读取 `listRecoverable()`，并通过
+Capability Receipt 判断原调用是未开始、执行中还是已有确定结果；它不会自动重发工具。
+详细设计见 [A4.2 恢复协调器](agent-a4-recovery-coordinator-design-v0.1.md)。
 
 ## 13. 结论
 

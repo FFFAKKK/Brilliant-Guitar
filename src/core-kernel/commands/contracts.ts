@@ -339,11 +339,15 @@ export type CommandFailureLeaf =
   | {
       readonly code: "command.resource-limit-exceeded";
       readonly limitKind:
+        | "diagnostics"
         | "input-depth"
         | "input-properties"
         | "batch-children"
         | "effects"
-        | "affected-addresses";
+        | "affected-addresses"
+        | "changeset-logical-bytes"
+        | "candidate-retained-bytes"
+        | "transaction-work-units";
       readonly limit: number;
       readonly actual: number;
     }

@@ -146,6 +146,33 @@ fn predecessor(
 }
 
 impl<'a> Recorder<'a> {
+    fn retained_bytes_upper_bound(&self) -> u64 {
+        let mut bound = RetainedBytesUpperBound::default();
+        bound.add_value::<Self>();
+        bound.add_bytes(self.candidate.retained_bytes_upper_bound());
+        self.identities.add_retained_bytes_upper_bound(&mut bound);
+        if let Some(ledger) = &self.extension_ledger {
+            ledger.add_retained_bytes_upper_bound(&mut bound);
+        }
+        bound.add_map(&self.active);
+        for active in self.active.values() {
+            bound.add_map(&active.staff_changes);
+        }
+        bound.add_map(&self.staff_images);
+        bound.add_map(&self.birth_nodes);
+        bound.add_set(&self.recorded_extension_deaths);
+        for key in &self.recorded_extension_deaths {
+            Candidate::add_retained_extension_key(&mut bound, key);
+        }
+        bound.add_vec(&self.steps);
+        bound.add_map(&self.changes);
+        bound.add_map(&self.order_changes);
+        for order in self.order_changes.values() {
+            bound.add_vec(order);
+        }
+        bound.finish()
+    }
+
     /// Internal finalization vertical slice: assess before sealing identities,
     /// bind actual operations to this journal, then produce an owned Store plan.
     /// Public command dispatch and resource accounting remain separate
@@ -186,7 +213,7 @@ impl<'a> Recorder<'a> {
             brilliant_kernel_contracts::KernelStage3MetricsV1,
         ),
     > {
-        let mut final_view = self.candidate.validate_final_with_metrics()?;
+        let mut final_view = self.candidate.validate_final_with_metrics_against(store)?;
         let identities = final_view
             .seal_identities(self.identities)
             .map_err(|failure| {
@@ -411,16 +438,18 @@ impl Journal {
         match direction {
             Direction::Forward => {
                 for step in &self.steps {
+                    candidate.charge_supplemental_work(1)?;
                     step.forward.apply(candidate, &mut bindings)?;
                 }
             }
             Direction::Inverse => {
                 for step in self.steps.iter().rev() {
+                    candidate.charge_supplemental_work(1)?;
                     step.inverse.apply(candidate, &mut bindings)?;
                 }
             }
         }
-        Ok(())
+        candidate.ensure_work_budget()
     }
 }
 

@@ -18,6 +18,7 @@ mod time_index;
 mod topology;
 mod transaction;
 mod validation_diagnostics;
+mod work_budget;
 
 pub use runtime::{
     DomainAvailabilityAssessmentV1, IntegratedKernelRuntimeV2, KernelEffectV1, KernelRuntime,

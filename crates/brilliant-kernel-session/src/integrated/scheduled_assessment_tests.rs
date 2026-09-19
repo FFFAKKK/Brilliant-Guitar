@@ -6,6 +6,8 @@ struct Host {
     calls: Vec<String>,
     bad: Option<&'static str>,
     editing: bool,
+    command_pitch: &'static str,
+    extension_present: bool,
 }
 impl ContributionExecutorV2 for Host {
     fn uses_scoped_assessment(&self) -> bool {
@@ -38,11 +40,11 @@ impl ContributionExecutorV2 for Host {
             let phase = request["callbackOperation"].as_str().unwrap();
             self.calls.push(phase.into());
             let reply: Value = serde_json::from_slice(&reads.read_core(br#"{"readVersion":2,"selectorId":"core.selector.score-entity","address":{"kind":"note","noteId":"note-1"}}"#).unwrap()).unwrap();
-            assert_eq!(reply["documentVersion"], 0);
+            assert_eq!(reply["documentVersion"], request["documentVersion"]);
             assert_eq!(
                 reply["result"]["value"]["value"]["writtenPitch"]["step"],
                 if phase.starts_with("command") {
-                    "C"
+                    self.command_pitch
                 } else {
                     "D"
                 }
@@ -64,7 +66,10 @@ impl ContributionExecutorV2 for Host {
                             .get("coreDocument")
                             .is_none()
                     );
-                    assert!(request["arguments"][0].get("currentBlock").is_none());
+                    assert_eq!(
+                        request["arguments"][0].get("currentBlock").is_some(),
+                        self.extension_present
+                    );
                     serde_json::from_str::<Value>(self.replies["transform"].as_str().unwrap())
                         .unwrap()["transformed"]
                         .clone()
@@ -124,6 +129,8 @@ fn host(fixture: &Value) -> Host {
         calls: vec![],
         bad: None,
         editing: false,
+        command_pitch: "C",
+        extension_present: false,
     }
 }
 fn without_metrics(mut value: Value) -> Value {
@@ -178,6 +185,452 @@ fn report_request(version: u64, offset: usize, limit: usize) -> Value {
     json!({"operation":"readCoreReportPage","reportVersion":2,
         "documentId":"score-1","documentVersion":version,
         "profileId":"brilliant-guitar.k1","offset":offset,"limit":limit})
+}
+
+fn module_command(payload: Value) -> Value {
+    json!({
+        "commandVersion":1,
+        "commandId":"fixture.score.apply",
+        "target":{"kind":"document","documentId":"score-1"},
+        "payload":payload
+    })
+}
+
+fn module_submit(payload: Value) -> Value {
+    json!({"operation":"submit","command":module_command(payload)})
+}
+
+fn set_module_prepare(host: &mut Host, effects: Value, affected: Value) {
+    host.replies["prepare"] = serde_json::to_string(&json!({
+        "ok":true,
+        "prepared":{
+            "status":"changed",
+            "effectRequests":effects,
+            "affected":affected
+        }
+    }))
+    .unwrap()
+    .into();
+}
+
+fn set_module_prepare_without_affected(host: &mut Host, effects: Value) {
+    host.replies["prepare"] = serde_json::to_string(&json!({
+        "ok":true,
+        "prepared":{
+            "status":"changed",
+            "effectRequests":effects
+        }
+    }))
+    .unwrap()
+    .into();
+}
+
+fn module_extension_effect() -> Value {
+    json!({
+        "requestVersion":1,
+        "requestKind":"module.extension",
+        "effectKind":"fixture.score.replace",
+        "namespace":"fixture.score",
+        "owner":{"kind":"score"},
+        "payload":{"schemaVersion":1,"marker":"wasm"}
+    })
+}
+
+fn pitch_effect_with_step(step: &str) -> Value {
+    json!({
+        "requestVersion":1,
+        "requestKind":"core.note.replace-written-pitch",
+        "target":{"kind":"note","noteId":"note-1"},
+        "writtenPitch":{"step":step,"alter":0,"octave":4}
+    })
+}
+
+fn pitch_effect() -> Value {
+    pitch_effect_with_step("D")
+}
+
+fn event_remove_effect(event_id: &str) -> Value {
+    json!({
+        "requestVersion":1,
+        "requestKind":"core.event.remove",
+        "target":{"kind":"event","eventId":event_id}
+    })
+}
+
+fn rest_insert_effect(event_id: &str) -> Value {
+    rest_insert_effect_at(event_id, json!({"kind":"start"}))
+}
+
+fn rest_insert_effect_at(event_id: &str, anchor: Value) -> Value {
+    json!({
+        "requestVersion":1,
+        "requestKind":"core.voice.insert-rest-event",
+        "target":{"kind":"voice","voiceId":"voice-1"},
+        "anchor":anchor,
+        "event":{"id":event_id,"duration":{"base":4,"dots":0},"content":{"kind":"rest"}}
+    })
+}
+
+#[test]
+fn plugin_core_effects_preserve_deleted_affected_addresses_and_atomic_failure() {
+    let fixture = fixture();
+    let mut input: Value = serde_json::from_str(fixture["initial"].as_str().unwrap()).unwrap();
+    input["reportDeliveryVersion"] = json!(2);
+    let mut host = host(&fixture);
+    host.editing = true;
+    let mut session =
+        IntegratedKernelSessionV2::create(&serde_json::to_vec(&input).unwrap(), &mut host).unwrap();
+
+    let document = json!({"kind":"document","documentId":"score-1"});
+    let note = json!({"kind":"note","noteId":"note-1"});
+    let voice = json!({"kind":"voice","voiceId":"voice-1"});
+    let event_2 = json!({"kind":"event","eventId":"event-2"});
+
+    set_module_prepare_without_affected(
+        &mut host,
+        json!([
+            pitch_effect(),
+            event_remove_effect("event-2"),
+            module_extension_effect()
+        ]),
+    );
+    let deleted: Value = serde_json::from_slice(&session.operate(
+        &serde_json::to_vec(&module_submit(json!({"eventId":"event-2"}))).unwrap(),
+        &mut host,
+    ))
+    .unwrap();
+    assert_eq!(deleted["result"]["status"], "committed", "{deleted}");
+    assert_eq!(
+        deleted["result"]["value"]["affected"],
+        json!([
+            document.clone(),
+            event_2.clone(),
+            note.clone(),
+            voice.clone()
+        ])
+    );
+    let after_delete = read(&mut session, &mut host);
+    let events = &after_delete["state"]["snapshot"]["document"]["parts"][0]["measureContents"][0]["voices"]
+        [0]["sequence"]["events"];
+    assert!(
+        events
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|event| event["id"] != "event-2")
+    );
+    host.command_pitch = "D";
+    host.extension_present = true;
+
+    let undone: Value =
+        serde_json::from_slice(&session.operate(br#"{"operation":"undo"}"#, &mut host)).unwrap();
+    assert_eq!(undone["result"]["status"], "committed", "{undone}");
+    let restored = read(&mut session, &mut host);
+    assert!(
+        restored["state"]["snapshot"]["document"]["parts"][0]["measureContents"][0]["voices"][0]
+            ["sequence"]["events"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|event| event["id"] == "event-2")
+    );
+
+    let redone: Value =
+        serde_json::from_slice(&session.operate(br#"{"operation":"redo"}"#, &mut host)).unwrap();
+    assert_eq!(redone["result"]["status"], "committed", "{redone}");
+
+    set_module_prepare(
+        &mut host,
+        json!([
+            pitch_effect(),
+            rest_insert_effect("event-2"),
+            module_extension_effect()
+        ]),
+        json!([{"kind":"measure","measureId":"plugin-only"}]),
+    );
+    let rebuilt: Value = serde_json::from_slice(&session.operate(
+        &serde_json::to_vec(&module_submit(json!({"eventId":"event-2"}))).unwrap(),
+        &mut host,
+    ))
+    .unwrap();
+    assert_eq!(rebuilt["result"]["status"], "committed", "{rebuilt}");
+    assert_eq!(
+        rebuilt["result"]["value"]["affected"],
+        json!([event_2.clone(), voice.clone()])
+    );
+    let rebuilt_state = read(&mut session, &mut host);
+    assert!(
+        rebuilt_state["state"]["snapshot"]["document"]["parts"][0]["measureContents"][0]["voices"]
+            [0]["sequence"]["events"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|event| event["id"] == "event-2")
+    );
+
+    set_module_prepare(
+        &mut host,
+        json!([
+            pitch_effect(),
+            event_remove_effect("event-2"),
+            module_extension_effect()
+        ]),
+        json!([
+            document.clone(),
+            note.clone(),
+            voice.clone(),
+            event_2.clone()
+        ]),
+    );
+    let removed_rebuilt: Value = serde_json::from_slice(&session.operate(
+        &serde_json::to_vec(&module_submit(json!({"eventId":"event-2"}))).unwrap(),
+        &mut host,
+    ))
+    .unwrap();
+    assert_eq!(
+        removed_rebuilt["result"]["status"], "committed",
+        "{removed_rebuilt}"
+    );
+
+    let before_noop = read(&mut session, &mut host);
+    set_module_prepare(
+        &mut host,
+        json!([
+            rest_insert_effect("transient-event"),
+            event_remove_effect("transient-event")
+        ]),
+        json!([voice.clone()]),
+    );
+    let inserted_then_removed: Value = serde_json::from_slice(&session.operate(
+        &serde_json::to_vec(&module_submit(json!({"eventId":"transient-event"}))).unwrap(),
+        &mut host,
+    ))
+    .unwrap();
+    assert_eq!(
+        inserted_then_removed["result"]["status"], "no-op",
+        "{inserted_then_removed}"
+    );
+    assert_eq!(
+        inserted_then_removed["result"]["value"]["affected"],
+        json!([])
+    );
+    assert_eq!(read(&mut session, &mut host), before_noop);
+
+    set_module_prepare(
+        &mut host,
+        json!([
+            event_remove_effect("event-3"),
+            rest_insert_effect_at("event-3", json!({"kind":"after-event","eventId":"event-1"}))
+        ]),
+        json!([
+            voice.clone(),
+            {"kind":"event","eventId":"event-3"}
+        ]),
+    );
+    let rebuilt_same_id: Value = serde_json::from_slice(&session.operate(
+        &serde_json::to_vec(&module_submit(json!({"eventId":"event-3"}))).unwrap(),
+        &mut host,
+    ))
+    .unwrap();
+    assert_eq!(
+        rebuilt_same_id["result"]["status"], "no-op",
+        "{rebuilt_same_id}"
+    );
+    assert_eq!(rebuilt_same_id["result"]["value"]["affected"], json!([]));
+    assert_eq!(read(&mut session, &mut host), before_noop);
+
+    set_module_prepare(
+        &mut host,
+        json!([
+            pitch_effect_with_step("E"),
+            event_remove_effect("missing-event")
+        ]),
+        json!([note]),
+    );
+    let before_failure = read(&mut session, &mut host);
+    let rejected: Value = serde_json::from_slice(&session.operate(
+        &serde_json::to_vec(&module_submit(json!({"eventId":"missing-event"}))).unwrap(),
+        &mut host,
+    ))
+    .unwrap();
+    assert_eq!(rejected["ok"], false, "{rejected}");
+    assert_eq!(
+        rejected["failure"],
+        json!({
+            "code":"command.contribution-effect-rejected",
+            "moduleId":"fixture.score.module",
+            "contributionId":"fixture.score.contribution.v1",
+            "effectIndex":1,
+            "effectKind":"core.event.remove",
+            "target":{"kind":"event","eventId":"missing-event"},
+            "failureCode":"command.target-not-found"
+        }),
+        "{rejected}"
+    );
+    assert_eq!(read(&mut session, &mut host), before_failure);
+}
+
+#[test]
+fn effect_contract_failures_preserve_provenance_and_atomicity() {
+    let fixture = fixture();
+    let mut input: Value = serde_json::from_str(fixture["initial"].as_str().unwrap()).unwrap();
+    input["reportDeliveryVersion"] = json!(2);
+    let mut host = host(&fixture);
+    host.editing = true;
+    let mut session =
+        IntegratedKernelSessionV2::create(&serde_json::to_vec(&input).unwrap(), &mut host).unwrap();
+    let before = read(&mut session, &mut host);
+    let event_target = json!({"kind":"event","eventId":"event-2"});
+
+    let cases = [
+        (
+            json!({
+                "requestVersion":2,
+                "requestKind":"core.event.remove",
+                "target":event_target.clone()
+            }),
+            "core.event.remove",
+            event_target.clone(),
+            "command.unsupported-version",
+        ),
+        (
+            json!({
+                "requestVersion":1,
+                "requestKind":"core.event.future-remove",
+                "target":event_target.clone()
+            }),
+            "core.event.future-remove",
+            event_target.clone(),
+            "command.unknown-id",
+        ),
+        (
+            json!({
+                "requestVersion":1,
+                "requestKind":"core.event.remove",
+                "target":event_target.clone(),
+                "extra":true
+            }),
+            "core.event.remove",
+            event_target.clone(),
+            "command.invalid-envelope",
+        ),
+        (
+            json!({
+                "requestVersion":1,
+                "requestKind":"module.extension",
+                "effectKind":"fixture.score.unknown",
+                "namespace":"fixture.score",
+                "owner":{"kind":"score"},
+                "payload":{}
+            }),
+            "fixture.score.unknown",
+            json!({"kind":"score"}),
+            "command.unknown-id",
+        ),
+    ];
+
+    for (effect, effect_kind, target, failure_code) in cases {
+        set_module_prepare_without_affected(
+            &mut host,
+            json!([pitch_effect_with_step("E"), effect]),
+        );
+        let rejected: Value = serde_json::from_slice(&session.operate(
+            &serde_json::to_vec(&module_submit(json!({"case":effect_kind}))).unwrap(),
+            &mut host,
+        ))
+        .unwrap();
+        assert_eq!(
+            rejected["failure"],
+            json!({
+                "code":"command.contribution-effect-rejected",
+                "moduleId":"fixture.score.module",
+                "contributionId":"fixture.score.contribution.v1",
+                "effectIndex":1,
+                "effectKind":effect_kind,
+                "target":target,
+                "failureCode":failure_code
+            }),
+            "{rejected}"
+        );
+        assert_eq!(read(&mut session, &mut host), before);
+    }
+
+    host.replies["transform"] = serde_json::to_string(&json!({
+        "ok":true,
+        "transformed":{"status":"replace","schemaVersion":3,"payload":{}}
+    }))
+    .unwrap()
+    .into();
+    set_module_prepare_without_affected(
+        &mut host,
+        json!([pitch_effect(), module_extension_effect()]),
+    );
+    let rejected: Value = serde_json::from_slice(&session.operate(
+        &serde_json::to_vec(&module_submit(json!({"case":"schema-version"}))).unwrap(),
+        &mut host,
+    ))
+    .unwrap();
+    assert_eq!(
+        rejected["failure"],
+        json!({
+            "code":"command.contribution-effect-rejected",
+            "moduleId":"fixture.score.module",
+            "contributionId":"fixture.score.contribution.v1",
+            "effectIndex":1,
+            "effectKind":"fixture.score.replace",
+            "target":{"kind":"score"},
+            "failureCode":"command.unsupported-version"
+        }),
+        "{rejected}"
+    );
+    assert_eq!(read(&mut session, &mut host), before);
+}
+
+#[test]
+fn batch_module_effects_derive_affected_from_the_journal_and_reuse_it_for_history() {
+    let fixture = fixture();
+    let mut input: Value = serde_json::from_str(fixture["initial"].as_str().unwrap()).unwrap();
+    input["reportDeliveryVersion"] = json!(2);
+    let mut host = host(&fixture);
+    host.editing = true;
+    let mut session =
+        IntegratedKernelSessionV2::create(&serde_json::to_vec(&input).unwrap(), &mut host).unwrap();
+
+    let document = json!({"kind":"document","documentId":"score-1"});
+    let event = json!({"kind":"event","eventId":"event-2"});
+    let note = json!({"kind":"note","noteId":"note-1"});
+    let voice = json!({"kind":"voice","voiceId":"voice-1"});
+    let expected = json!([document.clone(), event.clone(), note.clone(), voice.clone()]);
+    set_module_prepare(
+        &mut host,
+        json!([
+            pitch_effect(),
+            event_remove_effect("event-2"),
+            module_extension_effect()
+        ]),
+        json!([{"kind":"measure","measureId":"plugin-only"}]),
+    );
+    let batch = json!({"operation":"submit","command":{
+        "commandVersion":1,
+        "commandId":"core.transaction.batch",
+        "target":{"kind":"document","documentId":"score-1"},
+        "payload":{"commands":[module_command(json!({"eventId":"event-2"}))]}
+    }});
+    let committed: Value =
+        serde_json::from_slice(&session.operate(&serde_json::to_vec(&batch).unwrap(), &mut host))
+            .unwrap();
+    assert_eq!(committed["result"]["status"], "committed", "{committed}");
+    assert_eq!(committed["result"]["value"]["affected"], expected);
+
+    let undone: Value =
+        serde_json::from_slice(&session.operate(br#"{"operation":"undo"}"#, &mut host)).unwrap();
+    assert_eq!(undone["result"]["status"], "committed", "{undone}");
+    assert_eq!(undone["result"]["value"]["affected"], expected);
+
+    let redone: Value =
+        serde_json::from_slice(&session.operate(br#"{"operation":"redo"}"#, &mut host)).unwrap();
+    assert_eq!(redone["result"]["status"], "committed", "{redone}");
+    assert_eq!(redone["result"]["value"]["affected"], expected);
 }
 
 #[test]

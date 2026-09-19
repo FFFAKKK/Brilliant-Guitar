@@ -656,6 +656,8 @@ pub enum KernelStage3ResourceLimitKindV1 {
     Effects,
     AffectedAddresses,
     ChangesetLogicalBytes,
+    CandidateRetainedBytes,
+    TransactionWorkUnits,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -951,6 +953,18 @@ mod tests {
         assert_eq!(
             serde_json::to_string(&resource).expect("resource failure JSON"),
             r#"{"code":"command.resource-limit-exceeded","limitKind":"changeset-logical-bytes","limit":268435456,"actual":268435457}"#
+        );
+
+        let work_budget = KernelStage3CommandFailureV1::from(
+            KernelStage3CommandFailureLeafV1::ResourceLimitExceeded {
+                limit_kind: KernelStage3ResourceLimitKindV1::TransactionWorkUnits,
+                limit: 8_388_608,
+                actual: 8_388_609,
+            },
+        );
+        assert_eq!(
+            serde_json::to_string(&work_budget).expect("work budget failure JSON"),
+            r#"{"code":"command.resource-limit-exceeded","limitKind":"transaction-work-units","limit":8388608,"actual":8388609}"#
         );
 
         let batch = KernelStage3CommandFailureV1::BatchChildRejected {

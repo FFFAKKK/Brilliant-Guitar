@@ -1,18 +1,30 @@
 import {
   isCapabilityResult,
+  isScoreMeasureRangeV1,
+  isScoreMetadataV1,
   isScoreSummaryV1,
+  isScoreStructureV1,
 } from "../contracts/capability.ts";
 import type {
   CapabilityResult,
   CapabilityTransportRequest,
 } from "../contracts/capability.ts";
+import type { AgentWorkspaceScope } from "./agent-contracts.ts";
 
 interface CapabilityHost {
-  invokeCapability(request: CapabilityTransportRequest): Promise<unknown>;
+  invokeAgentCapability(request: CapabilityTransportRequest): Promise<unknown>;
 }
 
 export interface AgentCapabilityPort {
-  invoke(request: CapabilityTransportRequest): Promise<CapabilityResult<unknown>>;
+  invoke(
+    request: CapabilityTransportRequest,
+    context?: AgentCapabilityInvocationContext,
+  ): Promise<CapabilityResult<unknown>>;
+}
+
+export interface AgentCapabilityInvocationContext {
+  readonly workspace: AgentWorkspaceScope;
+  readonly rangeBudget: number;
 }
 
 export class AgentCapabilityPortError extends Error {
@@ -30,8 +42,23 @@ function decodeScoreSummary(value: unknown): CapabilityResult<unknown> | null {
   return isCapabilityResult(value, isScoreSummaryV1) ? value : null;
 }
 
+function decodeScoreMetadata(value: unknown): CapabilityResult<unknown> | null {
+  return isCapabilityResult(value, isScoreMetadataV1) ? value : null;
+}
+
+function decodeScoreStructure(value: unknown): CapabilityResult<unknown> | null {
+  return isCapabilityResult(value, isScoreStructureV1) ? value : null;
+}
+
+function decodeScoreMeasureRange(value: unknown): CapabilityResult<unknown> | null {
+  return isCapabilityResult(value, isScoreMeasureRangeV1) ? value : null;
+}
+
 const FIRST_PARTY_RESULT_DECODERS: ReadonlyMap<string, CapabilityResultDecoder> = new Map([
   ["score.read-summary", decodeScoreSummary],
+  ["score.read-metadata", decodeScoreMetadata],
+  ["score.read-structure", decodeScoreStructure],
+  ["score.read-measure-range", decodeScoreMeasureRange],
 ]);
 
 export class WorkbenchAgentCapabilityPort implements AgentCapabilityPort {
@@ -46,7 +73,10 @@ export class WorkbenchAgentCapabilityPort implements AgentCapabilityPort {
     this.decoders = decoders;
   }
 
-  async invoke(request: CapabilityTransportRequest): Promise<CapabilityResult<unknown>> {
+  async invoke(
+    request: CapabilityTransportRequest,
+    _context?: AgentCapabilityInvocationContext,
+  ): Promise<CapabilityResult<unknown>> {
     const decoder = this.decoders.get(request.capabilityId);
     if (decoder === undefined) throw new AgentCapabilityPortError(
       "Agent Capability result decoder is unavailable",
@@ -54,7 +84,7 @@ export class WorkbenchAgentCapabilityPort implements AgentCapabilityPort {
     );
     let value: unknown;
     try {
-      value = await this.host.invokeCapability(request);
+      value = await this.host.invokeAgentCapability(request);
     } catch {
       throw new AgentCapabilityPortError("Agent Capability dispatch outcome is unknown", "unknown");
     }

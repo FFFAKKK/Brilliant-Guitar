@@ -1,6 +1,9 @@
+mod agent_credential;
+mod agent_provider;
 mod agent_store;
 mod application;
 mod capability;
+mod capability_receipt;
 mod commands;
 mod diagnostics;
 mod document_io;
@@ -21,16 +24,19 @@ pub fn run() {
             let settings_path = app.path().app_config_dir()?.join("settings.v1.json");
             let workspace_configuration_root = app.path().app_config_dir()?.join("workspaces");
             let agent_run_root = app.path().app_data_dir()?.join("agent").join("runs");
+            let capability_receipt_root = app.path().app_data_dir()?.join("agent").join("receipts");
             app.manage(state::AppState::with_paths(
                 recovery_root,
                 settings_path,
                 workspace_configuration_root,
                 agent_run_root,
+                capability_receipt_root,
             ));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             commands::workbench_invoke_capability_v1,
+            commands::workbench_agent_invoke_capability_v1,
             commands::workbench_read_v1,
             commands::workbench_create_v1,
             commands::workbench_edit_v1,
@@ -51,6 +57,12 @@ pub fn run() {
             commands::workbench_agent_run_commit_v1,
             commands::workbench_agent_run_list_recoverable_v1,
             commands::workbench_agent_run_quarantine_v1,
+            commands::workbench_agent_invocation_receipt_v1,
+            commands::workbench_agent_provider_credential_status_v1,
+            commands::workbench_agent_provider_set_credential_v1,
+            commands::workbench_agent_provider_delete_credential_v1,
+            commands::workbench_agent_provider_decide_v1,
+            commands::workbench_agent_provider_cancel_v1,
         ])
         .run(tauri::generate_context!())
         .expect("failed to run desktop workbench");

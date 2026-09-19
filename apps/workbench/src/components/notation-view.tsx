@@ -24,9 +24,11 @@ export function NotationView({ notation, renderer, zoom, cursorMeasureId, draftS
   const [width, setWidth] = useState(0);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [retry, setRetry] = useState(0);
-  const description = notation.kind === "staff"
-    ? `五线谱，高音谱号，共 ${notation.measures.length} 小节，${notation.measures.reduce((sum, measure) => sum + measure.events.length, 0)} 个音符或休止。拍号：${notation.measures.flatMap((measure, index) => {
-      const previous = notation.measures[index - 1];
+  const staffNotation = notation.kind === "staff" ? notation : null;
+  const clefLabel = staffNotation ? { treble: "高音", bass: "低音", alto: "中音", tenor: "次中音" }[staffNotation.clef] : "";
+  const description = staffNotation
+    ? `五线谱，${clefLabel}谱号，共 ${staffNotation.measures.length} 小节，${staffNotation.measures.reduce((sum, measure) => sum + measure.events.length, 0)} 个音符或休止。拍号：${staffNotation.measures.flatMap((measure, index) => {
+      const previous = staffNotation.measures[index - 1];
       return previous?.meter.numerator === measure.meter.numerator && previous.meter.denominator === measure.meter.denominator
         ? [] : [`第 ${index + 1} 小节起 ${measure.meter.numerator}/${measure.meter.denominator}`];
     }).join("，")}` : undefined;
@@ -78,7 +80,8 @@ export function NotationView({ notation, renderer, zoom, cursorMeasureId, draftS
     const svg = hit?.ownerSVGElement, matrix = svg?.getScreenCTM();
     if (!hit || !matrix) return;
     const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
-    onLocate(hit.dataset.measureId!, pitchAtY(point.y, Number(hit.dataset.staffBottom), Number(hit.dataset.lineSpacing)), writeNow);
+    if (!staffNotation) return;
+    onLocate(hit.dataset.measureId!, pitchAtY(point.y, Number(hit.dataset.staffBottom), Number(hit.dataset.lineSpacing), staffNotation.clef), writeNow);
   }
 
   return (

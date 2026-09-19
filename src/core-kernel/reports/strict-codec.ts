@@ -422,11 +422,15 @@ function decodeCommandFailureValue(
     ]);
     if (resource?.code === "command.resource-limit-exceeded") {
       if (
+        resource.limitKind !== "diagnostics" &&
         resource.limitKind !== "input-depth" &&
         resource.limitKind !== "input-properties" &&
         resource.limitKind !== "batch-children" &&
         resource.limitKind !== "effects" &&
-        resource.limitKind !== "affected-addresses"
+        resource.limitKind !== "affected-addresses" &&
+        resource.limitKind !== "changeset-logical-bytes" &&
+        resource.limitKind !== "candidate-retained-bytes" &&
+        resource.limitKind !== "transaction-work-units"
       ) {
         return undefined;
       }
