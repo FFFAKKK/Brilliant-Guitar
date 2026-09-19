@@ -185,6 +185,17 @@ export class PluginPlatform {
     if (this.#started) return this.sessionPlan();
     this.#started = true;
     for (const plugin of this.#catalog.installationPlan()) {
+      const selected = plugin.manifest.activation === "always" || this.#nextLaunchActivated.has(plugin.manifest.id);
+      if (!selected) {
+        this.#records.set(plugin.manifest.id, {
+          manifest: plugin.manifest,
+          status: "installed",
+          active: false,
+          nextLaunchActive: false,
+          restartRequired: false,
+        });
+        continue;
+      }
       try {
         this.#validateInstruments(plugin);
         this.#validatePlaybackOutputs(plugin);
@@ -195,10 +206,9 @@ export class PluginPlatform {
         for (const output of plugin.playbackOutputs ?? []) {
           this.#playbackOutputOwners.set(output.id, plugin.manifest.id);
         }
-        const active = plugin.manifest.activation === "always" || this.#nextLaunchActivated.has(plugin.manifest.id);
-        if (active) this.#activated.add(plugin.manifest.id);
+        this.#activated.add(plugin.manifest.id);
         this.#records.set(plugin.manifest.id, { manifest: plugin.manifest,
-          status: active ? "active" : "installed", active, nextLaunchActive: active, restartRequired: false });
+          status: "active", active: true, nextLaunchActive: true, restartRequired: false });
       } catch (error) {
         const failure = isUiPluginHostError(error) ? error : new UiPluginHostError({
           code: "UI-PLG-012",
@@ -209,9 +219,8 @@ export class PluginPlatform {
           cause: error,
         });
         this.#report(failure.diagnostic);
-        const nextLaunchActive = plugin.manifest.activation === "always" || this.#nextLaunchActivated.has(plugin.manifest.id);
         this.#records.set(plugin.manifest.id, { manifest: plugin.manifest, status: "failed", active: false,
-          nextLaunchActive, restartRequired: nextLaunchActive });
+          nextLaunchActive: true, restartRequired: true });
       }
     }
     this.#publish();

@@ -212,6 +212,26 @@ test("platform rejects registration after startup to keep the composition root d
     /already started/);
 });
 
+test("a user plugin omitted from the startup plan never enters the application host", () => {
+  const platformInstance = platform();
+  platformInstance.registerAll([
+    plugin({ id: "test.selected", componentId: "test.shared.optional" }),
+    plugin({ id: "test.omitted", componentId: "test.shared.optional", activation: "user" }),
+  ]);
+
+  platformInstance.start();
+
+  assert.deepEqual(platformInstance.components().list().map((item) => item.id), ["test.shared.optional"]);
+  assert.deepEqual(platformInstance.list().map((item) => [item.manifest.id, item.status, item.active]), [
+    ["test.selected", "active", true],
+    ["test.omitted", "installed", false],
+  ]);
+  assert.deepEqual(platformInstance.diagnostics.list(), []);
+  assert.equal(platformInstance.activate("test.omitted").effect, "restart-required");
+  assert.deepEqual(platformInstance.components().list().map((item) => item.id), ["test.shared.optional"]);
+  assert.deepEqual([...platformInstance.resolveViews(snapshot(platformInstance)).keys()], ["test.shared.optional"]);
+});
+
 test("platform exposes read-only contribution directories instead of mutable host registries", () => {
   const platformInstance = platform();
   platformInstance.register(plugin({ id: "test.read-only", componentId: "test.read-only.view" }));
