@@ -41,7 +41,7 @@ PluginPackage
 
 插件等级固定为 `system`、`product` 和 `third-party`。Kernel 模块固定使用 `session-fixed` 生命周期；非系统插件可以在启动中心选择是否进入下一次会话，但进入会话后不能启停、替换或卸载。第三方 Kernel 模块只能声明 `wasm` runtime，不能伪装成受信任的内部模块。模块 ID 在整个平台内只能有一个所有者。
 
-平台生成的 assembly plan 是排序、冻结且与调用方数据隔离的纯数据。可信宿主以后根据该计划绑定真实内部模块或经过验证的 Wasm 产物；UI Host 不导入 Kernel 实现，Kernel 也不读取 UI 清单、React 组件或插件设置。
+平台生成的 assembly plan 是排序、冻结且与调用方数据隔离的纯数据。可信宿主根据该计划绑定真实内部模块；将来只会接收经过验证的 Wasm 产物。UI Host 不导入 Kernel 实现，Kernel 也不读取 UI 清单、React 组件或插件设置。
 
 可信绑定边界已经实现于 `plugins/plugin-kernel-adapter.ts`。它接收冻结会话计划和宿主提供的实现清单，在执行任何实现之前完成严格匹配：
 
@@ -51,9 +51,9 @@ PluginPackage
 - 传输计划会重新严格捕获并规范排序；访问器、稀疏数组、额外字段和原型伪装会被拒绝。
 - 输出只包含冻结的绑定清单，不提供替换、重载或卸载入口，也不会执行或深度冻结宿主拥有的实现对象。
 
-该适配器属于可信应用宿主，不属于插件作者 SDK。内部模块的真实 Catalog 编译和第三方 Wasm 的签名、摘要、字节边界校验继续由对应宿主负责；绑定适配器只保证“计划声明”和“交付实现”一一对应，避免把具体音乐模块耦合进平台。
+该适配器属于可信应用宿主，不属于插件作者 SDK。`host/plugin-kernel-catalog.ts` 已把固定会话计划、可信内部模块绑定和现有 `compileOfficialModuleCatalogV1` 接成一条启动链；工作台调号模块也通过这条链进入真实编辑 Session。平台没有新增第二个注册表或执行器，Kernel Catalog 仍是能力编译与运行时授权的唯一权威。第三方 Wasm 在签名、摘要、ABI 与资源预算验证完成前会以 `kernel-host.runtime-not-ready` 明确拒绝，不能降级成内部模块。
 
-当前基础合同已经完成，位于 `plugins/plugin-package-contract.ts`、`plugins/plugin-sdk.ts` 和 `plugins/plugin-platform.ts`。本切片没有适配任何吉他、调号或其他业务组件；它们在平台合同稳定后分别接入。
+当前基础合同已经完成，位于 `plugins/plugin-package-contract.ts`、`plugins/plugin-sdk.ts` 和 `plugins/plugin-platform.ts`。调号作为首个系统级内部模块，已经验证从固定会话计划到真实 Kernel Catalog 的完整装配链；吉他和其他业务组件仍由各自开发任务按同一合同接入。
 
 现在第一方业务组件可以并行开发。组件必须通过统一插件包声明应用贡献和 Kernel 模块，并把具体实现交给可信宿主绑定；组件不得直接写入平台目录、持有 Kernel Catalog 或自行实现启停生命周期。
 

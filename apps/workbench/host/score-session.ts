@@ -7,6 +7,7 @@ import type { ScoreSessionRead } from "../src/contracts/score-session.ts";
 import { projectNotation } from "./notation-projection.ts";
 import { projectPlaybackSource } from "./playback-projection.ts";
 import { prepareEventProperties } from "./event-properties-command.ts";
+import { compilePluginKernelCatalogV1 } from "./plugin-kernel-catalog.ts";
 import { decodeScoreDocument, encodeScoreDocumentJson } from "../.kernel/src/core-kernel/index.js";
 import type { CreateScoreDocumentInputV1, InsertMeasureCommand, IntegratedCommandBus, KernelIntegratedCatalog,
   ScoreDocument, Voice } from "../.kernel/src/core-kernel/index.js";
@@ -18,17 +19,41 @@ import type { ScoreEditRequest, StaffClef } from "../src/contracts/note-input.ts
 import type { BatchCommand, DeleteRangeCommand, RemoveEventCommand, RemoveMeasureCommand, SetMeasureDefinitionCommand,
   InsertNotesEventCommand, InsertRestEventCommand, SetStaffDefinitionCommand } from "../.kernel/src/core-kernel/index.js";
 import type { WorkbenchIssue, WorkbenchIssueTarget } from "../src/contracts/workbench-issue.ts";
+import { createPluginKernelAssemblyPlanV1 } from "../src/plugins/plugin-package-contract.ts";
 import { restDurations } from "./rest-durations.ts";
 const require = createRequire(import.meta.url);
 let cachedWorkbenchModuleCatalog: KernelIntegratedCatalog | undefined;
 
 function compileWorkbenchModuleCatalog() {
   if (cachedWorkbenchModuleCatalog) return cachedWorkbenchModuleCatalog;
-  const { compileKeySignatureModuleCatalogV1 } = require("../.kernel/src/first-party-modules/key-signature.js") as
+  const keySignature = require("../.kernel/src/first-party-modules/key-signature.js") as
     typeof import("../.kernel/src/first-party-modules/key-signature.js");
-  const catalog = compileKeySignatureModuleCatalogV1();
-  if (!catalog.ok) throw new WorkbenchHostError("暂时无法初始化乐谱编辑环境", 503);
-  cachedWorkbenchModuleCatalog = catalog.catalog;
+  const plan = createPluginKernelAssemblyPlanV1([{
+    id: keySignature.KEY_SIGNATURE_NAMESPACE,
+    version: "1.0.0",
+    activation: "always",
+    tier: "system",
+    kernelModules: [{
+      moduleId: keySignature.KEY_SIGNATURE_NAMESPACE,
+      apiVersion: 1,
+      runtime: "internal-module",
+      activation: "session-fixed",
+    }],
+  }]);
+  const registrationEntry = keySignature.KEY_SIGNATURE_MODULE_REGISTRATION_ENTRIES[0];
+  if (!registrationEntry) throw new WorkbenchHostError("暂时无法初始化乐谱编辑环境", 503);
+  const compiled = compilePluginKernelCatalogV1(plan, [{
+    pluginId: keySignature.KEY_SIGNATURE_NAMESPACE,
+    pluginVersion: "1.0.0",
+    tier: "system",
+    moduleId: keySignature.KEY_SIGNATURE_NAMESPACE,
+    apiVersion: 1,
+    runtime: "internal-module",
+    activation: "session-fixed",
+    implementation: registrationEntry,
+  }]);
+  if (!compiled.ok) throw new WorkbenchHostError("暂时无法初始化乐谱编辑环境", 503, compiled.failure);
+  cachedWorkbenchModuleCatalog = compiled.catalog;
   return cachedWorkbenchModuleCatalog;
 }
 
