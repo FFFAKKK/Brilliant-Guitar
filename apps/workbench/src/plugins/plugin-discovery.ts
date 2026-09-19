@@ -1,5 +1,5 @@
 import type { UiPluginManifest, WorkbenchCapabilityRegistry } from "../ui/plugin-manifest.ts";
-import { isUiPluginManifest } from "../ui/plugin-manifest.ts";
+import { captureUiPluginManifest } from "../ui/plugin-manifest.ts";
 
 export type PluginManifestDiscoveryFailureCode =
   | "manifest.invalid"
@@ -25,8 +25,11 @@ export interface PluginManifestDiscoveryOptions {
 
 function candidateId(value: unknown): string | null {
   if (typeof value !== "object" || value === null) return null;
-  const id = (value as Record<string, unknown>).id;
-  return typeof id === "string" && id.length > 0 ? id : null;
+  try {
+    const descriptor = Object.getOwnPropertyDescriptor(value, "id");
+    return descriptor && "value" in descriptor && typeof descriptor.value === "string" && descriptor.value.length > 0
+      ? descriptor.value : null;
+  } catch { return null; }
 }
 
 /** Preflight directory for host supplied manifests; it never loads or executes plugin code. */
@@ -42,7 +45,8 @@ export class PluginManifestDiscovery {
   }
 
   inspect(value: unknown): PluginManifestDiscoveryResult {
-    if (!isUiPluginManifest(value)) {
+    const manifest = captureUiPluginManifest(value);
+    if (!manifest) {
       const failure: PluginManifestDiscoveryFailure = {
         code: "manifest.invalid",
         pluginId: candidateId(value),
@@ -52,40 +56,40 @@ export class PluginManifestDiscovery {
       this.#failures.push(failure);
       return { accepted: false, failure };
     }
-    if (this.#manifests.has(value.id)) {
+    if (this.#manifests.has(manifest.id)) {
       const failure: PluginManifestDiscoveryFailure = {
         code: "manifest.duplicate",
-        pluginId: value.id,
+        pluginId: manifest.id,
         message: "插件清单重复",
-        detail: `Plugin manifest already discovered: ${value.id}`,
+        detail: `Plugin manifest already discovered: ${manifest.id}`,
       };
       this.#failures.push(failure);
       return { accepted: false, failure };
     }
-    const missingCapabilities = this.#capabilities.missing(value.requires.capabilities);
+    const missingCapabilities = this.#capabilities.missing(manifest.requires.capabilities);
     if (missingCapabilities.length > 0) {
       const failure: PluginManifestDiscoveryFailure = {
         code: "manifest.capability-unavailable",
-        pluginId: value.id,
+        pluginId: manifest.id,
         message: "插件所需能力不可用",
         detail: missingCapabilities.join(", "),
       };
       this.#failures.push(failure);
       return { accepted: false, failure };
     }
-    const missingProjections = value.requires.projections.filter((id) => !this.#projections.has(id));
+    const missingProjections = manifest.requires.projections.filter((id) => !this.#projections.has(id));
     if (missingProjections.length > 0) {
       const failure: PluginManifestDiscoveryFailure = {
         code: "manifest.projection-unavailable",
-        pluginId: value.id,
+        pluginId: manifest.id,
         message: "插件所需数据投影不可用",
         detail: missingProjections.join(", "),
       };
       this.#failures.push(failure);
       return { accepted: false, failure };
     }
-    this.#manifests.set(value.id, value);
-    return { accepted: true, manifest: value };
+    this.#manifests.set(manifest.id, manifest);
+    return { accepted: true, manifest };
   }
 
   discover(values: readonly unknown[]): readonly PluginManifestDiscoveryResult[] {

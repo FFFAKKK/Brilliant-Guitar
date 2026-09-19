@@ -602,4 +602,39 @@ test("manifest discovery preflights contracts without loading plugin modules", (
   assert.equal(discovery.inspect(unsafeKernelManifest).accepted, false);
   assert.equal(discovery.failures().at(-1)?.code, "manifest.invalid");
   assert.deepEqual(discovery.list().map((manifest) => manifest.id), ["test.discovered"]);
+
+  const detachedDiscovery = new PluginManifestDiscovery({
+    capabilities: new WorkbenchCapabilityRegistry([]),
+    projections: [state.id],
+  });
+  const mutableManifest = {
+    ...owner.manifest,
+    id: "test.detached",
+    requires: { capabilities: [], projections: [state.id] },
+    contributes: {
+      ...owner.manifest.contributes,
+      views: [...owner.manifest.contributes.views],
+      commands: [...owner.manifest.contributes.commands],
+      interactions: [...owner.manifest.contributes.interactions],
+      componentExtensions: [...owner.manifest.contributes.componentExtensions],
+    },
+  };
+  const detached = detachedDiscovery.inspect(mutableManifest);
+  assert.equal(detached.accepted, true);
+  mutableManifest.name = "changed";
+  mutableManifest.requires.projections[0] = "test.changed.state";
+  assert.equal(detachedDiscovery.list()[0]?.name, owner.manifest.name);
+  assert.deepEqual(detachedDiscovery.list()[0]?.requires.projections, [state.id]);
+  assert.equal(Object.isFrozen(detachedDiscovery.list()[0]), true);
+  assert.equal(Object.isFrozen(detachedDiscovery.list()[0]?.requires.projections), true);
+
+  let accessorReads = 0;
+  const hostile = { ...mutableManifest } as Record<string, unknown>;
+  Object.defineProperty(hostile, "id", { enumerable: true, get() { accessorReads += 1; return "test.hostile"; } });
+  assert.equal(detachedDiscovery.inspect(hostile).accepted, false);
+  assert.equal(accessorReads, 0);
+  assert.equal(detachedDiscovery.inspect({ ...mutableManifest, unexpected: true }).accepted, false);
+  const sparse = { ...mutableManifest, id: "test.sparse",
+    requires: { capabilities: [], projections: new Array(1) } };
+  assert.equal(detachedDiscovery.inspect(sparse).accepted, false);
 });

@@ -43,40 +43,134 @@ function uniqueStrings(value: unknown): value is readonly string[] {
     && new Set(value).size === value.length;
 }
 
-export function isUiPluginManifest(value: unknown): value is UiPluginManifest {
-  if (typeof value !== "object" || value === null) return false;
-  const candidate = value as Partial<UiPluginManifest>;
-  if (typeof candidate.id !== "string" || !dottedId.test(candidate.id)
-    || typeof candidate.name !== "string" || candidate.name.length === 0
-    || typeof candidate.version !== "string" || !semanticVersion.test(candidate.version)
-    || (candidate.tier !== undefined && !isPluginTier(candidate.tier))
-    || candidate.apiVersion !== WORKBENCH_PLUGIN_API_VERSION
-    || candidate.runtime !== "internal-module"
-    || (candidate.activation !== "always" && candidate.activation !== "user")) return false;
-  const requires = candidate.requires;
-  if (typeof requires !== "object" || requires === null
-    || !uniqueStrings(requires.capabilities) || !uniqueStrings(requires.projections)) return false;
-  const contributes = candidate.contributes;
-  const validContributions = typeof contributes === "object" && contributes !== null
-    && uniqueStrings(contributes.views) && uniqueStrings(contributes.commands) && uniqueStrings(contributes.interactions)
-    && uniqueStrings(contributes.componentExtensions)
-    && (contributes.instruments === undefined || uniqueStrings(contributes.instruments))
-    && (contributes.playbackOutputs === undefined || uniqueStrings(contributes.playbackOutputs))
-    && (contributes.kernelModules === undefined || (Array.isArray(contributes.kernelModules)
-      && contributes.kernelModules.every(isPluginKernelModuleManifestV1)));
-  if (!validContributions) return false;
+function exactDataRecord(value: unknown, required: readonly string[], optional: readonly string[] = []):
+  Record<string, unknown> | null {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
+  const allowed = new Set([...required, ...optional]);
+  let keys: readonly PropertyKey[];
   try {
-    createPluginKernelAssemblyPlanV1([{
-      id: candidate.id,
-      version: candidate.version,
-      activation: candidate.activation,
-      ...(candidate.tier === undefined ? {} : { tier: candidate.tier }),
-      ...(contributes.kernelModules === undefined ? {} : { kernelModules: contributes.kernelModules }),
-    }]);
-    return true;
-  } catch {
-    return false;
+    const prototype = Object.getPrototypeOf(value);
+    if (prototype !== Object.prototype && prototype !== null) return null;
+    keys = Reflect.ownKeys(value);
+  } catch { return null; }
+  if (keys.some((key) => typeof key !== "string" || !allowed.has(key))
+    || required.some((key) => !keys.includes(key))) return null;
+  const captured: Record<string, unknown> = {};
+  for (const key of keys) {
+    if (typeof key !== "string") return null;
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+    if (!descriptor || !("value" in descriptor)) return null;
+    captured[key] = descriptor.value;
   }
+  return captured;
+}
+
+function capturedArrayValues(value: unknown): readonly unknown[] | null {
+  if (!Array.isArray(value)) return null;
+  let keys: readonly PropertyKey[];
+  try { keys = Reflect.ownKeys(value); } catch { return null; }
+  if (keys.length !== value.length + 1 || !keys.includes("length")) return null;
+  const result: unknown[] = [];
+  for (let index = 0; index < value.length; index += 1) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
+    if (!descriptor || !("value" in descriptor)) return null;
+    result.push(descriptor.value);
+  }
+  return result;
+}
+
+function capturedStrings(value: unknown): readonly string[] | null {
+  const values = capturedArrayValues(value);
+  if (!values) return null;
+  const result: string[] = [];
+  const seen = new Set<string>();
+  for (const item of values) {
+    if (typeof item !== "string" || item.length === 0 || item.length > 128 || seen.has(item)) return null;
+    seen.add(item);
+    result.push(item);
+  }
+  return Object.freeze(result);
+}
+
+function capturedKernelModules(value: unknown): readonly PluginKernelModuleManifestV1[] | null {
+  const values = capturedArrayValues(value);
+  if (!values) return null;
+  const result: PluginKernelModuleManifestV1[] = [];
+  for (const value of values) {
+    const record = exactDataRecord(value, ["moduleId", "apiVersion", "runtime", "activation"]);
+    if (!record || !isPluginKernelModuleManifestV1(record)) return null;
+    result.push(Object.freeze({
+      moduleId: record.moduleId as string,
+      apiVersion: 1,
+      runtime: record.runtime as PluginKernelModuleManifestV1["runtime"],
+      activation: "session-fixed",
+    }));
+  }
+  return Object.freeze(result);
+}
+
+/** Strictly captures manifest-only discovery data without retaining host-owned objects. */
+export function captureUiPluginManifest(value: unknown): UiPluginManifest | null {
+  try {
+    const candidate = exactDataRecord(value,
+      ["id", "name", "version", "apiVersion", "runtime", "activation", "requires", "contributes"],
+      ["tier"]);
+    if (!candidate || typeof candidate.id !== "string" || !dottedId.test(candidate.id)
+      || typeof candidate.name !== "string" || candidate.name.trim().length === 0 || candidate.name.length > 128
+      || typeof candidate.version !== "string" || !semanticVersion.test(candidate.version)
+      || (candidate.tier !== undefined && !isPluginTier(candidate.tier))
+      || candidate.apiVersion !== WORKBENCH_PLUGIN_API_VERSION
+      || candidate.runtime !== "internal-module"
+      || (candidate.activation !== "always" && candidate.activation !== "user")) return null;
+    const requires = exactDataRecord(candidate.requires, ["capabilities", "projections"]);
+    const capabilities = capturedStrings(requires?.capabilities);
+    const projections = capturedStrings(requires?.projections);
+    const contributes = exactDataRecord(candidate.contributes,
+      ["views", "commands", "interactions", "componentExtensions"],
+      ["instruments", "playbackOutputs", "kernelModules"]);
+    const views = capturedStrings(contributes?.views);
+    const commands = capturedStrings(contributes?.commands);
+    const interactions = capturedStrings(contributes?.interactions);
+    const componentExtensions = capturedStrings(contributes?.componentExtensions);
+    const instruments = contributes?.instruments === undefined ? undefined : capturedStrings(contributes.instruments);
+    const playbackOutputs = contributes?.playbackOutputs === undefined
+      ? undefined : capturedStrings(contributes.playbackOutputs);
+    const kernelModules = contributes?.kernelModules === undefined
+      ? undefined : capturedKernelModules(contributes.kernelModules);
+    if (!capabilities || !projections || !contributes || !views || !commands || !interactions || !componentExtensions
+      || instruments === null || playbackOutputs === null || kernelModules === null) return null;
+    const manifest: UiPluginManifest = Object.freeze({
+      id: candidate.id,
+      name: candidate.name,
+      version: candidate.version,
+      ...(candidate.tier === undefined ? {} : { tier: candidate.tier }),
+      apiVersion: WORKBENCH_PLUGIN_API_VERSION,
+      runtime: "internal-module",
+      activation: candidate.activation,
+      requires: Object.freeze({ capabilities, projections }),
+      contributes: Object.freeze({
+        views, commands, interactions, componentExtensions,
+        ...(instruments === undefined ? {} : { instruments }),
+        ...(playbackOutputs === undefined ? {} : { playbackOutputs }),
+        ...(kernelModules === undefined ? {} : { kernelModules }),
+      }),
+    });
+    createPluginKernelAssemblyPlanV1([{
+      id: manifest.id,
+      version: manifest.version,
+      activation: manifest.activation,
+      ...(manifest.tier === undefined ? {} : { tier: manifest.tier }),
+      ...(manifest.contributes.kernelModules === undefined
+        ? {} : { kernelModules: manifest.contributes.kernelModules }),
+    }]);
+    return manifest;
+  } catch {
+    return null;
+  }
+}
+
+export function isUiPluginManifest(value: unknown): value is UiPluginManifest {
+  return captureUiPluginManifest(value) !== null;
 }
 
 /** Immutable service directory exposed by the host during plugin installation. */
