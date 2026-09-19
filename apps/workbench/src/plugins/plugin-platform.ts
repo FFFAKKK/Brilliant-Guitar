@@ -2,7 +2,10 @@ import type { WorkbenchCommand } from "../commands/workbench-command.ts";
 import type { AnyUiProjection, UiProjectionSnapshot } from "../ui/projection-registry.ts";
 import type { UiPluginManifest } from "../ui/plugin-manifest.ts";
 import type { UiComponentRegistry } from "../ui/component-registry.ts";
-import type { NotationInteractionRegistry } from "../input/notation-interaction-registry.ts";
+import type { ConcreteNotationKind, NotationInteractionDirectory } from "../input/notation-interaction-registry.ts";
+import type { EditIntent } from "../input/edit-intent.ts";
+import type { InputContext } from "../input/input-context.ts";
+import type { InputSignal, KeyPressSignal } from "../input/input-signal.ts";
 import type { UiResolvedViewContribution } from "../ui/view-contribution.ts";
 import type { InternalUiPluginModule } from "../ui/plugin-manager.ts";
 import { UiPluginCatalog } from "../ui/plugin-catalog.ts";
@@ -27,12 +30,32 @@ import type {
   PluginKernelPackageManifestSource,
 } from "./plugin-package-contract.ts";
 
-export type PluginRuntimeStatus = "discovered" | "installed" | "active" | "disabled" | "failed";
+export type PluginRuntimeStatus = "discovered" | "installed" | "active" | "failed";
+export type PluginPlatformPhase = "configuring" | "running";
+export type PluginActivationEffect = "configured" | "restart-required" | "unchanged" | "rejected";
 
 export interface PluginRuntimeInfo {
   readonly manifest: UiPluginManifest;
   readonly status: PluginRuntimeStatus;
+  /** Immutable activation state of the current process session. */
   readonly active: boolean;
+  /** Desired activation state to use when the next process session is assembled. */
+  readonly nextLaunchActive: boolean;
+  readonly restartRequired: boolean;
+}
+
+export interface PluginActivationChange {
+  readonly pluginId: string;
+  readonly active: boolean;
+  readonly nextLaunchActive: boolean;
+  readonly restartRequired: boolean;
+  readonly effect: PluginActivationEffect;
+}
+
+export interface PluginSessionPlanV1 {
+  readonly planVersion: 1;
+  readonly pluginIds: readonly string[];
+  readonly kernelAssembly: PluginKernelAssemblyPlanV1;
 }
 
 export interface PluginPlatformOptions {
@@ -43,6 +66,11 @@ export interface PluginPlatformOptions {
 }
 
 export type PluginRegistration = InternalUiPluginModule | PluginPackage;
+export type PluginComponentDirectory = Pick<UiComponentRegistry, "get" | "list">;
+export type PluginInteractionDirectory = NotationInteractionDirectory;
+export type PluginProjectionDirectory = Pick<UiProjectionRegistry, "has" | "list" | "snapshot">;
+export type PluginSettingsDirectory = Pick<PluginSettingsRegistry,
+  "has" | "subscribe" | "read" | "write" | "reset" | "restore" | "serialize">;
 
 function kernelPackageSource(manifest: UiPluginManifest): PluginKernelPackageManifestSource {
   return {
@@ -58,15 +86,20 @@ function kernelPackageSource(manifest: UiPluginManifest): PluginKernelPackageMan
 
 /** One package/lifecycle facade that delegates application execution to the internal UI host. */
 export class PluginPlatform {
-  readonly catalog = new UiPluginCatalog();
   readonly diagnostics: UiPluginDiagnosticStore;
-  readonly ui: ConcreteUiPluginHost;
+  readonly #catalog = new UiPluginCatalog();
+  readonly #ui: ConcreteUiPluginHost;
   readonly #settings = new PluginSettingsRegistry();
+  readonly #componentDirectory: PluginComponentDirectory;
+  readonly #interactionDirectory: PluginInteractionDirectory;
+  readonly #projectionDirectory: PluginProjectionDirectory;
+  readonly #settingsDirectory: PluginSettingsDirectory;
   readonly #settingsHosts = new Map<string, PluginSettingsHost>();
   readonly #records = new Map<string, PluginRuntimeInfo>();
   readonly #instrumentOwners = new Map<string, string>();
   readonly #playbackOutputOwners = new Map<string, string>();
   readonly #activated = new Set<string>();
+  readonly #nextLaunchActivated = new Set<string>();
   readonly #listeners = new Set<() => void>();
   readonly #onDiagnostic: ((diagnostic: UiPluginDiagnostic) => void) | undefined;
   #snapshot: readonly PluginRuntimeInfo[] = Object.freeze([]);
@@ -77,8 +110,42 @@ export class PluginPlatform {
   constructor(options: PluginPlatformOptions) {
     this.diagnostics = options.diagnostics ?? new UiPluginDiagnosticStore();
     this.#onDiagnostic = options.onDiagnostic;
-    this.ui = new ConcreteUiPluginHost(options.capabilities, new UiProjectionRegistry(options.projections),
+    this.#ui = new ConcreteUiPluginHost(options.capabilities, new UiProjectionRegistry(options.projections),
       (diagnostic) => this.#report(diagnostic));
+    this.#componentDirectory = Object.freeze({
+      get: (id: string) => this.#ui.components.get(id),
+      list: () => this.#ui.components.list(),
+    });
+    this.#interactionDirectory = Object.freeze({
+      hasId: (id: string) => this.#ui.interactions.hasId(id),
+      hasKind: (kind: ConcreteNotationKind) => this.#ui.interactions.hasKind(kind),
+      list: () => this.#ui.interactions.list(),
+      translate: <Input extends InputContext, Draft = unknown, Intent extends EditIntent = EditIntent>(
+        kind: ConcreteNotationKind, signal: InputSignal, context: Input,
+      ) => this.#ui.interactions.translate<Input, Draft, Intent>(kind, signal, context),
+      readDraft: <Draft>(kind: ConcreteNotationKind, composition: unknown) =>
+        this.#ui.interactions.readDraft<Draft>(kind, composition),
+      startComposition: <Draft>(kind: ConcreteNotationKind, draft: Draft) =>
+        this.#ui.interactions.startComposition<Draft>(kind, draft),
+      navigate: <Context, Result>(kind: ConcreteNotationKind, signal: KeyPressSignal, context: Context) =>
+        this.#ui.interactions.navigate<Context, Result>(kind, signal, context),
+      edit: <Context, Result>(kind: ConcreteNotationKind, signal: KeyPressSignal, context: Context) =>
+        this.#ui.interactions.edit<Context, Result>(kind, signal, context),
+    } satisfies NotationInteractionDirectory);
+    this.#projectionDirectory = Object.freeze({
+      has: (id: string) => this.#ui.projections.has(id),
+      list: () => this.#ui.projections.list(),
+      snapshot: (...args: Parameters<UiProjectionRegistry["snapshot"]>) => this.#ui.projections.snapshot(...args),
+    });
+    this.#settingsDirectory = Object.freeze({
+      has: (pluginId: string) => this.#settings.has(pluginId),
+      subscribe: (listener: () => void) => this.#settings.subscribe(listener),
+      read: <T = unknown>(pluginId: string) => this.#settings.read<T>(pluginId),
+      write: <T = unknown>(pluginId: string, value: unknown) => this.#settings.write<T>(pluginId, value),
+      reset: <T = unknown>(pluginId: string) => this.#settings.reset<T>(pluginId),
+      restore: (value: unknown) => this.#settings.restore(value),
+      serialize: () => this.#settings.serialize(),
+    });
     this.#settings.subscribe(() => this.#publish());
   }
 
@@ -98,8 +165,15 @@ export class PluginPlatform {
       kernelPackageSource(plugin.manifest),
     ]);
     if (pluginPackage?.settings) this.#settings.register(plugin.manifest.id, pluginPackage.settings);
-    this.catalog.register(plugin);
-    this.#records.set(plugin.manifest.id, { manifest: plugin.manifest, status: "discovered", active: false });
+    this.#catalog.register(plugin);
+    const nextLaunchActive = plugin.manifest.activation === "always";
+    this.#records.set(plugin.manifest.id, {
+      manifest: plugin.manifest,
+      status: "discovered",
+      active: false,
+      nextLaunchActive,
+      restartRequired: false,
+    });
     this.#publish();
   }
 
@@ -107,24 +181,24 @@ export class PluginPlatform {
     for (const plugin of plugins) this.register(plugin);
   }
 
-  start(): void {
-    if (this.#started) return;
+  start(): PluginSessionPlanV1 {
+    if (this.#started) return this.sessionPlan();
     this.#started = true;
-    for (const plugin of this.catalog.installationPlan()) {
+    for (const plugin of this.#catalog.installationPlan()) {
       try {
         this.#validateInstruments(plugin);
         this.#validatePlaybackOutputs(plugin);
-        this.ui.install(plugin);
+        this.#ui.install(plugin);
         for (const instrument of plugin.instruments ?? []) {
           this.#instrumentOwners.set(instrument.id, plugin.manifest.id);
         }
         for (const output of plugin.playbackOutputs ?? []) {
           this.#playbackOutputOwners.set(output.id, plugin.manifest.id);
         }
-        const active = plugin.manifest.activation === "always";
+        const active = plugin.manifest.activation === "always" || this.#nextLaunchActivated.has(plugin.manifest.id);
         if (active) this.#activated.add(plugin.manifest.id);
         this.#records.set(plugin.manifest.id, { manifest: plugin.manifest,
-          status: active ? "active" : "installed", active });
+          status: active ? "active" : "installed", active, nextLaunchActive: active, restartRequired: false });
       } catch (error) {
         const failure = isUiPluginHostError(error) ? error : new UiPluginHostError({
           code: "UI-PLG-012",
@@ -135,11 +209,16 @@ export class PluginPlatform {
           cause: error,
         });
         this.#report(failure.diagnostic);
-        this.#records.set(plugin.manifest.id, { manifest: plugin.manifest, status: "failed", active: false });
+        const nextLaunchActive = plugin.manifest.activation === "always" || this.#nextLaunchActivated.has(plugin.manifest.id);
+        this.#records.set(plugin.manifest.id, { manifest: plugin.manifest, status: "failed", active: false,
+          nextLaunchActive, restartRequired: nextLaunchActive });
       }
     }
     this.#publish();
+    return this.sessionPlan();
   }
+
+  phase(): PluginPlatformPhase { return this.#started ? "running" : "configuring"; }
 
   list(): readonly PluginRuntimeInfo[] {
     return this.#snapshot;
@@ -152,50 +231,53 @@ export class PluginPlatform {
     return () => { this.#listeners.delete(listener); };
   };
 
-  activate(pluginId: string): void {
-    const record = this.#records.get(pluginId);
-    if (!record || record.status === "failed") return;
-    if (record.active) return;
-    this.#activated.add(pluginId);
-    this.#records.set(pluginId, { ...record, status: "active", active: true });
-    this.#publish();
-  }
+  /** Configures activation before launch, or schedules it for the next launch after the session is locked. */
+  activate(pluginId: string): PluginActivationChange { return this.#setNextLaunchActivation(pluginId, true); }
 
-  deactivate(pluginId: string): void {
-    const record = this.#records.get(pluginId);
-    if (!record || record.manifest.activation === "always" || record.status === "failed") return;
-    if (!record.active && record.status === "disabled") return;
-    this.#activated.delete(pluginId);
-    this.#records.set(pluginId, { ...record, status: "disabled", active: false });
-    this.#publish();
-  }
+  /** Configures activation before launch, or schedules it for the next launch after the session is locked. */
+  deactivate(pluginId: string): PluginActivationChange { return this.#setNextLaunchActivation(pluginId, false); }
 
   /**
-   * Reconciles every user-activated plugin with a persisted desired set.
-   * Unknown and failed plugins are ignored; always-on plugins are never changed.
+   * Reconciles the desired user-plugin set. Before start this configures the imminent
+   * session; after start it only changes the next-launch plan. The current session is immutable.
    */
   restoreActivation(pluginIds: readonly string[]): void {
-    if (!this.#started) throw new Error("Plugin platform has not started");
     const desired = new Set(pluginIds);
     let changed = false;
     for (const [pluginId, record] of this.#records) {
-      if (record.manifest.activation !== "user" || record.status === "failed") continue;
-      const shouldBeActive = desired.has(pluginId);
-      if (shouldBeActive === record.active) continue;
+      if (record.manifest.activation !== "user") continue;
+      const nextLaunchActive = desired.has(pluginId);
+      if (nextLaunchActive) this.#nextLaunchActivated.add(pluginId);
+      else this.#nextLaunchActivated.delete(pluginId);
+      const restartRequired = this.#started && record.active !== nextLaunchActive;
+      if (record.nextLaunchActive === nextLaunchActive && record.restartRequired === restartRequired) continue;
       changed = true;
-      if (shouldBeActive) {
-        this.#activated.add(pluginId);
-        this.#records.set(pluginId, { ...record, status: "active", active: true });
-      } else {
-        this.#activated.delete(pluginId);
-        this.#records.set(pluginId, { ...record, status: "disabled", active: false });
-      }
+      this.#records.set(pluginId, { ...record, nextLaunchActive, restartRequired });
     }
     if (changed) this.#publish();
   }
 
   activatedPluginIds(): ReadonlySet<string> {
     return new Set(this.#activated);
+  }
+
+  nextLaunchPluginIds(): ReadonlySet<string> {
+    return new Set([...this.#records.values()]
+      .filter((record) => record.nextLaunchActive)
+      .map((record) => record.manifest.id));
+  }
+
+  restartRequired(): boolean {
+    return [...this.#records.values()].some((record) => record.restartRequired);
+  }
+
+  sessionPlan(): PluginSessionPlanV1 {
+    if (!this.#started) throw new Error("Plugin platform has not started");
+    return Object.freeze({
+      planVersion: 1,
+      pluginIds: Object.freeze([...this.#activated].sort()),
+      kernelAssembly: this.kernelAssemblyPlan(),
+    });
   }
 
   /** Data-only fixed-session plan. The trusted host resolves implementations in a separate execution adapter. */
@@ -205,18 +287,18 @@ export class PluginPlatform {
     );
   }
 
-  components(): UiComponentRegistry { return this.ui.components; }
-  interactions(): NotationInteractionRegistry { return this.ui.interactions; }
-  projections(): UiProjectionRegistry { return this.ui.projections; }
-  settings(): PluginSettingsRegistry { return this.#settings; }
+  components(): PluginComponentDirectory { return this.#componentDirectory; }
+  interactions(): PluginInteractionDirectory { return this.#interactionDirectory; }
+  projections(): PluginProjectionDirectory { return this.#projectionDirectory; }
+  settings(): PluginSettingsDirectory { return this.#settingsDirectory; }
   instruments(): readonly PluginInstrumentContribution[] {
-    return Object.freeze(this.catalog.list().flatMap((plugin) => {
+    return Object.freeze(this.#catalog.list().flatMap((plugin) => {
       const record = this.#records.get(plugin.manifest.id);
       return record?.active ? [...(plugin.instruments ?? [])] : [];
     }));
   }
   playbackOutputs(): readonly PluginPlaybackOutputContribution[] {
-    return Object.freeze(this.catalog.list().flatMap((plugin) => {
+    return Object.freeze(this.#catalog.list().flatMap((plugin) => {
       const record = this.#records.get(plugin.manifest.id);
       return record?.active ? [...(plugin.playbackOutputs ?? [])] : [];
     }));
@@ -228,18 +310,45 @@ export class PluginPlatform {
     return this.#settingsPersistence;
   }
   connectActivation(storage: PluginActivationStoragePort): PluginActivationPersistence {
-    if (!this.#started) throw new Error("Plugin platform has not started");
     if (this.#activationPersistence) throw new Error("Plugin activation storage is already connected");
     this.#activationPersistence = new PluginActivationPersistence(this, storage);
     return this.#activationPersistence;
   }
 
-  resolveCommands(snapshot: UiProjectionSnapshot, activatedPluginIds?: ReadonlySet<string>): readonly WorkbenchCommand[] {
-    return this.ui.resolveCommands(snapshot, activatedPluginIds ?? this.#activated);
+  resolveCommands(snapshot: UiProjectionSnapshot): readonly WorkbenchCommand[] {
+    return this.#ui.resolveCommands(snapshot, this.#activated);
   }
 
-  resolveViews(snapshot: UiProjectionSnapshot, activatedPluginIds?: ReadonlySet<string>): ReadonlyMap<string, UiResolvedViewContribution> {
-    return this.ui.resolveViews(snapshot, activatedPluginIds ?? this.#activated);
+  resolveViews(snapshot: UiProjectionSnapshot): ReadonlyMap<string, UiResolvedViewContribution> {
+    return this.#ui.resolveViews(snapshot, this.#activated);
+  }
+
+  #setNextLaunchActivation(pluginId: string, enabled: boolean): PluginActivationChange {
+    const record = this.#records.get(pluginId);
+    if (!record || record.manifest.activation !== "user") {
+      return Object.freeze({
+        pluginId,
+        active: record?.active ?? false,
+        nextLaunchActive: record?.nextLaunchActive ?? false,
+        restartRequired: record?.restartRequired ?? false,
+        effect: "rejected",
+      });
+    }
+    if (enabled) this.#nextLaunchActivated.add(pluginId);
+    else this.#nextLaunchActivated.delete(pluginId);
+    const restartRequired = this.#started && record.active !== enabled;
+    const changed = record.nextLaunchActive !== enabled || record.restartRequired !== restartRequired;
+    if (changed) {
+      this.#records.set(pluginId, { ...record, nextLaunchActive: enabled, restartRequired });
+      this.#publish();
+    }
+    return Object.freeze({
+      pluginId,
+      active: record.active,
+      nextLaunchActive: enabled,
+      restartRequired,
+      effect: !changed ? "unchanged" : this.#started ? "restart-required" : "configured",
+    });
   }
 
   #report(diagnostic: UiPluginDiagnostic): void {
@@ -383,7 +492,7 @@ export class PluginPlatform {
   }
 
   #publish(): void {
-    this.#snapshot = Object.freeze([...this.#records.values()]);
+    this.#snapshot = Object.freeze([...this.#records.values()].map((record) => Object.freeze({ ...record })));
     for (const listener of this.#listeners) listener();
   }
 }

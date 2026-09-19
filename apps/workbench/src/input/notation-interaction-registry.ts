@@ -10,6 +10,20 @@ export interface NotationCompositionStart<Draft> {
   readonly draft: Draft;
 }
 
+/** Read-only runtime surface. Registration stays inside the startup composition root. */
+export interface NotationInteractionDirectory {
+  hasId(id: string): boolean;
+  hasKind(kind: ConcreteNotationKind): boolean;
+  list(): readonly string[];
+  translate<Input extends InputContext, Draft = unknown, Intent extends EditIntent = EditIntent>(
+    kind: ConcreteNotationKind, signal: InputSignal, context: Input,
+  ): InputAdapterOutput<Draft, Intent> | null;
+  readDraft<Draft>(kind: ConcreteNotationKind, composition: unknown): Draft | null;
+  startComposition<Draft>(kind: ConcreteNotationKind, draft: Draft): NotationCompositionStart<Draft> | null;
+  navigate<Context, Result>(kind: ConcreteNotationKind, signal: KeyPressSignal, context: Context): Result | null;
+  edit<Context, Result>(kind: ConcreteNotationKind, signal: KeyPressSignal, context: Context): Result | null;
+}
+
 /** One notation plugin owns its input grammar and local interaction policies as one contribution. */
 export interface NotationInteractionContribution<Input extends InputContext = InputContext, Draft = unknown,
   Intent extends EditIntent = EditIntent, NavigationContext = unknown, NavigationResult = unknown,
@@ -24,7 +38,7 @@ export interface NotationInteractionContribution<Input extends InputContext = In
 }
 
 /** Runtime directory populated by installed UI plugins. */
-export class NotationInteractionRegistry {
+export class NotationInteractionRegistry implements NotationInteractionDirectory {
   readonly #byKind = new Map<ConcreteNotationKind, NotationInteractionContribution<any, any, any, any, any, any, any>>();
   readonly #byId = new Map<string, NotationInteractionContribution<any, any, any, any, any, any, any>>();
 

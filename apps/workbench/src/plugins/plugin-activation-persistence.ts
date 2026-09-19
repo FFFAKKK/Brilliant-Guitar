@@ -9,6 +9,7 @@ export interface PluginActivationStoragePort {
 }
 
 export interface PluginActivationTarget {
+  /** Applies before launch, or records a next-launch preference after the session is locked. */
   restoreActivation(pluginIds: readonly string[]): void;
 }
 
@@ -27,7 +28,10 @@ export function normalizePluginActivationDocument(value: unknown): PluginActivat
   return Object.freeze({ schemaVersion: 1, enabledPluginIds: Object.freeze([...new Set(ids)]) });
 }
 
-/** Persists the desired user-plugin activation set while the platform owns actual lifecycle state. */
+/**
+ * Persists the desired user-plugin activation set while the platform owns actual lifecycle state.
+ * Persistence never grants hot-plug behavior: a running target can only schedule the next launch.
+ */
 export class PluginActivationPersistence {
   readonly #target: PluginActivationTarget;
   readonly #storage: PluginActivationStoragePort;

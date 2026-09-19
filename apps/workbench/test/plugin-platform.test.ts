@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { PluginPlatform } from "../src/plugins/plugin-platform.ts";
+import { PluginStartupController } from "../src/plugins/plugin-startup-controller.ts";
 import { PluginManifestDiscovery } from "../src/plugins/plugin-discovery.ts";
 import type { InternalUiPluginModule, UiCommandContribution } from "../src/ui/plugin-manager.ts";
 import type { UiComponentDefinition } from "../src/ui/plugin-contract.ts";
@@ -99,7 +100,7 @@ function snapshot(platformInstance: PluginPlatform, enabled = true) {
   return platformInstance.projections().snapshot([bindUiProjection(state, { enabled })]);
 }
 
-test("platform installs always-on plugins and keeps user plugins inactive until activation", () => {
+test("platform fixes the configured activation set for the whole running session", () => {
   const platformInstance = platform();
   const command: UiCommandContribution = {
     id: "test.user.run",
@@ -116,22 +117,26 @@ test("platform installs always-on plugins and keeps user plugins inactive until 
     plugin({ id: "test.user", componentId: "test.user.view", activation: "user", commands: [command] }),
   ]);
 
-  platformInstance.start();
+  assert.equal(platformInstance.activate("test.user").effect, "configured");
+  const sessionPlan = platformInstance.start();
 
   assert.deepEqual(platformInstance.list().map((record) => [record.manifest.id, record.status, record.active]), [
     ["test.always", "active", true],
-    ["test.user", "installed", false],
+    ["test.user", "active", true],
   ]);
-  assert.deepEqual([...platformInstance.resolveViews(snapshot(platformInstance)).keys()], ["test.always.view"]);
-  assert.deepEqual(platformInstance.resolveCommands(snapshot(platformInstance)).map((item) => item.id), []);
-
-  platformInstance.activate("test.user");
   assert.deepEqual([...platformInstance.resolveViews(snapshot(platformInstance)).keys()],
     ["test.always.view", "test.user.view"]);
   assert.deepEqual(platformInstance.resolveCommands(snapshot(platformInstance)).map((item) => item.id), ["test.user.run"]);
+  assert.deepEqual(sessionPlan.pluginIds, ["test.always", "test.user"]);
 
-  platformInstance.deactivate("test.user");
-  assert.deepEqual([...platformInstance.resolveViews(snapshot(platformInstance)).keys()], ["test.always.view"]);
+  assert.deepEqual(platformInstance.deactivate("test.user"), {
+    pluginId: "test.user", active: true, nextLaunchActive: false, restartRequired: true, effect: "restart-required",
+  });
+  assert.deepEqual([...platformInstance.resolveViews(snapshot(platformInstance)).keys()],
+    ["test.always.view", "test.user.view"]);
+  assert.deepEqual([...platformInstance.activatedPluginIds()], ["test.always", "test.user"]);
+  assert.deepEqual([...platformInstance.nextLaunchPluginIds()], ["test.always"]);
+  assert.equal(platformInstance.restartRequired(), true);
 });
 
 test("platform preserves failed plugin diagnostics and leaves the successful plugin active", () => {
@@ -164,15 +169,14 @@ test("platform resolves playback outputs through plugin activation and isolates 
       playbackOutputs: [playbackOutput("test-output")] }),
   ]);
 
+  platformInstance.activate("test.output.user");
   platformInstance.start();
 
-  assert.deepEqual(platformInstance.playbackOutputs().map((output) => output.id), ["test-output"]);
+  assert.deepEqual(platformInstance.playbackOutputs().map((output) => output.id), ["test-output", "user-output"]);
   assert.equal(platformInstance.list().find((item) => item.manifest.id === "test.output.conflict")?.status, "failed");
   assert.equal(platformInstance.diagnostics.list().at(-1)?.subject?.kind, "playback-output");
-  platformInstance.activate("test.output.user");
-  assert.deepEqual(platformInstance.playbackOutputs().map((output) => output.id), ["test-output", "user-output"]);
   platformInstance.deactivate("test.output.user");
-  assert.deepEqual(platformInstance.playbackOutputs().map((output) => output.id), ["test-output"]);
+  assert.deepEqual(platformInstance.playbackOutputs().map((output) => output.id), ["test-output", "user-output"]);
 });
 
 test("platform resolves instrument descriptions through activation and isolates duplicate IDs", () => {
@@ -186,16 +190,16 @@ test("platform resolves instrument descriptions through activation and isolates 
       instruments: [instrument("test.instrument.guitar")] }),
   ]);
 
+  platformInstance.activate("test.instrument.user");
   platformInstance.start();
 
-  assert.deepEqual(platformInstance.instruments().map((item) => item.id), ["test.instrument.guitar"]);
-  assert.equal(platformInstance.list().find((item) => item.manifest.id === "test.instrument.conflict")?.status, "failed");
-  assert.equal(platformInstance.diagnostics.list().at(-1)?.subject?.kind, "instrument");
-  platformInstance.activate("test.instrument.user");
   assert.deepEqual(platformInstance.instruments().map((item) => item.id),
     ["test.instrument.guitar", "test.instrument.bass"]);
+  assert.equal(platformInstance.list().find((item) => item.manifest.id === "test.instrument.conflict")?.status, "failed");
+  assert.equal(platformInstance.diagnostics.list().at(-1)?.subject?.kind, "instrument");
   platformInstance.deactivate("test.instrument.user");
-  assert.deepEqual(platformInstance.instruments().map((item) => item.id), ["test.instrument.guitar"]);
+  assert.deepEqual(platformInstance.instruments().map((item) => item.id),
+    ["test.instrument.guitar", "test.instrument.bass"]);
 });
 
 test("platform rejects registration after startup to keep the composition root deterministic", () => {
@@ -206,6 +210,25 @@ test("platform rejects registration after startup to keep the composition root d
   platformInstance.start();
   assert.throws(() => platformInstance.register(plugin({ id: "test.after-start", componentId: "test.after-start.view" })),
     /already started/);
+});
+
+test("platform exposes read-only contribution directories instead of mutable host registries", () => {
+  const platformInstance = platform();
+  platformInstance.register(plugin({ id: "test.read-only", componentId: "test.read-only.view" }));
+  platformInstance.start();
+
+  assert.equal(Object.isFrozen(platformInstance.components()), true);
+  assert.equal(Object.isFrozen(platformInstance.interactions()), true);
+  assert.equal(Object.isFrozen(platformInstance.projections()), true);
+  assert.equal(Object.isFrozen(platformInstance.settings()), true);
+  assert.equal("register" in platformInstance.components(), false);
+  assert.equal("register" in platformInstance.interactions(), false);
+  assert.equal("register" in platformInstance.projections(), false);
+  assert.equal("register" in platformInstance.settings(), false);
+  assert.equal("unregister" in platformInstance.components(), false);
+  assert.equal("ui" in platformInstance, false);
+  assert.equal("catalog" in platformInstance, false);
+  assert.equal(Object.isFrozen(platformInstance.getSnapshot()[0]), true);
 });
 
 test("platform rejects duplicate kernel module ownership across otherwise independent packages", () => {
@@ -233,7 +256,7 @@ test("platform rejects duplicate kernel module ownership across otherwise indepe
   assert.deepEqual(platformInstance.kernelAssemblyPlan().modules.map((entry) => entry.pluginId), ["test.kernel.owner"]);
 });
 
-test("platform publishes stable lifecycle snapshots when a user plugin changes activation", () => {
+test("platform publishes next-launch changes without mutating the running activation set", () => {
   const platformInstance = platform();
   platformInstance.register(plugin({ id: "test.user", componentId: "test.user.view", activation: "user" }));
   platformInstance.start();
@@ -241,13 +264,19 @@ test("platform publishes stable lifecycle snapshots when a user plugin changes a
   let publications = 0;
   const unsubscribe = platformInstance.subscribe(() => { publications += 1; });
 
-  platformInstance.activate("test.user");
-  const activeSnapshot = platformInstance.getSnapshot();
-  assert.notEqual(activeSnapshot, installedSnapshot);
-  assert.equal(activeSnapshot[0]?.status, "active");
+  const scheduled = platformInstance.activate("test.user");
+  const nextLaunchSnapshot = platformInstance.getSnapshot();
+  assert.notEqual(nextLaunchSnapshot, installedSnapshot);
+  assert.deepEqual(scheduled, {
+    pluginId: "test.user", active: false, nextLaunchActive: true, restartRequired: true, effect: "restart-required",
+  });
+  assert.equal(nextLaunchSnapshot[0]?.status, "installed");
+  assert.equal(nextLaunchSnapshot[0]?.active, false);
+  assert.equal(nextLaunchSnapshot[0]?.nextLaunchActive, true);
+  assert.equal(publications, 1);
 
-  platformInstance.deactivate("test.user");
-  assert.equal(platformInstance.getSnapshot()[0]?.status, "disabled");
+  assert.equal(platformInstance.deactivate("test.user").effect, "restart-required");
+  assert.equal(platformInstance.getSnapshot()[0]?.restartRequired, false);
   assert.equal(publications, 2);
 
   unsubscribe();
@@ -255,19 +284,17 @@ test("platform publishes stable lifecycle snapshots when a user plugin changes a
   assert.equal(publications, 2);
 });
 
-test("platform restores the persisted user activation set in one lifecycle publication", () => {
+test("platform restores activation before launch and defers later changes until restart", () => {
   const platformInstance = platform();
   platformInstance.registerAll([
     plugin({ id: "test.always", componentId: "test.always.view" }),
     plugin({ id: "test.user.one", componentId: "test.user.one.view", activation: "user" }),
     plugin({ id: "test.user.two", componentId: "test.user.two.view", activation: "user" }),
   ]);
-  assert.throws(() => platformInstance.restoreActivation(["test.user.one"]), /has not started/);
+  platformInstance.restoreActivation(["test.user.one"]);
   platformInstance.start();
   let publications = 0;
   platformInstance.subscribe(() => { publications += 1; });
-
-  platformInstance.restoreActivation(["test.user.one", "test.unknown"]);
 
   assert.deepEqual(platformInstance.list().map((record) => [record.manifest.id, record.status, record.active]), [
     ["test.always", "active", true],
@@ -275,18 +302,24 @@ test("platform restores the persisted user activation set in one lifecycle publi
     ["test.user.two", "installed", false],
   ]);
   assert.deepEqual([...platformInstance.activatedPluginIds()], ["test.always", "test.user.one"]);
-  assert.equal(publications, 1);
+  assert.equal(publications, 0);
 
   platformInstance.restoreActivation(["test.user.one"]);
-  assert.equal(publications, 1);
+  assert.equal(publications, 0);
 
   platformInstance.restoreActivation(["test.user.two"]);
   assert.deepEqual(platformInstance.list().map((record) => [record.manifest.id, record.status, record.active]), [
     ["test.always", "active", true],
-    ["test.user.one", "disabled", false],
-    ["test.user.two", "active", true],
+    ["test.user.one", "active", true],
+    ["test.user.two", "installed", false],
   ]);
-  assert.equal(publications, 2);
+  assert.deepEqual(platformInstance.list().map((record) => [record.manifest.id, record.nextLaunchActive,
+    record.restartRequired]), [
+    ["test.always", true, false],
+    ["test.user.one", false, true],
+    ["test.user.two", true, true],
+  ]);
+  assert.equal(publications, 1);
 });
 
 test("platform ignores failed plugins while restoring activation", () => {
@@ -295,11 +328,10 @@ test("platform ignores failed plugins while restoring activation", () => {
     plugin({ id: "test.owner", componentId: "test.shared.view" }),
     plugin({ id: "test.failed-user", componentId: "test.shared.view", activation: "user" }),
   ]);
+  platformInstance.restoreActivation(["test.failed-user"]);
   platformInstance.start();
   let publications = 0;
   platformInstance.subscribe(() => { publications += 1; });
-
-  platformInstance.restoreActivation(["test.failed-user"]);
 
   assert.deepEqual(platformInstance.list().map((record) => [record.manifest.id, record.status, record.active]), [
     ["test.owner", "active", true],
@@ -309,15 +341,12 @@ test("platform ignores failed plugins while restoring activation", () => {
   assert.equal(publications, 0);
 });
 
-test("activation persistence retains unavailable plugin IDs and reconciles installed user plugins", async () => {
+test("activation persistence configures startup and only schedules changes after launch", async () => {
   const platformInstance = platform();
   platformInstance.registerAll([
     plugin({ id: "test.always", componentId: "test.always.view" }),
     plugin({ id: "test.user", componentId: "test.user.view", activation: "user" }),
   ]);
-  assert.throws(() => platformInstance.connectActivation({ read: async () => ({}), write: async () => {} }),
-    /has not started/);
-  platformInstance.start();
   let stored: unknown = {
     schemaVersion: 1,
     enabledPluginIds: ["test.user", "test.unavailable", "bad", "test.user"],
@@ -331,6 +360,8 @@ test("activation persistence retains unavailable plugin IDs and reconciles insta
     schemaVersion: 1,
     enabledPluginIds: ["test.user", "test.unavailable"],
   });
+  assert.equal(platformInstance.list().find((item) => item.manifest.id === "test.user")?.nextLaunchActive, true);
+  platformInstance.start();
   assert.equal(platformInstance.list().find((item) => item.manifest.id === "test.user")?.active, true);
   assert.deepEqual(stored, {
     schemaVersion: 1,
@@ -338,7 +369,8 @@ test("activation persistence retains unavailable plugin IDs and reconciles insta
   });
 
   await persistence.setEnabled("test.user", false);
-  assert.equal(platformInstance.list().find((item) => item.manifest.id === "test.user")?.status, "disabled");
+  assert.equal(platformInstance.list().find((item) => item.manifest.id === "test.user")?.status, "active");
+  assert.equal(platformInstance.list().find((item) => item.manifest.id === "test.user")?.restartRequired, true);
   assert.deepEqual(stored, { schemaVersion: 1, enabledPluginIds: ["test.unavailable"] });
 
   await persistence.setEnabled("test.unavailable", false);
@@ -347,6 +379,32 @@ test("activation persistence retains unavailable plugin IDs and reconciles insta
   assert.rejects(() => persistence.setEnabled("bad", true), /Invalid plugin ID/);
   assert.throws(() => platformInstance.connectActivation({ read: async () => ({}), write: async () => {} }),
     /already connected/);
+});
+
+test("startup controller restores configuration before producing one immutable session plan", async () => {
+  const platformInstance = platform();
+  platformInstance.registerAll([
+    plugin({ id: "test.startup.always", componentId: "test.startup.always.view" }),
+    plugin({ id: "test.startup.user", componentId: "test.startup.user.view", activation: "user" }),
+  ]);
+  let stored: unknown = { schemaVersion: 1, enabledPluginIds: ["test.startup.user"] };
+  const startup = new PluginStartupController(platformInstance, {
+    read: async () => stored,
+    write: async (document) => { stored = document; },
+  });
+
+  assert.equal(startup.snapshot().phase, "unprepared");
+  assert.throws(() => startup.launch(), /not ready/);
+  await startup.prepare();
+  assert.equal(startup.snapshot().phase, "configuring");
+  const plan = startup.launch();
+
+  assert.equal(startup.snapshot().phase, "launched");
+  assert.deepEqual(plan.pluginIds, ["test.startup.always", "test.startup.user"]);
+  assert.equal(Object.isFrozen(plan), true);
+  assert.equal(Object.isFrozen(plan.pluginIds), true);
+  await assert.rejects(() => startup.setEnabled("test.startup.user", false), /not configurable/);
+  assert.throws(() => startup.launch(), /not ready/);
 });
 
 test("manifest discovery preflights contracts without loading plugin modules", () => {

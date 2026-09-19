@@ -24,7 +24,7 @@ import { reconcileScoreFocus } from "../application/edit/score-focus-reconciler.
 import { ScoreEditController } from "../application/edit/score-edit-controller.ts";
 import type { ScoreEditResolution } from "../application/edit/score-edit-controller.ts";
 import { keyPressSignal } from "../input/input-signal.ts";
-import type { NotationInteractionRegistry } from "../input/notation-interaction-registry.ts";
+import type { NotationInteractionDirectory } from "../input/notation-interaction-registry.ts";
 
 interface Queued {
   intent: ScoreEditIntent;
@@ -64,7 +64,7 @@ function feedbackContext(session: ScoreSessionRead, point: ScoreEditPoint | null
 }
 export function useScoreInput(session: ScoreSessionRead | null, client: WorkbenchClient, onSession: (session: ScoreSessionRead) => void,
   focusRef: RefObject<HTMLDivElement | null>, loadEpoch = 0, deleteTimePolicy: DeleteTimePolicy = "preserve",
-  noteInputPreferences: NoteInputPreferencesV1, interactions: NotationInteractionRegistry, runtime?: WorkbenchTaskRuntime) {
+  noteInputPreferences: NoteInputPreferencesV1, interactions: NotationInteractionDirectory, runtime?: WorkbenchTaskRuntime) {
   const editor = useEditorMachine<ScoreEditPoint, NonNullable<PitchDraft>>();
   const point = editor.state.target.kind === "unavailable" ? null : editor.state.target.point;
   const enabled = editor.state.target.kind === "caret";

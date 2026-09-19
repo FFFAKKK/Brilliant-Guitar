@@ -115,14 +115,11 @@ test("the plugin platform accepts SDK packages and applies its activation lifecy
     projections: [state],
   });
   platform.register(packageDefinition());
+  platform.activate("test.sdk.plugin");
   platform.start();
   const snapshot = platform.projections().snapshot([bindUiProjection(state, { label: "已接入" })]);
 
-  assert.equal(platform.list()[0]?.status, "installed");
-  assert.deepEqual(platform.instruments(), []);
-  assert.deepEqual(platform.playbackOutputs(), []);
-  assert.equal(platform.resolveViews(snapshot).size, 0);
-  platform.activate("test.sdk.plugin");
+  assert.equal(platform.list()[0]?.status, "active");
   assert.deepEqual(platform.instruments().map((instrument) => instrument.id), ["test.instrument.guitar"]);
   assert.deepEqual(platform.playbackOutputs().map((output) => output.id), ["test-sdk-output"]);
   assert.equal(platform.resolveViews(snapshot).get("test.sdk.view")?.render(), "已接入");
@@ -171,18 +168,17 @@ test("instrument descriptions and their note-control extensions share one activa
   });
   const platform = new PluginPlatform({ capabilities: new WorkbenchCapabilityRegistry([]), projections: [] });
   platform.registerAll([guitar, noteControl]);
+  platform.activate(guitar.id);
   platform.start();
   const projections = platform.projections().snapshot([]);
   const renderNoteControl = () => platform.resolveViews(projections).get("test.note-control.view")?.render();
 
-  assert.deepEqual(platform.instruments(), []);
-  assert.equal(renderNoteControl(), "");
-  platform.activate(guitar.id);
   assert.deepEqual(platform.instruments().map((instrument) => instrument.id), ["test.instrument.guitar"]);
   assert.equal(renderNoteControl(), "guitar-techniques");
   platform.deactivate(guitar.id);
-  assert.deepEqual(platform.instruments(), []);
-  assert.equal(renderNoteControl(), "");
+  assert.deepEqual(platform.instruments().map((instrument) => instrument.id), ["test.instrument.guitar"]);
+  assert.equal(renderNoteControl(), "guitar-techniques");
+  assert.equal(platform.restartRequired(), true);
 });
 
 test("instrument descriptions cannot claim note-control extensions owned elsewhere or missing", () => {

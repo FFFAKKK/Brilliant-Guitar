@@ -14,6 +14,7 @@ export type {
 } from "./plugin-package-contract.ts";
 export { PLUGIN_PACKAGE_V1_LIMITS } from "./plugin-package-contract.ts";
 
+/** `user` means configurable before process launch; it never means runtime hot activation. */
 export type PluginActivation = "always" | "user";
 export type PluginCommandScope = "global" | "score";
 export type PluginComponentKind = "view" | "tool" | "inspector" | "status";

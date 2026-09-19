@@ -4,9 +4,9 @@
 
 ## 目标
 
-把当前分散在 UI 插件目录、UI 宿主、诊断存储和工作台组合根中的插件逻辑，整理为一个应用级插件平台。插件平台负责发现、校验、排序、安装、激活、停用和诊断；具体组件只消费已经解析好的贡献，不再自行扫描插件。
+把当前分散在 UI 插件目录、UI 宿主、诊断存储和工作台组合根中的插件逻辑，整理为一个应用级插件平台。插件平台负责发现、校验、排序、启动前配置、固定会话装配和诊断；具体组件只消费已经解析好的贡献，不再自行扫描插件。
 
-第一阶段保持现有行为：只支持编译进工作台的内部模块，不加载任意远程脚本，不修改 Rust 或内核，不引入插件市场。
+第一阶段只支持编译进工作台的内部模块，不加载任意远程脚本，不修改 Rust 或内核，不引入插件市场。
 
 ## 分层
 
@@ -45,17 +45,46 @@ PluginPackage
 
 当前基础合同已经完成，位于 `plugins/plugin-package-contract.ts`、`plugins/plugin-sdk.ts` 和 `plugins/plugin-platform.ts`。本切片没有适配任何吉他、调号或其他业务组件；它们在平台合同稳定后分别接入。
 
-## 生命周期
+## 安全原则：禁止热插拔
 
 ```text
-discovered → installed → active
-                 └──────→ failed
-                 ├──────→ disabled
+configuring
+  → restore desired plugin set
+  → validate and create immutable session plan
+  → running (locked until process restart)
 ```
 
-`installed` 表示插件合同已经通过并进入宿主；`active` 表示它的 View、Command 或扩展贡献正在解析；`disabled` 表示插件仍已安装但暂时不参与组合。停用只改变组合结果，不删除插件身份、布局位置或持久化数据。
+所有应用组件和 Kernel 模块都遵循相同规则：注册、启用、停用、安装、卸载、升级和执行域变更只能发生在启动配置阶段。进入工作台后，当前会话的插件 ID 集合、UI 贡献拓扑和 Kernel assembly plan 全部冻结。运行中的启停请求只保存为下次启动配置，并明确标记 `restartRequired`；它不能卸载当前 View、Command、交互、服务或 Kernel 模块。
 
-第一阶段由组合根提供激活集合。后续再接入用户设置和桌面插件目录。
+`always` 表示强制随产品装配，`user` 表示用户可以在启动前配置。`user` 不表示允许运行时激活。应用仍可修改普通业务设置，但设置不得借机改变组件拓扑或加载新的可执行代码。
+
+平台不再向应用代码暴露可变的 `UiPluginHost`、`UiPluginCatalog`、组件注册表、Projection 注册表或交互注册表。应用只能获得冻结的只读目录，无法绕过平台在运行中注册或删除贡献。
+
+## 启动中心
+
+软件启动后先进入一个由应用外壳拥有的轻量启动中心。启动中心本身不是插件，也不能被插件替换。它负责：
+
+1. 新建乐谱。
+2. 选择并打开已有文件。
+3. 查看插件 ID、版本、来源、等级、兼容性和诊断。
+4. 配置下一次工作台会话启用的用户插件。
+5. 在装配失败时进入安全模式或恢复上一次可用配置。
+
+```text
+trusted application shell
+  → manifest-only discovery and validation
+  → launch center (new / open / plugin configuration)
+  → PluginStartupController.prepare()
+  → PluginStartupController.launch()
+  → immutable PluginSessionPlanV1
+       ├─ application contributions
+       └─ kernel assembly plan
+  → full workbench
+```
+
+启动中心只编排流程，不拥有插件运行机制。新建和打开文件仍由文件/工作区服务处理；插件配置仍由唯一的 `PluginPlatform` 处理。因此不会形成第二套插件生命周期。
+
+`plugins/plugin-startup-controller.ts` 已提供启动中心所需的无界面控制器：先恢复持久化配置，再允许用户调整，最后只生成一次冻结的会话计划。具体启动中心窗口和桌面目录发现属于后续应用外壳工作。
 
 ## 贡献类型
 
@@ -84,7 +113,9 @@ discovered → installed → active
   → 解析扩展点所有者依赖
   → 先安装提供扩展点的组件
   → 安装贡献高级控制的插件
-  → 根据激活集合解析 View / Command / Extension
+  → 在启动前确定激活集合
+  → 冻结会话计划
+  → 根据固定集合解析 View / Command / Extension
   → 将解析结果投影给工作台
 ```
 
@@ -117,7 +148,7 @@ SDK 不公开 `UiPluginHost`、Projection Registry、React 内部宿主上下文
 旧的 `workbenchPlugins` / `workbenchPluginCatalog` 兼容导出已经移除，`WorkbenchApp` 只通过平台 facade 装配插件。平台级测试覆盖：
 
 - 常驻插件安装后进入 `active`，用户插件安装后保持 `installed`。
-- 用户插件通过 `activate` / `deactivate` 控制 View 和 Command 贡献。
+- 用户插件在 `start()` 前配置；`start()` 后的启停只影响下次启动，不改变当前 View 和 Command。
 - 扩展点或组件冲突只隔离失败插件，并产生结构化诊断报告码。
 - 启动后拒绝追加注册，保证组合根的确定性。
 
@@ -144,9 +175,9 @@ SDK 不公开 `UiPluginHost`、Projection Registry、React 内部宿主上下文
   工作台只按 `staff`、`tablature` 或 `numbered` 选择交互所有者，不需要知道具体谱式语法。
 - 公共协议只包含标准化输入信号、抽象输入上下文和通用编辑意图，不暴露 React hook、编辑状态机、
   Tauri command 或 Rust DTO。五线谱专用上下文与结果类型仍留在五线谱插件内部。
-- 平台已提供 `restoreActivation()`，可以一次性从持久化配置恢复全部用户插件的启用集合；未知插件和
-  装配失败插件会被忽略，常驻插件不会被关闭。Agent 插件已通过这条统一路径恢复运行时启用状态，
-  `WorkbenchApp` 不再为它单独调用 `activate()` / `deactivate()`。
+- 平台已提供 `restoreActivation()`，可以一次性从持久化配置恢复全部用户插件的启动配置；未知插件意图
+  由持久化层保留，常驻插件不会被关闭。恢复发生在 `start()` 前时进入本次会话；恢复发生在 `start()` 后
+  时只生成下次启动配置，不改变当前会话。
 - SDK 插件可以声明版本化设置结构、默认值和解析函数。平台按插件 ID 隔离设置，统一完成读写校验、
   默认值恢复以及持久化文档的序列化/恢复。当前只建立前端合同；接入桌面配置文件前仍需单独定义
   Tauri/Rust 配置边界。
@@ -157,27 +188,29 @@ SDK 不公开 `UiPluginHost`、Projection Registry、React 内部宿主上下文
 - 设置恢复、写入或复位会发布平台快照，工作台因此重新解析受影响的 View 和 Command，不依赖其他界面
   状态变化来偶然刷新。
 - 用户插件启用集合也已具备独立的版本化存储端口。恢复时会过滤非法 ID、去重并保留当前未安装插件的
-  启用意图；常驻插件仍由平台强制保持启用，存储端口不能关闭它们。
+  启用意图；常驻插件仍由平台强制保持启用，存储端口不能关闭它们。运行期间修改该文档只会设置
+  `restartRequired`。
 - 浏览器开发宿主已提供该端口的 localStorage 适配器，损坏的 JSON 会隔离到 invalid 键；桌面端仍等待
   Tauri 配置合同确认后接入，浏览器适配器不会成为桌面配置来源。
 - 新增 Manifest 预检目录，宿主可以在交给平台安装前验证 API 版本、能力、Projection 和重复 ID；预检只
   处理数据，不加载或执行任何插件模块。
 - 网页前端预览在 React 挂载前预检已打包的第一方 Manifest，并从 localStorage 恢复插件设置与启用状态。
   浏览器存储失败只生成插件诊断，工作台仍继续渲染；网页端不会扫描目录或执行外部脚本。
-- 播放输出已经成为 SDK 的功能型贡献。内置合成器由“播放输出”插件注册，播放器只消费平台当前激活插件
-  提供的输出；输出插件停用或失效时会回退到内置合成器。输出引擎只接收标准化 MIDI、开始时间和时长，
+- 播放输出已经成为 SDK 的功能型贡献。内置合成器由“播放输出”插件注册，播放器只消费本次会话计划中
+  已启用插件提供的输出；输出插件未进入启动计划或装配失效时会回退到内置合成器。输出引擎只接收标准化 MIDI、开始时间和时长，
   不接触乐谱 Core、React 状态或 Tauri DTO。
 - 乐器描述已经成为 SDK 的只读能力贡献。乐器插件可以声明稳定乐器 ID、名称、乐器族、支持的谱式、
   音符控制扩展和播放音色配置标识；平台负责清单一致性、重复 ID 隔离和启停解析。乐器描述不能覆盖
-  内核提供的移调、绝对音高或乐谱事实。同一插件停用后，它的乐器描述和高级音符控制会一起退出组合。
+  内核提供的移调、绝对音高或乐谱事实。同一插件在下一次启动未启用时，它的乐器描述和高级音符控制会一起退出组合。
 
-阶段验证结果：工作台完整测试 310 项全部通过，TypeScript 类型检查与生产构建通过。
+阶段验证结果：插件平台与 SDK 定向测试 27 项、工作台完整测试 424 项全部通过，TypeScript 类型检查与生产构建通过。
 
 ### C：桌面插件发现
 
 - Tauri 桌面端读取受控插件目录。
-- 只解析 manifest，确认兼容后再加载模块。
-- 增加启用、停用和恢复状态持久化。
+- 启动中心先只解析 manifest，确认兼容和用户选择后才装配模块。
+- 增加启动配置、恢复状态和安全模式持久化。
+- 工作台运行期间不监视目录、不加载新模块、不卸载旧模块。
 
 ### D：隔离与发布
 
@@ -189,8 +222,10 @@ SDK 不公开 `UiPluginHost`、Projection Registry、React 内部宿主上下文
 ## 第一阶段验收
 
 - 工作台仍能解析现有第一方插件。
-- 用户插件未激活时不贡献 View、Command 或扩展。
+- 用户插件未在启动计划中启用时不贡献 View、Command 或扩展。
 - 扩展点所有者总是先于贡献者安装。
 - 插件冲突只产生结构化诊断，不阻塞其他插件。
 - 组件不直接读取插件目录。
+- 运行中的插件集合、组件拓扑和 Kernel assembly plan 不可变。
+- 运行中的启停请求只能产生下一次启动配置和重启提示。
 - 不修改 Rust、内核事务和现有布局格式。

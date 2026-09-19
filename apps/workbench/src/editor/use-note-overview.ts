@@ -17,12 +17,12 @@ import type { ControlChangeSignal } from "../input/input-signal.ts";
 import { keyPressSignal } from "../input/input-signal.ts";
 import type { StaffNavigationContext, StaffNavigationResolution } from "./staff-navigation-policy.ts";
 import type { StaffEditKeyContext, StaffEditKeyResolution } from "./staff-edit-key-policy.ts";
-import type { NotationInteractionRegistry } from "../input/notation-interaction-registry.ts";
+import type { NotationInteractionDirectory } from "../input/notation-interaction-registry.ts";
 import { keySignatureAlterForStep, keySignatureFifthsAtMeasure } from "../notation/key-signature.ts";
 
 /** Feature interaction shared by the score and its tool. The visual host remains headless. */
 export function useNoteOverview(input: ReturnTypeOfScoreInput, session: ScoreSessionRead | null,
-  blocked: boolean, focusRef: RefObject<HTMLDivElement | null>, interactions: NotationInteractionRegistry,
+  blocked: boolean, focusRef: RefObject<HTMLDivElement | null>, interactions: NotationInteractionDirectory,
   _loadEpoch = 0) {
   const view = session?.notation.kind === "staff" ? session.notation : null;
   const [rangeSelection, setRangeSelection] = useState<ScoreEventRangeSelection | null>(null);

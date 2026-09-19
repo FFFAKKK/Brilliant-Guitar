@@ -85,7 +85,7 @@ export function initializeWorkbenchPluginPreview(): Promise<void> {
   return browserPreviewInitialization;
 }
 
-/** Shared activation entry for preferences and future plugin-management UI. */
+/** Saves the next-launch preference. The running workbench composition never changes. */
 export async function setWorkbenchUserPluginEnabled(pluginId: string, enabled: boolean): Promise<void> {
   try {
     if (activationPersistence) await activationPersistence.setEnabled(pluginId, enabled);
