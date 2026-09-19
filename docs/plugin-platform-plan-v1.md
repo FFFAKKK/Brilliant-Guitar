@@ -29,6 +29,22 @@ Tauri / Rust Kernel
 - `PluginPlatform` 负责把目录、宿主、激活集合和运行状态统一起来。
 - 组件只通过 Projection、命令和扩展点工作，不读取插件清单或插件目录。
 
+## 统一插件包与两个执行域
+
+项目只保留一个插件平台和一个插件包身份。一个插件包可以只贡献应用能力，也可以声明随内核 Session 固定装配的 Kernel 模块；平台统一管理插件 ID、版本、等级、清单和冲突，但不直接执行 Kernel 模块。
+
+```text
+PluginPackage
+  ├─ Application contributions → UiPluginHost
+  └─ kernelModules             → immutable assembly plan → trusted Kernel adapter
+```
+
+插件等级固定为 `system`、`product` 和 `third-party`。Kernel 模块固定使用 `session-fixed` 生命周期；包含 Kernel 模块的插件不能使用运行时用户启停。第三方 Kernel 模块只能声明 `wasm` runtime，不能伪装成受信任的内部模块。模块 ID 在整个平台内只能有一个所有者。
+
+平台生成的 assembly plan 是排序、冻结且与调用方数据隔离的纯数据。可信宿主以后根据该计划绑定真实内部模块或经过验证的 Wasm 产物；UI Host 不导入 Kernel 实现，Kernel 也不读取 UI 清单、React 组件或插件设置。
+
+当前基础合同已经完成，位于 `plugins/plugin-package-contract.ts`、`plugins/plugin-sdk.ts` 和 `plugins/plugin-platform.ts`。本切片没有适配任何吉他、调号或其他业务组件；它们在平台合同稳定后分别接入。
+
 ## 生命周期
 
 ```text

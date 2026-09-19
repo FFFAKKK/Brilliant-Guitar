@@ -1,3 +1,13 @@
+import {
+  createPluginKernelAssemblyPlanV1,
+  isPluginKernelModuleManifestV1,
+  isPluginTier,
+} from "../plugins/plugin-package-contract.ts";
+import type {
+  PluginKernelModuleManifestV1,
+  PluginTier,
+} from "../plugins/plugin-package-contract.ts";
+
 export const WORKBENCH_PLUGIN_API_VERSION = "2.0" as const;
 
 export type WorkbenchCapabilityId = string;
@@ -6,6 +16,7 @@ export interface UiPluginManifest {
   readonly id: string;
   readonly name: string;
   readonly version: string;
+  readonly tier?: PluginTier;
   readonly apiVersion: typeof WORKBENCH_PLUGIN_API_VERSION;
   readonly runtime: "internal-module";
   readonly activation: "always" | "user";
@@ -20,6 +31,7 @@ export interface UiPluginManifest {
     componentExtensions: readonly string[];
     readonly instruments?: readonly string[];
     readonly playbackOutputs?: readonly string[];
+    readonly kernelModules?: readonly PluginKernelModuleManifestV1[];
   }>;
 }
 
@@ -37,6 +49,7 @@ export function isUiPluginManifest(value: unknown): value is UiPluginManifest {
   if (typeof candidate.id !== "string" || !dottedId.test(candidate.id)
     || typeof candidate.name !== "string" || candidate.name.length === 0
     || typeof candidate.version !== "string" || !semanticVersion.test(candidate.version)
+    || (candidate.tier !== undefined && !isPluginTier(candidate.tier))
     || candidate.apiVersion !== WORKBENCH_PLUGIN_API_VERSION
     || candidate.runtime !== "internal-module"
     || (candidate.activation !== "always" && candidate.activation !== "user")) return false;
@@ -44,11 +57,26 @@ export function isUiPluginManifest(value: unknown): value is UiPluginManifest {
   if (typeof requires !== "object" || requires === null
     || !uniqueStrings(requires.capabilities) || !uniqueStrings(requires.projections)) return false;
   const contributes = candidate.contributes;
-  return typeof contributes === "object" && contributes !== null
+  const validContributions = typeof contributes === "object" && contributes !== null
     && uniqueStrings(contributes.views) && uniqueStrings(contributes.commands) && uniqueStrings(contributes.interactions)
     && uniqueStrings(contributes.componentExtensions)
     && (contributes.instruments === undefined || uniqueStrings(contributes.instruments))
-    && (contributes.playbackOutputs === undefined || uniqueStrings(contributes.playbackOutputs));
+    && (contributes.playbackOutputs === undefined || uniqueStrings(contributes.playbackOutputs))
+    && (contributes.kernelModules === undefined || (Array.isArray(contributes.kernelModules)
+      && contributes.kernelModules.every(isPluginKernelModuleManifestV1)));
+  if (!validContributions) return false;
+  try {
+    createPluginKernelAssemblyPlanV1([{
+      id: candidate.id,
+      version: candidate.version,
+      activation: candidate.activation,
+      ...(candidate.tier === undefined ? {} : { tier: candidate.tier }),
+      ...(contributes.kernelModules === undefined ? {} : { kernelModules: contributes.kernelModules }),
+    }]);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** Immutable service directory exposed by the host during plugin installation. */

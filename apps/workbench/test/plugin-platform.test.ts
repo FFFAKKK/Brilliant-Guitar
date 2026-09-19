@@ -8,6 +8,7 @@ import type { UiComponentDefinition } from "../src/ui/plugin-contract.ts";
 import { WORKBENCH_PLUGIN_API_VERSION, WorkbenchCapabilityRegistry } from "../src/ui/plugin-manifest.ts";
 import { bindUiProjection, defineUiProjection } from "../src/ui/projection-registry.ts";
 import type { PluginInstrumentContribution, PluginPlaybackOutputContribution } from "../src/plugins/plugin-sdk.ts";
+import { definePlugin } from "../src/plugins/plugin-sdk.ts";
 
 const state = defineUiProjection<{ readonly enabled: boolean }>("test.platform.state");
 
@@ -207,6 +208,31 @@ test("platform rejects registration after startup to keep the composition root d
     /already started/);
 });
 
+test("platform rejects duplicate kernel module ownership across otherwise independent packages", () => {
+  const platformInstance = platform();
+  const kernelModule = {
+    moduleId: "test.shared.kernel-module",
+    apiVersion: 1 as const,
+    runtime: "internal-module" as const,
+    activation: "session-fixed" as const,
+  };
+  platformInstance.register(definePlugin({
+    id: "test.kernel.owner",
+    name: "内核模块所有者",
+    version: "1.0.0",
+    tier: "system",
+    kernelModules: [kernelModule],
+  }));
+  assert.throws(() => platformInstance.register(definePlugin({
+    id: "test.kernel.conflict",
+    name: "冲突内核模块",
+    version: "1.0.0",
+    tier: "system",
+    kernelModules: [kernelModule],
+  })), /already owned/);
+  assert.deepEqual(platformInstance.kernelAssemblyPlan().modules.map((entry) => entry.pluginId), ["test.kernel.owner"]);
+});
+
 test("platform publishes stable lifecycle snapshots when a user plugin changes activation", () => {
   const platformInstance = platform();
   platformInstance.register(plugin({ id: "test.user", componentId: "test.user.view", activation: "user" }));
@@ -345,6 +371,20 @@ test("manifest discovery preflights contracts without loading plugin modules", (
   assert.equal(discovery.failures().at(-1)?.code, "manifest.projection-unavailable");
 
   assert.equal(discovery.inspect({ id: "bad" }).accepted, false);
+  assert.equal(discovery.failures().at(-1)?.code, "manifest.invalid");
+  const unsafeKernelManifest = {
+    ...owner.manifest,
+    id: "test.unsafe-kernel",
+    tier: "third-party" as const,
+    activation: "always" as const,
+    contributes: { ...owner.manifest.contributes, kernelModules: [{
+      moduleId: "test.unsafe-kernel.module",
+      apiVersion: 1 as const,
+      runtime: "internal-module" as const,
+      activation: "session-fixed" as const,
+    }] },
+  };
+  assert.equal(discovery.inspect(unsafeKernelManifest).accepted, false);
   assert.equal(discovery.failures().at(-1)?.code, "manifest.invalid");
   assert.deepEqual(discovery.list().map((manifest) => manifest.id), ["test.discovered"]);
 });

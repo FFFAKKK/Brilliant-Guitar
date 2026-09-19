@@ -14,6 +14,10 @@ import type { PluginInputContext, PluginNotationInteractionContribution,
   PluginSettingsHost } from "../src/plugins/plugin-sdk.ts";
 import { WorkbenchCapabilityRegistry } from "../src/ui/plugin-manifest.ts";
 import { bindUiProjection } from "../src/ui/projection-registry.ts";
+import {
+  createPluginKernelAssemblyPlanV1,
+  PLUGIN_PACKAGE_V1_LIMITS,
+} from "../src/plugins/plugin-package-contract.ts";
 
 const state = definePluginProjection<{ readonly label: string }>("test.sdk.state");
 
@@ -22,6 +26,7 @@ function packageDefinition() {
     id: "test.sdk.plugin",
     name: "SDK 插件",
     version: "1.2.3",
+    tier: "product",
     activation: "user",
     settings: {
       schemaVersion: 1,
@@ -84,6 +89,7 @@ test("definePlugin derives the internal manifest without exposing host registrie
     id: "test.sdk.plugin",
     name: "SDK 插件",
     version: "1.2.3",
+    tier: "product",
     apiVersion: "2.0",
     runtime: "internal-module",
     activation: "user",
@@ -95,6 +101,7 @@ test("definePlugin derives the internal manifest without exposing host registrie
       componentExtensions: [],
       instruments: ["test.instrument.guitar"],
       playbackOutputs: ["test-sdk-output"],
+      kernelModules: [],
     },
   });
   assert.equal(Object.isFrozen(plugin), true);
@@ -370,6 +377,101 @@ test("the SDK rejects malformed public identities before host installation", () 
     settings: { schemaVersion: 0, defaults: {}, parse: () => ({}) } }), /settings schema version/);
   assert.throws(() => definePlugin({ id: "test.bad", name: "坏插件", version: "1.0.0",
     settings: { schemaVersion: 1, defaults: {}, parse: () => null } }), /settings defaults/);
+});
+
+test("one plugin package publishes a canonical fixed-session kernel assembly plan", () => {
+  const mutableModule = {
+    moduleId: "test.notation.foundation",
+    apiVersion: 1 as const,
+    runtime: "internal-module" as const,
+    activation: "session-fixed" as const,
+  };
+  const plugin = definePlugin({
+    id: "test.notation.foundation",
+    name: "记谱基础",
+    version: "1.2.0",
+    tier: "system",
+    kernelModules: [mutableModule],
+  });
+  mutableModule.moduleId = "test.notation.changed";
+  const platform = new PluginPlatform({ capabilities: new WorkbenchCapabilityRegistry([]), projections: [] });
+  platform.register(plugin);
+
+  const manifest = adaptUiPluginPackage(plugin).manifest;
+  assert.equal(manifest.tier, "system");
+  assert.deepEqual(manifest.contributes.kernelModules, plugin.kernelModules);
+  assert.deepEqual(platform.kernelAssemblyPlan(), {
+    planVersion: 1,
+    modules: [{
+      pluginId: "test.notation.foundation",
+      pluginVersion: "1.2.0",
+      tier: "system",
+      moduleId: "test.notation.foundation",
+      apiVersion: 1,
+      runtime: "internal-module",
+      activation: "session-fixed",
+    }],
+  });
+  assert.equal(Object.isFrozen(platform.kernelAssemblyPlan()), true);
+  assert.equal(Object.isFrozen(platform.kernelAssemblyPlan().modules), true);
+  assert.equal(Object.isFrozen(plugin.kernelModules[0]), true);
+});
+
+test("kernel-bearing packages reject dynamic activation and untrusted internal execution", () => {
+  const module = {
+    moduleId: "test.kernel.module",
+    apiVersion: 1 as const,
+    runtime: "internal-module" as const,
+    activation: "session-fixed" as const,
+  };
+  assert.throws(() => definePlugin({
+    id: "test.dynamic.kernel",
+    name: "动态内核插件",
+    version: "1.0.0",
+    activation: "user",
+    kernelModules: [module],
+  }), /fixed activation/);
+  assert.throws(() => definePlugin({
+    id: "test.third-party.kernel",
+    name: "第三方内核插件",
+    version: "1.0.0",
+    tier: "third-party",
+    kernelModules: [module],
+  }), /must use Wasm/);
+  assert.throws(() => definePlugin({
+    id: "test.duplicate.kernel",
+    name: "重复内核插件",
+    version: "1.0.0",
+    kernelModules: [module, module],
+  }), /already owned/);
+  assert.throws(() => definePlugin({
+    id: "test.dynamic.system",
+    name: "动态系统插件",
+    version: "1.0.0",
+    tier: "system",
+    activation: "user",
+  }), /must always be active/);
+});
+
+test("kernel assembly planning is canonical, duplicate-free and bounded without loading plugin code", () => {
+  const source = (index: number) => ({
+    id: `test.package.p${index}`,
+    version: "1.0.0",
+    activation: "always" as const,
+    tier: "system" as const,
+    kernelModules: [{
+      moduleId: `test.module.m${String(index).padStart(2, "0")}`,
+      apiVersion: 1 as const,
+      runtime: "internal-module" as const,
+      activation: "session-fixed" as const,
+    }],
+  });
+  const plan = createPluginKernelAssemblyPlanV1([source(2), source(1)]);
+  assert.deepEqual(plan.modules.map((entry) => entry.moduleId), ["test.module.m01", "test.module.m02"]);
+  assert.throws(() => createPluginKernelAssemblyPlanV1([source(1), source(1)]), /already registered/);
+  assert.throws(() => createPluginKernelAssemblyPlanV1(
+    Array.from({ length: PLUGIN_PACKAGE_V1_LIMITS.kernelModules + 1 }, (_, index) => source(index)),
+  ), /limit exceeded/);
 });
 
 test("a notation plugin registers its own input grammar without changing the workbench", () => {

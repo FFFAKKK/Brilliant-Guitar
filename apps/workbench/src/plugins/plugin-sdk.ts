@@ -1,4 +1,18 @@
 import type { ReactNode } from "react";
+import { createPluginKernelAssemblyPlanV1 } from "./plugin-package-contract.ts";
+import type {
+  PluginKernelModuleManifestV1,
+  PluginTier,
+} from "./plugin-package-contract.ts";
+
+export type {
+  PluginKernelAssemblyEntryV1,
+  PluginKernelAssemblyPlanV1,
+  PluginKernelModuleManifestV1,
+  PluginKernelModuleRuntime,
+  PluginTier,
+} from "./plugin-package-contract.ts";
+export { PLUGIN_PACKAGE_V1_LIMITS } from "./plugin-package-contract.ts";
 
 export type PluginActivation = "always" | "user";
 export type PluginCommandScope = "global" | "score";
@@ -215,7 +229,9 @@ export interface UiPluginPackage {
   readonly id: string;
   readonly name: string;
   readonly version: string;
+  readonly tier: PluginTier;
   readonly activation: PluginActivation;
+  readonly kernelModules: readonly PluginKernelModuleManifestV1[];
   readonly capabilities: readonly string[];
   readonly projections: readonly PluginProjection<unknown>[];
   readonly commands: readonly PluginCommandContribution[];
@@ -227,11 +243,16 @@ export interface UiPluginPackage {
   readonly settings?: PluginSettingsContribution<unknown>;
 }
 
+/** Unified package name. UiPluginPackage remains as a compatibility surface for existing components. */
+export type PluginPackage = UiPluginPackage;
+
 export interface DefinePluginInput {
   readonly id: string;
   readonly name: string;
   readonly version: string;
+  readonly tier?: PluginTier;
   readonly activation?: PluginActivation;
+  readonly kernelModules?: readonly PluginKernelModuleManifestV1[];
   readonly capabilities?: readonly string[];
   readonly projections?: readonly PluginProjection<unknown>[];
   readonly commands?: readonly PluginCommandContribution[];
@@ -265,12 +286,24 @@ export function definePlugin(input: DefinePluginInput): UiPluginPackage {
       throw new Error(`Invalid plugin settings defaults: ${input.id}`, { cause: error });
     }
   }
+  const activation = input.activation ?? "always";
+  const tier = input.tier ?? "product";
+  const kernelModules = Object.freeze((input.kernelModules ?? []).map((module) => Object.freeze({ ...module })));
+  createPluginKernelAssemblyPlanV1([{
+    id: input.id,
+    version: input.version,
+    activation,
+    tier,
+    kernelModules,
+  }]);
   return Object.freeze({
     [packageBrand]: true as const,
     id: input.id,
     name: input.name,
     version: input.version,
-    activation: input.activation ?? "always",
+    tier,
+    activation,
+    kernelModules,
     capabilities: immutableList(input.capabilities),
     projections: immutableList(input.projections),
     commands: immutableList(input.commands),
@@ -286,3 +319,5 @@ export function definePlugin(input: DefinePluginInput): UiPluginPackage {
 export function isUiPluginPackage(value: unknown): value is UiPluginPackage {
   return typeof value === "object" && value !== null && (value as Partial<UiPluginPackage>)[packageBrand] === true;
 }
+
+export const isPluginPackage = isUiPluginPackage;

@@ -15,12 +15,17 @@ import { adaptUiPluginPackage } from "./plugin-sdk-adapter.ts";
 import { isUiPluginPackage } from "./plugin-sdk.ts";
 import { NOTE_CONTROL_EXTENSION_POINT } from "./plugin-sdk.ts";
 import type { PluginInstrumentContribution, PluginPlaybackOutputContribution, PluginSettingsHost,
-  UiPluginPackage } from "./plugin-sdk.ts";
+  PluginPackage } from "./plugin-sdk.ts";
 import { PluginSettingsRegistry } from "./plugin-settings.ts";
 import { PluginSettingsPersistence } from "./plugin-settings-persistence.ts";
 import type { PluginSettingsStoragePort } from "./plugin-settings-persistence.ts";
 import { PluginActivationPersistence } from "./plugin-activation-persistence.ts";
 import type { PluginActivationStoragePort } from "./plugin-activation-persistence.ts";
+import { createPluginKernelAssemblyPlanV1 } from "./plugin-package-contract.ts";
+import type {
+  PluginKernelAssemblyPlanV1,
+  PluginKernelPackageManifestSource,
+} from "./plugin-package-contract.ts";
 
 export type PluginRuntimeStatus = "discovered" | "installed" | "active" | "disabled" | "failed";
 
@@ -37,9 +42,21 @@ export interface PluginPlatformOptions {
   readonly onDiagnostic?: (diagnostic: UiPluginDiagnostic) => void;
 }
 
-export type PluginRegistration = InternalUiPluginModule | UiPluginPackage;
+export type PluginRegistration = InternalUiPluginModule | PluginPackage;
 
-/** Application-level facade around the current internal UI plugin host. */
+function kernelPackageSource(manifest: UiPluginManifest): PluginKernelPackageManifestSource {
+  return {
+    id: manifest.id,
+    version: manifest.version,
+    activation: manifest.activation,
+    ...(manifest.tier === undefined ? {} : { tier: manifest.tier }),
+    ...(manifest.contributes.kernelModules === undefined
+      ? {}
+      : { kernelModules: manifest.contributes.kernelModules }),
+  };
+}
+
+/** One package/lifecycle facade that delegates application execution to the internal UI host. */
 export class PluginPlatform {
   readonly catalog = new UiPluginCatalog();
   readonly diagnostics: UiPluginDiagnosticStore;
@@ -68,7 +85,7 @@ export class PluginPlatform {
   register(registration: PluginRegistration): void {
     if (this.#started) throw new Error("Plugin platform has already started");
     let plugin: InternalUiPluginModule;
-    let pluginPackage: UiPluginPackage | null = null;
+    let pluginPackage: PluginPackage | null = null;
     if (isUiPluginPackage(registration)) {
       pluginPackage = registration;
       plugin = adaptUiPluginPackage(registration, { settings: (pluginId) => this.#settingsHost(pluginId) });
@@ -76,6 +93,10 @@ export class PluginPlatform {
       plugin = registration;
     }
     if (this.#records.has(plugin.manifest.id)) throw new Error(`Plugin already registered: ${plugin.manifest.id}`);
+    createPluginKernelAssemblyPlanV1([
+      ...[...this.#records.values()].map((record) => kernelPackageSource(record.manifest)),
+      kernelPackageSource(plugin.manifest),
+    ]);
     if (pluginPackage?.settings) this.#settings.register(plugin.manifest.id, pluginPackage.settings);
     this.catalog.register(plugin);
     this.#records.set(plugin.manifest.id, { manifest: plugin.manifest, status: "discovered", active: false });
@@ -175,6 +196,13 @@ export class PluginPlatform {
 
   activatedPluginIds(): ReadonlySet<string> {
     return new Set(this.#activated);
+  }
+
+  /** Data-only fixed-session plan. The trusted host resolves implementations in a separate execution adapter. */
+  kernelAssemblyPlan(): PluginKernelAssemblyPlanV1 {
+    return createPluginKernelAssemblyPlanV1(
+      [...this.#records.values()].map((record) => kernelPackageSource(record.manifest)),
+    );
   }
 
   components(): UiComponentRegistry { return this.ui.components; }

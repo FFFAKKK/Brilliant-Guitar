@@ -47,7 +47,7 @@ export class PluginManifestDiscovery {
         code: "manifest.invalid",
         pluginId: candidateId(value),
         message: "插件清单无效",
-        detail: "Manifest does not match the supported UI plugin contract",
+        detail: "Manifest does not match the supported plugin package contract",
       };
       this.#failures.push(failure);
       return { accepted: false, failure };
