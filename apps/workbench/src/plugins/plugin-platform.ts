@@ -59,8 +59,8 @@ export interface PluginSessionPlanV1 {
 }
 
 export interface PluginStartOptions {
-  /** Omits every user-configurable package for this process without changing its next-launch preference. */
-  readonly safeMode?: boolean;
+  /** Overrides this session's user-plugin selection without changing the persisted next-launch preference. */
+  readonly selectedPluginIds?: readonly string[];
 }
 
 export interface PluginPlatformOptions {
@@ -188,11 +188,15 @@ export class PluginPlatform {
 
   start(options: PluginStartOptions = {}): PluginSessionPlanV1 {
     if (this.#started) return this.sessionPlan();
+    const sessionSelection = options.selectedPluginIds === undefined
+      ? null
+      : new Set(options.selectedPluginIds);
     this.#started = true;
     for (const plugin of this.#catalog.installationPlan()) {
       const nextLaunchActive = plugin.manifest.activation === "always"
         || this.#nextLaunchActivated.has(plugin.manifest.id);
-      const selected = plugin.manifest.activation === "always" || (!options.safeMode && nextLaunchActive);
+      const selected = plugin.manifest.activation === "always"
+        || (sessionSelection?.has(plugin.manifest.id) ?? nextLaunchActive);
       if (!selected) {
         this.#records.set(plugin.manifest.id, {
           manifest: plugin.manifest,

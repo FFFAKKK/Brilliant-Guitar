@@ -414,10 +414,10 @@ test("startup controller restores configuration before producing one immutable s
   });
 
   assert.equal(startup.snapshot().phase, "unprepared");
-  assert.throws(() => startup.launch(), /not ready/);
+  await assert.rejects(() => startup.launch(), /not ready/);
   await startup.prepare();
   assert.equal(startup.snapshot().phase, "configuring");
-  const plan = startup.launch();
+  const plan = await startup.launch();
 
   assert.equal(startup.snapshot().phase, "launched");
   assert.equal(startup.snapshot().launchMode, "normal");
@@ -425,7 +425,14 @@ test("startup controller restores configuration before producing one immutable s
   assert.equal(Object.isFrozen(plan), true);
   assert.equal(Object.isFrozen(plan.pluginIds), true);
   await assert.rejects(() => startup.setEnabled("test.startup.user", false), /not configurable/);
-  assert.throws(() => startup.launch(), /not ready/);
+  await assert.rejects(() => startup.launch(), /not ready/);
+  assert.deepEqual(await startup.markStable(), {
+    schemaVersion: 1,
+    state: "stable",
+    attemptedPluginIds: [],
+    lastKnownGoodPluginIds: ["test.startup.always", "test.startup.user"],
+  });
+  assert.equal(startup.snapshot().stable, true);
 });
 
 test("startup controller can omit every user plugin for one safe session without erasing preferences", async () => {
@@ -441,7 +448,7 @@ test("startup controller can omit every user plugin for one safe session without
   });
 
   await startup.prepare();
-  const plan = startup.launch({ mode: "safe" });
+  const plan = await startup.launch({ mode: "safe" });
 
   assert.deepEqual(plan.pluginIds, ["test.safe.always"]);
   assert.equal(startup.snapshot().launchMode, "safe");
@@ -449,6 +456,112 @@ test("startup controller can omit every user plugin for one safe session without
   assert.deepEqual(stored, { schemaVersion: 1, enabledPluginIds: ["test.safe.user"] });
   assert.deepEqual([...platformInstance.nextLaunchPluginIds()], ["test.safe.always", "test.safe.user"]);
   assert.equal(platformInstance.components().get("test.safe.user.view"), undefined);
+});
+
+test("an incomplete startup automatically restores the last stable plugin session", async () => {
+  const platformInstance = platform();
+  platformInstance.registerAll([
+    plugin({ id: "test.recovery.always", componentId: "test.recovery.always.view" }),
+    plugin({ id: "test.recovery.good", componentId: "test.recovery.good.view", activation: "user" }),
+    plugin({ id: "test.recovery.crashed", componentId: "test.recovery.crashed.view", activation: "user" }),
+  ]);
+  let activationStored: unknown = { schemaVersion: 1, enabledPluginIds: ["test.recovery.crashed"] };
+  let recoveryStored: unknown = {
+    schemaVersion: 1,
+    state: "launching",
+    attemptedPluginIds: ["test.recovery.always", "test.recovery.crashed"],
+    lastKnownGoodPluginIds: ["test.recovery.always", "test.recovery.good"],
+  };
+  const startup = new PluginStartupController(platformInstance, {
+    read: async () => activationStored,
+    write: async (document) => { activationStored = document; },
+  }, {
+    recoveryStorage: {
+      read: async () => recoveryStored,
+      write: async (document) => { recoveryStored = document; },
+    },
+  });
+
+  await startup.prepare();
+  assert.equal(startup.snapshot().previousLaunchIncomplete, true);
+  assert.equal(startup.snapshot().recommendedMode, "last-known-good");
+  const plan = await startup.launch();
+
+  assert.equal(startup.snapshot().launchMode, "last-known-good");
+  assert.deepEqual(plan.pluginIds, ["test.recovery.always", "test.recovery.good"]);
+  assert.deepEqual(activationStored, { schemaVersion: 1, enabledPluginIds: ["test.recovery.crashed"] });
+  assert.deepEqual(recoveryStored, {
+    schemaVersion: 1,
+    state: "launching",
+    attemptedPluginIds: ["test.recovery.always", "test.recovery.good"],
+    lastKnownGoodPluginIds: ["test.recovery.always", "test.recovery.good"],
+  });
+  assert.equal(startup.snapshot().restartRequired, true);
+
+  await startup.markStable();
+  assert.deepEqual(recoveryStored, {
+    schemaVersion: 1,
+    state: "recovery",
+    attemptedPluginIds: [],
+    lastKnownGoodPluginIds: ["test.recovery.always", "test.recovery.good"],
+  });
+  assert.equal(startup.snapshot().previousLaunchIncomplete, false);
+  assert.equal(startup.snapshot().recoveryRequired, true);
+  assert.equal(startup.snapshot().recommendedMode, "last-known-good");
+
+  const resolvedPlatform = platform();
+  resolvedPlatform.registerAll([
+    plugin({ id: "test.recovery.always", componentId: "test.recovery.always.view" }),
+    plugin({ id: "test.recovery.good", componentId: "test.recovery.good.view", activation: "user" }),
+    plugin({ id: "test.recovery.crashed", componentId: "test.recovery.crashed.view", activation: "user" }),
+  ]);
+  const resolvedStartup = new PluginStartupController(resolvedPlatform, {
+    read: async () => activationStored,
+    write: async (document) => { activationStored = document; },
+  }, {
+    recoveryStorage: {
+      read: async () => recoveryStored,
+      write: async (document) => { recoveryStored = document; },
+    },
+  });
+  await resolvedStartup.prepare();
+  await resolvedStartup.setEnabled("test.recovery.good", true);
+  await resolvedStartup.setEnabled("test.recovery.crashed", false);
+  assert.equal(resolvedStartup.snapshot().recommendedMode, "normal");
+  assert.deepEqual((await resolvedStartup.launch()).pluginIds,
+    ["test.recovery.always", "test.recovery.good"]);
+  await resolvedStartup.markStable();
+  assert.deepEqual(recoveryStored, {
+    schemaVersion: 1,
+    state: "stable",
+    attemptedPluginIds: [],
+    lastKnownGoodPluginIds: ["test.recovery.always", "test.recovery.good"],
+  });
+  assert.equal(resolvedStartup.snapshot().recoveryRequired, false);
+});
+
+test("an incomplete first startup falls back to safe mode when no stable baseline exists", async () => {
+  const platformInstance = platform();
+  platformInstance.registerAll([
+    plugin({ id: "test.first.always", componentId: "test.first.always.view" }),
+    plugin({ id: "test.first.user", componentId: "test.first.user.view", activation: "user" }),
+  ]);
+  const startup = new PluginStartupController(platformInstance, {
+    read: async () => ({ schemaVersion: 1, enabledPluginIds: ["test.first.user"] }),
+    write: async () => {},
+  }, {
+    recoveryStorage: {
+      read: async () => ({ schemaVersion: 1, state: "launching", attemptedPluginIds: ["bad"],
+        lastKnownGoodPluginIds: [] }),
+      write: async () => {},
+    },
+  });
+
+  await startup.prepare();
+  assert.equal(startup.snapshot().recommendedMode, "safe");
+  const plan = await startup.launch();
+  assert.deepEqual(plan.pluginIds, ["test.first.always"]);
+  assert.equal(startup.snapshot().launchMode, "safe");
 });
 
 test("manifest discovery preflights contracts without loading plugin modules", () => {
