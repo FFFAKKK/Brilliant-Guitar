@@ -4,7 +4,9 @@ import type { ScoreEditRequest } from "../src/contracts/note-input.ts";
 import type { NewScoreInput } from "../src/contracts/new-score.ts";
 import type { ScoreSessionRead } from "../src/contracts/score-session.ts";
 import { WorkbenchClient, resolveWorkbenchWorkspaceId } from "../src/services/workbench-client.ts";
-import { BrowserPluginActivationStorage, BrowserPluginSettingsStorage, BrowserWorkbenchHostBridge, TauriWorkbenchHostBridge, WorkbenchRequestError } from "../src/services/workbench-host-bridge.ts";
+import { BrowserPluginActivationStorage, BrowserPluginSettingsStorage, BrowserPluginStartupRecoveryStorage,
+  BrowserWorkbenchHostBridge, TauriWorkbenchHostBridge,
+  WorkbenchRequestError } from "../src/services/workbench-host-bridge.ts";
 import type { WorkbenchHostBridge } from "../src/services/workbench-host-bridge.ts";
 import type { CloseRequestedEvent, Window as TauriWindow } from "@tauri-apps/api/window";
 import { DEFAULT_APPLICATION_SETTINGS } from "../src/contracts/application-settings.ts";
@@ -151,6 +153,24 @@ test("browser plugin activation storage keeps a versioned document and isolates 
   storage.setItem("brilliant.workbench.plugin-activation.v1", "{broken-json");
   assert.deepEqual(await activation.read(), {});
   assert.equal(storage.getItem("brilliant.workbench.plugin-activation.invalid.v1"), "{broken-json");
+});
+
+test("browser plugin startup recovery preserves the crash marker and isolates invalid JSON", async () => {
+  const storage = memoryStorage();
+  const recovery = new BrowserPluginStartupRecoveryStorage(storage);
+  assert.deepEqual(await recovery.read(), {});
+  const document = {
+    schemaVersion: 1 as const,
+    state: "launching" as const,
+    attemptedPluginIds: ["brilliant.instrument.guitar"],
+    lastKnownGoodPluginIds: ["brilliant.notation.foundation"],
+  };
+  await recovery.write(document);
+  assert.deepEqual(await recovery.read(), document);
+
+  storage.setItem("brilliant.workbench.plugin-startup-recovery.v1", "{broken-json");
+  assert.deepEqual(await recovery.read(), {});
+  assert.equal(storage.getItem("brilliant.workbench.plugin-startup-recovery.invalid.v1"), "{broken-json");
 });
 
 test("browser plugin settings storage preserves namespaced documents and isolates invalid JSON", async () => {

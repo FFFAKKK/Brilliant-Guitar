@@ -12,6 +12,7 @@ import { isWorkbenchIssue } from "../contracts/workbench-issue.ts";
 import type { WorkbenchIssue } from "../contracts/workbench-issue.ts";
 import type { AgentProviderDecideRequestV1 } from "../contracts/agent-provider-turn.ts";
 import type { PluginActivationDocumentV1, PluginActivationStoragePort } from "../plugins/plugin-activation-persistence.ts";
+import type { PluginStartupRecoveryDocumentV1, PluginStartupRecoveryStoragePort } from "../plugins/plugin-startup-recovery.ts";
 import type { PluginSettingsDocument } from "../plugins/plugin-settings.ts";
 import type { PluginSettingsStoragePort } from "../plugins/plugin-settings-persistence.ts";
 
@@ -470,6 +471,31 @@ export class BrowserPluginActivationStorage implements PluginActivationStoragePo
 
   async write(document: PluginActivationDocumentV1): Promise<void> {
     this.storage?.setItem(BrowserPluginActivationStorage.KEY, JSON.stringify(document));
+  }
+}
+
+/** Browser-only development storage for fixed-session startup recovery. */
+export class BrowserPluginStartupRecoveryStorage implements PluginStartupRecoveryStoragePort {
+  private static readonly KEY = "brilliant.workbench.plugin-startup-recovery.v1";
+  private static readonly INVALID_KEY = "brilliant.workbench.plugin-startup-recovery.invalid.v1";
+  private readonly storage: SettingsStorage | undefined;
+
+  constructor(storage: SettingsStorage | undefined = browserSettingsStorage()) {
+    this.storage = storage;
+  }
+
+  async read(): Promise<unknown> {
+    const value = this.storage?.getItem(BrowserPluginStartupRecoveryStorage.KEY);
+    if (value === null || value === undefined) return {};
+    try { return JSON.parse(value); }
+    catch {
+      this.storage?.setItem(BrowserPluginStartupRecoveryStorage.INVALID_KEY, value);
+      return {};
+    }
+  }
+
+  async write(document: PluginStartupRecoveryDocumentV1): Promise<void> {
+    this.storage?.setItem(BrowserPluginStartupRecoveryStorage.KEY, JSON.stringify(document));
   }
 }
 
