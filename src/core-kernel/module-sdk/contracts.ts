@@ -5,7 +5,6 @@ import type {
   ExtensionOwner,
   JsonObject,
 } from "../domain/extensions";
-import type { WrittenPitch } from "../domain/pitch";
 import type {
   ScoreDocument,
   ScoreDocumentSchemaVersion,
@@ -18,6 +17,9 @@ import type {
   ModuleIssueCode,
   ModuleKernelIssue,
 } from "../registry/integrated-contracts";
+import type { CoreEffectRequestV1 } from "./core-effects";
+
+export type { CoreWrittenPitchEffectRequestV1 } from "./core-effects";
 
 export interface DomainContributionReadViewV1 {
   readonly viewVersion: 1;
@@ -54,13 +56,6 @@ export type DomainCommandDecoderV1<Command> = (
   input: DomainCommandDecodeInputV1,
 ) => DomainCommandDecodeResultV1<Command>;
 
-export interface CoreWrittenPitchEffectRequestV1 {
-  readonly requestVersion: 1;
-  readonly requestKind: "core.note.replace-written-pitch";
-  readonly target: Extract<ScoreEntityTarget, { readonly kind: "note" }>;
-  readonly writtenPitch: WrittenPitch;
-}
-
 export interface ModuleOwnedEffectRequestV1 {
   readonly requestVersion: 1;
   readonly requestKind: "module.extension";
@@ -71,7 +66,7 @@ export interface ModuleOwnedEffectRequestV1 {
 }
 
 export type DomainEffectRequestV1 =
-  | CoreWrittenPitchEffectRequestV1
+  | CoreEffectRequestV1
   | ModuleOwnedEffectRequestV1;
 
 export type DomainCommandPreparationResultV1 =

@@ -100,6 +100,163 @@ test("one module submit applies ordered Core plus owned-extension effects atomic
   ]);
 });
 
+test("module Core effect requests reuse the closed Core command path atomically", () => {
+  const bus = setup();
+  const before = bus.read();
+  assert.equal(before.ok, true);
+  if (!before.ok) return;
+
+  resetCvn6Callbacks();
+  cvn6CallbackBehavior.prepareOverride = (view) => ({
+    status: "changed",
+    effectRequests: [
+      {
+        requestVersion: 1,
+        requestKind: "core.document.set-metadata",
+        target: { kind: "document", documentId: view.documentId },
+        metadata: {
+          ...view.coreDocument.metadata,
+          title: "Changed through module Core effects",
+        },
+      },
+      {
+        requestVersion: 1,
+        requestKind: "core.event.set-note-value",
+        target: { kind: "event", eventId: "event-1" },
+        noteValue: { base: 8, dots: 0 },
+      },
+      {
+        requestVersion: 1,
+        requestKind: "core.voice.insert-notes-event",
+        target: { kind: "voice", voiceId: "voice-1" },
+        anchor: { kind: "after-event", eventId: "event-1" },
+        event: {
+          id: "event-module-note",
+          duration: { base: 8, dots: 0 },
+          content: {
+            kind: "notes",
+            notes: [{
+              id: "note-module",
+              writtenPitch: { step: "E", alter: 0, octave: 4 },
+            }],
+          },
+        },
+      },
+      {
+        requestVersion: 1,
+        requestKind: "core.voice.insert-rest-event",
+        target: { kind: "voice", voiceId: "voice-1" },
+        anchor: { kind: "after-event", eventId: "event-module-note" },
+        event: {
+          id: "event-module-rest",
+          duration: { base: 4, dots: 0 },
+          content: { kind: "rest" },
+        },
+      },
+      {
+        requestVersion: 1,
+        requestKind: "core.event.remove",
+        target: { kind: "event", eventId: "event-2" },
+      },
+    ],
+    affected: [{ kind: "document", documentId: view.documentId }],
+  });
+
+  const result = bus.submit(command);
+  assert.equal(result.status, "committed");
+  const committed = bus.read();
+  assert.equal(committed.ok, true);
+  if (!committed.ok) return;
+  const document = committed.value.snapshot.document;
+  const events = document.parts[0]?.measureContents[0]?.voices[0]?.sequence.events;
+  assert.equal(document.metadata.title, "Changed through module Core effects");
+  assert.deepEqual(events?.map((event) => event.id), [
+    "event-1",
+    "event-module-note",
+    "event-module-rest",
+    "event-3",
+    "event-4",
+  ]);
+  assert.deepEqual(events?.[0]?.duration, { base: 8, dots: 0 });
+  assert.equal(committed.value.history.undoDepth, 1);
+
+  assert.equal(bus.undo().status, "committed");
+  const undone = bus.read();
+  assert.equal(undone.ok, true);
+  if (!undone.ok) return;
+  assert.deepEqual(
+    undone.value.snapshot.document,
+    before.value.snapshot.document,
+  );
+
+  assert.equal(bus.redo().status, "committed");
+  const redone = bus.read();
+  assert.equal(redone.ok, true);
+  if (!redone.ok) return;
+  assert.deepEqual(redone.value.snapshot.document, document);
+});
+
+test("module Core effect rejection preserves attribution and all session state", () => {
+  const bus = setup();
+  const before = bus.read();
+  resetCvn6Callbacks();
+  cvn6CallbackBehavior.prepareOverride = () => ({
+    status: "changed",
+    effectRequests: [{
+      requestVersion: 1,
+      requestKind: "core.event.remove",
+      target: { kind: "note", noteId: "note-1" },
+    }],
+    affected: [{ kind: "note", noteId: "note-1" }],
+  } as never);
+
+  const result = bus.submit(command);
+  assert.equal(result.status, "rejected");
+  if (result.status === "rejected") {
+    assert.deepEqual(result.failure, {
+      code: "command.contribution-effect-rejected",
+      moduleId: "fixture.score.module",
+      contributionId: "fixture.score.contribution.v1",
+      effectIndex: 0,
+      effectKind: "core.event.remove",
+      target: { kind: "note", noteId: "note-1" },
+      failureCode: "command.target-mismatch",
+    });
+  }
+  assert.deepEqual(bus.read(), before);
+});
+
+test("module Core effect versions fail closed before mutation", () => {
+  const bus = setup();
+  const before = bus.read();
+  resetCvn6Callbacks();
+  cvn6CallbackBehavior.prepareOverride = () => ({
+    status: "changed",
+    effectRequests: [{
+      requestVersion: 2,
+      requestKind: "core.document.set-metadata",
+      target: { kind: "document", documentId: "score-1" },
+      metadata: createCoreScoreFixture().metadata,
+    }],
+    affected: [{ kind: "document", documentId: "score-1" }],
+  } as never);
+
+  const result = bus.submit(command);
+  assert.equal(result.status, "rejected");
+  if (result.status === "rejected") {
+    assert.deepEqual(result.failure, {
+      code: "command.contribution-effect-rejected",
+      moduleId: "fixture.score.module",
+      contributionId: "fixture.score.contribution.v1",
+      effectIndex: 0,
+      effectKind: "core.document.set-metadata",
+      target: { kind: "document", documentId: "score-1" },
+      failureCode: "command.unsupported-version",
+    });
+  }
+  assert.deepEqual(bus.read(), before);
+});
+
 test("undo and redo use stored effects without re-running command or effect callbacks", () => {
   const bus = setup();
   resetCvn6Callbacks();

@@ -10,7 +10,6 @@ import {
   type ExtensionOwner,
   type JsonObject,
 } from "../domain/extensions";
-import { isWrittenPitch } from "../domain/pitch";
 import type { ScoreDocument } from "../domain/score-document";
 import type {
   EventSubscriptionResult,
@@ -85,9 +84,11 @@ import {
   type CoreEffect,
   type NonEmptyCoreEffectSet,
 } from "./effects";
-import { findCoreExecutionDefinition } from "./execution-assembly";
+import {
+  findCoreExecutionDefinition,
+  type CoreExecutionAssembly,
+} from "./execution-assembly";
 import { decodeCoreCommand } from "./strict-codec";
-import { resolveScoreEntityTarget } from "./target-resolver";
 import {
   appendBatchAffectedWithinBudget,
   BATCH_EFFECT_LIMIT,
@@ -1320,6 +1321,7 @@ export function moduleEffectForRequest(
 function applyModuleRequests(
   document: ScoreDocument,
   documentVersion: number,
+  coreAssembly: CoreExecutionAssembly,
   contribution: CompiledDomainCommandContributionV1,
   requests: readonly unknown[],
   options: ModuleRequestApplicationOptions,
@@ -1404,9 +1406,16 @@ function applyModuleRequests(
       ok: false,
       failure: attributedEffectFailure(contribution, index, request, failureCode),
     });
-    let effect: CoreEffect | undefined;
-    let affectedAddress: ScoreAddress;
-    if (requestKind === "core.note.replace-written-pitch") {
+    let effectsToApply: readonly CoreEffect[];
+    let affectedAddresses: readonly ScoreAddress[];
+    if (
+      requestKind === "core.note.replace-written-pitch" ||
+      requestKind === "core.document.set-metadata" ||
+      requestKind === "core.event.set-note-value" ||
+      requestKind === "core.voice.insert-notes-event" ||
+      requestKind === "core.voice.insert-rest-event" ||
+      requestKind === "core.event.remove"
+    ) {
       const requestVersion = ownDataValue(request, "requestVersion");
       if (!isSafeInteger(requestVersion)) {
         return reject("command.invalid-envelope");
@@ -1414,39 +1423,55 @@ function applyModuleRequests(
       if (requestVersion !== 1) {
         return reject("command.unsupported-version");
       }
-      const coreRecord = readExactDataRecord(request, [
-        "requestVersion",
-        "requestKind",
-        "target",
-        "writtenPitch",
-      ]);
+      const requestKeys = requestKind === "core.note.replace-written-pitch"
+        ? ["requestVersion", "requestKind", "target", "writtenPitch"]
+        : requestKind === "core.document.set-metadata"
+          ? ["requestVersion", "requestKind", "target", "metadata"]
+          : requestKind === "core.event.set-note-value"
+            ? ["requestVersion", "requestKind", "target", "noteValue"]
+            : requestKind === "core.voice.insert-notes-event" ||
+                requestKind === "core.voice.insert-rest-event"
+              ? ["requestVersion", "requestKind", "target", "anchor", "event"]
+              : ["requestVersion", "requestKind", "target"];
+      const coreRecord = readExactDataRecord(request, requestKeys);
       if (coreRecord === undefined) {
         return reject("command.invalid-envelope");
       }
-      const actualKind = targetKind(coreRecord.target);
-      if (actualKind === undefined) {
-        return reject("command.invalid-envelope");
+      const commandId = requestKind === "core.note.replace-written-pitch"
+        ? "core.note.set-written-pitch"
+        : requestKind;
+      const payload = requestKind === "core.note.replace-written-pitch"
+        ? { writtenPitch: coreRecord.writtenPitch }
+        : requestKind === "core.document.set-metadata"
+          ? { metadata: coreRecord.metadata }
+          : requestKind === "core.event.set-note-value"
+            ? { noteValue: coreRecord.noteValue }
+            : requestKind === "core.voice.insert-notes-event" ||
+                requestKind === "core.voice.insert-rest-event"
+              ? { anchor: coreRecord.anchor, event: coreRecord.event }
+              : {};
+      const decoded = decodeCoreCommand({
+        commandVersion: 1,
+        commandId,
+        target: coreRecord.target,
+        payload,
+      }, coreAssembly);
+      if (!decoded.ok) {
+        return reject(commandFailureLeafCode(decoded.failure));
       }
-      if (actualKind !== "note") {
-        return reject("command.target-mismatch");
+      const definition = findCoreExecutionDefinition(coreAssembly, commandId);
+      if (definition === undefined) {
+        return reject("command.internal-error");
       }
-      const target = decodeTarget(coreRecord.target, "note");
-      if (target?.kind !== "note" || !isWrittenPitch(coreRecord.writtenPitch)) {
-        return reject("command.invalid-envelope");
+      const prepared = definition.prepare(candidate, decoded.value);
+      if (!prepared.ok) {
+        return reject(commandFailureLeafCode(prepared.failure));
       }
-      const resolved = resolveScoreEntityTarget(candidate, target);
-      if (!resolved.ok || resolved.value.kind !== "note") {
-        return reject("command.target-not-found");
-      }
-      if (deepEqual(resolved.value.note.writtenPitch, coreRecord.writtenPitch)) {
+      if (!prepared.changed) {
         continue;
       }
-      effect = {
-        kind: "replace-written-pitch",
-        noteId: target.noteId,
-        value: clone(coreRecord.writtenPitch),
-      };
-      affectedAddress = target;
+      effectsToApply = prepared.effects;
+      affectedAddresses = prepared.affected;
     } else {
       if (requestKind !== "module.extension") {
         return reject("command.unknown-id");
@@ -1567,11 +1592,11 @@ function applyModuleRequests(
         if (current === undefined) {
           continue;
         }
-        effect = {
+        effectsToApply = [{
           kind: "remove-extension-block",
           namespace: definition.descriptor.namespace,
           owner: clone(owner),
-        };
+        }];
       } else if (replace?.status === "replace") {
         if (
           !isSafeInteger(replace.schemaVersion) ||
@@ -1595,7 +1620,7 @@ function applyModuleRequests(
         if (current !== undefined && deepEqual(current.block, block)) {
           continue;
         }
-        effect = current === undefined
+        effectsToApply = [current === undefined
           ? {
               kind: "insert-extension-block",
               index: candidate.extensions.length,
@@ -1606,28 +1631,43 @@ function applyModuleRequests(
               namespace: block.namespace,
               owner: clone(block.owner),
               value: block,
-            };
+            }];
       } else {
         return reject("command.invalid-envelope");
       }
-      affectedAddress = owner.kind === "score"
+      affectedAddresses = [owner.kind === "score"
         ? { kind: "document", documentId: candidate.id }
-        : { kind: "part", partId: owner.partId };
+        : { kind: "part", partId: owner.partId }];
     }
-    const applyFailure = applyPreparedEffects([effect]);
-    if (applyFailure !== undefined) {
-      return reject(commandFailureLeafCode(applyFailure));
-    }
-    if (!appendAffected(affectedAddress)) {
+    const effectCount = forward.length + effectsToApply.length;
+    if (effectCount > MAX_EFFECTS) {
       return {
         ok: false,
         failure: {
           code: "command.resource-limit-exceeded",
-          limitKind: "affected-addresses",
-          limit: MAX_AFFECTED_ADDRESSES,
-          actual: MAX_AFFECTED_ADDRESSES + 1,
+          limitKind: "effects",
+          limit: MAX_EFFECTS,
+          actual: effectCount,
         },
       };
+    }
+    const applyFailure = applyPreparedEffects(effectsToApply);
+    if (applyFailure !== undefined) {
+      return reject(commandFailureLeafCode(applyFailure));
+    }
+    for (let addressIndex = 0; addressIndex < affectedAddresses.length; addressIndex += 1) {
+      const address = affectedAddresses[addressIndex];
+      if (address !== undefined && !appendAffected(address)) {
+        return {
+          ok: false,
+          failure: {
+            code: "command.resource-limit-exceeded",
+            limitKind: "affected-addresses",
+            limit: MAX_AFFECTED_ADDRESSES,
+            actual: MAX_AFFECTED_ADDRESSES + 1,
+          },
+        };
+      }
     }
   }
   reflectApply(arraySort, affected, [
@@ -1778,6 +1818,7 @@ function prepareModuleOperation(
   const applied = applyModuleRequests(
     state.document,
     state.documentVersion,
+    state.assembly,
     contribution,
     requests,
     applicationOptions,
