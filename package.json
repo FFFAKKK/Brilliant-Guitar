@@ -16,6 +16,7 @@
     "build": "node scripts/build.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "npm run build && node dist/test/test-infrastructure/run-compiled-tests.js",
+    "test:kernel-commercial": "npm run build && node scripts/qualify-integrated-addon.mjs",
     "test:cvn7": "npm run build && node --test \"dist/test/core-kernel/cvn-7-*.test.js\"",
     "qualify:cvn7": "node --expose-gc dist/test/core-kernel/qualification/cvn-7-runner.js"
   },

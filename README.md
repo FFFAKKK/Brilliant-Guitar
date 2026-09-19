@@ -56,6 +56,14 @@ npm test
 
 `BRILLIANT_INTEGRATED_ADDON_PATH` 只覆盖 Integrated V2 测试产物；构建顺序仍应保证复制的是带 `integrated-bridge-v2` feature 的最新 DLL。验证记录必须保存实际路径、大小和 SHA-256，不能用旧 addon 的失败判断当前 Rust 源码状态。
 
+商业内核完整验证优先使用自动入口：
+
+```powershell
+npm run test:kernel-commercial
+```
+
+该命令先以 `integrated-bridge-v2` feature、`--locked --offline` 构建当前 Rust 源码，再把 addon 保存到带 SHA-256 的内容寻址路径，生成 `target/kernel-commercial-current/integrated-v2.manifest.json`，并将该精确产物传给完整测试套件。这样不会误用 `target/integrated-v2/` 中被旧进程占用或遗留的文件。
+
 三个 addon 分别保留：`rkp-1-node` 是冻结的五入口 Core V1 产物，`integrated-v2` 是增加私有组合会话和独立扩展迁移入口的七入口实验产物，`wasm-v1` 再增加受限 WASM 编译执行入口。按上面的顺序分别构建、复制，不能互相覆盖。V2 已接通真实 SDK 插件命令、独立 Core 编辑、跨域 Batch 和显式扩展迁移；WASM 支持宿主显式绑定到真实贡献者，仍未完成商业资格或产品默认切换。见 [当前插件 Native 闭环](docs/kernel-native-integrated-v2.md) 和 [WASM 执行与绑定](docs/kernel-wasm-executor-v1.md)。
 
 `npm run build` 会先清理本工作区的 `dist`，防止已删除源码留下旧 JS；不要与同工作区的测试并行执行。普通静态检查使用 `npm run typecheck`，无需重建输出。
