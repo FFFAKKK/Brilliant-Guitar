@@ -967,6 +967,9 @@ export class AgentAssistantSession {
         ...(this.#preparedMutations === null
           ? {}
           : { preparedMutations: this.#preparedMutations }),
+        ...(this.#workflowRuntime === null
+          ? {}
+          : { workflows: this.#workflowRuntime }),
       });
       const observe = (event: Parameters<typeof projectRunProgressToConversation>[0]): void => {
         if (this.#disposed || event.runId !== runId) return;

@@ -353,6 +353,8 @@ Model intent
 - 将 `score.edit-metadata` 的 prepare、approval、commit 和 verify 从硬编码协调器迁入乐谱插件的 Workflow IR。
 - Workflow IR 只允许有界 Operation、Condition、Request Approval、Request User Input、Verify 和受限组合节点。
 
+第一切片（2026-09-20）已落地版本化、不可变的 `WorkflowRuntimeContext`，其中只包含固定工作流身份、入口操作、操作白名单、工作区范围和 range budget。Direct Tool 与未来的 Workflow Step 通过同一个 `AgentActionRuntime` 进入现有 typed prepare/capability port；审批、持久回执、重放、恢复与完成校验仍由 `AgentRunController` 统一负责。审批继续和重试严格使用 Run 中持久化的工作流身份，调用方不能通过替换请求 intent 绕过插件所有者、版本或操作白名单。本切片尚未实现 Workflow IR、条件节点、步骤检查点或低代码编辑器。
+
 ### 阶段 D：Agent 双入口
 
 - 简单查询通过 Direct Tool Adapter 调用类型化端口。

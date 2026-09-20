@@ -33,7 +33,9 @@ import type {
   AgentContextBudget,
   RunPolicySnapshot,
 } from "../src/agent/agent-contracts.ts";
+import { AgentWorkflowRuntime } from "../src/agent/workflow-runtime.ts";
 import type { CapabilityTransportRequest } from "../src/contracts/capability.ts";
+import type { RegisteredWorkflow, WorkflowDirectory } from "../src/contracts/workflow.ts";
 
 const budget: AgentContextBudget = {
   tokenBudget: 400,
@@ -96,6 +98,26 @@ function approvalCatalog() {
     approvalRequirement: "risk-based" as const,
     sideEffects: { ...descriptor.sideEffects, document: "write" as const },
   }];
+}
+
+function scoreWorkflowRuntime(ownerPluginVersion: string): AgentWorkflowRuntime {
+  const workflow: RegisteredWorkflow = {
+    id: "score.inspect",
+    contractVersion: 1,
+    name: "检查乐谱",
+    description: "读取乐谱信息",
+    runtime: "agent-orchestration-v1",
+    operationIds: ["score.read-summary"],
+    entryOperationIds: ["score.read-summary"],
+    ownerPluginId: "brilliant.score",
+    ownerPluginVersion,
+  };
+  const directory: WorkflowDirectory = {
+    get: (id) => id === workflow.id ? workflow : undefined,
+    list: () => [workflow],
+    listByPlugin: (ownerPluginId) => ownerPluginId === workflow.ownerPluginId ? [workflow] : [],
+  };
+  return new AgentWorkflowRuntime(directory, workflow.operationIds);
 }
 
 test("fake provider completes a grounded read-only run through the real capability boundary", async () => {
@@ -313,6 +335,73 @@ test("approved invocation executes its persisted input and resumes the same Run"
   ]);
   assert.equal(completed.run.events.some((event) => event.event.type === "approval.approved"), true);
   assert.equal(provider.exhausted, true);
+});
+
+test("approval recovery authorizes against the persisted workflow instead of a replacement request", async () => {
+  const initialWorkflows = scoreWorkflowRuntime("1.0.0");
+  const provider = new FakeAgentProvider([{
+    kind: "decision",
+    expect: { capabilityIds: ["score.read-summary"], contextSourceIds: [] },
+    decision: {
+      kind: "tool-calls",
+      calls: [{
+        callId: "read-summary",
+        capabilityId: "score.read-summary",
+        contractVersion: 1,
+        input: {},
+      }],
+    },
+  }]);
+  const initialRequest = {
+    ...approvalRunRequest(),
+    intent: {
+      ...approvalRunRequest().intent,
+      workflow: initialWorkflows.resolveEntryOperation("score.read-summary"),
+    },
+  };
+  const waiting = await new AgentRunController({
+    provider,
+    capabilities: { async invoke(): Promise<never> { throw new Error("must not dispatch"); } },
+    catalog: approvalCatalog(),
+    completionVerifier: verifyScoreSummaryCompletion,
+    workflows: initialWorkflows,
+    nextId: idSource(),
+  }).run(initialRequest);
+  const approval = getAgentRunRequiredApproval(waiting.run);
+  assert.ok(approval);
+
+  let invocationCalls = 0;
+  const continued = await new AgentRunController({
+    provider: new FakeAgentProvider([]),
+    capabilities: {
+      async invoke(): Promise<never> {
+        invocationCalls += 1;
+        throw new Error("stale workflow must fail before dispatch");
+      },
+    },
+    catalog: approvalCatalog(),
+    completionVerifier: verifyScoreSummaryCompletion,
+    workflows: scoreWorkflowRuntime("2.0.0"),
+    nextId: idSource(),
+  }).continueWithApproval(
+    approvalRunRequest(),
+    waiting.run,
+    {
+      approvalId: approval.approvalId,
+      kind: "capability-execution",
+      outcome: "approved",
+      decidedBy: "local-user",
+    },
+  );
+
+  assert.equal(invocationCalls, 0);
+  assert.equal(continued.run.invocations[0]?.state.status, "failed");
+  assert.deepEqual(continued.run.state, {
+    lifecycle: "terminal",
+    phase: "executing",
+    terminalReason: "failed",
+    failureCode: "capability-failed",
+  });
 });
 
 test("approval barrier resumes every Invocation in a mixed tool-call batch", async () => {

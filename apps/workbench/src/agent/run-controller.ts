@@ -20,6 +20,7 @@ import type {
   ValidatedActions,
 } from "./agent-contracts.ts";
 import { isAgentApprovalPreview } from "./agent-contracts.ts";
+import { AgentActionRuntime } from "./action-runtime.ts";
 import { evaluateCapabilityApproval } from "./approval-policy.ts";
 import { AgentCapabilityPortError } from "./capability-port.ts";
 import type { AgentCapabilityPort } from "./capability-port.ts";
@@ -57,6 +58,7 @@ import type {
   AgentRunEventRecord,
 } from "./run-state.ts";
 import { ToolsetResolver } from "./toolset-resolver.ts";
+import type { AgentWorkflowRuntime } from "./workflow-runtime.ts";
 
 type ToolCallAction = Extract<ValidatedAction, { readonly kind: "tool-call" }>;
 
@@ -162,6 +164,7 @@ export interface AgentRunControllerDependencies {
   readonly catalog: readonly AgentCapabilityDescriptor[];
   readonly completionVerifier: AgentCompletionVerifier;
   readonly preparedMutations?: AgentPreparedMutationPort;
+  readonly workflows?: AgentWorkflowRuntime;
   readonly store?: AgentRunStorePort;
   readonly now?: () => number;
   readonly nextId?: (kind: "event" | "turn" | "invocation" | "user-input") => string;
@@ -298,6 +301,7 @@ export class AgentRunController {
   private readonly catalog: readonly AgentCapabilityDescriptor[];
   private readonly completionVerifier: AgentCompletionVerifier;
   private readonly preparedMutations: AgentPreparedMutationPort;
+  private readonly actions: AgentActionRuntime;
   private readonly store: AgentRunStorePort | null;
   private readonly now: () => number;
   private readonly nextId: (kind: "event" | "turn" | "invocation" | "user-input") => string;
@@ -312,6 +316,11 @@ export class AgentRunController {
     this.completionVerifier = dependencies.completionVerifier;
     this.preparedMutations = dependencies.preparedMutations
       ?? new UnavailableAgentPreparedMutationPort();
+    this.actions = new AgentActionRuntime(
+      this.capabilities,
+      this.preparedMutations,
+      dependencies.workflows,
+    );
     this.store = dependencies.store ?? null;
     this.now = dependencies.now ?? (() => Date.now());
     this.nextId = dependencies.nextId ?? (() => crypto.randomUUID());
@@ -390,6 +399,12 @@ export class AgentRunController {
     const goal = resumeFrom?.goal ?? request.goal;
     const policy = resumeFrom?.policy ?? request.policy;
     const intent = resumeFrom?.intent ?? request.intent;
+    const workflowContext = () => this.actions.context(
+      intent,
+      workspace,
+      request.budget.rangeBudget,
+    );
+    workflowContext();
     const publish = (event: Parameters<AgentRunProgressObserver>[0]): void => {
       publishAgentRunProgress(observer, event, this.reportProgressError);
     };
@@ -748,14 +763,14 @@ export class AgentRunController {
                 label: "正在准备精确变更",
               });
               try {
-                preparedExecution = await waitForEffect(this.preparedMutations.prepare({
+                preparedExecution = await waitForEffect(this.actions.prepare({
                   preparationInvocationId,
                   capabilityId: action.capabilityId,
                   contractVersion: action.contractVersion,
                   input: action.input,
                   workspace,
                   rangeBudget: request.budget.rangeBudget,
-                }), signal);
+                }, workflowContext()), signal);
                 publish({
                   type: "activity.completed",
                   runId: request.runId,
@@ -911,10 +926,12 @@ export class AgentRunController {
           input: action.input,
         };
         try {
-          result = await waitForEffect(this.capabilities.invoke(capabilityRequest, {
+          result = await waitForEffect(this.actions.invoke(
+            capabilityRequest,
             workspace,
-            rangeBudget: request.budget.rangeBudget,
-          }), signal);
+            request.budget.rangeBudget,
+            workflowContext(),
+          ), signal);
         } catch (error) {
           const cancelled = error instanceof AgentRunCancelled;
           const definiteFailure = error instanceof AgentCapabilityPortError
@@ -1298,10 +1315,13 @@ export class AgentRunController {
       const capabilityRequest = capabilityRequestForInvocation(invocation, workspace);
       let result: CapabilityResult<unknown>;
       try {
-        const executionResult = await waitForEffect(this.capabilities.invoke(capabilityRequest, {
+        const executionResult = await waitForEffect(this.actions.invoke(
+          capabilityRequest,
           workspace,
-          rangeBudget: request.budget.rangeBudget,
-        }), signal);
+          request.budget.rangeBudget,
+          this.actions.context(storedRun.intent, workspace, request.budget.rangeBudget),
+          invocation.capabilityId,
+        ), signal);
         result = normalizeCapabilityResultForInvocation(invocation, executionResult);
       } catch (error) {
         const cancelled = error instanceof AgentRunCancelled;
@@ -1567,10 +1587,13 @@ export class AgentRunController {
       const capabilityRequest = capabilityRequestForInvocation(invocation, workspace);
       let result: CapabilityResult<unknown>;
       try {
-        const executionResult = await waitForEffect(this.capabilities.invoke(capabilityRequest, {
+        const executionResult = await waitForEffect(this.actions.invoke(
+          capabilityRequest,
           workspace,
-          rangeBudget: request.budget.rangeBudget,
-        }), signal);
+          request.budget.rangeBudget,
+          this.actions.context(storedRun.intent, workspace, request.budget.rangeBudget),
+          invocation.capabilityId,
+        ), signal);
         result = normalizeCapabilityResultForInvocation(invocation, executionResult);
       } catch (error) {
         const cancelled = error instanceof AgentRunCancelled;

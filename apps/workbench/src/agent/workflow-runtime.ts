@@ -2,7 +2,7 @@ import type {
   RegisteredWorkflow,
   WorkflowDirectory,
 } from "../contracts/workflow.ts";
-import type { AgentWorkflowIdentity } from "./agent-contracts.ts";
+import type { AgentWorkflowIdentity, AgentWorkspaceScope } from "./agent-contracts.ts";
 
 export type AgentWorkflowResolutionErrorCode =
   | "workflow-not-found"
@@ -10,6 +10,7 @@ export type AgentWorkflowResolutionErrorCode =
   | "workflow-version-mismatch"
   | "workflow-owner-mismatch"
   | "workflow-operation-unavailable"
+  | "workflow-operation-not-authorized"
   | "workflow-entry-mismatch";
 
 export class AgentWorkflowResolutionError extends Error {
@@ -27,6 +28,16 @@ function identity(workflow: RegisteredWorkflow): AgentWorkflowIdentity {
     ownerPluginId: workflow.ownerPluginId,
     ownerPluginVersion: workflow.ownerPluginVersion,
   });
+}
+
+export interface WorkflowRuntimeContext {
+  readonly version: 1;
+  readonly workflow: AgentWorkflowIdentity;
+  readonly entryOperationId: string;
+  readonly workspace: AgentWorkspaceScope;
+  readonly rangeBudget: number;
+  readonly operationIds: readonly string[];
+  assertOperation(operationId: string): void;
 }
 
 /** Resolves immutable plugin-owned workflow definitions for an Agent session. */
@@ -61,6 +72,43 @@ export class AgentWorkflowRuntime {
     expected: AgentWorkflowIdentity,
     entryOperationId: string,
   ): AgentWorkflowIdentity {
+    return identity(this.#resolvePinnedWorkflow(expected, entryOperationId));
+  }
+
+  createContext(
+    expected: AgentWorkflowIdentity,
+    entryOperationId: string,
+    workspace: AgentWorkspaceScope,
+    rangeBudget: number,
+  ): WorkflowRuntimeContext {
+    if (!Number.isSafeInteger(rangeBudget) || rangeBudget < 0) {
+      throw new RangeError("Workflow range budget must be a non-negative safe integer");
+    }
+    const workflow = this.#resolvePinnedWorkflow(expected, entryOperationId);
+    const allowed = new Set(workflow.operationIds);
+    return Object.freeze({
+      version: 1 as const,
+      workflow: identity(workflow),
+      entryOperationId,
+      workspace: Object.freeze({
+        ...workspace,
+        selection: workspace.selection === null ? null : Object.freeze({ ...workspace.selection }),
+      }),
+      rangeBudget,
+      operationIds: Object.freeze([...workflow.operationIds]),
+      assertOperation(operationId: string): void {
+        if (!allowed.has(operationId)) throw new AgentWorkflowResolutionError(
+          "workflow-operation-not-authorized",
+          `Operation is outside the pinned workflow: ${operationId}`,
+        );
+      },
+    });
+  }
+
+  #resolvePinnedWorkflow(
+    expected: AgentWorkflowIdentity,
+    entryOperationId: string,
+  ): RegisteredWorkflow {
     const workflow = this.#directory.get(expected.id);
     if (workflow === undefined) throw new AgentWorkflowResolutionError(
       "workflow-not-found",
@@ -84,7 +132,7 @@ export class AgentWorkflowRuntime {
       );
     }
     this.#assertOperationsAvailable(workflow);
-    return identity(workflow);
+    return workflow;
   }
 
   #assertOperationsAvailable(workflow: RegisteredWorkflow): void {

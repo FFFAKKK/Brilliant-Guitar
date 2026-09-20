@@ -100,3 +100,31 @@ test("Agent workflow runtime consumes the directory as a read-only catalog", () 
   assert.equal(listByPluginCalls, 0);
   assert.deepEqual(item.operationIds, ["score.read-summary", "score.read-metadata"]);
 });
+
+test("workflow runtime context freezes scope and rejects operations outside the pinned workflow", () => {
+  const runtime = new AgentWorkflowRuntime(directory([registered()]), [
+    "score.read-summary",
+    "score.read-metadata",
+  ]);
+  const pinned = runtime.resolveEntryOperation("score.read-summary");
+  const workspace = {
+    workspaceId: "workspace-1",
+    documentId: "score-1",
+    documentVersion: 7,
+    selection: null,
+  };
+
+  const context = runtime.createContext(pinned, "score.read-summary", workspace, 16);
+
+  assert.equal(context.version, 1);
+  assert.equal(context.rangeBudget, 16);
+  assert.deepEqual(context.operationIds, ["score.read-summary", "score.read-metadata"]);
+  assert.doesNotThrow(() => context.assertOperation("score.read-metadata"));
+  assert.throws(
+    () => context.assertOperation("score.update-tempo"),
+    (error) => error instanceof AgentWorkflowResolutionError
+      && error.code === "workflow-operation-not-authorized",
+  );
+  assert.equal(Object.isFrozen(context), true);
+  assert.equal(Object.isFrozen(context.workspace), true);
+});
