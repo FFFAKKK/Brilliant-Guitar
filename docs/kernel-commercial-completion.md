@@ -1,5 +1,19 @@
 # Commercial kernel completion
 
+**Long-sequence history/checkpoint retained-state soak (2026-09-20):** the
+runtime now has a default multi-checkpoint regression and an explicit 10,000
+submit soak spanning undo, redo, branching, persisted markers, snapshot reads
+and index rebuild parity. Test-only weak-reference observations prove Stage 4
+snapshot-cache documents are released on the next mutation and each operational
+checkpoint replaces the prior retained document. Redo branches truncate to the
+new cursor, checkpoint retention remains one document, and live indices continue
+to equal a clean rebuild throughout the sequence. The explicit debug soak passed
+in 4.59 seconds; this is deterministic lifecycle evidence, not release latency or
+peak-RSS qualification. Full undo history and the version-to-content-identity
+table intentionally remain linear in retained history/published versions under
+the frozen history and asynchronous persistence semantics. See
+`docs/kernel-long-sequence-soak-2026-09-20.md`.
+
 **Reuse Candidate semantic authority during integrated classification
 (2026-09-16):** structural Core and mixed Core/module Candidate finalization
 already performs complete Core semantic validation before it yields an immutable

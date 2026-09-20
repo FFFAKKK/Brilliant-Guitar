@@ -198,6 +198,17 @@ impl CheckpointStateV1 {
         schedule.changeset_bytes_since_checkpoint = logical_bytes;
         schedule.due = true;
     }
+
+    #[cfg(test)]
+    pub(crate) fn retained_document_for_test(
+        &self,
+    ) -> Option<std::sync::Weak<brilliant_score_foundation::ScoreDocumentV1>> {
+        self.schedule
+            .borrow()
+            .latest
+            .as_ref()
+            .map(|checkpoint| Arc::downgrade(&checkpoint.document))
+    }
 }
 
 #[cfg(test)]

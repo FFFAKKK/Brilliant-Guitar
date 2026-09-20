@@ -192,6 +192,25 @@ impl HistoryStateV1 {
     pub(crate) fn set_next_sequence_for_test(&mut self, value: u64) {
         self.next_sequence = value;
     }
+
+    #[cfg(test)]
+    pub(crate) fn observation(&self) -> HistoryObservationV1 {
+        HistoryObservationV1 {
+            entries: self.entries.len(),
+            capacity: self.entries.capacity(),
+            cursor: self.cursor,
+            next_sequence: self.next_sequence,
+        }
+    }
+}
+
+#[cfg(test)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) struct HistoryObservationV1 {
+    pub(crate) entries: usize,
+    pub(crate) capacity: usize,
+    pub(crate) cursor: usize,
+    pub(crate) next_sequence: u64,
 }
 
 impl Default for HistoryStateV1 {

@@ -3083,6 +3083,7 @@ fn map_store_create_failure(failure: LiveStoreBuildFailure) -> KernelRuntimeCrea
 #[cfg(test)]
 mod tests {
     mod range_order;
+    mod soak;
     use brilliant_kernel_contracts::{
         CHECKPOINT_CHANGESET_BYTES_V1, KernelStage4CommandResultV1,
         KernelStage4MarkPersistedResultV1, decode_create_request,

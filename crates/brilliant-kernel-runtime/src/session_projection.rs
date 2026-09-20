@@ -196,6 +196,36 @@ impl SessionProjectionStateV1 {
     pub(crate) fn set_next_event_sequence_for_test(&mut self, value: u64) {
         self.next_event_sequence = value;
     }
+
+    #[cfg(test)]
+    pub(crate) fn observation(&self) -> SessionProjectionObservationV1 {
+        let snapshot_version = self
+            .snapshot_cache
+            .borrow()
+            .as_ref()
+            .map(|snapshot| snapshot.document_version);
+        SessionProjectionObservationV1 {
+            version_identities: self.state_identity_by_document_version.len(),
+            snapshot_version,
+            next_event_sequence: self.next_event_sequence,
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn cached_document_for_test(&self) -> Option<std::sync::Weak<ScoreDocumentV1>> {
+        self.snapshot_cache
+            .borrow()
+            .as_ref()
+            .map(|snapshot| Arc::downgrade(&snapshot.document))
+    }
+}
+
+#[cfg(test)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) struct SessionProjectionObservationV1 {
+    pub(crate) version_identities: usize,
+    pub(crate) snapshot_version: Option<DocumentVersionV1>,
+    pub(crate) next_event_sequence: u64,
 }
 
 #[cfg(test)]
