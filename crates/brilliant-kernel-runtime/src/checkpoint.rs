@@ -1,11 +1,29 @@
-use std::{cell::RefCell, sync::Arc};
+use std::{cell::RefCell, io::Write, sync::Arc};
 
 use brilliant_core_types::DocumentVersionV1;
 use brilliant_kernel_contracts::{
     CHECKPOINT_CHANGESET_BYTES_V1, CHECKPOINT_ENTRY_INTERVAL_V1, CHECKPOINT_RETAINED_COUNT_V1,
     KernelStage4MetricsV1,
 };
-use brilliant_score_foundation::canonical_score_bytes;
+use brilliant_score_foundation::write_canonical_score_document;
+
+#[derive(Default)]
+struct CountingWriter {
+    bytes: u64,
+}
+
+impl Write for CountingWriter {
+    fn write(&mut self, buffer: &[u8]) -> std::io::Result<usize> {
+        self.bytes = self
+            .bytes
+            .saturating_add(u64::try_from(buffer.len()).unwrap_or(u64::MAX));
+        Ok(buffer.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum CheckpointPrepareFailureV1 {
@@ -106,14 +124,15 @@ impl CheckpointStateV1 {
                 ..KernelStage4MetricsV1::default()
             };
         };
-        let Ok(bytes) = canonical_score_bytes(document.as_ref()) else {
+        let mut counter = CountingWriter::default();
+        if write_canonical_score_document(document.as_ref(), &mut counter).is_err() {
             return KernelStage4MetricsV1 {
                 checkpoint_attempts: 1,
                 checkpoint_failures: 1,
                 ..KernelStage4MetricsV1::default()
             };
-        };
-        let materialized_bytes = u64::try_from(bytes.len()).unwrap_or(u64::MAX);
+        }
+        let materialized_bytes = counter.bytes;
         let candidate = OperationalCheckpointV1 {
             document_version,
             history_cursor,
@@ -196,6 +215,26 @@ pub(crate) struct CheckpointObservationV1 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use brilliant_score_foundation::canonical_score_bytes;
+
+    #[test]
+    fn checkpoint_stream_counts_exact_canonical_bytes() {
+        let mut document = crate::store::tests::fixture();
+        document.metadata.title = "checkpoint \u{1f3b8}".into();
+        let expected = canonical_score_bytes(&document).expect("canonical document");
+        let state = CheckpointStateV1::new();
+        state.force_due_for_test(1, 1);
+
+        let metrics = state.attempt(DocumentVersionV1::initial(), 0, 7, || {
+            Some(Arc::new(document.clone()))
+        });
+        assert_eq!(metrics.checkpoint_attempts, 1);
+        assert_eq!(metrics.checkpoint_successes, 1);
+        assert_eq!(metrics.checkpoint_failures, 0);
+        assert_eq!(metrics.checkpoint_materialized_bytes, expected.len() as u64);
+        assert_eq!(state.observation().latest_identity, Some(7));
+        assert!(!state.observation().due);
+    }
 
     #[test]
     fn entry_and_byte_thresholds_are_exact() {
