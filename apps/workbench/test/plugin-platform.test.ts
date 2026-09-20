@@ -424,7 +424,11 @@ test("startup controller restores configuration before producing one immutable s
   assert.deepEqual(plan.pluginIds, ["test.startup.always", "test.startup.user"]);
   assert.equal(Object.isFrozen(plan), true);
   assert.equal(Object.isFrozen(plan.pluginIds), true);
-  await assert.rejects(() => startup.setEnabled("test.startup.user", false), /not configurable/);
+  await startup.setEnabled("test.startup.user", false);
+  assert.equal(startup.snapshot().plugins.find((item) => item.manifest.id === "test.startup.user")?.active, true);
+  assert.equal(startup.snapshot().plugins.find((item) => item.manifest.id === "test.startup.user")?.nextLaunchActive,
+    false);
+  assert.equal(startup.snapshot().restartRequired, true);
   await assert.rejects(() => startup.launch(), /not ready/);
   assert.deepEqual(await startup.markStable(), {
     schemaVersion: 1,

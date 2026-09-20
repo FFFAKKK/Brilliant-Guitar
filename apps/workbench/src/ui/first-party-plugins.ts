@@ -16,8 +16,13 @@ import type { PluginCommandContribution, PluginProjectionReader, UiPluginPackage
 import { BUILTIN_SYNTH_PLAYBACK_OUTPUT } from "../playback/playback-output.ts";
 import { GUITAR_PLUGIN } from "../instruments/guitar-plugin.ts";
 import { SCORE_APPLICATION_PLUGIN } from "../plugins/score-application-plugin.ts";
+import {
+  AGENT_ASSISTANT_HOST_SERVICES,
+  AGENT_ASSISTANT_PLUGIN_ID,
+  AGENT_ASSISTANT_PLUGIN_VERSION,
+} from "../plugins/agent-plugin-host-contract.ts";
 
-export const AGENT_ASSISTANT_PLUGIN_ID = "brilliant.agent.assistant";
+export { AGENT_ASSISTANT_PLUGIN_ID } from "../plugins/agent-plugin-host-contract.ts";
 
 function HistoryPluginView({ projections }: { readonly projections: PluginProjectionReader }) {
   const component = useHostedUiComponent();
@@ -191,9 +196,10 @@ const playbackOutputPlugin = definePlugin({
 const agentAssistantPlugin = definePlugin({
   id: AGENT_ASSISTANT_PLUGIN_ID,
   name: "Agent 助手",
-  version: "1.0.0",
+  version: AGENT_ASSISTANT_PLUGIN_VERSION,
   activation: "user",
   hostFeatures: ["workbench.layout", "agent.assistant"],
+  hostServices: AGENT_ASSISTANT_HOST_SERVICES,
   projections: [AGENT_ASSISTANT_PROJECTION],
   views: [{
     definition: AGENT_RECOVERY_COMPONENT,

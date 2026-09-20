@@ -65,6 +65,7 @@ export class PluginStartupController {
   async prepare(): Promise<PluginActivationDocumentV1> {
     if (this.#phase !== "unprepared") throw new Error("Plugin startup has already been prepared");
     if (this.#platform.phase() !== "configuring") throw new Error("Plugin platform has already started");
+    this.#phase = "configuring";
     const document = await this.#activation.restore();
     if (this.#recoveryStorage) {
       this.#recovery = normalizePluginStartupRecoveryDocument(await this.#recoveryStorage.read());
@@ -74,12 +75,13 @@ export class PluginStartupController {
         this.#recommendedMode = this.#recovery.lastKnownGoodPluginIds.length > 0 ? "last-known-good" : "safe";
       }
     }
-    this.#phase = "configuring";
     return document;
   }
 
   async setEnabled(pluginId: string, enabled: boolean): Promise<PluginActivationDocumentV1> {
-    if (this.#phase !== "configuring") throw new Error("Plugin startup is not configurable");
+    if (this.#phase !== "configuring" && this.#phase !== "launched") {
+      throw new Error("Plugin startup is not configurable");
+    }
     const document = await this.#activation.setEnabled(pluginId, enabled);
     if (this.#recoveryRequired) this.#recommendedMode = "normal";
     return document;

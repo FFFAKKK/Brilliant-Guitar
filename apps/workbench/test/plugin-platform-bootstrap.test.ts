@@ -1,0 +1,116 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+
+import { PluginPlatform } from "../src/plugins/plugin-platform.ts";
+import { bootstrapPersistedPluginPlatform } from "../src/plugins/plugin-platform-bootstrap.ts";
+import { definePlugin } from "../src/plugins/plugin-sdk.ts";
+import { WorkbenchFeatureRegistry } from "../src/ui/plugin-manifest.ts";
+
+function platformWithUserPlugin(): PluginPlatform {
+  const platform = new PluginPlatform({
+    hostFeatures: new WorkbenchFeatureRegistry([]),
+    projections: [],
+  });
+  platform.register(definePlugin({
+    id: "test.bootstrap.user",
+    name: "Bootstrap User",
+    version: "1.0.0",
+    activation: "user",
+  }));
+  return platform;
+}
+
+test("bootstrap restores activation before freezing the session and settings afterwards", async () => {
+  const platform = platformWithUserPlugin();
+  const events: string[] = [];
+  const result = await bootstrapPersistedPluginPlatform(
+    platform,
+    {
+      read: async () => {
+        events.push(`activation:read:${platform.phase()}`);
+        return { schemaVersion: 1, enabledPluginIds: ["test.bootstrap.user"] };
+      },
+      write: async () => { events.push(`activation:write:${platform.phase()}`); },
+    },
+    {
+      read: async () => {
+        events.push(`settings:read:${platform.phase()}`);
+        return {};
+      },
+      write: async () => { events.push(`settings:write:${platform.phase()}`); },
+    },
+    () => assert.fail("bootstrap unexpectedly reported a persistence failure"),
+  );
+
+  assert.deepEqual(events, [
+    "activation:read:configuring",
+    "activation:write:configuring",
+    "settings:read:running",
+    "settings:write:running",
+  ]);
+  assert.deepEqual(result.plan.pluginIds, ["test.bootstrap.user"]);
+  assert.equal(platform.list()[0]?.active, true);
+});
+
+test("bootstrap starts with user plugins disabled when activation restore fails", async () => {
+  const platform = platformWithUserPlugin();
+  const failures: string[] = [];
+  let settingsRestored = false;
+  const result = await bootstrapPersistedPluginPlatform(
+    platform,
+    {
+      read: async () => { throw new Error("activation unavailable"); },
+      write: async () => {},
+    },
+    {
+      read: async () => { settingsRestored = true; return {}; },
+      write: async () => {},
+    },
+    (kind) => { failures.push(kind); },
+  );
+
+  assert.deepEqual(failures, ["activation"]);
+  assert.equal(settingsRestored, true);
+  assert.equal(platform.phase(), "running");
+  assert.deepEqual(result.plan.pluginIds, []);
+  assert.equal(platform.list()[0]?.active, false);
+});
+
+test("bootstrap clears a partially restored selection when activation persistence cannot be written", async () => {
+  const platform = platformWithUserPlugin();
+  const failures: string[] = [];
+  const result = await bootstrapPersistedPluginPlatform(
+    platform,
+    {
+      read: async () => ({ schemaVersion: 1, enabledPluginIds: ["test.bootstrap.user"] }),
+      write: async () => { throw new Error("activation write unavailable"); },
+    },
+    { read: async () => null, write: async () => {} },
+    (kind) => { failures.push(kind); },
+  );
+
+  assert.deepEqual(failures, ["activation"]);
+  assert.equal(result.plan.pluginIds.includes("test.bootstrap.user"), false);
+  assert.equal(platform.list()[0]?.active, false);
+  assert.equal(platform.list()[0]?.nextLaunchActive, false);
+});
+
+test("persisted preference changes after bootstrap only affect the next launch", async () => {
+  const platform = platformWithUserPlugin();
+  const writes: unknown[] = [];
+  const result = await bootstrapPersistedPluginPlatform(
+    platform,
+    { read: async () => null, write: async (document) => { writes.push(document); } },
+    { read: async () => null, write: async () => {} },
+    () => assert.fail("bootstrap unexpectedly reported a persistence failure"),
+  );
+
+  await result.startup.setEnabled("test.bootstrap.user", true);
+  assert.equal(platform.list()[0]?.active, false);
+  assert.equal(platform.list()[0]?.nextLaunchActive, true);
+  assert.equal(platform.list()[0]?.restartRequired, true);
+  assert.deepEqual(writes.at(-1), {
+    schemaVersion: 1,
+    enabledPluginIds: ["test.bootstrap.user"],
+  });
+});
