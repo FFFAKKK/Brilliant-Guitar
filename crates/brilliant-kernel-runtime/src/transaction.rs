@@ -137,6 +137,24 @@ pub(crate) fn commit_change_set_with_work_budget(
     )
 }
 
+#[cfg(test)]
+pub(crate) fn commit_change_set_with_reservation_failure(
+    store: &mut LiveScoreStore,
+    document_version: &mut DocumentVersionV1,
+    committed_metrics: &mut KernelStage3MetricsV1,
+    change_set: ChangeSetV1,
+    work_budget: crate::work_budget::TransactionWorkBudgetV1,
+) -> Result<ChangeSetV1, TransactionPrepareFailureV1> {
+    commit_change_set_with_policy(
+        store,
+        document_version,
+        committed_metrics,
+        change_set,
+        CommitReservationPolicyV1::fail_all(),
+        &work_budget,
+    )
+}
+
 fn commit_change_set_with_policy(
     store: &mut LiveScoreStore,
     document_version: &mut DocumentVersionV1,
@@ -184,6 +202,31 @@ pub(crate) fn apply_stored_operations(
         &work_budget,
     )?;
     plan.reserve(store, CommitReservationPolicyV1::production())?;
+    plan.adopt(store, document_version, committed_metrics);
+    Ok(())
+}
+
+#[cfg(test)]
+pub(crate) fn apply_stored_operations_with_reservation_failure(
+    store: &mut LiveScoreStore,
+    document_version: &mut DocumentVersionV1,
+    committed_metrics: &mut KernelStage3MetricsV1,
+    change_set: &ChangeSetV1,
+    operations: &[ChangeOpV1],
+) -> Result<(), TransactionPrepareFailureV1> {
+    let next_version = document_version
+        .checked_next()
+        .ok_or(TransactionPrepareFailureV1::VersionOverflow)?;
+    let work_budget = crate::work_budget::TransactionWorkBudgetV1::default();
+    let mut plan = CommitPlanV1::prepare(
+        store,
+        next_version,
+        &change_set.arena,
+        operations,
+        change_set,
+        &work_budget,
+    )?;
+    plan.reserve(store, CommitReservationPolicyV1::fail_all())?;
     plan.adopt(store, document_version, committed_metrics);
     Ok(())
 }
@@ -371,6 +414,21 @@ mod final_state {
                 version,
                 metrics,
                 CommitReservationPolicyV1::production(),
+            )
+        }
+
+        #[cfg(test)]
+        pub(crate) fn commit_with_reservation_failure(
+            self,
+            store: &mut LiveScoreStore,
+            version: &mut DocumentVersionV1,
+            metrics: &mut KernelStage3MetricsV1,
+        ) -> Result<(), TransactionPrepareFailureV1> {
+            self.commit_with_policy(
+                store,
+                version,
+                metrics,
+                CommitReservationPolicyV1::fail_all(),
             )
         }
 

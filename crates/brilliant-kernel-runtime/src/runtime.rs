@@ -160,6 +160,8 @@ pub struct KernelRuntime {
     history: HistoryStateV1,
     projection: SessionProjectionStateV1,
     checkpoint: CheckpointStateV1,
+    #[cfg(test)]
+    fail_next_commit_reservation: bool,
 }
 
 impl KernelRuntime {
@@ -179,6 +181,8 @@ impl KernelRuntime {
             history: HistoryStateV1::new(),
             projection,
             checkpoint: CheckpointStateV1::new(),
+            #[cfg(test)]
+            fail_next_commit_reservation: false,
         })
     }
 
@@ -553,24 +557,51 @@ impl KernelRuntime {
             .try_reserve(event_count as usize)
             .map_err(|_| KernelStage4FailureV1::HistoryInvariantViolation)?;
 
+        #[cfg(test)]
+        let fail_reservation = std::mem::take(&mut self.fail_next_commit_reservation);
         let committed = match prepared {
-            PreparedMutationV1::Typed(value) => commit_change_set_with_work_budget(
-                &mut self.store,
-                &mut self.document_version,
-                &mut self.committed_metrics,
-                value.change_set,
-                value.work_budget,
-            )
-            .map(HistoryPayloadV1::Typed),
+            PreparedMutationV1::Typed(value) => {
+                #[cfg(test)]
+                let commit = if fail_reservation {
+                    crate::transaction::commit_change_set_with_reservation_failure
+                } else {
+                    commit_change_set_with_work_budget
+                };
+                #[cfg(not(test))]
+                let commit = commit_change_set_with_work_budget;
+                commit(
+                    &mut self.store,
+                    &mut self.document_version,
+                    &mut self.committed_metrics,
+                    value.change_set,
+                    value.work_budget,
+                )
+                .map(HistoryPayloadV1::Typed)
+            }
             PreparedMutationV1::Candidate(value) => match value.plan {
                 Some(plan) => {
                     let history = Arc::new(value.history);
-                    plan.commit(
+                    #[cfg(test)]
+                    let committed = if fail_reservation {
+                        plan.commit_with_reservation_failure(
+                            &mut self.store,
+                            &mut self.document_version,
+                            &mut self.committed_metrics,
+                        )
+                    } else {
+                        plan.commit(
+                            &mut self.store,
+                            &mut self.document_version,
+                            &mut self.committed_metrics,
+                        )
+                    };
+                    #[cfg(not(test))]
+                    let committed = plan.commit(
                         &mut self.store,
                         &mut self.document_version,
                         &mut self.committed_metrics,
-                    )
-                    .map(|()| HistoryPayloadV1::Candidate(history))
+                    );
+                    committed.map(|()| HistoryPayloadV1::Candidate(history))
                 }
                 None => Err(TransactionPrepareFailureV1::InvalidChangeSet),
             },
@@ -776,6 +807,9 @@ impl KernelRuntime {
                 .try_reserve(event_count as usize)
                 .map_err(|_| KernelStage4FailureV1::HistoryInvariantViolation)?;
 
+            #[cfg(test)]
+            let fail_reservation = std::mem::take(&mut self.fail_next_commit_reservation);
+
             match &entry.payload {
                 HistoryPayloadV1::Typed(change_set) => {
                     let operations = if redo {
@@ -783,7 +817,15 @@ impl KernelRuntime {
                     } else {
                         &change_set.inverse
                     };
-                    apply_stored_operations(
+                    #[cfg(test)]
+                    let apply = if fail_reservation {
+                        crate::transaction::apply_stored_operations_with_reservation_failure
+                    } else {
+                        apply_stored_operations
+                    };
+                    #[cfg(not(test))]
+                    let apply = apply_stored_operations;
+                    apply(
                         &mut self.store,
                         &mut self.document_version,
                         &mut self.committed_metrics,
@@ -802,12 +844,27 @@ impl KernelRuntime {
                             .map_err(|_| KernelStage4FailureV1::HistoryInvariantViolation)?,
                     }
                     .ok_or(KernelStage4FailureV1::HistoryInvariantViolation)?;
-                    plan.commit(
+                    #[cfg(test)]
+                    let committed = if fail_reservation {
+                        plan.commit_with_reservation_failure(
+                            &mut self.store,
+                            &mut self.document_version,
+                            &mut self.committed_metrics,
+                        )
+                    } else {
+                        plan.commit(
+                            &mut self.store,
+                            &mut self.document_version,
+                            &mut self.committed_metrics,
+                        )
+                    };
+                    #[cfg(not(test))]
+                    let committed = plan.commit(
                         &mut self.store,
                         &mut self.document_version,
                         &mut self.committed_metrics,
-                    )
-                    .map_err(|_| KernelStage4FailureV1::HistoryInvariantViolation)?;
+                    );
+                    committed.map_err(|_| KernelStage4FailureV1::HistoryInvariantViolation)?;
                 }
             }
             if redo {
@@ -910,6 +967,11 @@ impl KernelRuntime {
             },
             failure,
         }
+    }
+
+    #[cfg(test)]
+    fn fail_next_commit_reservation_for_test(&mut self) {
+        self.fail_next_commit_reservation = true;
     }
 
     #[cfg(test)]
@@ -3082,6 +3144,7 @@ fn map_store_create_failure(failure: LiveStoreBuildFailure) -> KernelRuntimeCrea
 
 #[cfg(test)]
 mod tests {
+    mod failure_recovery;
     mod range_order;
     mod soak;
     mod state_machine;

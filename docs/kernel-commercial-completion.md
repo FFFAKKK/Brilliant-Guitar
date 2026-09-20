@@ -1,5 +1,20 @@
 # Commercial kernel completion
 
+**Publication fault injection and recovery invariants (2026-09-20):** test-only
+reservation faults now exercise typed and Candidate submit plus both history
+directions after all session preflight but before Store adoption. A unified
+fingerprint proves failed publication preserves the document/version, logical
+history branch and cursor, dirty identity, committed metrics, checkpoint state,
+cached snapshot and event sequence; the same operation or history direction
+then succeeds and clean index rebuild parity holds. Counter faults also pin
+checkpoint, history and event preflight as zero-delta. Operational checkpoint
+materialization remains intentionally post-commit: failure keeps the mutation,
+leaves the checkpoint due and retries on a later read. Runtime all-features:
+398 passed/2 ignored; workspace all-features: 667 passed/2 ignored; strict
+Clippy passed. This is deterministic in-process fault coverage, not process
+crash, power-loss or durable-storage recovery qualification. See
+`docs/kernel-publication-failure-recovery-2026-09-20.md`.
+
 **Seeded Effect/Batch/history state-machine regression (2026-09-20):** four
 fixed xorshift seeds now drive 2,048 mixed Rust-runtime actions across typed
 Effects, Candidate Batches, effective-prefix Batch rejection, no-op submits,
