@@ -8,7 +8,10 @@ import {
   verifyScoreTempoUpdateCompletion,
 } from "../src/agent/completion-verifier.ts";
 import { FIRST_PARTY_CAPABILITY_CATALOG } from "../src/agent/first-party-capabilities.ts";
-import { isAgentPreparedExecution } from "../src/agent/prepared-mutation.ts";
+import {
+  FirstPartyPreparedMutationCoordinator,
+  isAgentPreparedExecution,
+} from "../src/agent/prepared-mutation.ts";
 import { FakeAgentProvider } from "../src/agent/provider.ts";
 import {
   AgentRunController,
@@ -81,6 +84,31 @@ function request() {
   };
 }
 
+function typedPreparedMutations(calls: string[] = []) {
+  return new FirstPartyPreparedMutationCoordinator({
+    async prepareTempoChange(input, context) {
+      calls.push("score.prepare-tempo-change");
+      assert.deepEqual(input, { tempoBpm: 132 });
+      assert.equal(context.workspaceId, "workspace-1");
+      assert.deepEqual(context.documentPrecondition, {
+        documentId: "score-1",
+        documentVersion: 7,
+      });
+      return changeSet;
+    },
+    async prepareMetadataTransaction(input, context) {
+      calls.push("score.prepare-metadata-transaction");
+      assert.deepEqual(input, { title: "夜曲", tempoBpm: 132 });
+      assert.equal(context.workspaceId, "workspace-1");
+      assert.deepEqual(context.documentPrecondition, {
+        documentId: "score-1",
+        documentVersion: 7,
+      });
+      return metadataChangeSet;
+    },
+  });
+}
+
 test("prepared tempo mutation approves the authoritative ChangeSet before commit", async () => {
   const provider = new FakeAgentProvider([
     {
@@ -110,16 +138,10 @@ test("prepared tempo mutation approves the authoritative ChangeSet before commit
     },
   ]);
   const hostRequests: CapabilityTransportRequest[] = [];
+  const preparationCalls: string[] = [];
   const capabilities = new WorkbenchAgentCapabilityPort({
     async invokeCapability(hostRequest) {
       hostRequests.push(hostRequest);
-      if (hostRequest.capabilityId === "score.prepare-tempo-change") return {
-        status: "completed",
-        invocationId: hostRequest.invocationId,
-        capabilityId: hostRequest.capabilityId,
-        contractVersion: hostRequest.contractVersion,
-        data: changeSet,
-      };
       assert.equal(hostRequest.capabilityId, "score.commit-tempo-change");
       assert.deepEqual(hostRequest.input, { changeSet });
       return {
@@ -143,13 +165,15 @@ test("prepared tempo mutation approves the authoritative ChangeSet before commit
     capabilities,
     catalog: FIRST_PARTY_CAPABILITY_CATALOG,
     completionVerifier: verifyScoreTempoUpdateCompletion,
+    preparedMutations: typedPreparedMutations(preparationCalls),
     now: () => 100,
     nextId: idSource(),
   });
 
   const waiting = await controller.run(request());
 
-  assert.deepEqual(hostRequests.map((item) => item.capabilityId), ["score.prepare-tempo-change"]);
+  assert.deepEqual(preparationCalls, ["score.prepare-tempo-change"]);
+  assert.equal(hostRequests.length, 0);
   assert.deepEqual(waiting.run.state, {
     lifecycle: "waiting",
     phase: "executing",
@@ -179,7 +203,6 @@ test("prepared tempo mutation approves the authoritative ChangeSet before commit
   });
 
   assert.deepEqual(hostRequests.map((item) => item.capabilityId), [
-    "score.prepare-tempo-change",
     "score.commit-tempo-change",
   ]);
   assert.equal(completed.run.state.lifecycle, "terminal");
@@ -225,17 +248,11 @@ test("denying a prepared tempo ChangeSet never dispatches the commit", async () 
     },
   ]);
   const hostCapabilityIds: string[] = [];
+  const preparationCalls: string[] = [];
   const capabilities = new WorkbenchAgentCapabilityPort({
     async invokeCapability(hostRequest) {
       hostCapabilityIds.push(hostRequest.capabilityId);
-      assert.equal(hostRequest.capabilityId, "score.prepare-tempo-change");
-      return {
-        status: "completed",
-        invocationId: hostRequest.invocationId,
-        capabilityId: hostRequest.capabilityId,
-        contractVersion: hostRequest.contractVersion,
-        data: changeSet,
-      };
+      throw new Error(`commit must not run after denial: ${hostRequest.capabilityId}`);
     },
   });
   const controller = new AgentRunController({
@@ -243,6 +260,7 @@ test("denying a prepared tempo ChangeSet never dispatches the commit", async () 
     capabilities,
     catalog: FIRST_PARTY_CAPABILITY_CATALOG,
     completionVerifier: verifyScoreTempoUpdateCompletion,
+    preparedMutations: typedPreparedMutations(preparationCalls),
     now: () => 100,
     nextId: idSource(),
   });
@@ -257,7 +275,8 @@ test("denying a prepared tempo ChangeSet never dispatches the commit", async () 
     decidedBy: "local-user",
   });
 
-  assert.deepEqual(hostCapabilityIds, ["score.prepare-tempo-change"]);
+  assert.deepEqual(preparationCalls, ["score.prepare-tempo-change"]);
+  assert.deepEqual(hostCapabilityIds, []);
   assert.equal(denied.run.invocations[0]?.state.status, "rejected");
   assert.equal(denied.run.invocations[0]?.events.some(
     (event) => event.event.type === "invocation.dispatched",
@@ -365,16 +384,10 @@ test("prepared metadata transaction binds two changes to one approval and one co
     },
   ]);
   const hostRequests: CapabilityTransportRequest[] = [];
+  const preparationCalls: string[] = [];
   const capabilities = new WorkbenchAgentCapabilityPort({
     async invokeCapability(hostRequest) {
       hostRequests.push(hostRequest);
-      if (hostRequest.capabilityId === "score.prepare-metadata-transaction") return {
-        status: "completed",
-        invocationId: hostRequest.invocationId,
-        capabilityId: hostRequest.capabilityId,
-        contractVersion: hostRequest.contractVersion,
-        data: metadataChangeSet,
-      };
       assert.equal(hostRequest.capabilityId, "score.commit-metadata-transaction");
       assert.deepEqual(hostRequest.input, { changeSet: metadataChangeSet });
       return {
@@ -399,6 +412,7 @@ test("prepared metadata transaction binds two changes to one approval and one co
     capabilities,
     catalog: FIRST_PARTY_CAPABILITY_CATALOG,
     completionVerifier: verifyScoreMetadataTransactionCompletion,
+    preparedMutations: typedPreparedMutations(preparationCalls),
     now: () => 100,
     nextId: idSource(),
   });
@@ -420,9 +434,8 @@ test("prepared metadata transaction binds two changes to one approval and one co
   const waiting = await controller.run(metadataRequest);
   const approval = getAgentRunRequiredApproval(waiting.run);
   assert.notEqual(approval, null);
-  assert.deepEqual(hostRequests.map((item) => item.capabilityId), [
-    "score.prepare-metadata-transaction",
-  ]);
+  assert.deepEqual(preparationCalls, ["score.prepare-metadata-transaction"]);
+  assert.equal(hostRequests.length, 0);
   assert.equal(approval!.items[0]?.changeSetId, metadataChangeSetId);
   assert.deepEqual(approval!.items[0]?.preview, {
     kind: "change-list",
@@ -466,7 +479,6 @@ test("prepared metadata transaction binds two changes to one approval and one co
     decidedBy: "local-user",
   });
   assert.deepEqual(hostRequests.map((item) => item.capabilityId), [
-    "score.prepare-metadata-transaction",
     "score.commit-metadata-transaction",
   ]);
   assert.equal(completed.verification?.satisfied, true);
@@ -481,4 +493,43 @@ test("prepared metadata transaction binds two changes to one approval and one co
     item.id === "score.prepare-metadata-transaction"
       || item.id === "score.commit-metadata-transaction"
   )), false);
+});
+
+test("prepared mutation fails closed when the typed ChangeSet port is missing", async () => {
+  const provider = new FakeAgentProvider([{
+    kind: "decision",
+    expect: { capabilityIds: ["score.update-tempo"], contextSourceIds: [] },
+    decision: {
+      kind: "tool-calls",
+      calls: [{
+        callId: "update-tempo",
+        capabilityId: "score.update-tempo",
+        contractVersion: 1,
+        input: { tempoBpm: 132 },
+      }],
+    },
+  }]);
+  let genericCapabilityCalls = 0;
+  const controller = new AgentRunController({
+    provider,
+    capabilities: {
+      async invoke() {
+        genericCapabilityCalls += 1;
+        throw new Error("generic prepare transport must not be used");
+      },
+    },
+    catalog: FIRST_PARTY_CAPABILITY_CATALOG,
+    completionVerifier: verifyScoreTempoUpdateCompletion,
+    now: () => 100,
+    nextId: idSource(),
+  });
+
+  const outcome = await controller.run(request());
+
+  assert.equal(outcome.run.state.lifecycle, "terminal");
+  assert.equal(outcome.run.state.phase, "planning");
+  assert.equal(outcome.run.state.terminalReason, "failed");
+  assert.equal(outcome.run.state.failureCode, "capability-failed");
+  assert.equal(genericCapabilityCalls, 0);
+  assert.equal(outcome.run.invocations.length, 0);
 });

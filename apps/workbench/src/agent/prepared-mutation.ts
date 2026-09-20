@@ -65,6 +65,19 @@ export class AgentPreparedMutationError extends Error {
   }
 }
 
+/**
+ * Fail-closed default for runtimes that have not supplied the typed
+ * ScoreChangeSetPort adapter. It must never reconstruct a generic prepare RPC.
+ */
+export class UnavailableAgentPreparedMutationPort implements AgentPreparedMutationPort {
+  async prepare(): Promise<AgentPreparedExecution> {
+    throw new AgentPreparedMutationError(
+      "Typed Score ChangeSet preparation is unavailable",
+      "definite-failure",
+    );
+  }
+}
+
 function record(value: unknown): Record<string, unknown> | null {
   return typeof value === "object" && value !== null && !Array.isArray(value)
     ? value as Record<string, unknown>

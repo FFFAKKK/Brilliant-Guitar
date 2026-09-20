@@ -27,6 +27,7 @@ import {
 } from "../src/agent/completion-verifier.ts";
 import type { AgentCompletionVerifier } from "../src/agent/completion-verifier.ts";
 import { FIRST_PARTY_CAPABILITY_CATALOG } from "../src/agent/first-party-capabilities.ts";
+import { FirstPartyPreparedMutationCoordinator } from "../src/agent/prepared-mutation.ts";
 import { FakeAgentProvider } from "../src/agent/provider.ts";
 import {
   AgentRunController,
@@ -292,20 +293,6 @@ class BaselineExecutor implements AgentEvaluationExecutor {
     const atomicCapabilities = new WorkbenchAgentCapabilityPort({
       async invokeCapability(request) {
         assert.notEqual(request.capabilityId, "score.read-measures");
-        if (request.capabilityId === "score.prepare-tempo-change") return {
-          status: "completed",
-          invocationId: request.invocationId,
-          capabilityId: request.capabilityId,
-          contractVersion: request.contractVersion,
-          data: {
-            changeSetId: `sha256:${"a".repeat(64)}`,
-            kind: "score-tempo",
-            documentId: "score-1",
-            baseDocumentVersion: 7,
-            beforeTempoBpm: 120,
-            afterTempoBpm: 132,
-          },
-        };
         if (request.capabilityId === "score.commit-tempo-change") {
           assert.deepEqual(request.documentPrecondition, { documentId: "score-1", documentVersion: 7 });
           assert.equal((request.input as { changeSet: { changeSetId: string } }).changeSet.changeSetId,
@@ -318,21 +305,6 @@ class BaselineExecutor implements AgentEvaluationExecutor {
             data: capabilityPlans["score.update-tempo"].data,
           };
         }
-        if (request.capabilityId === "score.prepare-metadata-transaction") return {
-          status: "completed",
-          invocationId: request.invocationId,
-          capabilityId: request.capabilityId,
-          contractVersion: request.contractVersion,
-          data: {
-            changeSetId: `sha256:${"b".repeat(64)}`,
-            kind: "score-metadata-transaction",
-            documentId: "score-1",
-            baseDocumentVersion: 7,
-            operations: ["set-title", "set-tempo"],
-            before: { title: "练习曲", tempoBpm: 120 },
-            after: { title: "夜曲", tempoBpm: 132 },
-          },
-        };
         if (request.capabilityId === "score.commit-metadata-transaction") {
           assert.deepEqual(request.documentPrecondition, {
             documentId: "score-1",
@@ -410,6 +382,39 @@ class BaselineExecutor implements AgentEvaluationExecutor {
       capabilities,
       catalog: FIRST_PARTY_CAPABILITY_CATALOG,
       completionVerifier: plan.completionVerifier,
+      preparedMutations: new FirstPartyPreparedMutationCoordinator({
+        async prepareTempoChange(input, context) {
+          assert.deepEqual(input, { tempoBpm: 132 });
+          assert.deepEqual(context.documentPrecondition, {
+            documentId: "score-1",
+            documentVersion: 7,
+          });
+          return {
+            changeSetId: `sha256:${"a".repeat(64)}`,
+            kind: "score-tempo",
+            documentId: "score-1",
+            baseDocumentVersion: 7,
+            beforeTempoBpm: 120,
+            afterTempoBpm: 132,
+          } as const;
+        },
+        async prepareMetadataTransaction(input, context) {
+          assert.deepEqual(input, { title: "夜曲", tempoBpm: 132 });
+          assert.deepEqual(context.documentPrecondition, {
+            documentId: "score-1",
+            documentVersion: 7,
+          });
+          return {
+            changeSetId: `sha256:${"b".repeat(64)}`,
+            kind: "score-metadata-transaction",
+            documentId: "score-1",
+            baseDocumentVersion: 7,
+            operations: ["set-title", "set-tempo"],
+            before: { title: "练习曲", tempoBpm: 120 },
+            after: { title: "夜曲", tempoBpm: 132 },
+          } as const;
+        },
+      }),
       now: clock(),
       nextId: idSource(),
     });

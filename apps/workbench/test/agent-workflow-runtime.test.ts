@@ -78,3 +78,25 @@ test("Agent workflow runtime refuses stale pinned workflow versions", () => {
     (error) => error instanceof AgentWorkflowResolutionError && error.code === "workflow-version-mismatch",
   );
 });
+
+test("Agent workflow runtime consumes the directory as a read-only catalog", () => {
+  const item = Object.freeze(registered());
+  let listByPluginCalls = 0;
+  const readOnlyDirectory: WorkflowDirectory = Object.freeze({
+    get: (id: string) => id === item.id ? item : undefined,
+    list: () => Object.freeze([item]),
+    listByPlugin: () => {
+      listByPluginCalls += 1;
+      throw new Error("Agent runtime must not query plugin ownership indexes");
+    },
+  });
+  const runtime = new AgentWorkflowRuntime(readOnlyDirectory, [
+    "score.read-summary",
+    "score.read-metadata",
+  ]);
+
+  const pinned = runtime.resolveEntryOperation("score.read-summary");
+  assert.deepEqual(runtime.resolvePinned(pinned, "score.read-metadata"), pinned);
+  assert.equal(listByPluginCalls, 0);
+  assert.deepEqual(item.operationIds, ["score.read-summary", "score.read-metadata"]);
+});
