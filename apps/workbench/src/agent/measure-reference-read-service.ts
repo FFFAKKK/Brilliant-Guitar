@@ -1,8 +1,5 @@
-import type {
-  CapabilityResult,
-  ScoreMeasureRangeInputV1,
-  ScoreMeasureRangeV1,
-} from "../contracts/capability.ts";
+import type { ScoreMeasureRangeInputV1, ScoreMeasureRangeV1 } from "../contracts/capability.ts";
+import type { ScoreReadResult } from "../services/score-read-port.ts";
 import {
   resolveMeasureReference,
 } from "./measure-reference-resolver.ts";
@@ -35,7 +32,7 @@ export interface MeasureIndexPort {
 export interface MeasureRangeReadPort {
   readMeasureRange(
     input: ScoreMeasureRangeInputV1,
-  ): Promise<CapabilityResult<ScoreMeasureRangeV1>>;
+  ): Promise<ScoreReadResult<ScoreMeasureRangeV1>>;
 }
 
 export interface MeasureReferenceReadRequest {
@@ -149,18 +146,18 @@ export class MeasureReferenceReadService {
       return Object.freeze({ status: "unresolved", resolution });
     }
 
-    let rangeResult: CapabilityResult<ScoreMeasureRangeV1>;
+    let rangeResult: ScoreReadResult<ScoreMeasureRangeV1>;
     try {
       rangeResult = await this.#range.readMeasureRange(resolution.input);
     } catch {
       return failed("measure-range", "measure-range.failed", "无法读取当前小节范围", true);
     }
-    if (rangeResult.status !== "completed") {
+    if (rangeResult.status !== "ready") {
       return failed(
         "measure-range",
         rangeResult.code,
         rangeResult.message,
-        rangeResult.status !== "rejected",
+        rangeResult.status === "unavailable",
       );
     }
     if (!rangeMatchesResolution(rangeResult.data, resolution)) {

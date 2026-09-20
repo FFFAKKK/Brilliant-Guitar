@@ -1,5 +1,3 @@
-import { isTauri } from "@tauri-apps/api/core";
-
 import {
   isScoreMeasureRangeV1,
   isScoreMetadataTransactionUpdateV1,
@@ -19,7 +17,6 @@ import type {
   ScoreStructureV1,
   ScoreSummaryV1,
 } from "../contracts/capability.ts";
-import type { ApplicationCapabilityInvoker } from "../contracts/application-capability.ts";
 import type { WorkflowDirectory } from "../contracts/workflow.ts";
 import type {
   AgentApprovalDecision,
@@ -32,7 +29,6 @@ import type {
   RunPolicySnapshot,
   AgentWorkflowIdentity,
 } from "./agent-contracts.ts";
-import { InMemoryAgentRunStore } from "./agent-store.ts";
 import type { AgentRunStorePort } from "./agent-store.ts";
 import type {
   AgentPluginRunLease,
@@ -48,7 +44,6 @@ import type {
   AgentConversationIssue,
   AgentConversationSnapshot,
 } from "./agent-conversation.ts";
-import { WorkbenchAgentCapabilityPort } from "./capability-port.ts";
 import type { AgentCapabilityPort } from "./capability-port.ts";
 import type { AgentCompletionVerifier } from "./completion-verifier.ts";
 import {
@@ -82,12 +77,10 @@ import {
   projectAgentTaskHistoryContext,
 } from "./task-history.ts";
 import type { AgentTaskHistoryEntry } from "./task-history.ts";
-import { TauriAgentRunStore } from "./tauri-agent-run-store.ts";
 import { MeasureReferenceAgentCapabilityPort } from "./measure-reference-capability-port.ts";
 import { MeasureReferenceReadService } from "./measure-reference-read-service.ts";
 import { ScoreMeasureIndexPort } from "./score-measure-index-port.ts";
 import type { AgentInvocationReceiptPort } from "./recovery-coordinator.ts";
-import { TauriAgentInvocationReceiptPort } from "./tauri-invocation-receipt.ts";
 import { AgentWorkflowRuntime } from "./workflow-runtime.ts";
 import { DirectScoreReadAgentPort } from "./direct-score-read-agent-port.ts";
 import type { ScoreReadPort } from "../services/score-read-port.ts";
@@ -124,21 +117,6 @@ export interface AgentAssistantRuntimePort {
   refresh(): Promise<void>;
 }
 
-export interface AgentAssistantCapabilityHost {
-  agentCapabilities(): ApplicationCapabilityInvoker;
-  scoreReadPort?(): ScoreReadPort;
-  scoreChangeSetPort?(): ScoreChangeSetPort;
-  readScoreSummary?(): Promise<CapabilityResult<ScoreSummaryV1>>;
-  readScoreMetadata?(): Promise<CapabilityResult<ScoreMetadataV1>>;
-  readScoreStructure?(): Promise<CapabilityResult<ScoreStructureV1>>;
-  readScoreMeasureIndex(
-    input: ScoreMeasureIndexInputV1,
-  ): Promise<CapabilityResult<ScoreMeasureIndexV1>>;
-  readScoreMeasureRange(
-    input: ScoreMeasureRangeInputV1,
-  ): Promise<CapabilityResult<ScoreMeasureRangeV1>>;
-}
-
 export interface AgentAssistantSessionDependencies {
   readonly runtime: AgentAssistantRuntimePort;
   readonly capabilities: AgentCapabilityPort;
@@ -151,6 +129,18 @@ export interface AgentAssistantSessionDependencies {
   readonly intentRouter?: AgentIntentRouter;
   readonly workflows?: WorkflowDirectory;
   readonly now?: () => number;
+  readonly onDocumentChanged?: (change: AgentDocumentChange) => void | Promise<void>;
+}
+
+export interface AgentAssistantSessionBindings {
+  readonly runtime: AgentPluginRuntime;
+  /** Transitional durable commit boundary. Reads and prepare operations use typed ports. */
+  readonly commitCapabilities: AgentCapabilityPort;
+  readonly scoreRead: ScoreReadPort;
+  readonly scoreChangeSets: ScoreChangeSetPort;
+  readonly store: AgentRunStorePort;
+  readonly receipts: AgentInvocationReceiptPort | null;
+  readonly workflows: WorkflowDirectory;
   readonly onDocumentChanged?: (change: AgentDocumentChange) => void | Promise<void>;
 }
 
@@ -1214,37 +1204,26 @@ export class AgentAssistantSession {
 }
 
 export function createAgentAssistantSession(
-  runtime: AgentPluginRuntime,
-  host: AgentAssistantCapabilityHost,
-  workflows: WorkflowDirectory,
-  onDocumentChanged?: (change: AgentDocumentChange) => void | Promise<void>,
+  bindings: AgentAssistantSessionBindings,
 ): AgentAssistantSession {
   const atomicCapabilities = new DirectScoreReadAgentPort(
-    new WorkbenchAgentCapabilityPort(host.agentCapabilities()),
-    host,
+    bindings.commitCapabilities,
+    bindings.scoreRead,
   );
   const capabilities = new MeasureReferenceAgentCapabilityPort(
     atomicCapabilities,
-    new MeasureReferenceReadService(new ScoreMeasureIndexPort(host), {
-      readMeasureRange: (input) => host.readScoreMeasureRange(input),
-    }),
+    new MeasureReferenceReadService(new ScoreMeasureIndexPort(bindings.scoreRead), bindings.scoreRead),
   );
-  let preparedMutations: AgentPreparedMutationPort | undefined;
-  try {
-    const scoreChangeSets = host.scoreChangeSetPort?.();
-    if (scoreChangeSets !== undefined) {
-      preparedMutations = new FirstPartyPreparedMutationCoordinator(scoreChangeSets);
-    }
-  } catch {
-    preparedMutations = undefined;
-  }
+  const preparedMutations: AgentPreparedMutationPort = new FirstPartyPreparedMutationCoordinator(
+    bindings.scoreChangeSets,
+  );
   return new AgentAssistantSession({
-    runtime,
+    runtime: bindings.runtime,
     capabilities,
-    ...(preparedMutations === undefined ? {} : { preparedMutations }),
-    store: isTauri() ? new TauriAgentRunStore() : new InMemoryAgentRunStore(),
-    receipts: isTauri() ? new TauriAgentInvocationReceiptPort() : null,
-    workflows,
-    ...(onDocumentChanged === undefined ? {} : { onDocumentChanged }),
+    preparedMutations,
+    store: bindings.store,
+    receipts: bindings.receipts,
+    workflows: bindings.workflows,
+    ...(bindings.onDocumentChanged === undefined ? {} : { onDocumentChanged: bindings.onDocumentChanged }),
   });
 }

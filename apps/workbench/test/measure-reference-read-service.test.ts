@@ -28,10 +28,7 @@ function completedRange(input: {
   readonly maxMeasures: number;
 }) {
   return {
-    status: "completed" as const,
-    invocationId: "range-1",
-    capabilityId: "score.read-measure-range",
-    contractVersion: 1,
+    status: "ready" as const,
     data: {
       documentId: "score-1",
       documentVersion: 7,

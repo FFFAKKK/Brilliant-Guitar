@@ -7,12 +7,7 @@ import type {
   CapabilityResult,
   CapabilityTransportRequest,
   ScoreMeasureIndexInputV1,
-  ScoreMeasureIndexV1,
   ScoreMeasureRangeInputV1,
-  ScoreMeasureRangeV1,
-  ScoreMetadataV1,
-  ScoreStructureV1,
-  ScoreSummaryV1,
 } from "../contracts/capability.ts";
 import type { ScoreReadPort, ScoreReadResult } from "../services/score-read-port.ts";
 import type { AgentCapabilityInvocationContext, AgentCapabilityPort } from "./capability-port.ts";
@@ -25,16 +20,6 @@ const DIRECT_READ_IDS = new Set([
   "score.read-measure-index",
   "score.read-measure-range",
 ]);
-
-/** Minimal host surface; the adapter does not depend on Agent session orchestration. */
-export interface DirectScoreReadHost {
-  scoreReadPort?(): ScoreReadPort;
-  readScoreSummary?(): Promise<CapabilityResult<ScoreSummaryV1>>;
-  readScoreMetadata?(): Promise<CapabilityResult<ScoreMetadataV1>>;
-  readScoreStructure?(): Promise<CapabilityResult<ScoreStructureV1>>;
-  readScoreMeasureIndex(input: ScoreMeasureIndexInputV1): Promise<CapabilityResult<ScoreMeasureIndexV1>>;
-  readScoreMeasureRange(input: ScoreMeasureRangeInputV1): Promise<CapabilityResult<ScoreMeasureRangeV1>>;
-}
 
 function emptyInput(value: unknown): boolean {
   return typeof value === "object" && value !== null && !Array.isArray(value)
@@ -49,15 +34,6 @@ function identity(request: CapabilityTransportRequest) {
   } as const;
 }
 
-function rebindLegacy<T>(request: CapabilityTransportRequest, result: unknown): CapabilityResult<T> {
-  if (!isCapabilityResult(result, (_data): _data is T => true)) {
-    throw new AgentCapabilityPortError("Score read returned an invalid result", "unknown");
-  }
-  return result.status === "completed"
-    ? Object.freeze({ ...identity(request), status: "completed", data: result.data })
-    : Object.freeze({ ...identity(request), status: result.status, code: result.code, message: result.message });
-}
-
 function projectTyped(request: CapabilityTransportRequest, result: ScoreReadResult<unknown>): CapabilityResult<unknown> {
   return result.status === "ready"
     ? Object.freeze({ ...identity(request), status: "completed", data: result.data })
@@ -67,11 +43,11 @@ function projectTyped(request: CapabilityTransportRequest, result: ScoreReadResu
 /** Direct Tool Adapter for score queries; mutations remain on the compatibility port. */
 export class DirectScoreReadAgentPort implements AgentCapabilityPort {
   readonly #fallback: AgentCapabilityPort;
-  readonly #host: DirectScoreReadHost;
+  readonly #scoreRead: ScoreReadPort;
 
-  constructor(fallback: AgentCapabilityPort, host: DirectScoreReadHost) {
+  constructor(fallback: AgentCapabilityPort, scoreRead: ScoreReadPort) {
     this.#fallback = fallback;
-    this.#host = host;
+    this.#scoreRead = scoreRead;
   }
 
   async invoke(
@@ -94,53 +70,19 @@ export class DirectScoreReadAgentPort implements AgentCapabilityPort {
       throw new AgentCapabilityPortError("Score measure range input is invalid", "definite-failure");
     }
 
-    let typed: ScoreReadPort | undefined;
     try {
-      typed = this.#host.scoreReadPort?.();
+      const result = request.capabilityId === "score.read-summary"
+        ? await this.#scoreRead.readSummary()
+        : request.capabilityId === "score.read-metadata"
+          ? await this.#scoreRead.readMetadata()
+          : request.capabilityId === "score.read-structure"
+            ? await this.#scoreRead.readStructure()
+            : request.capabilityId === "score.read-measure-index"
+              ? await this.#scoreRead.readMeasureIndex(request.input as ScoreMeasureIndexInputV1)
+              : await this.#scoreRead.readMeasureRange(request.input as ScoreMeasureRangeInputV1);
+      return projectTyped(request, result);
     } catch {
-      throw new AgentCapabilityPortError("Score read port is unavailable", "unknown");
+      throw new AgentCapabilityPortError("Score read outcome is unknown", "unknown");
     }
-    if (typed !== undefined) {
-      try {
-        const result = request.capabilityId === "score.read-summary"
-          ? await typed.readSummary()
-          : request.capabilityId === "score.read-metadata"
-            ? await typed.readMetadata()
-            : request.capabilityId === "score.read-structure"
-              ? await typed.readStructure()
-              : request.capabilityId === "score.read-measure-index"
-                ? await typed.readMeasureIndex(request.input as ScoreMeasureIndexInputV1)
-                : await typed.readMeasureRange(request.input as ScoreMeasureRangeInputV1);
-        return projectTyped(request, result);
-      } catch {
-        throw new AgentCapabilityPortError("Score read outcome is unknown", "unknown");
-      }
-    }
-
-    if (request.capabilityId === "score.read-summary") {
-      if (this.#host.readScoreSummary === undefined) return this.#fallback.invoke(request, context);
-      try { return rebindLegacy(request, await this.#host.readScoreSummary()); }
-      catch { throw new AgentCapabilityPortError("Score read outcome is unknown", "unknown"); }
-    }
-    if (request.capabilityId === "score.read-metadata") {
-      if (this.#host.readScoreMetadata === undefined) return this.#fallback.invoke(request, context);
-      try { return rebindLegacy(request, await this.#host.readScoreMetadata()); }
-      catch { throw new AgentCapabilityPortError("Score read outcome is unknown", "unknown"); }
-    }
-    if (request.capabilityId === "score.read-structure") {
-      if (this.#host.readScoreStructure === undefined) return this.#fallback.invoke(request, context);
-      try { return rebindLegacy(request, await this.#host.readScoreStructure()); }
-      catch { throw new AgentCapabilityPortError("Score read outcome is unknown", "unknown"); }
-    }
-    if (request.capabilityId === "score.read-measure-index") {
-      try {
-        return rebindLegacy(request, await this.#host.readScoreMeasureIndex(request.input as ScoreMeasureIndexInputV1));
-      }
-      catch { throw new AgentCapabilityPortError("Score read outcome is unknown", "unknown"); }
-    }
-    try {
-      return rebindLegacy(request, await this.#host.readScoreMeasureRange(request.input as ScoreMeasureRangeInputV1));
-    }
-    catch { throw new AgentCapabilityPortError("Score read outcome is unknown", "unknown"); }
   }
 }

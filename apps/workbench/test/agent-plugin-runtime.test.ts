@@ -191,7 +191,7 @@ const readyProvider: AgentProviderRuntimeSnapshot = {
   message: "Provider 已连接",
 };
 
-test("Agent runtime starts disabled and does not construct recovery services", async () => {
+test("Agent runtime construction does not start execution services", async () => {
   let recoveryFactoryCalls = 0;
   let providerFactoryCalls = 0;
   const runtime = new AgentPluginRuntime({ hostAvailable: true, createRecoverySession: () => {
@@ -202,11 +202,7 @@ test("Agent runtime starts disabled and does not construct recovery services", a
     return new FakeProviderSession(readyProvider);
   } });
 
-  assert.equal(runtime.getSnapshot().status, "disabled");
-  assert.equal(runtime.getSnapshot().enabled, false);
-  assert.equal(recoveryFactoryCalls, 0);
-  assert.equal(providerFactoryCalls, 0);
-  await runtime.setEnabled(false);
+  assert.equal(runtime.getSnapshot().status, "configuring");
   assert.equal(recoveryFactoryCalls, 0);
   assert.equal(providerFactoryCalls, 0);
 });
@@ -222,9 +218,8 @@ test("unsupported hosts expose unavailable without constructing desktop services
     return new FakeProviderSession(readyProvider);
   } });
 
-  await runtime.setEnabled(true);
+  await runtime.start();
 
-  assert.equal(runtime.getSnapshot().enabled, true);
   assert.equal(runtime.getSnapshot().status, "unavailable");
   assert.equal(runtime.getSnapshot().canStartRun, false);
   assert.equal(recoveryFactoryCalls, 0);
@@ -245,8 +240,8 @@ test("desktop activation lazily refreshes recovery and waits for Provider config
     return provider;
   } });
 
-  await runtime.setEnabled(true);
-  await runtime.setEnabled(true);
+  await runtime.start();
+  await runtime.start();
 
   assert.equal(recoveryFactoryCalls, 1);
   assert.equal(providerFactoryCalls, 1);
@@ -262,7 +257,7 @@ test("recovery work takes precedence over a ready Provider", async () => {
     createProviderSession: () => new FakeProviderSession(readyProvider),
     createRecoverySession: () => recovery });
 
-  await runtime.setEnabled(true);
+  await runtime.start();
 
   assert.equal(runtime.getSnapshot().status, "recovering");
   assert.equal(runtime.getSnapshot().canStartRun, false);
@@ -274,7 +269,7 @@ test("a ready Provider can start runs after recovery is clear", async () => {
     createProviderSession: () => new FakeProviderSession(readyProvider),
     createRecoverySession: () => new FakeRecoverySession() });
 
-  await runtime.setEnabled(true);
+  await runtime.start();
 
   assert.equal(runtime.getSnapshot().status, "ready");
   assert.equal(runtime.getSnapshot().canStartRun, true);
@@ -284,7 +279,7 @@ test("runtime grants one cancellable run lease and returns to ready after releas
   const runtime = new AgentPluginRuntime({ hostAvailable: true,
     createProviderSession: () => new FakeProviderSession(readyProvider),
     createRecoverySession: () => new FakeRecoverySession() });
-  await runtime.setEnabled(true);
+  await runtime.start();
 
   const lease = runtime.beginRun();
 
@@ -303,7 +298,7 @@ test("runtime grants a continuation lease only to the matching input-waiting Run
   const runtime = new AgentPluginRuntime({ hostAvailable: true,
     createProviderSession: () => new FakeProviderSession(readyProvider),
     createRecoverySession: () => new FakeRecoverySession(selectionRecoverySnapshot()) });
-  await runtime.setEnabled(true);
+  await runtime.start();
 
   assert.equal(runtime.getSnapshot().canStartRun, false);
   assert.equal(runtime.beginRun(), null);
@@ -322,7 +317,7 @@ test("runtime grants an approval lease only for the persisted approval identity"
   const runtime = new AgentPluginRuntime({ hostAvailable: true,
     createProviderSession: () => new FakeProviderSession(readyProvider),
     createRecoverySession: () => new FakeRecoverySession(approvalRecoverySnapshot()) });
-  await runtime.setEnabled(true);
+  await runtime.start();
 
   assert.equal(runtime.beginApprovalContinuation("other-run", "approval-1"), null);
   assert.equal(runtime.beginApprovalContinuation("run-approval", "stale-approval"), null);
@@ -339,7 +334,7 @@ test("runtime grants a retry lease only for the projected Invocation identity", 
   const runtime = new AgentPluginRuntime({ hostAvailable: true,
     createProviderSession: () => new FakeProviderSession(readyProvider),
     createRecoverySession: () => new FakeRecoverySession(retryRecoverySnapshot()) });
-  await runtime.setEnabled(true);
+  await runtime.start();
 
   assert.equal(runtime.beginRetryContinuation("other-run", "invocation-retry"), null);
   assert.equal(runtime.beginRetryContinuation("run-retry", "stale-invocation"), null);
@@ -352,39 +347,35 @@ test("runtime grants a retry lease only for the projected Invocation identity", 
   assert.equal(runtime.getSnapshot().status, "recovering");
 });
 
-test("disabling the plugin aborts an active run lease", async () => {
+test("disposing the runtime aborts an active run lease", async () => {
   const runtime = new AgentPluginRuntime({ hostAvailable: true,
     createProviderSession: () => new FakeProviderSession(readyProvider),
     createRecoverySession: () => new FakeRecoverySession() });
-  await runtime.setEnabled(true);
+  await runtime.start();
   const lease = runtime.beginRun();
   assert.ok(lease);
 
-  await runtime.setEnabled(false);
+  runtime.dispose();
 
   assert.equal(lease.signal.aborted, true);
-  assert.equal(runtime.getSnapshot().status, "disabled");
   lease.release();
-  assert.equal(runtime.getSnapshot().status, "disabled");
 });
 
-test("deactivation releases Provider and recovery subscriptions and ignores stale publications", async () => {
+test("disposal releases Provider and recovery subscriptions and ignores stale publications", async () => {
   const recovery = new FakeRecoverySession();
   const provider = new FakeProviderSession(readyProvider);
   const runtime = new AgentPluginRuntime({ hostAvailable: true, createProviderSession: () => provider,
     createRecoverySession: () => recovery });
-  await runtime.setEnabled(true);
+  await runtime.start();
 
-  await runtime.setEnabled(false);
+  runtime.dispose();
   recovery.publish(recoverySnapshot("error", true));
   provider.publish({ ...readyProvider, status: "error", message: "stale Provider error" });
 
   assert.equal(recovery.unsubscribeCalls, 1);
   assert.equal(provider.unsubscribeCalls, 1);
   assert.equal(provider.disposeCalls, 1);
-  assert.equal(runtime.getSnapshot().enabled, false);
-  assert.equal(runtime.getSnapshot().status, "disabled");
-  assert.equal(runtime.getSnapshot().recovery.items.length, 0);
+  assert.equal(runtime.beginRun(), null);
 });
 
 test("Provider control status updates the plugin without recreating the runtime", async () => {
@@ -393,7 +384,7 @@ test("Provider control status updates the plugin without recreating the runtime"
   });
   const runtime = new AgentPluginRuntime({ hostAvailable: true, createProviderSession: () => provider,
     createRecoverySession: () => new FakeRecoverySession() });
-  await runtime.setEnabled(true);
+  await runtime.start();
   assert.equal(runtime.getSnapshot().status, "configuring");
 
   provider.publish(readyProvider);
@@ -413,7 +404,7 @@ test("changing model hot-swaps only the Provider session", async () => {
   });
 
   await runtime.setProviderSelection({ providerId: "provider.example", modelId: "model-1" });
-  await runtime.setEnabled(true);
+  await runtime.start();
   await runtime.setProviderSelection({ providerId: "provider.example", modelId: "model-2" });
 
   assert.equal(first.unsubscribeCalls, 1);
@@ -433,10 +424,9 @@ test("partial activation failures dispose Provider resources and publish a stabl
     createRecoverySession: () => { throw new Error("Recovery storage unavailable"); },
   });
 
-  await runtime.setEnabled(true);
+  await runtime.start();
 
   assert.equal(provider.disposeCalls, 1);
-  assert.equal(runtime.getSnapshot().enabled, true);
   assert.equal(runtime.getSnapshot().status, "error");
   assert.equal(runtime.getSnapshot().canStartRun, false);
   assert.equal(runtime.getSnapshot().message, "Recovery storage unavailable");

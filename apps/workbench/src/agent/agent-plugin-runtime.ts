@@ -1,7 +1,4 @@
-import { isTauri } from "@tauri-apps/api/core";
-
 import type { AgentRecoverySessionSnapshot } from "./agent-recovery-session.ts";
-import { createAgentRecoverySession } from "./agent-recovery-session.ts";
 import type { AgentProviderSelection } from "../contracts/agent-provider-settings.ts";
 import { isAgentProviderSelection, sameAgentProviderSelection } from "../contracts/agent-provider-settings.ts";
 import { createConfiguredAgentProviderSession } from "./agent-provider-catalog.ts";
@@ -14,7 +11,6 @@ import type { AgentProviderPort } from "./provider.ts";
 export type { AgentProviderRuntimeSnapshot, AgentProviderRuntimeStatus } from "./provider-contract.ts";
 
 export type AgentPluginRuntimeStatus =
-  | "disabled"
   | "unavailable"
   | "configuring"
   | "ready"
@@ -23,7 +19,6 @@ export type AgentPluginRuntimeStatus =
   | "error";
 
 export interface AgentPluginRuntimeSnapshot {
-  readonly enabled: boolean;
   readonly status: AgentPluginRuntimeStatus;
   readonly provider: AgentProviderRuntimeSnapshot;
   readonly recovery: AgentRecoverySessionSnapshot;
@@ -55,21 +50,20 @@ export interface AgentPluginRuntimeDependencies {
 const EMPTY_RECOVERY: AgentRecoverySessionSnapshot = Object.freeze({
   status: "idle",
   items: Object.freeze([]),
-  message: "Agent 插件未启用",
+  message: "尚未检查可恢复的 Agent Run",
 });
 
-function disabledSnapshot(provider: AgentProviderRuntimeSnapshot): AgentPluginRuntimeSnapshot {
+function initialSnapshot(provider: AgentProviderRuntimeSnapshot): AgentPluginRuntimeSnapshot {
   return Object.freeze({
-    enabled: false,
-    status: "disabled",
+    status: "configuring",
     provider,
     recovery: EMPTY_RECOVERY,
     canStartRun: false,
-    message: "Agent 插件已关闭",
+    message: "Agent 执行服务尚未启动",
   });
 }
 
-/** Owns lazy Agent services. UI activation follows this snapshot, not module installation. */
+/** Owns execution services for an Agent plugin that already belongs to the fixed session. */
 export class AgentPluginRuntime {
   readonly #hostAvailable: boolean;
   readonly #createRecoverySession: () => AgentRecoverySessionPort;
@@ -83,13 +77,14 @@ export class AgentPluginRuntime {
   #providerSelection: AgentProviderSelection | null = null;
   #activeRun: Readonly<{ token: symbol; controller: AbortController }> | null = null;
   #generation = 0;
+  #started = false;
 
   constructor(dependencies: AgentPluginRuntimeDependencies) {
     this.#hostAvailable = dependencies.hostAvailable;
     this.#createRecoverySession = dependencies.createRecoverySession;
     this.#createProviderSession = dependencies.createProviderSession
       ?? ((selection) => createConfiguredAgentProviderSession(selection, dependencies.providerHost));
-    this.#snapshot = disabledSnapshot(UNCONFIGURED_AGENT_PROVIDER);
+    this.#snapshot = initialSnapshot(UNCONFIGURED_AGENT_PROVIDER);
   }
 
   getSnapshot = (): AgentPluginRuntimeSnapshot => this.#snapshot;
@@ -104,7 +99,7 @@ export class AgentPluginRuntime {
   };
 
   beginContinuation = (runId: string, requestId: string): AgentPluginRunLease | null => {
-    if (!this.#snapshot.enabled || this.#activeRun !== null) return null;
+    if (!this.#started || this.#activeRun !== null) return null;
     const continuation = this.#snapshot.recovery.items.find((item) => item.runId === runId);
     if (continuation?.action !== "provide-input"
       || continuation.requiredInput?.requestId !== requestId
@@ -115,7 +110,7 @@ export class AgentPluginRuntime {
   };
 
   beginApprovalContinuation = (runId: string, approvalId: string): AgentPluginRunLease | null => {
-    if (!this.#snapshot.enabled || this.#activeRun !== null) return null;
+    if (!this.#started || this.#activeRun !== null) return null;
     const continuation = this.#snapshot.recovery.items.find((item) => item.runId === runId);
     if (continuation?.action !== "approve"
       || continuation.requiredApproval?.approvalId !== approvalId
@@ -126,7 +121,7 @@ export class AgentPluginRuntime {
   };
 
   beginRetryContinuation = (runId: string, invocationId: string): AgentPluginRunLease | null => {
-    if (!this.#snapshot.enabled || this.#activeRun !== null) return null;
+    if (!this.#started || this.#activeRun !== null) return null;
     const continuation = this.#snapshot.recovery.items.find((item) => item.runId === runId);
     if (continuation?.action !== "retry"
       || continuation.invocationId !== invocationId
@@ -151,7 +146,7 @@ export class AgentPluginRuntime {
         released = true;
         if (this.#activeRun?.token !== token) return;
         this.#activeRun = null;
-        if (this.#snapshot.enabled) this.#syncRuntime();
+        if (this.#started) this.#syncRuntime();
       },
     });
   }
@@ -167,29 +162,17 @@ export class AgentPluginRuntime {
     }
     if (sameAgentProviderSelection(this.#providerSelection, selection)) return;
     this.#providerSelection = selection === null ? null : { ...selection };
-    if (!this.#snapshot.enabled) {
-      this.#publish(disabledSnapshot(UNCONFIGURED_AGENT_PROVIDER));
-      return;
-    }
+    if (!this.#started) return;
     if (!this.#hostAvailable || this.#recovery === null) return;
     this.#cancelActiveRun(true);
     await this.#replaceProvider();
   };
 
-  setEnabled = async (enabled: boolean): Promise<void> => {
-    if (!enabled) {
-      this.#generation += 1;
-      const provider = this.#provider?.getSnapshot() ?? UNCONFIGURED_AGENT_PROVIDER;
-      this.#cancelActiveRun(true);
-      this.#releaseProvider();
-      this.#releaseRecovery();
-      this.#publish(disabledSnapshot(provider));
-      return;
-    }
-    if (this.#snapshot.enabled && this.#provider !== null && this.#recovery !== null) return;
+  start = async (): Promise<void> => {
+    if (this.#started && this.#provider !== null && this.#recovery !== null) return;
+    this.#started = true;
     if (!this.#hostAvailable) {
       this.#publish({
-        enabled: true,
         status: "unavailable",
         provider: UNCONFIGURED_AGENT_PROVIDER,
         recovery: Object.freeze({ status: "unavailable", items: Object.freeze([]),
@@ -219,7 +202,6 @@ export class AgentPluginRuntime {
       unsubscribeRecovery?.();
       provider?.dispose();
       this.#publish({
-        enabled: true,
         status: "error",
         provider: provider?.getSnapshot() ?? UNCONFIGURED_AGENT_PROVIDER,
         recovery: EMPTY_RECOVERY,
@@ -242,7 +224,7 @@ export class AgentPluginRuntime {
       this.#provider?.refresh() ?? Promise.resolve(),
       this.#recovery?.refresh() ?? Promise.resolve(),
     ]);
-    if (this.#snapshot.enabled) this.#syncRuntime();
+    if (this.#started) this.#syncRuntime();
   };
 
   resume = async (runId: string): Promise<boolean> => {
@@ -251,6 +233,7 @@ export class AgentPluginRuntime {
 
   dispose(): void {
     this.#generation += 1;
+    this.#started = false;
     this.#cancelActiveRun(true);
     this.#releaseProvider();
     this.#releaseRecovery();
@@ -337,7 +320,6 @@ export class AgentPluginRuntime {
       message = provider.message;
     }
     this.#publish({
-      enabled: true,
       status,
       provider,
       recovery,
@@ -369,12 +351,4 @@ export class AgentPluginRuntime {
     this.#snapshot = Object.freeze(snapshot);
     for (const listener of this.#listeners) listener();
   }
-}
-
-export function createAgentPluginRuntime(providerHost: AgentProviderHostPort): AgentPluginRuntime {
-  return new AgentPluginRuntime({
-    hostAvailable: isTauri(),
-    providerHost,
-    createRecoverySession: createAgentRecoverySession,
-  });
 }

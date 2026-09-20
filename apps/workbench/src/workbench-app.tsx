@@ -37,14 +37,27 @@ import type { WorkbenchCommand } from "./commands/workbench-command.ts";
 import { bindUiProjection } from "./ui/projection-registry.ts";
 import { AGENT_ASSISTANT_PROJECTION, HISTORY_PROJECTION, NOTE_CONTROL_PROJECTION, PAPER_ZOOM_PROJECTION, PLAYBACK_OUTPUT_PROJECTION, PLAYBACK_PROJECTION, STAFF_PROJECTION } from "./ui/first-party-plugin-projections.ts";
 import { usePlaybackSession } from "./playback/use-playback-session.ts";
-import { createAgentPluginRuntime } from "./agent/agent-plugin-runtime.ts";
-import { createAgentAssistantSession } from "./agent/agent-assistant-session.ts";
+import {
+  createAgentPluginSession,
+  INACTIVE_AGENT_ASSISTANT_SESSION_SNAPSHOT,
+  INACTIVE_AGENT_PLUGIN_RUNTIME_SNAPSHOT,
+} from "./agent/agent-plugin-session.ts";
 import { AGENT_PROVIDER_DESCRIPTORS } from "./agent/agent-provider-catalog.ts";
 import { useAgentProviderCredential } from "./agent/use-agent-provider-credential.ts";
 import type { AgentWorkspaceScope } from "./agent/agent-contracts.ts";
 import type { MeterInput } from "./contracts/note-input.ts";
+import { createWorkbenchAgentPluginBindings } from "./services/workbench-agent-plugin-host.ts";
 
 const INSTALLED_COMPONENTS = workbenchPluginPlatform.components().list();
+const NOOP_DISPOSABLE = Object.freeze({ dispose() {} });
+const INACTIVE_AGENT_RUNTIME_STORE = Object.freeze({
+  subscribe: (_listener: () => void) => () => {},
+  getSnapshot: () => INACTIVE_AGENT_PLUGIN_RUNTIME_SNAPSHOT,
+});
+const INACTIVE_AGENT_ASSISTANT_STORE = Object.freeze({
+  subscribe: (_listener: () => void) => () => {},
+  getSnapshot: () => INACTIVE_AGENT_ASSISTANT_SESSION_SNAPSHOT,
+});
 const SLOT_LABELS: Record<UiSlot, string> = {
   workspace: "中央工作区",
   top: "上方停靠区",
@@ -128,24 +141,24 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
   const applicationSettings = useApplicationSettings(score.client, runtime);
   const { animationsEnabled, ruleWarningsVisible } = applicationSettings.settings.ui;
   const { deleteTimePolicy, noteInput: noteInputPreferences } = applicationSettings.settings.editing;
+  const agentPluginInfo = pluginRuntimeSnapshot.find((plugin) => plugin.manifest.id === AGENT_ASSISTANT_PLUGIN_ID);
+  const agentPluginActive = agentPluginInfo?.active === true;
   const [agentComposition] = useState(() => {
-    const plugin = createAgentPluginRuntime(score.client);
-    const assistant = createAgentAssistantSession(plugin, score.client, workbenchPluginPlatform.workflows(), async (change) => {
+    if (!agentPluginActive || agentPluginInfo === undefined) return null;
+    const bindings = createWorkbenchAgentPluginBindings(
+      score.client,
+      workbenchPluginPlatform.workflows(),
+      agentPluginInfo.manifest.version,
+    );
+    return createAgentPluginSession(bindings, async (change) => {
       const fresh = await score.client.read();
       if (fresh?.documentId === change.documentId
         && fresh.documentVersion >= change.documentVersion) score.replaceSession(fresh);
     });
-    return {
-      plugin,
-      assistant,
-      dispose() {
-        assistant.dispose();
-        plugin.dispose();
-      },
-    };
   });
-  const { plugin: agentPlugin, assistant: agentAssistant } = agentComposition;
-  useDisposableResource(agentComposition);
+  const agentPlugin = agentComposition?.runtime ?? null;
+  const agentAssistant = agentComposition?.assistant ?? null;
+  useDisposableResource(agentComposition ?? NOOP_DISPOSABLE);
   const selectedAgentProvider = useMemo(() => AGENT_PROVIDER_DESCRIPTORS.find(
     (provider) => provider.id === applicationSettings.settings.agent.providerSelection?.providerId,
   ), [applicationSettings.settings.agent.providerSelection?.providerId]);
@@ -156,35 +169,28 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
     runtime,
   );
   const agentPluginSnapshot = useSyncExternalStore(
-    agentPlugin.subscribe,
-    agentPlugin.getSnapshot,
-    agentPlugin.getSnapshot,
+    agentPlugin?.subscribe ?? INACTIVE_AGENT_RUNTIME_STORE.subscribe,
+    agentPlugin?.getSnapshot ?? INACTIVE_AGENT_RUNTIME_STORE.getSnapshot,
+    agentPlugin?.getSnapshot ?? INACTIVE_AGENT_RUNTIME_STORE.getSnapshot,
   );
   const agentAssistantSnapshot = useSyncExternalStore(
-    agentAssistant.subscribe,
-    agentAssistant.getSnapshot,
-    agentAssistant.getSnapshot,
+    agentAssistant?.subscribe ?? INACTIVE_AGENT_ASSISTANT_STORE.subscribe,
+    agentAssistant?.getSnapshot ?? INACTIVE_AGENT_ASSISTANT_STORE.getSnapshot,
+    agentAssistant?.getSnapshot ?? INACTIVE_AGENT_ASSISTANT_STORE.getSnapshot,
   );
   useEffect(() => {
-    if (!applicationSettings.ready) return;
-    let cancelled = false;
-    void agentPlugin.setProviderSelection(applicationSettings.settings.agent.providerSelection)
-      .then(() => cancelled ? undefined : agentPlugin.setEnabled(applicationSettings.settings.agent.enabled));
-    return () => { cancelled = true; };
-  }, [agentPlugin, applicationSettings.ready, applicationSettings.settings.agent.enabled,
+    if (!applicationSettings.ready || agentComposition === null) return;
+    void agentComposition.configure(applicationSettings.settings.agent.providerSelection);
+  }, [agentComposition, applicationSettings.ready,
     applicationSettings.settings.agent.providerSelection]);
-  useEffect(() => {
-    if (!applicationSettings.ready) return;
-    void setWorkbenchUserPluginEnabled(AGENT_ASSISTANT_PLUGIN_ID, agentPluginSnapshot.enabled);
-  }, [agentPluginSnapshot.enabled, applicationSettings.ready]);
   const saveAgentCredential = useCallback(async (secret: string) => {
     const saved = await agentCredential.save(secret);
-    if (saved) await agentPlugin.refresh();
+    if (saved) await agentPlugin?.refresh();
     return saved;
   }, [agentCredential.save, agentPlugin]);
   const deleteAgentCredential = useCallback(async () => {
     const removed = await agentCredential.remove();
-    if (removed) await agentPlugin.refresh();
+    if (removed) await agentPlugin?.refresh();
     return removed;
   }, [agentCredential.remove, agentPlugin]);
   const input = useScoreInput(score.session, score.client, score.setSession, scoreViewport, score.loadEpoch, deleteTimePolicy,
@@ -348,26 +354,19 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
       session: agentAssistantSnapshot,
       documentAvailable: score.session !== null,
       selectionAvailable: agentWorkspace.selection !== null,
-      start: (goal) => agentAssistant.start(goal, agentWorkspace),
-      provideRequiredInput: (runId, requestId) => agentAssistant.provideRequiredInput(
-        runId,
-        requestId,
-        agentWorkspace,
-      ),
-      provideApprovalDecision: (runId, approvalId, outcome) => agentAssistant.provideApprovalDecision(
-        runId,
-        approvalId,
-        outcome,
-        agentWorkspace,
-      ),
-      retryInvocation: (runId, invocationId) => agentAssistant.retryInvocation(
-        runId,
-        invocationId,
-        agentWorkspace,
-      ),
-      cancel: agentAssistant.cancel,
-      refresh: agentPlugin.refresh,
-      resume: agentPlugin.resume,
+      start: (goal) => agentAssistant?.start(goal, agentWorkspace) ?? Promise.resolve(false),
+      provideRequiredInput: (runId, requestId) => agentAssistant?.provideRequiredInput(
+        runId, requestId, agentWorkspace,
+      ) ?? Promise.resolve(false),
+      provideApprovalDecision: (runId, approvalId, outcome) => agentAssistant?.provideApprovalDecision(
+        runId, approvalId, outcome, agentWorkspace,
+      ) ?? Promise.resolve(false),
+      retryInvocation: (runId, invocationId) => agentAssistant?.retryInvocation(
+        runId, invocationId, agentWorkspace,
+      ) ?? Promise.resolve(false),
+      cancel: () => { agentAssistant?.cancel(); },
+      refresh: () => agentPlugin?.refresh() ?? Promise.resolve(),
+      resume: (runId) => agentPlugin?.resume(runId) ?? Promise.resolve(false),
     }),
   ]), [blocked, dispatchHistory, historyActivity, historyBlocked, input.duration, input.enabled, input.feedback, input.pending,
     input.point, input.rest, inputAvailable, noteOverview.disabled, noteOverview.focusScore, noteOverview.message,
@@ -504,7 +503,8 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
       deleteTimePolicy={deleteTimePolicy} onDeleteTimePolicyChange={applicationSettings.setDeleteTimePolicy}
       noteInputPreferences={noteInputPreferences} onNoteInputRetentionChange={applicationSettings.setNoteInputRetention}
       onDefaultNoteInputDurationChange={applicationSettings.setDefaultNoteInputDuration}
-      agentEnabled={applicationSettings.settings.agent.enabled} onAgentEnabledChange={applicationSettings.setAgentEnabled}
+      agentEnabled={agentPluginInfo?.nextLaunchActive ?? false}
+      onAgentEnabledChange={(enabled) => { void setWorkbenchUserPluginEnabled(AGENT_ASSISTANT_PLUGIN_ID, enabled); }}
       agentProviderDescriptors={AGENT_PROVIDER_DESCRIPTORS}
       agentProviderSelection={applicationSettings.settings.agent.providerSelection}
       onAgentProviderSelectionChange={applicationSettings.setAgentProviderSelection}

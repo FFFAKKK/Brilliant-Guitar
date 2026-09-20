@@ -1,40 +1,30 @@
-import type {
-  CapabilityResult,
-  ScoreMeasureIndexInputV1,
-  ScoreMeasureIndexV1,
-} from "../contracts/capability.ts";
+import type { ScoreMeasureIndexV1 } from "../contracts/capability.ts";
+import type { ScoreReadPort, ScoreReadResult } from "../services/score-read-port.ts";
 import type {
   MeasureIndexPort,
   MeasureIndexPortRequest,
   MeasureIndexPortResult,
 } from "./measure-reference-read-service.ts";
 
-interface ScoreMeasureIndexClient {
-  readScoreMeasureIndex(
-    input: ScoreMeasureIndexInputV1,
-  ): Promise<CapabilityResult<ScoreMeasureIndexV1>>;
-}
-
-function retryable(result: Exclude<CapabilityResult<ScoreMeasureIndexV1>, { readonly status: "completed" }>): boolean {
+function retryable(result: Exclude<ScoreReadResult<ScoreMeasureIndexV1>, { readonly status: "ready" }>): boolean {
   return result.status === "unavailable"
-    || result.status === "failed"
     || result.code === "score.measure-index-stale";
 }
 
-/** Adapts the internal UI capability route to the control-plane measure index port. */
+/** Adapts the typed score read port to the control-plane measure index port. */
 export class ScoreMeasureIndexPort implements MeasureIndexPort {
-  readonly #client: ScoreMeasureIndexClient;
+  readonly #scoreRead: ScoreReadPort;
 
-  constructor(client: ScoreMeasureIndexClient) {
-    this.#client = client;
+  constructor(scoreRead: ScoreReadPort) {
+    this.#scoreRead = scoreRead;
   }
 
   async readMeasureIndex(request: MeasureIndexPortRequest): Promise<MeasureIndexPortResult> {
-    const result = await this.#client.readScoreMeasureIndex({
+    const result = await this.#scoreRead.readMeasureIndex({
       expectedDocumentId: request.expectedDocumentId,
       expectedDocumentVersion: request.expectedDocumentVersion,
     });
-    if (result.status === "completed") {
+    if (result.status === "ready") {
       return Object.freeze({ status: "completed", index: result.data });
     }
     return Object.freeze({

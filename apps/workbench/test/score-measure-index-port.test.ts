@@ -28,13 +28,10 @@ test("internal measure index is absent from the model-visible capability catalog
 test("measure index port calls the internal capability with version-bound identity", async () => {
   const inputs: unknown[] = [];
   const port = new ScoreMeasureIndexPort({
-    async readScoreMeasureIndex(input) {
+    async readMeasureIndex(input) {
       inputs.push(input);
       return {
-        status: "completed",
-        invocationId: "index-1",
-        capabilityId: "score.read-measure-index",
-        contractVersion: 1,
+        status: "ready",
         data: {
           documentId: "score-1",
           documentVersion: 7,
@@ -60,12 +57,9 @@ test("measure index port calls the internal capability with version-bound identi
 
 test("measure index port preserves stable failures and retryability", async () => {
   const stale = new ScoreMeasureIndexPort({
-    async readScoreMeasureIndex() {
+    async readMeasureIndex() {
       return {
-        status: "rejected",
-        invocationId: "index-1",
-        capabilityId: "score.read-measure-index",
-        contractVersion: 1,
+        status: "failed",
         code: "score.measure-index-stale",
         message: "小节索引与当前文档版本不一致",
       };
@@ -79,12 +73,9 @@ test("measure index port preserves stable failures and retryability", async () =
   });
 
   const invalid = new ScoreMeasureIndexPort({
-    async readScoreMeasureIndex() {
+    async readMeasureIndex() {
       return {
-        status: "rejected",
-        invocationId: "index-2",
-        capabilityId: "score.read-measure-index",
-        contractVersion: 1,
+        status: "failed",
         code: "capability.invalid-input",
         message: "能力输入格式无效",
       };

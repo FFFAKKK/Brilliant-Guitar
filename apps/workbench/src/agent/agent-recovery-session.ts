@@ -1,12 +1,10 @@
-import { isTauri } from "@tauri-apps/api/core";
-
 import type { AgentRunRecord } from "./run-controller.ts";
 import type { AgentRunRecoveryResult } from "./recovery-coordinator.ts";
 import { AgentRecoveryCoordinator, AgentRecoveryResumeError } from "./recovery-coordinator.ts";
+import type { AgentInvocationReceiptPort } from "./recovery-coordinator.ts";
 import type { AgentRecoveryProjection } from "./recovery-projection.ts";
 import { projectRecovery } from "./recovery-projection.ts";
-import { TauriAgentRunStore } from "./tauri-agent-run-store.ts";
-import { TauriAgentInvocationReceiptPort } from "./tauri-invocation-receipt.ts";
+import type { AgentRunStorePort } from "./agent-store.ts";
 
 export type AgentRecoverySessionStatus = "unavailable" | "idle" | "loading" | "ready" | "error";
 
@@ -123,10 +121,13 @@ export class AgentRecoverySession {
   }
 }
 
-export function createAgentRecoverySession(): AgentRecoverySession {
-  if (!isTauri()) return new AgentRecoverySession(null);
+export function createAgentRecoverySession(
+  store: AgentRunStorePort,
+  receipts: AgentInvocationReceiptPort | null,
+): AgentRecoverySession {
+  if (receipts === null) return new AgentRecoverySession(null);
   return new AgentRecoverySession(new AgentRecoveryCoordinator({
-    store: new TauriAgentRunStore(),
-    receipts: new TauriAgentInvocationReceiptPort(),
+    store,
+    receipts,
   }));
 }
