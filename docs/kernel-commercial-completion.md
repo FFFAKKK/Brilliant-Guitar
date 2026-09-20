@@ -1,5 +1,18 @@
 # Commercial kernel completion
 
+**Seeded Effect/Batch/history state-machine regression (2026-09-20):** four
+fixed xorshift seeds now drive 2,048 mixed Rust-runtime actions across typed
+Effects, Candidate Batches, effective-prefix Batch rejection, no-op submits,
+undo and redo. An independent document/history-cursor model checks every step,
+including canonical bytes, dirty state, history depths, branch truncation and
+periodic clean index rebuild parity. Typed Effects pin exact `affected` values;
+all commits pin de-duplication and event equality; history transitions must
+publish the exact affected list retained by their journal entry. Each seed's
+final reachable branch is then executed in a fresh runtime and cycled through
+complete undo/redo. This is reproducible property-style regression evidence,
+not exhaustive fuzzing or crash recovery. See
+`docs/kernel-seeded-state-machine-2026-09-20.md`.
+
 **Long-sequence history/checkpoint retained-state soak (2026-09-20):** the
 runtime now has a default multi-checkpoint regression and an explicit 10,000
 submit soak spanning undo, redo, branching, persisted markers, snapshot reads
