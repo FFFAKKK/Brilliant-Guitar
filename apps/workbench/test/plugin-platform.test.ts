@@ -458,6 +458,39 @@ test("startup controller can omit every user plugin for one safe session without
   assert.equal(platformInstance.components().get("test.safe.user.view"), undefined);
 });
 
+test("a recovery session does not overwrite the next normal launch preference", () => {
+  const platformInstance = platform();
+  platformInstance.registerAll([
+    plugin({ id: "test.intent.always", componentId: "test.intent.always.view" }),
+    plugin({ id: "test.intent.desired", componentId: "test.intent.desired.view", activation: "user" }),
+    plugin({ id: "test.intent.recovery", componentId: "test.intent.recovery.view", activation: "user" }),
+  ]);
+  platformInstance.restoreActivation(["test.intent.desired"]);
+
+  const plan = platformInstance.start({ selectedPluginIds: ["test.intent.recovery"] });
+
+  assert.deepEqual(plan.pluginIds, ["test.intent.always", "test.intent.recovery"]);
+  assert.deepEqual([...platformInstance.nextLaunchPluginIds()], ["test.intent.always", "test.intent.desired"]);
+  assert.deepEqual(platformInstance.list().map((record) => [record.manifest.id, record.active,
+    record.nextLaunchActive, record.restartRequired]), [
+    ["test.intent.always", true, true, false],
+    ["test.intent.desired", false, true, true],
+    ["test.intent.recovery", true, false, true],
+  ]);
+});
+
+test("the UI host cannot show an omitted plugin by reinterpreting its mutable activation label", () => {
+  const platformInstance = platform();
+  const optional = plugin({ id: "test.optional", componentId: "test.optional.view", activation: "user" });
+  platformInstance.register(optional);
+  platformInstance.start();
+
+  assert.deepEqual([...platformInstance.resolveViews(snapshot(platformInstance)).keys()], []);
+  (optional.manifest as { activation: "always" | "user" }).activation = "always";
+  assert.deepEqual([...platformInstance.resolveViews(snapshot(platformInstance)).keys()], []);
+  assert.deepEqual(platformInstance.sessionPlan().pluginIds, []);
+});
+
 test("an incomplete startup automatically restores the last stable plugin session", async () => {
   const platformInstance = platform();
   platformInstance.registerAll([

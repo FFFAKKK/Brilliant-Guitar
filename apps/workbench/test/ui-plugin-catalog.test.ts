@@ -86,8 +86,9 @@ test("startup catalog discovers extension-only instrument plugins and installs c
   for (const plugin of catalog.installationPlan()) host.install(plugin);
   const snapshot = host.projections.snapshot([bindUiProjection(state, { instrument: "guitar" })]);
 
-  assert.equal(host.resolveViews(snapshot).get("example.note-control-panel")?.render(), "");
-  assert.equal(host.resolveViews(snapshot, new Set(["example.instrument.guitar"]))
+  assert.equal(host.resolveViews(snapshot, new Set(["example.note-control"]))
+    .get("example.note-control-panel")?.render(), "");
+  assert.equal(host.resolveViews(snapshot, new Set(["example.note-control", "example.instrument.guitar"]))
     .get("example.note-control-panel")?.render(), "guitar-techniques");
 });
 
@@ -96,7 +97,7 @@ test("instrument extensions may stay registered while hiding controls outside th
   for (const plugin of new UiPluginCatalog([noteControl, guitar]).installationPlan()) host.install(plugin);
   const snapshot = host.projections.snapshot([bindUiProjection(state, { instrument: "piano" })]);
 
-  assert.equal(host.resolveViews(snapshot, new Set(["example.instrument.guitar"]))
+  assert.equal(host.resolveViews(snapshot, new Set(["example.note-control", "example.instrument.guitar"]))
     .get("example.note-control-panel")?.render(), "");
   assert.equal(host.ownerOfComponentExtension("example.instrument.guitar.techniques")?.id,
     "example.instrument.guitar");

@@ -224,15 +224,15 @@ export class UiPluginHost {
     return owner ? this.#plugins.get(owner)?.manifest : undefined;
   }
 
-  #installed(snapshot: UiProjectionSnapshot, activatedPluginIds?: ReadonlySet<string>): readonly InstalledPlugin[] {
+  #installed(snapshot: UiProjectionSnapshot, includedPluginIds?: ReadonlySet<string>): readonly InstalledPlugin[] {
     return [...this.#plugins.values()]
-      .filter((module) => module.manifest.activation === "always" || activatedPluginIds?.has(module.manifest.id))
+      .filter((module) => includedPluginIds === undefined || includedPluginIds.has(module.manifest.id))
       .map((module) => ({ module, projections: snapshot.scoped(module.projections) }));
   }
 
-  resolveCommands(snapshot: UiProjectionSnapshot, activatedPluginIds?: ReadonlySet<string>): readonly WorkbenchCommand[] {
+  resolveCommands(snapshot: UiProjectionSnapshot, includedPluginIds?: ReadonlySet<string>): readonly WorkbenchCommand[] {
     const result: WorkbenchCommand[] = [];
-    for (const plugin of this.#installed(snapshot, activatedPluginIds)) {
+    for (const plugin of this.#installed(snapshot, includedPluginIds)) {
       for (const contribution of plugin.module.commands) {
         try {
           const command = contribution.create(plugin.projections);
@@ -252,9 +252,9 @@ export class UiPluginHost {
   }
 
   resolveViews(snapshot: UiProjectionSnapshot,
-    activatedPluginIds?: ReadonlySet<string>): ReadonlyMap<string, UiResolvedViewContribution> {
+    includedPluginIds?: ReadonlySet<string>): ReadonlyMap<string, UiResolvedViewContribution> {
     const result = new Map<string, UiResolvedViewContribution>();
-    const installed = this.#installed(snapshot, activatedPluginIds);
+    const installed = this.#installed(snapshot, includedPluginIds);
     const extensions = (extensionPoint: string): readonly UiResolvedComponentExtension[] => installed
       .flatMap((plugin) => plugin.module.componentExtensions
         .filter((extension) => extension.extensionPoint === extensionPoint)

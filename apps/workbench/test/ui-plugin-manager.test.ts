@@ -72,12 +72,13 @@ test("user-activated plugins stay installed but contribute only while activated"
     [], [command], [], [], "user"));
   const snapshot = manager.projections.snapshot([bindUiProjection(projection, { enabled: true })]);
 
-  assert.deepEqual([...manager.resolveViews(snapshot).keys()], ["example.always-panel"]);
-  assert.deepEqual(manager.resolveCommands(snapshot).map((item) => item.id), []);
-  const activated = new Set(["example.user"]);
-  assert.deepEqual([...manager.resolveViews(snapshot, activated).keys()],
+  const initialSession = new Set(["example.always"]);
+  assert.deepEqual([...manager.resolveViews(snapshot, initialSession).keys()], ["example.always-panel"]);
+  assert.deepEqual(manager.resolveCommands(snapshot, initialSession).map((item) => item.id), []);
+  const nextSession = new Set(["example.always", "example.user"]);
+  assert.deepEqual([...manager.resolveViews(snapshot, nextSession).keys()],
     ["example.always-panel", "example.user-panel"]);
-  assert.deepEqual(manager.resolveCommands(snapshot, activated).map((item) => item.id), ["example.user.run"]);
+  assert.deepEqual(manager.resolveCommands(snapshot, nextSession).map((item) => item.id), ["example.user.run"]);
 });
 
 test("notation interaction contributions register with plugin ownership", () => {
