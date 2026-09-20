@@ -7,7 +7,11 @@ import {
 } from "../src/agent/score-change-set-port.ts";
 import { ScoreChangeSetClient } from "../src/services/score-change-set-port.ts";
 import type { ScoreChangeSetPreparationContext } from "../src/services/score-change-set-port.ts";
-import type { ScoreUpdateMetadataInputV1 } from "../src/contracts/capability.ts";
+import type {
+  CapabilityDocumentPrecondition,
+  ScorePrepareTempoChangeInputV1,
+  ScoreUpdateMetadataInputV1,
+} from "../src/contracts/capability.ts";
 import { TauriWorkbenchHostBridge } from "../src/services/workbench-host-bridge.ts";
 
 const preparationContext = {
@@ -358,3 +362,145 @@ test("ScoreChangeSetPort preserves the valid-context workspace mismatch error", 
   }
   assert.equal(hostCalls, 0);
 });
+
+for (const changedField of ["tempo", "document", "version"] as const) {
+  for (const originalResponse of [true, false]) {
+    test(`ScoreChangeSetPort ${originalResponse ? "accepts original" : "rejects changed"} tempo results after caller changes ${changedField}`, async () => {
+      let complete!: (value: unknown) => void;
+      const response = new Promise<unknown>((resolve) => { complete = resolve; });
+      let forwardedInput: ScorePrepareTempoChangeInputV1 | undefined;
+      let forwardedPrecondition: CapabilityDocumentPrecondition | undefined;
+      const port = new ScoreChangeSetClient({
+        async prepareScoreTempoChange(_workspaceId, precondition, input) {
+          forwardedInput = input;
+          forwardedPrecondition = precondition;
+          return response;
+        },
+      }, "workspace-1");
+      const input = { tempoBpm: 132 };
+      const precondition = { documentId: "score-1", documentVersion: 7 };
+      const context = { ...preparationContext, documentPrecondition: precondition };
+      const pending = port.prepareTempoChange(input, context);
+
+      if (changedField === "tempo") input.tempoBpm = 144;
+      if (changedField === "document") precondition.documentId = "other-score";
+      if (changedField === "version") precondition.documentVersion = 8;
+      const changeSet = {
+        changeSetId: `sha256:${"a".repeat(64)}`,
+        kind: "score-tempo",
+        documentId: originalResponse ? "score-1" : precondition.documentId,
+        baseDocumentVersion: originalResponse ? 7 : precondition.documentVersion,
+        beforeTempoBpm: 96,
+        afterTempoBpm: originalResponse ? 132 : input.tempoBpm,
+      };
+      complete(changeSet);
+
+      if (originalResponse) {
+        assert.deepEqual(await pending, changeSet);
+      } else {
+        await assert.rejects(pending, (error: unknown) => error instanceof ScoreChangeSetPortError
+          && error.outcome === "definite-failure"
+          && error.message === "Prepared tempo ChangeSet does not match the request");
+      }
+      assert.deepEqual(forwardedInput, { tempoBpm: 132 });
+      assert.deepEqual(forwardedPrecondition, preparationContext.documentPrecondition);
+      assert.notEqual(forwardedInput, input);
+      assert.notEqual(forwardedPrecondition, precondition);
+      assert.equal(Object.isFrozen(input), false);
+      assert.equal(Object.isFrozen(precondition), false);
+    });
+  }
+}
+
+type MutableMetadataInput = { title?: string; tempoBpm?: number };
+const metadataInputMutations: readonly {
+  readonly name: string;
+  readonly initial: MutableMetadataInput;
+  readonly mutate: (input: MutableMetadataInput) => void;
+}[] = [
+  { name: "title change", initial: { title: "New", tempoBpm: 132 }, mutate: (input) => { input.title = "Later"; } },
+  { name: "tempo change", initial: { title: "New", tempoBpm: 132 }, mutate: (input) => { input.tempoBpm = 144; } },
+  { name: "added title", initial: { tempoBpm: 132 }, mutate: (input) => { input.title = "Later"; } },
+  { name: "added tempo", initial: { title: "New" }, mutate: (input) => { input.tempoBpm = 144; } },
+  { name: "removed title", initial: { title: "New", tempoBpm: 132 }, mutate: (input) => { delete input.title; } },
+];
+
+for (const scenario of metadataInputMutations) {
+  for (const originalResponse of [true, false]) {
+    test(`ScoreChangeSetPort ${originalResponse ? "accepts original" : "rejects changed"} metadata results after ${scenario.name}`, async () => {
+      let complete!: (value: unknown) => void;
+      const response = new Promise<unknown>((resolve) => { complete = resolve; });
+      let forwardedInput: ScoreUpdateMetadataInputV1 | undefined;
+      const port = new ScoreChangeSetClient({
+        async prepareScoreMetadataTransaction(_workspaceId, _precondition, input) {
+          forwardedInput = input;
+          return response;
+        },
+      }, "workspace-1");
+      const input = { ...scenario.initial };
+      const pending = port.prepareMetadataTransaction(input, preparationContext);
+      scenario.mutate(input);
+      const resultInput = originalResponse ? scenario.initial : input;
+      const before = { title: "Old", tempoBpm: 96 };
+      const after = {
+        title: resultInput.title ?? before.title,
+        tempoBpm: resultInput.tempoBpm ?? before.tempoBpm,
+      };
+      const changeSet = {
+        changeSetId: `sha256:${"b".repeat(64)}`,
+        kind: "score-metadata-transaction",
+        documentId: "score-1",
+        baseDocumentVersion: 7,
+        operations: [
+          ...(after.title !== before.title ? ["set-title"] : []),
+          ...(after.tempoBpm !== before.tempoBpm ? ["set-tempo"] : []),
+        ],
+        before,
+        after,
+      };
+      complete(changeSet);
+
+      if (originalResponse) {
+        assert.deepEqual(await pending, changeSet);
+      } else {
+        await assert.rejects(pending, (error: unknown) => error instanceof ScoreChangeSetPortError
+          && error.outcome === "definite-failure"
+          && error.message === "Prepared metadata ChangeSet does not match the request");
+      }
+      assert.deepEqual(forwardedInput, scenario.initial);
+      assert.notEqual(forwardedInput, input);
+      assert.equal(Object.isFrozen(input), false);
+    });
+  }
+}
+
+for (const operation of ["tempo", "metadata"] as const) {
+  test(`ScoreChangeSetPort keeps the original ${operation} precondition when the caller replaces its context`, async () => {
+    let complete!: (value: unknown) => void;
+    const response = new Promise<unknown>((resolve) => { complete = resolve; });
+    const port = new ScoreChangeSetClient({
+      async prepareScoreTempoChange() { return response; },
+      async prepareScoreMetadataTransaction() { return response; },
+    }, "workspace-1");
+    const context = { ...preparationContext };
+    const pending = operation === "tempo"
+      ? port.prepareTempoChange({ tempoBpm: 132 }, context)
+      : port.prepareMetadataTransaction({ title: "New" }, context);
+    context.documentPrecondition = null as unknown as typeof context.documentPrecondition;
+    const identity = {
+      changeSetId: `sha256:${"c".repeat(64)}`,
+      documentId: "score-1",
+      baseDocumentVersion: 7,
+    };
+    const changeSet = operation === "tempo"
+      ? { ...identity, kind: "score-tempo", beforeTempoBpm: 96, afterTempoBpm: 132 }
+      : {
+          ...identity, kind: "score-metadata-transaction", operations: ["set-title"],
+          before: { title: "Old", tempoBpm: 96 }, after: { title: "New", tempoBpm: 96 },
+        };
+    complete(changeSet);
+
+    assert.deepEqual(await pending, changeSet);
+    assert.equal(context.documentPrecondition, null);
+  });
+}
