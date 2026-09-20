@@ -22,11 +22,12 @@ use crate::{
         NativeFileResult, NewScoreInput, NotationView, PitchStep, PlaybackSourceContent,
         PlaybackSourceEvent, PlaybackSourceMeasure, PlaybackSourceProjection,
         PlaybackTransposition, ScoreEditAction, ScoreEditRequest, ScoreMeasureIndexV1,
-        ScoreMeasureRangeMeasureV1, ScoreMeasureRangeV1, ScoreMetadataV1, ScoreSessionRead,
-        ScoreStructureV1, ScoreSummaryV1, StaffEvent, StaffMeasure, StaffRuleWarning,
-        WorkbenchIssueSource, WorkbenchIssueTarget,
+        ScoreMeasureRangeMeasureV1, ScoreMeasureRangeV1, ScoreMetadataTransactionChangeSetV1,
+        ScoreMetadataV1, ScoreSessionRead, ScoreStructureV1, ScoreSummaryV1, ScoreTempoChangeSetV1,
+        StaffEvent, StaffMeasure, StaffRuleWarning, WorkbenchIssueSource, WorkbenchIssueTarget,
     },
     error::HostError,
+    score_change_set,
 };
 
 const MAX_WORKSPACES: usize = 32;
@@ -76,7 +77,14 @@ impl ScoreSessionService {
             || entry.measure_index.document_version != current_document_version
             || entry.measure_index.measure_ids.len() != current_measure_count
         {
-            return Err(HostError::new("小节索引与当前文档版本不一致", 409));
+            return Err(HostError::issue(
+                "score.measure-index-stale",
+                "小节索引与当前文档版本不一致",
+                409,
+                WorkbenchIssueSource::Host,
+                WorkbenchIssueTarget::Workbench,
+                Some(true),
+            ));
         }
         Ok(Some(entry.measure_index.clone()))
     }
@@ -135,6 +143,98 @@ impl ScoreSessionService {
             })),
             _ => Err(HostError::internal()),
         }
+    }
+
+    pub fn prepare_tempo_change(
+        &self,
+        workspace_id: &str,
+        expected_document_id: &str,
+        expected_document_version: u64,
+        tempo_bpm: f64,
+    ) -> Result<Option<ScoreTempoChangeSetV1>, HostError> {
+        if !valid_change_set_document_id(expected_document_id)
+            || !tempo_bpm.is_finite()
+            || tempo_bpm <= 0.0
+        {
+            return Err(score_change_set_error(
+                "capability.invalid-input",
+                "作品速度格式无效",
+                422,
+                false,
+            ));
+        }
+        let Some(current) = self.read_metadata(workspace_id)? else {
+            return Ok(None);
+        };
+        if current.document_id != expected_document_id
+            || current.document_version != expected_document_version
+        {
+            return Err(score_change_set_error(
+                "score.document-version-conflict",
+                "乐谱版本已经变化，请重新准备变更",
+                409,
+                true,
+            ));
+        }
+        if current.tempo_bpm == tempo_bpm {
+            return Err(score_change_set_error(
+                "score.change-set-empty",
+                "目标速度与当前速度相同，无需修改",
+                422,
+                false,
+            ));
+        }
+        Ok(Some(score_change_set::tempo_change_set(
+            &current, tempo_bpm,
+        )))
+    }
+
+    pub fn prepare_metadata_transaction(
+        &self,
+        workspace_id: &str,
+        expected_document_id: &str,
+        expected_document_version: u64,
+        title: Option<String>,
+        tempo_bpm: Option<f64>,
+    ) -> Result<Option<ScoreMetadataTransactionChangeSetV1>, HostError> {
+        if !valid_change_set_document_id(expected_document_id)
+            || title.is_none() && tempo_bpm.is_none()
+            || title.as_ref().is_some_and(|value| {
+                value.trim() != value || value.is_empty() || value.encode_utf16().count() > 120
+            })
+            || tempo_bpm.is_some_and(|value| !value.is_finite() || value <= 0.0)
+        {
+            return Err(score_change_set_error(
+                "capability.invalid-input",
+                "作品元数据格式无效",
+                422,
+                false,
+            ));
+        }
+        let Some(current) = self.read_metadata(workspace_id)? else {
+            return Ok(None);
+        };
+        if current.document_id != expected_document_id
+            || current.document_version != expected_document_version
+        {
+            return Err(score_change_set_error(
+                "score.document-version-conflict",
+                "乐谱版本已经变化，请重新准备事务",
+                409,
+                true,
+            ));
+        }
+        let change_set =
+            score_change_set::metadata_transaction_change_set(&current, title, tempo_bpm);
+        if change_set.operations.is_empty() {
+            return Err(score_change_set_error(
+                "score.change-set-empty",
+                "目标元数据与当前内容相同，无需修改",
+                422,
+                false,
+            ));
+        }
+        Ok(Some(change_set))
     }
 
     pub fn read_structure(
@@ -211,7 +311,14 @@ impl ScoreSessionService {
                 )),
             ) => {
                 if measures.len() > max_measures {
-                    return Err(HostError::new("小节范围超过本次调用上限", 422));
+                    return Err(HostError::issue(
+                        "score.measure-range-invalid",
+                        "小节范围超过本次调用上限",
+                        422,
+                        WorkbenchIssueSource::Host,
+                        WorkbenchIssueTarget::Workbench,
+                        Some(false),
+                    ));
                 }
                 let measures = measures
                     .into_iter()
@@ -542,6 +649,21 @@ fn validate_workspace_id(value: &str) -> Result<(), HostError> {
     Uuid::parse_str(value)
         .map(|_| ())
         .map_err(|_| HostError::new("工作区标识无效", 400))
+}
+
+fn score_change_set_error(code: &str, message: &str, status: u16, retryable: bool) -> HostError {
+    HostError::issue(
+        code,
+        message,
+        status,
+        WorkbenchIssueSource::Host,
+        WorkbenchIssueTarget::Workbench,
+        Some(retryable),
+    )
+}
+
+fn valid_change_set_document_id(value: &str) -> bool {
+    !value.is_empty() && value.encode_utf16().count() <= 256
 }
 
 fn validate_request_id(value: &str) -> Result<(), HostError> {

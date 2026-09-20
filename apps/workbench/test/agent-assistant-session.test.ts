@@ -12,6 +12,7 @@ import { FIRST_PARTY_CAPABILITY_CATALOG } from "../src/agent/first-party-capabil
 import { FakeAgentProvider } from "../src/agent/provider.ts";
 import type { AgentProviderPort } from "../src/agent/provider.ts";
 import { AgentRunController, getAgentRunRequiredApproval } from "../src/agent/run-controller.ts";
+import { FirstPartyPreparedMutationCoordinator } from "../src/agent/prepared-mutation.ts";
 import type { WorkflowDirectory } from "../src/contracts/workflow.ts";
 
 const readyRuntimeSnapshot: AgentPluginRuntimeSnapshot = {
@@ -750,7 +751,7 @@ test("assistant session prepares and approves an authoritative tempo ChangeSet",
   const changeSetId = `sha256:${"b".repeat(64)}`;
   const changeSet = {
     changeSetId,
-    kind: "score-tempo",
+    kind: "score-tempo" as const,
     documentId: "score-1",
     baseDocumentVersion: 7,
     beforeTempoBpm: 96,
@@ -785,13 +786,6 @@ test("assistant session prepares and approves an authoritative tempo ChangeSet",
     capabilities: new WorkbenchAgentCapabilityPort({
       async invokeCapability(request) {
         requests.push(request);
-        if (request.capabilityId === "score.prepare-tempo-change") return {
-          status: "completed",
-          invocationId: request.invocationId,
-          capabilityId: request.capabilityId,
-          contractVersion: request.contractVersion,
-          data: changeSet,
-        };
         assert.equal(request.capabilityId, "score.commit-tempo-change");
         return {
           status: "completed",
@@ -809,11 +803,15 @@ test("assistant session prepares and approves an authoritative tempo ChangeSet",
         };
       },
     }),
+    preparedMutations: new FirstPartyPreparedMutationCoordinator({
+      async prepareTempoChange() { return changeSet; },
+      async prepareMetadataTransaction() { throw new Error("unused"); },
+    }),
     onDocumentChanged(change) { changes.push(change); },
   });
 
   assert.equal(await session.start("请将速度改为 132 BPM", workspace), false);
-  assert.deepEqual(requests.map((request) => request.capabilityId), ["score.prepare-tempo-change"]);
+  assert.deepEqual(requests.map((request) => request.capabilityId), []);
   const waiting = await store.load("run-update-tempo");
   assert.ok(waiting);
   const approval = getAgentRunRequiredApproval(waiting.run);
@@ -833,10 +831,9 @@ test("assistant session prepares and approves an authoritative tempo ChangeSet",
     workspace,
   ), true);
   assert.deepEqual(requests.map((request) => request.capabilityId), [
-    "score.prepare-tempo-change",
     "score.commit-tempo-change",
   ]);
-  assert.deepEqual(requests[1]?.input, { changeSet });
+  assert.deepEqual(requests[0]?.input, { changeSet });
   assert.deepEqual(changes, [{ documentId: "score-1", documentVersion: 8 }]);
   assert.equal(session.getSnapshot().status, "completed");
   assert.equal(session.getSnapshot().response, "作品速度已经修改为 132 BPM。");
@@ -847,10 +844,10 @@ test("assistant session commits title and tempo as one approved metadata transac
   const changeSetId = `sha256:${"c".repeat(64)}`;
   const changeSet = {
     changeSetId,
-    kind: "score-metadata-transaction",
+    kind: "score-metadata-transaction" as const,
     documentId: "score-1",
     baseDocumentVersion: 7,
-    operations: ["set-title", "set-tempo"],
+    operations: ["set-title", "set-tempo"] as const,
     before: { title: "练习曲", tempoBpm: 96 },
     after: { title: "夜曲", tempoBpm: 132 },
   };
@@ -890,13 +887,6 @@ test("assistant session commits title and tempo as one approved metadata transac
     capabilities: new WorkbenchAgentCapabilityPort({
       async invokeCapability(request) {
         requests.push(request);
-        if (request.capabilityId === "score.prepare-metadata-transaction") return {
-          status: "completed",
-          invocationId: request.invocationId,
-          capabilityId: request.capabilityId,
-          contractVersion: request.contractVersion,
-          data: changeSet,
-        };
         assert.equal(request.capabilityId, "score.commit-metadata-transaction");
         return {
           status: "completed",
@@ -915,6 +905,10 @@ test("assistant session commits title and tempo as one approved metadata transac
         };
       },
     }),
+    preparedMutations: new FirstPartyPreparedMutationCoordinator({
+      async prepareTempoChange() { throw new Error("unused"); },
+      async prepareMetadataTransaction() { return changeSet; },
+    }),
     onDocumentChanged(change) { changes.push(change); },
   });
 
@@ -922,9 +916,7 @@ test("assistant session commits title and tempo as one approved metadata transac
     "请把作品标题改为《夜曲》，并将速度改为 132 BPM",
     workspace,
   ), false);
-  assert.deepEqual(requests.map((request) => request.capabilityId), [
-    "score.prepare-metadata-transaction",
-  ]);
+  assert.deepEqual(requests.map((request) => request.capabilityId), []);
   const waiting = await store.load("run-update-metadata");
   assert.ok(waiting);
   const approval = getAgentRunRequiredApproval(waiting.run);
@@ -939,10 +931,9 @@ test("assistant session commits title and tempo as one approved metadata transac
     workspace,
   ), true);
   assert.deepEqual(requests.map((request) => request.capabilityId), [
-    "score.prepare-metadata-transaction",
     "score.commit-metadata-transaction",
   ]);
-  assert.deepEqual(requests[1]?.input, { changeSet });
+  assert.deepEqual(requests[0]?.input, { changeSet });
   assert.deepEqual(changes, [{ documentId: "score-1", documentVersion: 8 }]);
   assert.equal(session.getSnapshot().status, "completed");
   assert.equal(session.getSnapshot().response, "标题与速度已经在一个事务中修改。");

@@ -9,6 +9,7 @@ mod diagnostics;
 mod document_io;
 mod dto;
 mod error;
+mod score_change_set;
 mod settings;
 mod state;
 mod workspace_configuration;
@@ -38,6 +39,13 @@ pub fn run() {
             commands::workbench_invoke_capability_v1,
             commands::workbench_agent_invoke_capability_v1,
             commands::workbench_read_v1,
+            commands::workbench_score_read_summary_v1,
+            commands::workbench_score_read_metadata_v1,
+            commands::workbench_score_read_structure_v1,
+            commands::workbench_score_read_measure_index_v1,
+            commands::workbench_score_read_measure_range_v1,
+            commands::workbench_score_prepare_tempo_change_v1,
+            commands::workbench_score_prepare_metadata_transaction_v1,
             commands::workbench_create_v1,
             commands::workbench_edit_v1,
             commands::workbench_export_v1,

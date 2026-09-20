@@ -1,18 +1,17 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
 use crate::{
     application::ScoreSessionService,
     dto::{
         CapabilityDocumentPrecondition, CapabilityTransportRequest, ScoreEditAction,
-        ScoreEditRequest, ScoreMeasureIndexV1, ScoreMeasureRangeV1, ScoreMetadataSnapshotV1,
-        ScoreMetadataTransactionChangeSetV1, ScoreMetadataTransactionOperationV1,
-        ScoreMetadataTransactionUpdateV1, ScoreTempoChangeSetV1, ScoreTempoUpdateV1,
-        ScoreTitleUpdateV1,
+        ScoreEditRequest, ScoreMeasureIndexV1, ScoreMeasureRangeV1,
+        ScoreMetadataTransactionChangeSetV1, ScoreMetadataTransactionUpdateV1,
+        ScoreTempoChangeSetV1, ScoreTempoUpdateV1, ScoreTitleUpdateV1,
     },
     error::HostError,
+    score_change_set,
 };
 
 const SCORE_READ_SUMMARY_ID: &str = "score.read-summary";
@@ -35,10 +34,6 @@ const SCORE_PREPARE_METADATA_TRANSACTION_ID: &str = "score.prepare-metadata-tran
 const SCORE_PREPARE_METADATA_TRANSACTION_VERSION: u64 = 1;
 const SCORE_COMMIT_METADATA_TRANSACTION_ID: &str = "score.commit-metadata-transaction";
 const SCORE_COMMIT_METADATA_TRANSACTION_VERSION: u64 = 1;
-const SCORE_TEMPO_CHANGE_KIND: &str = "score-tempo";
-const SCORE_METADATA_TRANSACTION_KIND: &str = "score-metadata-transaction";
-const TEMPO_CHANGE_SET_HASH_DOMAIN: &[u8] = b"brilliant-score-tempo-change-set-v1\0";
-const METADATA_TRANSACTION_HASH_DOMAIN: &[u8] = b"brilliant-score-metadata-transaction-v1\0";
 const MAX_MEASURE_RANGE: usize = 32;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -527,7 +522,7 @@ pub fn invoke(
                 );
             };
             if !valid_stable_id(&precondition.document_id)
-                || !valid_tempo_change_set(&input.change_set)
+                || !score_change_set::valid_tempo_change_set(&input.change_set)
             {
                 return rejected(identity, "capability.invalid-input", "变更集格式无效");
             }
@@ -602,7 +597,7 @@ pub fn invoke(
                 );
             };
             if !valid_stable_id(&precondition.document_id)
-                || !valid_metadata_transaction_change_set(&input.change_set)
+                || !score_change_set::valid_metadata_transaction_change_set(&input.change_set)
             {
                 return rejected(identity, "capability.invalid-input", "事务变更集格式无效");
             }
@@ -630,59 +625,6 @@ pub fn invoke(
 
 fn valid_tempo_bpm(value: f64) -> bool {
     value.is_finite() && value > 0.0
-}
-
-fn tempo_change_set_id(
-    document_id: &str,
-    base_document_version: u64,
-    before_tempo_bpm: f64,
-    after_tempo_bpm: f64,
-) -> String {
-    let mut digest = Sha256::new();
-    digest.update(TEMPO_CHANGE_SET_HASH_DOMAIN);
-    digest.update(document_id.as_bytes());
-    digest.update([0]);
-    digest.update(base_document_version.to_be_bytes());
-    digest.update(before_tempo_bpm.to_bits().to_be_bytes());
-    digest.update(after_tempo_bpm.to_bits().to_be_bytes());
-    format!("sha256:{:x}", digest.finalize())
-}
-
-fn tempo_change_set(
-    document_id: String,
-    base_document_version: u64,
-    before_tempo_bpm: f64,
-    after_tempo_bpm: f64,
-) -> ScoreTempoChangeSetV1 {
-    let change_set_id = tempo_change_set_id(
-        &document_id,
-        base_document_version,
-        before_tempo_bpm,
-        after_tempo_bpm,
-    );
-    ScoreTempoChangeSetV1 {
-        change_set_id,
-        kind: SCORE_TEMPO_CHANGE_KIND.into(),
-        document_id,
-        base_document_version,
-        before_tempo_bpm,
-        after_tempo_bpm,
-    }
-}
-
-fn valid_tempo_change_set(value: &ScoreTempoChangeSetV1) -> bool {
-    value.kind == SCORE_TEMPO_CHANGE_KIND
-        && valid_stable_id(&value.document_id)
-        && valid_tempo_bpm(value.before_tempo_bpm)
-        && valid_tempo_bpm(value.after_tempo_bpm)
-        && value.before_tempo_bpm != value.after_tempo_bpm
-        && value.change_set_id
-            == tempo_change_set_id(
-                &value.document_id,
-                value.base_document_version,
-                value.before_tempo_bpm,
-                value.after_tempo_bpm,
-            )
 }
 
 fn prepare_tempo_change(
@@ -729,10 +671,8 @@ fn prepare_tempo_change(
     }
     complete_serialized(
         identity,
-        Ok::<_, HostError>(Some(tempo_change_set(
-            current.document_id,
-            current.document_version,
-            current.tempo_bpm,
+        Ok::<_, HostError>(Some(score_change_set::tempo_change_set(
+            &current,
             after_tempo_bpm,
         ))),
         "无法编码作品速度变更集",
@@ -844,85 +784,6 @@ fn commit_tempo_change(
     )
 }
 
-fn hash_string(digest: &mut Sha256, value: &str) {
-    digest.update((value.len() as u64).to_be_bytes());
-    digest.update(value.as_bytes());
-}
-
-fn metadata_transaction_operations(
-    before: &ScoreMetadataSnapshotV1,
-    after: &ScoreMetadataSnapshotV1,
-) -> Vec<ScoreMetadataTransactionOperationV1> {
-    let mut operations = Vec::with_capacity(2);
-    if before.title != after.title {
-        operations.push(ScoreMetadataTransactionOperationV1::SetTitle);
-    }
-    if before.tempo_bpm != after.tempo_bpm {
-        operations.push(ScoreMetadataTransactionOperationV1::SetTempo);
-    }
-    operations
-}
-
-fn metadata_transaction_change_set_id(
-    document_id: &str,
-    base_document_version: u64,
-    before: &ScoreMetadataSnapshotV1,
-    after: &ScoreMetadataSnapshotV1,
-) -> String {
-    let mut digest = Sha256::new();
-    digest.update(METADATA_TRANSACTION_HASH_DOMAIN);
-    hash_string(&mut digest, document_id);
-    digest.update(base_document_version.to_be_bytes());
-    hash_string(&mut digest, &before.title);
-    digest.update(before.tempo_bpm.to_bits().to_be_bytes());
-    hash_string(&mut digest, &after.title);
-    digest.update(after.tempo_bpm.to_bits().to_be_bytes());
-    format!("sha256:{:x}", digest.finalize())
-}
-
-fn metadata_transaction_change_set(
-    document_id: String,
-    base_document_version: u64,
-    before: ScoreMetadataSnapshotV1,
-    after: ScoreMetadataSnapshotV1,
-) -> ScoreMetadataTransactionChangeSetV1 {
-    let operations = metadata_transaction_operations(&before, &after);
-    let change_set_id =
-        metadata_transaction_change_set_id(&document_id, base_document_version, &before, &after);
-    ScoreMetadataTransactionChangeSetV1 {
-        change_set_id,
-        kind: SCORE_METADATA_TRANSACTION_KIND.into(),
-        document_id,
-        base_document_version,
-        operations,
-        before,
-        after,
-    }
-}
-
-fn valid_metadata_snapshot(value: &ScoreMetadataSnapshotV1) -> bool {
-    value.title.trim() == value.title
-        && !value.title.is_empty()
-        && value.title.encode_utf16().count() <= 120
-        && valid_tempo_bpm(value.tempo_bpm)
-}
-
-fn valid_metadata_transaction_change_set(value: &ScoreMetadataTransactionChangeSetV1) -> bool {
-    value.kind == SCORE_METADATA_TRANSACTION_KIND
-        && valid_stable_id(&value.document_id)
-        && valid_metadata_snapshot(&value.before)
-        && valid_metadata_snapshot(&value.after)
-        && !value.operations.is_empty()
-        && value.operations == metadata_transaction_operations(&value.before, &value.after)
-        && value.change_set_id
-            == metadata_transaction_change_set_id(
-                &value.document_id,
-                value.base_document_version,
-                &value.before,
-                &value.after,
-            )
-}
-
 fn prepare_metadata_transaction(
     service: &ScoreSessionService,
     identity: (String, String, u64),
@@ -959,15 +820,9 @@ fn prepare_metadata_transaction(
         );
     }
 
-    let before = ScoreMetadataSnapshotV1 {
-        title: current.title,
-        tempo_bpm: current.tempo_bpm,
-    };
-    let after = ScoreMetadataSnapshotV1 {
-        title: input.title.unwrap_or_else(|| before.title.clone()),
-        tempo_bpm: input.tempo_bpm.unwrap_or(before.tempo_bpm),
-    };
-    if before == after {
+    let change_set =
+        score_change_set::metadata_transaction_change_set(&current, input.title, input.tempo_bpm);
+    if change_set.operations.is_empty() {
         return rejected(
             identity,
             "score.change-set-empty",
@@ -976,12 +831,7 @@ fn prepare_metadata_transaction(
     }
     complete_serialized(
         identity,
-        Ok::<_, HostError>(Some(metadata_transaction_change_set(
-            current.document_id,
-            current.document_version,
-            before,
-            after,
-        ))),
+        Ok::<_, HostError>(Some(change_set)),
         "无法编码作品元数据事务变更集",
     )
 }
@@ -1617,7 +1467,10 @@ mod tests {
         else {
             panic!("tempo change preparation must complete");
         };
-        assert_eq!(change_set["kind"], SCORE_TEMPO_CHANGE_KIND);
+        assert_eq!(
+            change_set["kind"],
+            score_change_set::SCORE_TEMPO_CHANGE_KIND
+        );
         assert_eq!(change_set["documentId"], created.document_id);
         assert_eq!(change_set["baseDocumentVersion"], created.document_version);
         assert_eq!(change_set["beforeTempoBpm"], 96.0);
@@ -1788,7 +1641,10 @@ mod tests {
         else {
             panic!("metadata transaction preparation must complete");
         };
-        assert_eq!(change_set["kind"], SCORE_METADATA_TRANSACTION_KIND);
+        assert_eq!(
+            change_set["kind"],
+            score_change_set::SCORE_METADATA_TRANSACTION_KIND
+        );
         assert_eq!(change_set["documentId"], created.document_id);
         assert_eq!(change_set["baseDocumentVersion"], created.document_version);
         assert_eq!(change_set["operations"], json!(["set-title", "set-tempo"]));

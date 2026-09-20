@@ -23,7 +23,9 @@ use crate::{
     },
     dto::{
         CapabilityTransportRequest, CreateScoreRequest, NativeFileResult, ScoreEditRequest,
-        ScoreSessionRead,
+        ScoreMeasureIndexV1, ScoreMeasureRangeV1, ScoreMetadataTransactionChangeSetV1,
+        ScoreMetadataV1, ScorePrepareMetadataTransactionInputV1, ScorePrepareTempoChangeInputV1,
+        ScoreSessionRead, ScoreStructureV1, ScoreSummaryV1, ScoreTempoChangeSetV1,
     },
     error::HostError,
     settings::{ApplicationSettingsSnapshotV1, ApplicationSettingsV1},
@@ -574,6 +576,99 @@ pub fn workbench_read_v1(
     workspace_id: String,
 ) -> Result<Option<ScoreSessionRead>, HostError> {
     read_or_recover(state.inner(), &workspace_id)
+}
+
+// Typed score read commands are the host-side implementation of ScoreReadPort.
+// They intentionally do not accept capability IDs, caller labels, or a generic
+// transport envelope; Agent receipt semantics remain in the separate adapter.
+#[tauri::command]
+pub fn workbench_score_read_summary_v1(
+    state: State<'_, AppState>,
+    workspace_id: String,
+) -> Result<Option<ScoreSummaryV1>, HostError> {
+    locked(state.inner())?.read_summary(&workspace_id)
+}
+
+#[tauri::command]
+pub fn workbench_score_read_metadata_v1(
+    state: State<'_, AppState>,
+    workspace_id: String,
+) -> Result<Option<ScoreMetadataV1>, HostError> {
+    locked(state.inner())?.read_metadata(&workspace_id)
+}
+
+#[tauri::command]
+pub fn workbench_score_read_structure_v1(
+    state: State<'_, AppState>,
+    workspace_id: String,
+) -> Result<Option<ScoreStructureV1>, HostError> {
+    locked(state.inner())?.read_structure(&workspace_id)
+}
+
+#[tauri::command]
+pub fn workbench_score_read_measure_index_v1(
+    state: State<'_, AppState>,
+    workspace_id: String,
+    expected_document_id: String,
+    expected_document_version: u64,
+) -> Result<Option<ScoreMeasureIndexV1>, HostError> {
+    locked(state.inner())?.read_measure_index(
+        &workspace_id,
+        &expected_document_id,
+        expected_document_version,
+    )
+}
+
+#[tauri::command]
+pub fn workbench_score_read_measure_range_v1(
+    state: State<'_, AppState>,
+    workspace_id: String,
+    start_measure_id: String,
+    end_measure_id: String,
+    max_measures: usize,
+) -> Result<Option<ScoreMeasureRangeV1>, HostError> {
+    locked(state.inner())?.read_measure_range(
+        &workspace_id,
+        start_measure_id,
+        end_measure_id,
+        max_measures,
+    )
+}
+
+// ChangeSet preparation is read-only and deterministic, so it can use direct
+// typed commands. Commit remains on the Agent capability command because that
+// command owns the durable invocation receipt and crash-recovery protocol.
+#[tauri::command]
+pub fn workbench_score_prepare_tempo_change_v1(
+    state: State<'_, AppState>,
+    workspace_id: String,
+    expected_document_id: String,
+    expected_document_version: u64,
+    input: ScorePrepareTempoChangeInputV1,
+) -> Result<Option<ScoreTempoChangeSetV1>, HostError> {
+    locked(state.inner())?.prepare_tempo_change(
+        &workspace_id,
+        &expected_document_id,
+        expected_document_version,
+        input.tempo_bpm,
+    )
+}
+
+#[tauri::command]
+pub fn workbench_score_prepare_metadata_transaction_v1(
+    state: State<'_, AppState>,
+    workspace_id: String,
+    expected_document_id: String,
+    expected_document_version: u64,
+    input: ScorePrepareMetadataTransactionInputV1,
+) -> Result<Option<ScoreMetadataTransactionChangeSetV1>, HostError> {
+    locked(state.inner())?.prepare_metadata_transaction(
+        &workspace_id,
+        &expected_document_id,
+        expected_document_version,
+        input.title,
+        input.tempo_bpm,
+    )
 }
 
 #[tauri::command]

@@ -3,7 +3,14 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { Window as TauriWindow } from "@tauri-apps/api/window";
 import type { ScoreEditRequest } from "../contracts/note-input";
 import type { NewScoreInput } from "../contracts/new-score";
-import type { CapabilityTransportRequest } from "../contracts/capability.ts";
+import type {
+  CapabilityDocumentPrecondition,
+  CapabilityTransportRequest,
+  ScoreMeasureIndexInputV1,
+  ScoreMeasureRangeInputV1,
+  ScorePrepareTempoChangeInputV1,
+  ScoreUpdateMetadataInputV1,
+} from "../contracts/capability.ts";
 import { DEFAULT_APPLICATION_SETTINGS, normalizeApplicationSettings } from "../contracts/application-settings.ts";
 import type { ApplicationSettingsV1 } from "../contracts/application-settings.ts";
 import { DEFAULT_WORKSPACE_CONFIGURATION, isWorkspaceConfigurationV1 } from "../contracts/workspace-configuration.ts";
@@ -35,6 +42,22 @@ export class WorkbenchRequestError extends Error {
 export interface WorkbenchHostBridge {
   invokeCapability(request: CapabilityTransportRequest): Promise<unknown>;
   invokeAgentCapability(request: CapabilityTransportRequest): Promise<unknown>;
+  /** Typed score read ports; optional for older test/development hosts during migration. */
+  readScoreSummary?(workspaceId: string): Promise<unknown | null>;
+  readScoreMetadata?(workspaceId: string): Promise<unknown | null>;
+  readScoreStructure?(workspaceId: string): Promise<unknown | null>;
+  readScoreMeasureIndex?(workspaceId: string, input: ScoreMeasureIndexInputV1): Promise<unknown | null>;
+  readScoreMeasureRange?(workspaceId: string, input: ScoreMeasureRangeInputV1): Promise<unknown | null>;
+  prepareScoreTempoChange?(
+    workspaceId: string,
+    precondition: CapabilityDocumentPrecondition,
+    input: ScorePrepareTempoChangeInputV1,
+  ): Promise<unknown | null>;
+  prepareScoreMetadataTransaction?(
+    workspaceId: string,
+    precondition: CapabilityDocumentPrecondition,
+    input: ScoreUpdateMetadataInputV1,
+  ): Promise<unknown | null>;
   read(workspaceId: string): Promise<unknown | null>;
   create(workspaceId: string, input: NewScoreInput, requestId: string, expectedDocumentId: string | null): Promise<unknown>;
   edit(workspaceId: string, input: ScoreEditRequest): Promise<unknown>;
@@ -120,6 +143,56 @@ export class TauriWorkbenchHostBridge implements WorkbenchHostBridge {
 
   invokeAgentCapability(request: CapabilityTransportRequest) {
     return this.call<unknown>("workbench_agent_invoke_capability_v1", { request }, "无法调用 Agent 应用能力");
+  }
+
+  readScoreSummary(workspaceId: string) {
+    return this.call<unknown | null>("workbench_score_read_summary_v1", { workspaceId }, "无法读取乐谱概要");
+  }
+
+  readScoreMetadata(workspaceId: string) {
+    return this.call<unknown | null>("workbench_score_read_metadata_v1", { workspaceId }, "无法读取乐谱元数据");
+  }
+
+  readScoreStructure(workspaceId: string) {
+    return this.call<unknown | null>("workbench_score_read_structure_v1", { workspaceId }, "无法读取乐谱结构");
+  }
+
+  readScoreMeasureIndex(workspaceId: string, input: ScoreMeasureIndexInputV1) {
+    return this.call<unknown | null>("workbench_score_read_measure_index_v1", {
+      workspaceId, expectedDocumentId: input.expectedDocumentId, expectedDocumentVersion: input.expectedDocumentVersion,
+    }, "无法读取小节索引");
+  }
+
+  readScoreMeasureRange(workspaceId: string, input: ScoreMeasureRangeInputV1) {
+    return this.call<unknown | null>("workbench_score_read_measure_range_v1", {
+      workspaceId, startMeasureId: input.startMeasureId, endMeasureId: input.endMeasureId, maxMeasures: input.maxMeasures,
+    }, "无法读取小节范围");
+  }
+
+  prepareScoreTempoChange(
+    workspaceId: string,
+    precondition: CapabilityDocumentPrecondition,
+    input: ScorePrepareTempoChangeInputV1,
+  ) {
+    return this.call<unknown | null>("workbench_score_prepare_tempo_change_v1", {
+      workspaceId,
+      expectedDocumentId: precondition.documentId,
+      expectedDocumentVersion: precondition.documentVersion,
+      input,
+    }, "无法准备作品速度变更");
+  }
+
+  prepareScoreMetadataTransaction(
+    workspaceId: string,
+    precondition: CapabilityDocumentPrecondition,
+    input: ScoreUpdateMetadataInputV1,
+  ) {
+    return this.call<unknown | null>("workbench_score_prepare_metadata_transaction_v1", {
+      workspaceId,
+      expectedDocumentId: precondition.documentId,
+      expectedDocumentVersion: precondition.documentVersion,
+      input,
+    }, "无法准备作品元数据事务");
   }
 
   read(workspaceId: string) {
@@ -269,6 +342,42 @@ export class BrowserWorkbenchHostBridge implements WorkbenchHostBridge {
       code: "capability.agent-host-unsupported",
       message: "浏览器开发宿主尚未提供 Agent 应用能力",
     };
+  }
+
+  async readScoreSummary(_workspaceId: string): Promise<unknown | null> {
+    throw new WorkbenchRequestError("浏览器开发宿主尚未提供乐谱类型化读取端口", 501);
+  }
+
+  async readScoreMetadata(_workspaceId: string): Promise<unknown | null> {
+    throw new WorkbenchRequestError("浏览器开发宿主尚未提供乐谱类型化读取端口", 501);
+  }
+
+  async readScoreStructure(_workspaceId: string): Promise<unknown | null> {
+    throw new WorkbenchRequestError("浏览器开发宿主尚未提供乐谱类型化读取端口", 501);
+  }
+
+  async readScoreMeasureIndex(_workspaceId: string, _input: ScoreMeasureIndexInputV1): Promise<unknown | null> {
+    throw new WorkbenchRequestError("浏览器开发宿主尚未提供乐谱类型化读取端口", 501);
+  }
+
+  async readScoreMeasureRange(_workspaceId: string, _input: ScoreMeasureRangeInputV1): Promise<unknown | null> {
+    throw new WorkbenchRequestError("浏览器开发宿主尚未提供乐谱类型化读取端口", 501);
+  }
+
+  async prepareScoreTempoChange(
+    _workspaceId: string,
+    _precondition: CapabilityDocumentPrecondition,
+    _input: ScorePrepareTempoChangeInputV1,
+  ): Promise<unknown | null> {
+    throw new WorkbenchRequestError("浏览器开发宿主尚未提供乐谱变更集准备端口", 501);
+  }
+
+  async prepareScoreMetadataTransaction(
+    _workspaceId: string,
+    _precondition: CapabilityDocumentPrecondition,
+    _input: ScoreUpdateMetadataInputV1,
+  ): Promise<unknown | null> {
+    throw new WorkbenchRequestError("浏览器开发宿主尚未提供乐谱变更集准备端口", 501);
   }
 
   private endpoint(workspaceId: string, resource: "session" | "document") {

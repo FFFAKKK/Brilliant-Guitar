@@ -15,6 +15,9 @@ import type {
   ScoreMeasureIndexV1,
   ScoreMeasureRangeInputV1,
   ScoreMeasureRangeV1,
+  ScoreMetadataV1,
+  ScoreStructureV1,
+  ScoreSummaryV1,
 } from "../contracts/capability.ts";
 import type { ApplicationCapabilityInvoker } from "../contracts/application-capability.ts";
 import type { WorkflowDirectory } from "../contracts/workflow.ts";
@@ -86,6 +89,11 @@ import { ScoreMeasureIndexPort } from "./score-measure-index-port.ts";
 import type { AgentInvocationReceiptPort } from "./recovery-coordinator.ts";
 import { TauriAgentInvocationReceiptPort } from "./tauri-invocation-receipt.ts";
 import { AgentWorkflowRuntime } from "./workflow-runtime.ts";
+import { DirectScoreReadAgentPort } from "./direct-score-read-agent-port.ts";
+import type { ScoreReadPort } from "../services/score-read-port.ts";
+import type { ScoreChangeSetPort } from "../services/score-change-set-port.ts";
+import { FirstPartyPreparedMutationCoordinator } from "./prepared-mutation.ts";
+import type { AgentPreparedMutationPort } from "./prepared-mutation.ts";
 
 export type AgentAssistantSessionStatus =
   | "idle"
@@ -118,6 +126,11 @@ export interface AgentAssistantRuntimePort {
 
 export interface AgentAssistantCapabilityHost {
   agentCapabilities(): ApplicationCapabilityInvoker;
+  scoreReadPort?(): ScoreReadPort;
+  scoreChangeSetPort?(): ScoreChangeSetPort;
+  readScoreSummary?(): Promise<CapabilityResult<ScoreSummaryV1>>;
+  readScoreMetadata?(): Promise<CapabilityResult<ScoreMetadataV1>>;
+  readScoreStructure?(): Promise<CapabilityResult<ScoreStructureV1>>;
   readScoreMeasureIndex(
     input: ScoreMeasureIndexInputV1,
   ): Promise<CapabilityResult<ScoreMeasureIndexV1>>;
@@ -129,6 +142,7 @@ export interface AgentAssistantCapabilityHost {
 export interface AgentAssistantSessionDependencies {
   readonly runtime: AgentAssistantRuntimePort;
   readonly capabilities: AgentCapabilityPort;
+  readonly preparedMutations?: AgentPreparedMutationPort;
   readonly store: AgentRunStorePort;
   readonly receipts?: AgentInvocationReceiptPort | null;
   readonly createRunId?: () => string;
@@ -481,6 +495,7 @@ export class AgentAssistantSession {
   readonly #runtime: AgentAssistantRuntimePort;
   readonly #store: AgentRunStorePort;
   readonly #capabilities: AgentCapabilityPort;
+  readonly #preparedMutations: AgentPreparedMutationPort | null;
   readonly #receipts: AgentInvocationReceiptPort | null;
   readonly #createRunId: () => string;
   readonly #createController: ((lease: AgentPluginRunLease) => AgentRunController) | null;
@@ -498,6 +513,7 @@ export class AgentAssistantSession {
     this.#runtime = dependencies.runtime;
     this.#store = dependencies.store;
     this.#capabilities = dependencies.capabilities;
+    this.#preparedMutations = dependencies.preparedMutations ?? null;
     this.#receipts = dependencies.receipts ?? null;
     this.#createRunId = dependencies.createRunId ?? (() => crypto.randomUUID());
     this.#createController = dependencies.createController ?? null;
@@ -948,6 +964,9 @@ export class AgentAssistantSession {
         catalog: FIRST_PARTY_CAPABILITY_CATALOG,
         completionVerifier: plan.completionVerifier,
         store: this.#store,
+        ...(this.#preparedMutations === null
+          ? {}
+          : { preparedMutations: this.#preparedMutations }),
       });
       const observe = (event: Parameters<typeof projectRunProgressToConversation>[0]): void => {
         if (this.#disposed || event.runId !== runId) return;
@@ -1197,16 +1216,29 @@ export function createAgentAssistantSession(
   workflows: WorkflowDirectory,
   onDocumentChanged?: (change: AgentDocumentChange) => void | Promise<void>,
 ): AgentAssistantSession {
-  const atomicCapabilities = new WorkbenchAgentCapabilityPort(host.agentCapabilities());
+  const atomicCapabilities = new DirectScoreReadAgentPort(
+    new WorkbenchAgentCapabilityPort(host.agentCapabilities()),
+    host,
+  );
   const capabilities = new MeasureReferenceAgentCapabilityPort(
     atomicCapabilities,
     new MeasureReferenceReadService(new ScoreMeasureIndexPort(host), {
       readMeasureRange: (input) => host.readScoreMeasureRange(input),
     }),
   );
+  let preparedMutations: AgentPreparedMutationPort | undefined;
+  try {
+    const scoreChangeSets = host.scoreChangeSetPort?.();
+    if (scoreChangeSets !== undefined) {
+      preparedMutations = new FirstPartyPreparedMutationCoordinator(scoreChangeSets);
+    }
+  } catch {
+    preparedMutations = undefined;
+  }
   return new AgentAssistantSession({
     runtime,
     capabilities,
+    ...(preparedMutations === undefined ? {} : { preparedMutations }),
     store: isTauri() ? new TauriAgentRunStore() : new InMemoryAgentRunStore(),
     receipts: isTauri() ? new TauriAgentInvocationReceiptPort() : null,
     workflows,

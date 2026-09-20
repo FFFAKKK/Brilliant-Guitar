@@ -62,6 +62,78 @@ fn create_read_and_close_session() {
 }
 
 #[test]
+fn typed_change_set_preparation_is_version_bound_deterministic_and_read_only() {
+    let workspace_id = id();
+    let mut service = ScoreSessionService::default();
+    let created = service
+        .create(create_request(&workspace_id, &id()))
+        .expect("create score");
+
+    let tempo = service
+        .prepare_tempo_change(
+            &workspace_id,
+            &created.document_id,
+            created.document_version,
+            132.0,
+        )
+        .expect("prepare tempo")
+        .expect("tempo change set");
+    assert_eq!(tempo.before_tempo_bpm, 96.0);
+    assert_eq!(tempo.after_tempo_bpm, 132.0);
+    assert!(crate::score_change_set::valid_tempo_change_set(&tempo));
+
+    let metadata = service
+        .prepare_metadata_transaction(
+            &workspace_id,
+            &created.document_id,
+            created.document_version,
+            Some("夜曲".into()),
+            Some(132.0),
+        )
+        .expect("prepare metadata")
+        .expect("metadata change set");
+    assert_eq!(metadata.before.title, "测试乐谱");
+    assert_eq!(metadata.after.title, "夜曲");
+    assert!(crate::score_change_set::valid_metadata_transaction_change_set(&metadata));
+
+    let unchanged = service
+        .read_metadata(&workspace_id)
+        .expect("read metadata")
+        .expect("metadata");
+    assert_eq!(unchanged.document_version, created.document_version);
+    assert_eq!(unchanged.title, "测试乐谱");
+    assert_eq!(unchanged.tempo_bpm, 96.0);
+
+    let stale = service
+        .prepare_tempo_change(
+            &workspace_id,
+            &created.document_id,
+            created.document_version + 1,
+            132.0,
+        )
+        .expect_err("stale preparation rejected");
+    assert_eq!(stale.status, 409);
+    assert_eq!(
+        stale.issue.as_ref().map(|issue| issue.code.as_str()),
+        Some("score.document-version-conflict")
+    );
+
+    let empty = service
+        .prepare_tempo_change(
+            &workspace_id,
+            &created.document_id,
+            created.document_version,
+            96.0,
+        )
+        .expect_err("empty preparation rejected");
+    assert_eq!(empty.status, 422);
+    assert_eq!(
+        empty.issue.as_ref().map(|issue| issue.code.as_str()),
+        Some("score.change-set-empty")
+    );
+}
+
+#[test]
 fn measure_index_tracks_structural_edits_undo_and_redo_by_document_version() {
     let workspace_id = id();
     let mut service = ScoreSessionService::default();

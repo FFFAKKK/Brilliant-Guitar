@@ -278,7 +278,7 @@ Model intent
   -> Toolset Resolver
   -> Direct Tool Adapter
   -> Agent policy / version / receipt boundary
-  -> typed domain port
+  -> ScoreReadPort / ScoreChangeSetPort
   -> ScoreSessionService
   -> Kernel
 ```
@@ -338,6 +338,14 @@ Model intent
 - 从现有 `WorkbenchClient` 和专用 Client 中整理 `ScoreReadPort`、`ScoreEditPort` 等最小接口。
 - UI Controller 和第一方 UI 插件直接依赖这些端口。
 - 平台根据插件身份提供 scoped host context，不暴露完整 Client。
+
+首个纵向切片（2026-09-20）已完成 `ScoreReadPort`：概要、元数据、结构、小节索引和有界小节范围现在通过独立的类型化宿主命令进入 `ScoreSessionService`，不再经由前端 `ApplicationCapabilityGateway`。Agent 查询由 `DirectScoreReadAgentPort` 适配到同一读取端口，并暂时把写入与回执继续交给旧兼容链；因此本阶段没有增加新的全局能力目录，也没有改变审批、回执或恢复语义。
+
+第二个切片已将现有 `workbench_edit_v1` 收敛为 `ScoreEditPort`。这一步只整理 UI/第一方插件的类型化编辑边界；Agent 的 prepare、approval、commit 和 receipt 仍保留在兼容路径，等编辑端口具备变更集语义后再迁移。
+
+第三个切片已将 Agent 的 prepare 阶段收敛为独立的 `ScoreChangeSetPort`。`FirstPartyPreparedMutationCoordinator` 现在只处理意图校验、版本绑定和审批预览，不再拼装通用 Capability 请求；`CapabilityBackedScoreChangeSetPort` 暂时把旧的 `score.prepare-*` 调用封装在适配器内部。这样先固定可复用的变更集合同，同时不改变提交回执、不确定结果恢复或旧宿主的行为；后续宿主提供类型化 prepare 命令时，只需替换适配器实现。
+
+第四个切片（2026-09-20）已为速度和元数据事务提供类型化的 `workbench_score_prepare_*_v1` 宿主命令。桌面 Agent 会话通过 `ScoreChangeSetClient` 直接准备权威 ChangeSet，不再为 prepare 调用通用 Agent Capability RPC；旧 `CapabilityBackedScoreChangeSetPort` 仅作为旧宿主兼容实现。两条路径共享 Rust `score_change_set` 生成和哈希校验逻辑，避免合同漂移。commit 仍通过 `workbench_agent_invoke_capability_v1`，因为该入口持有持久调用回执、重放和崩溃恢复语义。
 
 ### 阶段 C：Workflow Runtime Context
 

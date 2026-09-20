@@ -1,9 +1,7 @@
 import {
   isScoreCommitMetadataTransactionInputV1,
   isScoreCommitTempoChangeInputV1,
-  isScoreMetadataTransactionChangeSetV1,
   isScorePrepareTempoChangeInputV1,
-  isScoreTempoChangeSetV1,
   isScoreUpdateMetadataInputV1,
 } from "../contracts/capability.ts";
 import type {
@@ -20,10 +18,12 @@ import type {
   AgentApprovalPreview,
   AgentWorkspaceScope,
 } from "./agent-contracts.ts";
+import {
+  ScoreChangeSetPortError,
+} from "./score-change-set-port.ts";
 import type {
-  AgentCapabilityInvocationContext,
-  AgentCapabilityPort,
-} from "./capability-port.ts";
+  ScoreChangeSetPort,
+} from "./score-change-set-port.ts";
 
 export interface AgentPreparedExecution {
   readonly kind: "change-set";
@@ -242,10 +242,10 @@ export function normalizeCapabilityResultForInvocation(
 }
 
 export class FirstPartyPreparedMutationCoordinator implements AgentPreparedMutationPort {
-  private readonly capabilities: AgentCapabilityPort;
+  private readonly changeSets: ScoreChangeSetPort;
 
-  constructor(capabilities: AgentCapabilityPort) {
-    this.capabilities = capabilities;
+  constructor(changeSets: ScoreChangeSetPort) {
+    this.changeSets = changeSets;
   }
 
   async prepare(request: AgentPreparedMutationRequest): Promise<AgentPreparedExecution> {
@@ -270,26 +270,19 @@ export class FirstPartyPreparedMutationCoordinator implements AgentPreparedMutat
       documentId: request.workspace.documentId,
       documentVersion: request.workspace.documentVersion,
     };
-    const preparationRequest: CapabilityTransportRequest = {
-      invocationId: request.preparationInvocationId,
-      capabilityId: "score.prepare-tempo-change",
-      contractVersion: 1,
-      workspaceId: request.workspace.workspaceId,
-      documentPrecondition,
-      input: request.input,
-    };
-    const context: AgentCapabilityInvocationContext = {
-      workspace: request.workspace,
-      rangeBudget: request.rangeBudget,
-    };
-    const result = await this.capabilities.invoke(preparationRequest, context);
-    if (result.status !== "completed" || !isScoreTempoChangeSetV1(result.data)) {
-      throw new AgentPreparedMutationError(
-        result.status === "completed" ? "Prepared mutation returned invalid data" : result.message,
-        "definite-failure",
-      );
+    let changeSet;
+    try {
+      changeSet = await this.changeSets.prepareTempoChange(request.input, {
+        preparationInvocationId: request.preparationInvocationId,
+        workspaceId: request.workspace.workspaceId,
+        documentPrecondition,
+      });
+    } catch (error) {
+      if (error instanceof ScoreChangeSetPortError) {
+        throw new AgentPreparedMutationError(error.message, error.outcome);
+      }
+      throw error;
     }
-    const changeSet = result.data;
     if (changeSet.documentId !== documentPrecondition.documentId
       || changeSet.baseDocumentVersion !== documentPrecondition.documentVersion
       || changeSet.afterTempoBpm !== request.input.tempoBpm) {
@@ -304,8 +297,8 @@ export class FirstPartyPreparedMutationCoordinator implements AgentPreparedMutat
       changeSetId: changeSet.changeSetId,
       preparation: {
         invocationId: request.preparationInvocationId,
-        capabilityId: preparationRequest.capabilityId,
-        contractVersion: preparationRequest.contractVersion,
+        capabilityId: "score.prepare-tempo-change",
+        contractVersion: 1,
       },
       commit: {
         capabilityId: "score.commit-tempo-change",
@@ -337,25 +330,19 @@ export class FirstPartyPreparedMutationCoordinator implements AgentPreparedMutat
       documentId: request.workspace.documentId,
       documentVersion: request.workspace.documentVersion,
     };
-    const preparationRequest: CapabilityTransportRequest = {
-      invocationId: request.preparationInvocationId,
-      capabilityId: "score.prepare-metadata-transaction",
-      contractVersion: 1,
-      workspaceId: request.workspace.workspaceId,
-      documentPrecondition,
-      input,
-    };
-    const result = await this.capabilities.invoke(preparationRequest, {
-      workspace: request.workspace,
-      rangeBudget: request.rangeBudget,
-    });
-    if (result.status !== "completed" || !isScoreMetadataTransactionChangeSetV1(result.data)) {
-      throw new AgentPreparedMutationError(
-        result.status === "completed" ? "Prepared mutation returned invalid data" : result.message,
-        "definite-failure",
-      );
+    let changeSet;
+    try {
+      changeSet = await this.changeSets.prepareMetadataTransaction(input, {
+        preparationInvocationId: request.preparationInvocationId,
+        workspaceId: request.workspace.workspaceId,
+        documentPrecondition,
+      });
+    } catch (error) {
+      if (error instanceof ScoreChangeSetPortError) {
+        throw new AgentPreparedMutationError(error.message, error.outcome);
+      }
+      throw error;
     }
-    const changeSet = result.data;
     if (changeSet.documentId !== documentPrecondition.documentId
       || changeSet.baseDocumentVersion !== documentPrecondition.documentVersion
       || input.title !== undefined && changeSet.after.title !== input.title
@@ -371,8 +358,8 @@ export class FirstPartyPreparedMutationCoordinator implements AgentPreparedMutat
       changeSetId: changeSet.changeSetId,
       preparation: {
         invocationId: request.preparationInvocationId,
-        capabilityId: preparationRequest.capabilityId,
-        contractVersion: preparationRequest.contractVersion,
+        capabilityId: "score.prepare-metadata-transaction",
+        contractVersion: 1,
       },
       commit: {
         capabilityId: "score.commit-metadata-transaction",

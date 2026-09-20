@@ -168,6 +168,19 @@ pub struct ScoreTitleUpdateV1 {
     pub undo_available: bool,
 }
 
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ScorePrepareTempoChangeInputV1 {
+    pub tempo_bpm: f64,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ScorePrepareMetadataTransactionInputV1 {
+    pub title: Option<String>,
+    pub tempo_bpm: Option<f64>,
+}
+
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ScoreTempoChangeSetV1 {

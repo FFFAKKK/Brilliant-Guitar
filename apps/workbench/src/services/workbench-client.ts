@@ -9,7 +9,12 @@ import type { ScoreSessionRead } from "../contracts/score-session";
 import { isWorkspaceId } from "../contracts/workspace-id.ts";
 import { createWorkbenchHostBridge } from "./workbench-host-bridge.ts";
 import type { WorkbenchHostBridge } from "./workbench-host-bridge.ts";
-import { ScoreCapabilityClient } from "./score-capability-client.ts";
+import { ScoreReadClient } from "./score-read-port.ts";
+import type { ScoreReadPort, ScoreReadResult } from "./score-read-port.ts";
+import { ScoreEditClient } from "./score-edit-port.ts";
+import type { ScoreEditPort } from "./score-edit-port.ts";
+import { ScoreChangeSetClient } from "./score-change-set-port.ts";
+import type { ScoreChangeSetPort } from "./score-change-set-port.ts";
 import { ApplicationCapabilityGateway } from "./application-capability-gateway.ts";
 import type {
   ApplicationCapabilityDirectory,
@@ -88,7 +93,9 @@ export function resolveWorkbenchWorkspaceId(
 export class WorkbenchClient {
   private readonly bridge: WorkbenchHostBridge;
   private readonly workspaceId: string;
-  private readonly scoreCapabilities: ScoreCapabilityClient;
+  private readonly scoreReads: ScoreReadClient;
+  private readonly scoreEdits: ScoreEditClient;
+  private readonly scoreChangeSets: ScoreChangeSetClient;
   private readonly agentCapabilityInvoker: ApplicationCapabilityInvoker;
 
   constructor(
@@ -98,32 +105,51 @@ export class WorkbenchClient {
     this.bridge = bridge;
     this.workspaceId = resolveWorkbenchWorkspaceId(bridge.nativeFiles === true);
     const gateway = new ApplicationCapabilityGateway(capabilities, bridge);
-    this.scoreCapabilities = new ScoreCapabilityClient(gateway.forCaller("ui"), this.workspaceId);
+    // Score reads use the typed host port directly. The generic application
+    // gateway remains only for the not-yet-migrated Agent write adapters.
+    this.scoreReads = new ScoreReadClient(this.bridge, this.workspaceId);
+    this.scoreEdits = new ScoreEditClient(this.bridge, this.workspaceId);
+    this.scoreChangeSets = new ScoreChangeSetClient(this.bridge, this.workspaceId);
     this.agentCapabilityInvoker = gateway.forCaller("agent");
   }
 
   readScoreSummary(): Promise<CapabilityResult<ScoreSummaryV1>> {
-    return this.scoreCapabilities.readSummary();
+    return this.legacyScoreRead("score.read-summary", this.scoreReads.readSummary());
   }
 
   readScoreMetadata(): Promise<CapabilityResult<ScoreMetadataV1>> {
-    return this.scoreCapabilities.readMetadata();
+    return this.legacyScoreRead("score.read-metadata", this.scoreReads.readMetadata());
   }
 
   readScoreStructure(): Promise<CapabilityResult<ScoreStructureV1>> {
-    return this.scoreCapabilities.readStructure();
+    return this.legacyScoreRead("score.read-structure", this.scoreReads.readStructure());
   }
 
   readScoreMeasureIndex(
     input: ScoreMeasureIndexInputV1,
   ): Promise<CapabilityResult<ScoreMeasureIndexV1>> {
-    return this.scoreCapabilities.readMeasureIndex(input);
+    return this.legacyScoreRead("score.read-measure-index", this.scoreReads.readMeasureIndex(input));
   }
 
   readScoreMeasureRange(
     input: ScoreMeasureRangeInputV1,
   ): Promise<CapabilityResult<ScoreMeasureRangeV1>> {
-    return this.scoreCapabilities.readMeasureRange(input);
+    return this.legacyScoreRead("score.read-measure-range", this.scoreReads.readMeasureRange(input));
+  }
+
+  /** Typed score port for UI controllers and direct Agent adapters. */
+  scoreReadPort(): ScoreReadPort {
+    return this.scoreReads;
+  }
+
+  /** Typed score edit port for UI controllers and first-party UI plugins. */
+  scoreEditPort(): ScoreEditPort {
+    return this.scoreEdits;
+  }
+
+  /** Typed read-only preparation port for authoritative Agent ChangeSets. */
+  scoreChangeSetPort(): ScoreChangeSetPort {
+    return this.scoreChangeSets;
   }
 
   getWorkspaceId(): string {
@@ -139,6 +165,19 @@ export class WorkbenchClient {
     });
   }
 
+  private async legacyScoreRead<T>(
+    capabilityId: string,
+    resultPromise: Promise<ScoreReadResult<T>>,
+  ): Promise<CapabilityResult<T>> {
+    const identity = {
+      invocationId: crypto.randomUUID(), capabilityId, contractVersion: 1,
+    } as const;
+    const result = await resultPromise;
+    return result.status === "ready"
+      ? Object.freeze({ ...identity, status: "completed" as const, data: result.data })
+      : Object.freeze({ ...identity, status: "unavailable" as const, code: result.code, message: result.message });
+  }
+
   private session(value: unknown | null, requiredMessage?: string): ScoreSessionRead | null {
     if (value === null) {
       if (requiredMessage) throw new Error(requiredMessage);
@@ -149,7 +188,7 @@ export class WorkbenchClient {
   }
 
   async edit(input: ScoreEditRequest): Promise<ScoreSessionRead> {
-    return this.session(await this.bridge.edit(this.workspaceId, input), "无法确认输入结果，请重试")!;
+    return this.scoreEdits.edit(input);
   }
 
   async read(): Promise<ScoreSessionRead | null> {

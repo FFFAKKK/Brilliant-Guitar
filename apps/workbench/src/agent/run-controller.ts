@@ -45,6 +45,7 @@ import {
   capabilityRequestForInvocation,
   normalizeCapabilityResultForInvocation,
 } from "./prepared-mutation.ts";
+import { CapabilityBackedScoreChangeSetPort } from "./score-change-set-port.ts";
 import type {
   AgentPreparedExecution,
   AgentPreparedMutationPort,
@@ -311,7 +312,9 @@ export class AgentRunController {
     this.catalog = dependencies.catalog;
     this.completionVerifier = dependencies.completionVerifier;
     this.preparedMutations = dependencies.preparedMutations
-      ?? new FirstPartyPreparedMutationCoordinator(dependencies.capabilities);
+      ?? new FirstPartyPreparedMutationCoordinator(
+        new CapabilityBackedScoreChangeSetPort(dependencies.capabilities),
+      );
     this.store = dependencies.store ?? null;
     this.now = dependencies.now ?? (() => Date.now());
     this.nextId = dependencies.nextId ?? (() => crypto.randomUUID());
