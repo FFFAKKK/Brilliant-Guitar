@@ -13,6 +13,7 @@ import type {
   PluginViewHost,
   UiPluginPackage,
 } from "./plugin-sdk.ts";
+import { captureInternalUiPluginModule } from "../ui/plugin-module-capture.ts";
 
 export interface PluginSdkRuntimeServices {
   settings(pluginId: string): PluginSettingsHost | null;
@@ -39,7 +40,7 @@ function viewHost(host: UiViewHostContext, pluginId: string, services?: PluginSd
 
 /** Internal boundary that translates the stable authoring SDK into the current UI host contract. */
 export function adaptUiPluginPackage(plugin: UiPluginPackage, services?: PluginSdkRuntimeServices): InternalUiPluginModule {
-  return {
+  return captureInternalUiPluginModule({
     manifest: {
       id: plugin.id,
       name: plugin.name,
@@ -66,28 +67,37 @@ export function adaptUiPluginPackage(plugin: UiPluginPackage, services?: PluginS
       },
     },
     projections: plugin.projections as readonly AnyUiProjection[],
-    commands: plugin.commands.map((contribution) => ({
-      id: contribution.id,
-      create: (reader): WorkbenchCommand => contribution.create(
-        projectionReader(reader), runtimeHost(plugin.id, services)),
-    })),
+    commands: plugin.commands.map((contribution) => {
+      const create = contribution.create;
+      return {
+        id: contribution.id,
+        create: (reader): WorkbenchCommand => create(
+          projectionReader(reader), runtimeHost(plugin.id, services)),
+      };
+    }),
     interactions: plugin.interactions as readonly NotationInteractionContribution<any, any, any, any, any, any, any>[],
-    componentExtensions: plugin.componentExtensions.map((contribution) => ({
-      id: contribution.id,
-      extensionPoint: contribution.extensionPoint,
-      ...(contribution.order === undefined ? {} : { order: contribution.order }),
-      render: (reader) => contribution.render(projectionReader(reader), runtimeHost(plugin.id, services)),
-    })),
+    componentExtensions: plugin.componentExtensions.map((contribution) => {
+      const render = contribution.render;
+      return {
+        id: contribution.id,
+        extensionPoint: contribution.extensionPoint,
+        ...(contribution.order === undefined ? {} : { order: contribution.order }),
+        render: (reader) => render(projectionReader(reader), runtimeHost(plugin.id, services)),
+      };
+    }),
     instruments: plugin.instruments,
     playbackOutputs: plugin.playbackOutputs,
     applicationCapabilities: plugin.applicationCapabilities,
     workflows: plugin.workflows,
-    views: plugin.views.map((contribution) => ({
-      definition: contribution.definition as UiComponentDefinition,
-      label: contribution.label,
-      ...(contribution.icon === undefined ? {} : { icon: contribution.icon }),
-      ...(contribution.inlineZone === undefined ? {} : { inlineZone: contribution.inlineZone }),
-      render: (reader, host) => contribution.render(projectionReader(reader), viewHost(host, plugin.id, services)),
-    })),
-  };
+    views: plugin.views.map((contribution) => {
+      const render = contribution.render;
+      return {
+        definition: contribution.definition as UiComponentDefinition,
+        label: contribution.label,
+        ...(contribution.icon === undefined ? {} : { icon: contribution.icon }),
+        ...(contribution.inlineZone === undefined ? {} : { inlineZone: contribution.inlineZone }),
+        render: (reader, host) => render(projectionReader(reader), viewHost(host, plugin.id, services)),
+      };
+    }),
+  });
 }

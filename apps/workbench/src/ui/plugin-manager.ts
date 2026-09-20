@@ -14,6 +14,7 @@ import type { NotationInteractionContribution } from "../input/notation-interact
 import type { PluginInstrumentContribution, PluginPlaybackOutputContribution } from "../plugins/plugin-sdk.ts";
 import type { ApplicationCapabilityContribution } from "../contracts/application-capability.ts";
 import type { WorkflowContribution } from "../contracts/workflow.ts";
+import { captureInternalUiPluginModule } from "./plugin-module-capture.ts";
 
 export interface UiCommandContribution {
   readonly id: string;
@@ -78,6 +79,7 @@ export class UiPluginHost {
   install(plugin: InternalUiPluginModule): void {
     if (!isUiPluginManifest(plugin.manifest)) throw this.#failure(plugin, "UI-PLG-001", "manifest",
       "界面插件清单无效", "Invalid UI plugin manifest");
+    plugin = captureInternalUiPluginModule(plugin);
     if (this.#plugins.has(plugin.manifest.id)) throw this.#failure(plugin, "UI-PLG-002", "registration",
       "界面插件重复加载", `UI plugin already installed: ${plugin.manifest.id}`,
       { kind: "plugin", id: plugin.manifest.id, ownerPluginId: plugin.manifest.id });

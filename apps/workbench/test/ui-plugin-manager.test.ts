@@ -63,6 +63,21 @@ test("the startup extension host installs compiled V2 modules through declarativ
   assert.equal(manager.ownerOfCommand("example.run")?.id, "example.tool");
 });
 
+test("the UI host captures installed module descriptions and callbacks", () => {
+  const manager = host();
+  const source = plugin("example.capture", definition("example.capture-panel"));
+  manager.install(source);
+
+  (source.manifest as { version: string }).version = "2.0.0";
+  (source.views[0]?.definition.slots as ("bottom" | "overlay")[]).push("overlay");
+  (source.views[0] as { render: InternalUiPluginModule["views"][number]["render"] }).render = () => "changed";
+  const snapshot = manager.projections.snapshot([bindUiProjection(projection, { enabled: true })]);
+
+  assert.equal(manager.list()[0]?.version, "1.0.0");
+  assert.deepEqual(manager.components.get("example.capture-panel")?.slots, ["bottom"]);
+  assert.equal(manager.resolveViews(snapshot).get("example.capture-panel")?.render(), "enabled");
+});
+
 test("user-activated plugins stay installed but contribute only while activated", () => {
   const manager = host();
   const command = { id: "example.user.run", create: () => ({ id: "example.user.run", label: "运行",

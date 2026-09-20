@@ -491,6 +491,22 @@ test("the UI host cannot show an omitted plugin by reinterpreting its mutable ac
   assert.deepEqual(platformInstance.sessionPlan().pluginIds, []);
 });
 
+test("platform registration captures a direct module for the fixed session", () => {
+  const platformInstance = platform();
+  const direct = plugin({ id: "test.capture.direct", componentId: "test.capture.direct.view" });
+  platformInstance.register(direct);
+
+  (direct.manifest as { version: string }).version = "2.0.0";
+  (direct.views[0]?.definition.slots as ("bottom" | "overlay")[]).push("overlay");
+  (direct.views[0] as { render: InternalUiPluginModule["views"][number]["render"] }).render = () => "changed";
+  platformInstance.start();
+
+  assert.equal(platformInstance.list()[0]?.manifest.version, "1.0.0");
+  assert.deepEqual(platformInstance.components().get("test.capture.direct.view")?.slots, ["bottom"]);
+  assert.equal(platformInstance.resolveViews(snapshot(platformInstance)).get("test.capture.direct.view")?.render(),
+    "test.capture.direct");
+});
+
 test("an incomplete startup automatically restores the last stable plugin session", async () => {
   const platformInstance = platform();
   platformInstance.registerAll([

@@ -16,6 +16,7 @@ import type { InputContext } from "../input/input-context.ts";
 import type { InputSignal, KeyPressSignal } from "../input/input-signal.ts";
 import type { UiResolvedViewContribution } from "../ui/view-contribution.ts";
 import type { InternalUiPluginModule } from "../ui/plugin-manager.ts";
+import { captureInternalUiPluginModule } from "../ui/plugin-module-capture.ts";
 import { UiPluginCatalog } from "../ui/plugin-catalog.ts";
 import { UiPluginDiagnosticStore, UiPluginHostError, isUiPluginHostError, uiPluginIdentity } from "../ui/plugin-diagnostic.ts";
 import type { UiPluginDiagnostic } from "../ui/plugin-diagnostic.ts";
@@ -212,7 +213,7 @@ export class PluginPlatform {
       pluginPackage = registration;
       plugin = adaptUiPluginPackage(registration, { settings: (pluginId) => this.#settingsHost(pluginId) });
     } else {
-      plugin = registration;
+      plugin = captureInternalUiPluginModule(registration);
     }
     if (this.#records.has(plugin.manifest.id)) throw new Error(`Plugin already registered: ${plugin.manifest.id}`);
     createPluginKernelAssemblyPlanV1([

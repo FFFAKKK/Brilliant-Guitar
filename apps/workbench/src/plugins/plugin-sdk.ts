@@ -283,6 +283,97 @@ function immutableList<T>(value: readonly T[] | undefined): readonly T[] {
   return Object.freeze([...(value ?? [])]);
 }
 
+function componentDefinition(definition: PluginComponentDefinition): PluginComponentDefinition {
+  return Object.freeze({
+    id: definition.id,
+    version: definition.version,
+    kind: definition.kind,
+    domain: definition.domain,
+    slots: Object.freeze([...definition.slots]),
+    presentation: Object.freeze({
+      allowed: Object.freeze([...definition.presentation.allowed]),
+      default: definition.presentation.default,
+    }),
+    capabilities: Object.freeze({ ...definition.capabilities }),
+    permissions: Object.freeze({
+      projections: Object.freeze([...definition.permissions.projections]),
+      commands: Object.freeze([...definition.permissions.commands]),
+    }),
+    ...(definition.extensionPoints === undefined
+      ? {}
+      : { extensionPoints: Object.freeze([...definition.extensionPoints]) }),
+  });
+}
+
+function commands(value: readonly PluginCommandContribution[] | undefined): readonly PluginCommandContribution[] {
+  return Object.freeze((value ?? []).map((command) => Object.freeze({ id: command.id, create: command.create })));
+}
+
+function views(value: readonly PluginViewContribution[] | undefined): readonly PluginViewContribution[] {
+  return Object.freeze((value ?? []).map((view) => Object.freeze({
+    definition: componentDefinition(view.definition),
+    label: view.label,
+    ...(view.icon === undefined ? {} : { icon: view.icon }),
+    ...(view.inlineZone === undefined ? {} : { inlineZone: view.inlineZone }),
+    render: view.render,
+  })));
+}
+
+function interactions(
+  value: readonly PluginNotationInteractionContribution<any, any, any, any, any, any, any>[] | undefined,
+): readonly PluginNotationInteractionContribution<any, any, any, any, any, any, any>[] {
+  return Object.freeze((value ?? []).map((interaction) => Object.freeze({
+    id: interaction.id,
+    notationKind: interaction.notationKind,
+    input: Object.freeze({
+      id: interaction.input.id,
+      canHandle: interaction.input.canHandle,
+      translate: interaction.input.translate,
+    }),
+    readDraft: interaction.readDraft,
+    startComposition: interaction.startComposition,
+    navigate: interaction.navigate,
+    edit: interaction.edit,
+  })));
+}
+
+function componentExtensions(
+  value: readonly PluginComponentExtensionContribution[] | undefined,
+): readonly PluginComponentExtensionContribution[] {
+  return Object.freeze((value ?? []).map((extension) => Object.freeze({
+    id: extension.id,
+    extensionPoint: extension.extensionPoint,
+    ...(extension.order === undefined ? {} : { order: extension.order }),
+    render: extension.render,
+  })));
+}
+
+function instruments(
+  value: readonly PluginInstrumentContribution[] | undefined,
+): readonly PluginInstrumentContribution[] {
+  return Object.freeze((value ?? []).map((instrument) => Object.freeze({
+    id: instrument.id,
+    label: instrument.label,
+    family: instrument.family,
+    notationKinds: Object.freeze([...instrument.notationKinds]),
+    ...(instrument.noteControlExtensionIds === undefined
+      ? {}
+      : { noteControlExtensionIds: Object.freeze([...instrument.noteControlExtensionIds]) }),
+    ...(instrument.playbackProfileId === undefined ? {} : { playbackProfileId: instrument.playbackProfileId }),
+  })));
+}
+
+function playbackOutputs(
+  value: readonly PluginPlaybackOutputContribution[] | undefined,
+): readonly PluginPlaybackOutputContribution[] {
+  return Object.freeze((value ?? []).map((output) => Object.freeze({
+    id: output.id,
+    kind: output.kind,
+    label: output.label,
+    createEngine: output.createEngine,
+  })));
+}
+
 function applicationCapabilities(
   pluginId: string,
   value: readonly ApplicationCapabilityContribution[] | undefined,
@@ -381,12 +472,12 @@ export function definePlugin(input: DefinePluginInput): UiPluginPackage {
     hostFeatures: immutableList(input.hostFeatures),
     hostServices: new PluginHostServiceRegistry(input.hostServices ?? []).list(),
     projections: immutableList(input.projections),
-    commands: immutableList(input.commands),
-    views: immutableList(input.views),
-    interactions: immutableList(input.interactions),
-    componentExtensions: immutableList(input.componentExtensions),
-    instruments: immutableList(input.instruments),
-    playbackOutputs: immutableList(input.playbackOutputs),
+    commands: commands(input.commands),
+    views: views(input.views),
+    interactions: interactions(input.interactions),
+    componentExtensions: componentExtensions(input.componentExtensions),
+    instruments: instruments(input.instruments),
+    playbackOutputs: playbackOutputs(input.playbackOutputs),
     applicationCapabilities: applicationCapabilities(input.id, input.applicationCapabilities),
     workflows: workflows(input.id, input.workflows),
     ...(input.settings ? { settings: Object.freeze({ ...input.settings }) } : {}),

@@ -112,6 +112,58 @@ test("definePlugin derives the internal manifest without exposing host registrie
   assert.equal(Object.isFrozen(plugin.hostServices), true);
 });
 
+test("definePlugin captures contribution descriptions and callbacks without freezing author objects", () => {
+  const slots: ("bottom" | "overlay")[] = ["bottom"];
+  const command = {
+    id: "test.capture.run",
+    create: () => ({ id: "test.capture.run", label: "before", scope: "global" as const,
+      enabled: true, run() {} }),
+  };
+  const view = {
+    definition: {
+      id: "test.capture.view",
+      version: "1.0",
+      kind: "tool" as const,
+      domain: "test.capture",
+      slots,
+      presentation: { allowed: ["panel" as const], default: "panel" as const },
+      capabilities: {},
+      permissions: { projections: [], commands: [command.id] },
+    },
+    label: "Captured",
+    render: () => "before",
+  };
+  const instrument = {
+    id: "test.capture.instrument",
+    label: "Captured",
+    family: "test",
+    notationKinds: ["staff"] as ("staff" | "tablature")[],
+  };
+  const plugin = definePlugin({
+    id: "test.capture",
+    name: "Capture",
+    version: "1.0.0",
+    commands: [command],
+    views: [view],
+    instruments: [instrument],
+  });
+
+  slots.push("overlay");
+  command.create = () => ({ id: command.id, label: "after", scope: "global", enabled: true, run() {} });
+  view.render = () => "after";
+  instrument.notationKinds.push("tablature");
+
+  assert.equal(Object.isFrozen(view), false);
+  assert.deepEqual(plugin.views[0]?.definition.slots, ["bottom"]);
+  assert.deepEqual(plugin.instruments[0]?.notationKinds, ["staff"]);
+  const platform = new PluginPlatform({ hostFeatures: new WorkbenchFeatureRegistry([]), projections: [] });
+  platform.register(plugin);
+  platform.start();
+  const snapshot = platform.projections().snapshot([]);
+  assert.equal(platform.resolveViews(snapshot).get("test.capture.view")?.render(), "before");
+  assert.equal(platform.resolveCommands(snapshot)[0]?.label, "before");
+});
+
 test("the plugin platform accepts SDK packages and applies its activation lifecycle", () => {
   const platform = new PluginPlatform({
     hostFeatures: new WorkbenchFeatureRegistry(["workbench.layout"]),
