@@ -37,6 +37,15 @@ import type {
   PluginKernelAssemblyPlanV1,
   PluginKernelPackageManifestSource,
 } from "./plugin-package-contract.ts";
+import {
+  describePluginHostServiceDenial,
+  PluginHostServicePolicy,
+  PluginHostServiceRegistry,
+} from "./plugin-security.ts";
+import type {
+  PluginHostServiceGrantV1,
+  PluginHostServicePolicyOptions,
+} from "./plugin-security.ts";
 
 export type PluginRuntimeStatus = "discovered" | "installed" | "active" | "failed";
 export type PluginPlatformPhase = "configuring" | "running";
@@ -63,6 +72,7 @@ export interface PluginActivationChange {
 export interface PluginSessionPlanV1 {
   readonly planVersion: 1;
   readonly pluginIds: readonly string[];
+  readonly hostServiceGrants: readonly PluginHostServiceGrantV1[];
   readonly kernelAssembly: PluginKernelAssemblyPlanV1;
 }
 
@@ -73,6 +83,8 @@ export interface PluginStartOptions {
 
 export interface PluginPlatformOptions {
   readonly hostFeatures: WorkbenchFeatureRegistry;
+  readonly hostServices?: PluginHostServiceRegistry;
+  readonly hostServicePolicy?: PluginHostServicePolicyOptions;
   readonly projections: readonly AnyUiProjection[];
   readonly diagnostics?: UiPluginDiagnosticStore;
   readonly onDiagnostic?: (diagnostic: UiPluginDiagnostic) => void;
@@ -84,6 +96,10 @@ export type PluginInteractionDirectory = NotationInteractionDirectory;
 export type PluginProjectionDirectory = Pick<UiProjectionRegistry, "has" | "list" | "snapshot">;
 export type PluginSettingsDirectory = Pick<PluginSettingsRegistry,
   "has" | "subscribe" | "read" | "write" | "reset" | "restore" | "serialize">;
+export interface PluginHostServiceGrantDirectory {
+  get(pluginId: string): PluginHostServiceGrantV1 | undefined;
+  list(): readonly PluginHostServiceGrantV1[];
+}
 
 function kernelPackageSource(manifest: UiPluginManifest): PluginKernelPackageManifestSource {
   return {
@@ -97,6 +113,13 @@ function kernelPackageSource(manifest: UiPluginManifest): PluginKernelPackageMan
   };
 }
 
+function sortedHostServiceGrants(
+  grants: Iterable<PluginHostServiceGrantV1>,
+): readonly PluginHostServiceGrantV1[] {
+  return Object.freeze([...grants].sort((left, right) => left.pluginId < right.pluginId ? -1
+    : left.pluginId > right.pluginId ? 1 : 0));
+}
+
 /** One package/lifecycle facade that delegates application execution to the internal UI host. */
 export class PluginPlatform {
   readonly diagnostics: UiPluginDiagnosticStore;
@@ -107,7 +130,10 @@ export class PluginPlatform {
   readonly #interactionDirectory: PluginInteractionDirectory;
   readonly #projectionDirectory: PluginProjectionDirectory;
   readonly #settingsDirectory: PluginSettingsDirectory;
+  readonly #hostServicePolicy: PluginHostServicePolicy;
+  readonly #hostServiceGrantDirectory: PluginHostServiceGrantDirectory;
   readonly #settingsHosts = new Map<string, PluginSettingsHost>();
+  readonly #hostServiceGrants = new Map<string, PluginHostServiceGrantV1>();
   readonly #records = new Map<string, PluginRuntimeInfo>();
   readonly #instrumentOwners = new Map<string, string>();
   readonly #playbackOutputOwners = new Map<string, string>();
@@ -127,6 +153,10 @@ export class PluginPlatform {
   constructor(options: PluginPlatformOptions) {
     this.diagnostics = options.diagnostics ?? new UiPluginDiagnosticStore();
     this.#onDiagnostic = options.onDiagnostic;
+    this.#hostServicePolicy = new PluginHostServicePolicy(
+      options.hostServices ?? new PluginHostServiceRegistry([]),
+      options.hostServicePolicy,
+    );
     this.#ui = new ConcreteUiPluginHost(options.hostFeatures, new UiProjectionRegistry(options.projections),
       (diagnostic) => this.#report(diagnostic));
     this.#componentDirectory = Object.freeze({
@@ -162,6 +192,10 @@ export class PluginPlatform {
       reset: <T = unknown>(pluginId: string) => this.#settings.reset<T>(pluginId),
       restore: (value: unknown) => this.#settings.restore(value),
       serialize: () => this.#settings.serialize(),
+    });
+    this.#hostServiceGrantDirectory = Object.freeze({
+      get: (pluginId: string) => this.#hostServiceGrants.get(pluginId),
+      list: () => sortedHostServiceGrants(this.#hostServiceGrants.values()),
     });
     this.#applicationCapabilityDirectory = Object.freeze({
       get: (id: string) => this.#applicationCapabilities.get(id),
@@ -231,6 +265,7 @@ export class PluginPlatform {
         continue;
       }
       try {
+        const hostServiceGrant = this.#resolveHostServiceGrant(plugin);
         this.#validateInstruments(plugin);
         this.#validatePlaybackOutputs(plugin);
         this.#validateApplicationCapabilities(plugin);
@@ -258,6 +293,7 @@ export class PluginPlatform {
             ownerPluginVersion: plugin.manifest.version,
           }));
         }
+        this.#hostServiceGrants.set(plugin.manifest.id, hostServiceGrant);
         this.#activated.add(plugin.manifest.id);
         this.#records.set(plugin.manifest.id, { manifest: plugin.manifest,
           status: "active", active: true, nextLaunchActive: true, restartRequired: false });
@@ -337,6 +373,7 @@ export class PluginPlatform {
     return Object.freeze({
       planVersion: 1,
       pluginIds: Object.freeze([...this.#activated].sort()),
+      hostServiceGrants: sortedHostServiceGrants(this.#hostServiceGrants.values()),
       kernelAssembly: this.kernelAssemblyPlan(),
     });
   }
@@ -354,6 +391,7 @@ export class PluginPlatform {
   interactions(): PluginInteractionDirectory { return this.#interactionDirectory; }
   projections(): PluginProjectionDirectory { return this.#projectionDirectory; }
   settings(): PluginSettingsDirectory { return this.#settingsDirectory; }
+  hostServiceGrants(): PluginHostServiceGrantDirectory { return this.#hostServiceGrantDirectory; }
   applicationCapabilities(): ApplicationCapabilityDirectory { return this.#applicationCapabilityDirectory; }
   workflows(): WorkflowDirectory { return this.#workflowDirectory; }
   instruments(): readonly PluginInstrumentContribution[] {
@@ -436,6 +474,31 @@ export class PluginPlatform {
     });
     this.#settingsHosts.set(pluginId, host);
     return host;
+  }
+
+  #resolveHostServiceGrant(plugin: InternalUiPluginModule): PluginHostServiceGrantV1 {
+    const resolution = this.#hostServicePolicy.resolve({
+      pluginId: plugin.manifest.id,
+      pluginVersion: plugin.manifest.version,
+      tier: plugin.manifest.tier ?? "product",
+      requiredHostServices: plugin.manifest.requires.hostServices ?? [],
+    });
+    if (resolution.accepted) return resolution.grant;
+    const denied = [
+      ...resolution.denial.unavailable,
+      ...resolution.denial.deniedByTier,
+      ...resolution.denial.deniedByUser,
+      ...resolution.denial.deniedBySession,
+    ][0] ?? "unknown.host-service";
+    throw new UiPluginHostError({
+      code: "UI-PLG-003",
+      stage: "permissions",
+      plugin: uiPluginIdentity(plugin.manifest),
+      subject: { kind: "host-service", id: denied },
+      message: "插件所需宿主服务未获授权",
+      detail: `Plugin ${plugin.manifest.id} host service grant denied: ${
+        describePluginHostServiceDenial(resolution.denial)}`,
+    });
   }
 
   #validateInstruments(plugin: InternalUiPluginModule): void {

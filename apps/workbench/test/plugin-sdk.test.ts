@@ -93,7 +93,7 @@ test("definePlugin derives the internal manifest without exposing host registrie
     apiVersion: "3.0",
     runtime: "internal-module",
     activation: "user",
-    requires: { hostFeatures: ["workbench.layout"], projections: [state.id] },
+    requires: { hostFeatures: ["workbench.layout"], hostServices: [], projections: [state.id] },
     contributes: {
       views: ["test.sdk.view"],
       commands: ["test.sdk.run"],
@@ -109,6 +109,7 @@ test("definePlugin derives the internal manifest without exposing host registrie
   assert.equal(Object.isFrozen(plugin), true);
   assert.equal(Object.isFrozen(plugin.views), true);
   assert.equal(Object.isFrozen(plugin.instruments), true);
+  assert.equal(Object.isFrozen(plugin.hostServices), true);
 });
 
 test("the plugin platform accepts SDK packages and applies its activation lifecycle", () => {
@@ -375,6 +376,10 @@ test("the SDK rejects malformed public identities before host installation", () 
     settings: { schemaVersion: 0, defaults: {}, parse: () => ({}) } }), /settings schema version/);
   assert.throws(() => definePlugin({ id: "test.bad", name: "坏插件", version: "1.0.0",
     settings: { schemaVersion: 1, defaults: {}, parse: () => null } }), /settings defaults/);
+  assert.throws(() => definePlugin({ id: "test.bad", name: "坏插件", version: "1.0.0",
+    hostServices: ["host.all-access"] }), /host service directory/);
+  assert.throws(() => definePlugin({ id: "test.bad", name: "坏插件", version: "1.0.0",
+    hostServices: ["score.read", "score.read"] }), /host service directory/);
 });
 
 test("one plugin package publishes a canonical fixed-session kernel assembly plan", () => {

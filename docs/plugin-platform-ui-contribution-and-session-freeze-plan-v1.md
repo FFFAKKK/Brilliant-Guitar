@@ -321,6 +321,18 @@ Model intent
 - 把 A7.11 标为历史过渡方案。
 - 暂停向 `applicationCapabilities` 增加新业务能力。
 
+插件安全与固定授权切片（2026-09-20）已经完成：
+
+- `PluginHostServiceRegistry` 单独描述当前宿主实际提供的类型化服务，不复用 `hostFeatures`，也不保存服务实现。
+- `PluginHostServicePolicy` 按 `tier allowlist ∩ manifest requirements ∩ user grants ∩ session policy`
+  计算有效授权；服务不可用时同样拒绝启动插件。
+- `third-party` 默认没有等级授权和用户授权，必须由宿主显式开放；`system` 和 `product` 当前把产品安装
+  本身视为默认授权，但仍受等级上限和当前 Session Policy 限制。
+- `host.all-access` 在 SDK、Manifest 捕获、宿主服务目录和策略输入处全部禁止。
+- 解析成功的授权写入不可变 `PluginSessionPlanV1.hostServiceGrants`，运行中的启停设置不能改变当前授权。
+- 平台目前只发布只读授权事实，没有向插件暴露通用服务定位器。具体类型化端口仍由后续 scoped host context
+  和 `WorkflowRuntimeContext` 绑定。
+
 ### 阶段 B：类型化直接端口
 
 - 从现有 `WorkbenchClient` 和专用 Client 中整理 `ScoreReadPort`、`ScoreEditPort` 等最小接口。

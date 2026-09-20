@@ -30,7 +30,8 @@ export interface UiPluginIdentity {
 
 export interface UiPluginFailureSubject {
   readonly kind: "plugin" | "capability" | "projection" | "component" | "command" | "interaction"
-    | "component-extension" | "extension-point" | "instrument" | "playback-output" | "workflow";
+    | "component-extension" | "extension-point" | "instrument" | "playback-output" | "workflow"
+    | "host-service";
   readonly id: string;
   readonly ownerPluginId?: string;
 }

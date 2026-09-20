@@ -7,6 +7,7 @@ import type {
   PluginKernelModuleManifestV1,
   PluginTier,
 } from "../plugins/plugin-package-contract.ts";
+import { PluginHostServiceRegistry } from "../plugins/plugin-security.ts";
 
 export const WORKBENCH_PLUGIN_API_VERSION = "3.0" as const;
 
@@ -22,6 +23,7 @@ export interface UiPluginManifest {
   readonly activation: "always" | "user";
   readonly requires: Readonly<{
     hostFeatures: readonly WorkbenchFeatureId[];
+    readonly hostServices?: readonly string[];
     projections: readonly string[];
   }>;
   readonly contributes: Readonly<{
@@ -124,8 +126,9 @@ export function captureUiPluginManifest(value: unknown): UiPluginManifest | null
       || candidate.apiVersion !== WORKBENCH_PLUGIN_API_VERSION
       || candidate.runtime !== "internal-module"
       || (candidate.activation !== "always" && candidate.activation !== "user")) return null;
-    const requires = exactDataRecord(candidate.requires, ["hostFeatures", "projections"]);
+    const requires = exactDataRecord(candidate.requires, ["hostFeatures", "projections"], ["hostServices"]);
     const hostFeatures = capturedStrings(requires?.hostFeatures);
+    const hostServices = requires?.hostServices === undefined ? undefined : capturedStrings(requires.hostServices);
     const projections = capturedStrings(requires?.projections);
     const contributes = exactDataRecord(candidate.contributes,
       ["views", "commands", "interactions", "componentExtensions"],
@@ -143,9 +146,11 @@ export function captureUiPluginManifest(value: unknown): UiPluginManifest | null
       ? undefined : capturedStrings(contributes.workflows);
     const kernelModules = contributes?.kernelModules === undefined
       ? undefined : capturedKernelModules(contributes.kernelModules);
-    if (!hostFeatures || !projections || !contributes || !views || !commands || !interactions || !componentExtensions
+    if (!hostFeatures || hostServices === null || !projections || !contributes || !views || !commands || !interactions
+      || !componentExtensions
       || instruments === null || playbackOutputs === null || applicationCapabilities === null || workflows === null
       || kernelModules === null) return null;
+    if (hostServices !== undefined) new PluginHostServiceRegistry(hostServices);
     const manifest: UiPluginManifest = Object.freeze({
       id: candidate.id,
       name: candidate.name,
@@ -154,7 +159,7 @@ export function captureUiPluginManifest(value: unknown): UiPluginManifest | null
       apiVersion: WORKBENCH_PLUGIN_API_VERSION,
       runtime: "internal-module",
       activation: candidate.activation,
-      requires: Object.freeze({ hostFeatures, projections }),
+      requires: Object.freeze({ hostFeatures, ...(hostServices === undefined ? {} : { hostServices }), projections }),
       contributes: Object.freeze({
         views, commands, interactions, componentExtensions,
         ...(instruments === undefined ? {} : { instruments }),

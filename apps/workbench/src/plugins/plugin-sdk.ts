@@ -6,6 +6,7 @@ import type {
   PluginKernelModuleManifestV1,
   PluginTier,
 } from "./plugin-package-contract.ts";
+import { PluginHostServiceRegistry } from "./plugin-security.ts";
 
 export type {
   PluginKernelAssemblyEntryV1,
@@ -15,6 +16,11 @@ export type {
   PluginTier,
 } from "./plugin-package-contract.ts";
 export { PLUGIN_PACKAGE_V1_LIMITS } from "./plugin-package-contract.ts";
+export type {
+  PluginHostServiceGrantV1,
+  PluginHostServiceId,
+} from "./plugin-security.ts";
+export { FORBIDDEN_PLUGIN_HOST_SERVICE_ID } from "./plugin-security.ts";
 
 /** `user` means configurable before process launch; it never means runtime hot activation. */
 export type PluginActivation = "always" | "user";
@@ -236,6 +242,7 @@ export interface UiPluginPackage {
   readonly activation: PluginActivation;
   readonly kernelModules: readonly PluginKernelModuleManifestV1[];
   readonly hostFeatures: readonly string[];
+  readonly hostServices: readonly string[];
   readonly projections: readonly PluginProjection<unknown>[];
   readonly commands: readonly PluginCommandContribution[];
   readonly views: readonly PluginViewContribution[];
@@ -259,6 +266,7 @@ export interface DefinePluginInput {
   readonly activation?: PluginActivation;
   readonly kernelModules?: readonly PluginKernelModuleManifestV1[];
   readonly hostFeatures?: readonly string[];
+  readonly hostServices?: readonly string[];
   readonly projections?: readonly PluginProjection<unknown>[];
   readonly commands?: readonly PluginCommandContribution[];
   readonly views?: readonly PluginViewContribution[];
@@ -371,6 +379,7 @@ export function definePlugin(input: DefinePluginInput): UiPluginPackage {
     activation,
     kernelModules,
     hostFeatures: immutableList(input.hostFeatures),
+    hostServices: new PluginHostServiceRegistry(input.hostServices ?? []).list(),
     projections: immutableList(input.projections),
     commands: immutableList(input.commands),
     views: immutableList(input.views),

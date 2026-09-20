@@ -1,10 +1,12 @@
 import type { UiPluginManifest, WorkbenchFeatureRegistry } from "../ui/plugin-manifest.ts";
 import { captureUiPluginManifest } from "../ui/plugin-manifest.ts";
+import { PluginHostServiceRegistry } from "./plugin-security.ts";
 
 export type PluginManifestDiscoveryFailureCode =
   | "manifest.invalid"
   | "manifest.duplicate"
   | "manifest.capability-unavailable"
+  | "manifest.host-service-unavailable"
   | "manifest.projection-unavailable";
 
 export interface PluginManifestDiscoveryFailure {
@@ -20,6 +22,7 @@ export type PluginManifestDiscoveryResult =
 
 export interface PluginManifestDiscoveryOptions {
   readonly hostFeatures: WorkbenchFeatureRegistry;
+  readonly hostServices?: PluginHostServiceRegistry;
   readonly projections: readonly string[];
 }
 
@@ -35,12 +38,14 @@ function candidateId(value: unknown): string | null {
 /** Preflight directory for host supplied manifests; it never loads or executes plugin code. */
 export class PluginManifestDiscovery {
   readonly #hostFeatures: WorkbenchFeatureRegistry;
+  readonly #hostServices: PluginHostServiceRegistry;
   readonly #projections: ReadonlySet<string>;
   readonly #manifests = new Map<string, UiPluginManifest>();
   readonly #failures: PluginManifestDiscoveryFailure[] = [];
 
   constructor(options: PluginManifestDiscoveryOptions) {
     this.#hostFeatures = options.hostFeatures;
+    this.#hostServices = options.hostServices ?? new PluginHostServiceRegistry([]);
     this.#projections = new Set(options.projections);
   }
 
@@ -73,6 +78,17 @@ export class PluginManifestDiscovery {
         pluginId: manifest.id,
         message: "插件所需能力不可用",
         detail: missingFeatures.join(", "),
+      };
+      this.#failures.push(failure);
+      return { accepted: false, failure };
+    }
+    const missingHostServices = this.#hostServices.missing(manifest.requires.hostServices ?? []);
+    if (missingHostServices.length > 0) {
+      const failure: PluginManifestDiscoveryFailure = {
+        code: "manifest.host-service-unavailable",
+        pluginId: manifest.id,
+        message: "插件所需宿主服务不可用",
+        detail: missingHostServices.join(", "),
       };
       this.#failures.push(failure);
       return { accepted: false, failure };

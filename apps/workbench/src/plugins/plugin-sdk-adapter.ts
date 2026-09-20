@@ -50,6 +50,7 @@ export function adaptUiPluginPackage(plugin: UiPluginPackage, services?: PluginS
       activation: plugin.activation,
       requires: {
         hostFeatures: plugin.hostFeatures,
+        hostServices: plugin.hostServices,
         projections: plugin.projections.map((projection) => projection.id),
       },
       contributes: {
