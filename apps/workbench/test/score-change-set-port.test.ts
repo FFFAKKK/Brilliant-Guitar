@@ -137,3 +137,84 @@ test("ScoreChangeSetPort rejects malformed preparation data at the typed boundar
       && error.message === "Prepared mutation returned invalid data",
   );
 });
+
+test("ScoreChangeSetPort rejects invalid input before calling the typed host", async () => {
+  let hostCalls = 0;
+  const port = new ScoreChangeSetClient({
+    async prepareScoreTempoChange() { hostCalls += 1; return null; },
+  }, "workspace-1");
+
+  await assert.rejects(
+    port.prepareTempoChange({ tempoBpm: 0 }, preparationContext),
+    (error: unknown) => error instanceof ScoreChangeSetPortError
+      && error.outcome === "definite-failure"
+      && error.message === "Score tempo ChangeSet input is invalid",
+  );
+  assert.equal(hostCalls, 0);
+});
+
+test("ScoreChangeSetPort binds a prepared result to the requested document and value", async () => {
+  const port = new ScoreChangeSetClient({
+    async prepareScoreTempoChange() {
+      return {
+        changeSetId: `sha256:${"a".repeat(64)}`,
+        kind: "score-tempo",
+        documentId: "other-score",
+        baseDocumentVersion: 8,
+        beforeTempoBpm: 96,
+        afterTempoBpm: 144,
+      };
+    },
+  }, "workspace-1");
+
+  await assert.rejects(
+    port.prepareTempoChange({ tempoBpm: 132 }, preparationContext),
+    (error: unknown) => error instanceof ScoreChangeSetPortError
+      && error.outcome === "definite-failure"
+      && error.message === "Prepared tempo ChangeSet does not match the request",
+  );
+});
+
+test("ScoreChangeSetPort rejects invalid preparation context before calling the host", async () => {
+  let hostCalls = 0;
+  const port = new ScoreChangeSetClient({
+    async prepareScoreTempoChange() { hostCalls += 1; return null; },
+  }, "workspace-1");
+
+  await assert.rejects(
+    port.prepareTempoChange({ tempoBpm: 132 }, {
+      ...preparationContext,
+      documentPrecondition: { documentId: "", documentVersion: -1 },
+    }),
+    (error: unknown) => error instanceof ScoreChangeSetPortError
+      && error.outcome === "definite-failure"
+      && error.message === "Score ChangeSet preparation context is invalid",
+  );
+  assert.equal(hostCalls, 0);
+});
+
+test("ScoreChangeSetPort binds metadata results to every requested field", async () => {
+  const port = new ScoreChangeSetClient({
+    async prepareScoreMetadataTransaction() {
+      return {
+        changeSetId: `sha256:${"b".repeat(64)}`,
+        kind: "score-metadata-transaction",
+        documentId: "score-1",
+        baseDocumentVersion: 7,
+        operations: ["set-title", "set-tempo"],
+        before: { title: "练习曲", tempoBpm: 96 },
+        after: { title: "错误标题", tempoBpm: 144 },
+      };
+    },
+  }, "workspace-1");
+
+  await assert.rejects(
+    port.prepareMetadataTransaction(
+      { title: "夜曲", tempoBpm: 132 },
+      preparationContext,
+    ),
+    (error: unknown) => error instanceof ScoreChangeSetPortError
+      && error.outcome === "definite-failure"
+      && error.message === "Prepared metadata ChangeSet does not match the request",
+  );
+});

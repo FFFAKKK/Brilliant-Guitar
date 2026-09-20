@@ -1,3 +1,4 @@
+import { isScoreEditRequest } from "../contracts/note-input.ts";
 import type { ScoreEditRequest } from "../contracts/note-input.ts";
 import { isScoreSessionRead } from "../contracts/score-session.ts";
 import type { ScoreSessionRead } from "../contracts/score-session.ts";
@@ -22,6 +23,7 @@ export class ScoreEditClient implements ScoreEditPort {
   }
 
   async edit(input: ScoreEditRequest): Promise<ScoreSessionRead> {
+    if (!isScoreEditRequest(input)) throw new Error("编辑请求无效");
     const value = await this.#host.edit(this.#workspaceId, input);
     if (!isScoreSessionRead(value)) throw new Error("编辑结果无效");
     return value;

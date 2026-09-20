@@ -53,3 +53,21 @@ test("ScoreEditPort rejects a malformed host session instead of leaking it to UI
     /编辑结果无效/,
   );
 });
+
+test("ScoreEditPort rejects invalid runtime input before calling the host", async () => {
+  let hostCalls = 0;
+  const edits = new ScoreEditClient({
+    async edit() { hostCalls += 1; return session; },
+  }, workspaceId);
+
+  await assert.rejects(
+    edits.edit({
+      requestId: "not-a-request-id",
+      documentId: "score-1",
+      expectedVersion: 0,
+      action: { kind: "undo" },
+    }),
+    /编辑请求无效/,
+  );
+  assert.equal(hostCalls, 0);
+});

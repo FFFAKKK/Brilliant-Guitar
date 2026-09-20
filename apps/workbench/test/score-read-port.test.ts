@@ -50,6 +50,24 @@ test("ScoreReadPort keeps an empty session as an explicit unavailable result", a
   });
 });
 
+test("ScoreReadPort rejects invalid bounded-read input before calling the host", async () => {
+  let hostCalls = 0;
+  const reads = new ScoreReadClient({
+    async readScoreMeasureIndex() { hostCalls += 1; return null; },
+    async readScoreMeasureRange() { hostCalls += 1; return null; },
+  }, workspaceId);
+
+  await assert.rejects(
+    reads.readMeasureIndex({ expectedDocumentId: "", expectedDocumentVersion: -1 }),
+    /小节索引读取请求无效/,
+  );
+  await assert.rejects(
+    reads.readMeasureRange({ startMeasureId: "m-1", endMeasureId: "m-2", maxMeasures: 33 }),
+    /小节范围读取请求无效/,
+  );
+  assert.equal(hostCalls, 0);
+});
+
 test("Direct score tool adapter prefers the typed port and preserves Agent invocation identity", async () => {
   const invocationId = crypto.randomUUID();
   const adapter = new DirectScoreReadAgentPort({

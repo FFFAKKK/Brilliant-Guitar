@@ -1,6 +1,8 @@
 import {
+  isScorePrepareTempoChangeInputV1,
   isScoreMetadataTransactionChangeSetV1,
   isScoreTempoChangeSetV1,
+  isScoreUpdateMetadataInputV1,
 } from "../contracts/capability.ts";
 import type {
   CapabilityDocumentPrecondition,
@@ -65,24 +67,57 @@ export class ScoreChangeSetClient implements ScoreChangeSetPort {
     input: ScorePrepareTempoChangeInputV1,
     context: ScoreChangeSetPreparationContext,
   ): Promise<ScoreTempoChangeSetV1> {
+    if (!isScorePrepareTempoChangeInputV1(input)) {
+      return Promise.reject(new ScoreChangeSetPortError(
+        "Score tempo ChangeSet input is invalid",
+        "definite-failure",
+      ));
+    }
     return this.prepare(
       context,
       this.#host.prepareScoreTempoChange,
       input,
       isScoreTempoChangeSetV1,
-    );
+    ).then((changeSet) => {
+      if (changeSet.documentId !== context.documentPrecondition.documentId
+        || changeSet.baseDocumentVersion !== context.documentPrecondition.documentVersion
+        || changeSet.afterTempoBpm !== input.tempoBpm) {
+        throw new ScoreChangeSetPortError(
+          "Prepared tempo ChangeSet does not match the request",
+          "definite-failure",
+        );
+      }
+      return changeSet;
+    });
   }
 
   prepareMetadataTransaction(
     input: ScoreUpdateMetadataInputV1,
     context: ScoreChangeSetPreparationContext,
   ): Promise<ScoreMetadataTransactionChangeSetV1> {
+    if (!isScoreUpdateMetadataInputV1(input)) {
+      return Promise.reject(new ScoreChangeSetPortError(
+        "Score metadata ChangeSet input is invalid",
+        "definite-failure",
+      ));
+    }
     return this.prepare(
       context,
       this.#host.prepareScoreMetadataTransaction,
       input,
       isScoreMetadataTransactionChangeSetV1,
-    );
+    ).then((changeSet) => {
+      if (changeSet.documentId !== context.documentPrecondition.documentId
+        || changeSet.baseDocumentVersion !== context.documentPrecondition.documentVersion
+        || input.title !== undefined && changeSet.after.title !== input.title
+        || input.tempoBpm !== undefined && changeSet.after.tempoBpm !== input.tempoBpm) {
+        throw new ScoreChangeSetPortError(
+          "Prepared metadata ChangeSet does not match the request",
+          "definite-failure",
+        );
+      }
+      return changeSet;
+    });
   }
 
   private async prepare<TInput, TResult>(
@@ -97,6 +132,15 @@ export class ScoreChangeSetClient implements ScoreChangeSetPort {
   ): Promise<TResult> {
     if (context.workspaceId !== this.#workspaceId) {
       throw new ScoreChangeSetPortError("Score ChangeSet workspace does not match", "definite-failure");
+    }
+    if (!context.preparationInvocationId
+      || !context.documentPrecondition.documentId
+      || !Number.isSafeInteger(context.documentPrecondition.documentVersion)
+      || context.documentPrecondition.documentVersion < 0) {
+      throw new ScoreChangeSetPortError(
+        "Score ChangeSet preparation context is invalid",
+        "definite-failure",
+      );
     }
     if (method === undefined) {
       throw new ScoreChangeSetPortError("Score ChangeSet preparation port is unavailable", "unknown");

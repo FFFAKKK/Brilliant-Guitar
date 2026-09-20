@@ -1,5 +1,7 @@
 import {
+  isScoreMeasureIndexInputV1,
   isScoreMeasureIndexV1,
+  isScoreMeasureRangeInputV1,
   isScoreMeasureRangeV1,
   isScoreMetadataV1,
   isScoreStructureV1,
@@ -91,20 +93,26 @@ export class ScoreReadClient implements ScoreReadPort {
     return this.read(method, EMPTY_INPUT, isScoreStructureV1);
   }
 
-  readMeasureIndex(input: ScoreMeasureIndexInputV1): Promise<ScoreReadResult<ScoreMeasureIndexV1>> {
+  async readMeasureIndex(input: ScoreMeasureIndexInputV1): Promise<ScoreReadResult<ScoreMeasureIndexV1>> {
+    if (!isScoreMeasureIndexInputV1(input)) {
+      throw new Error("乐谱小节索引读取请求无效");
+    }
     const method = this.#host.readScoreMeasureIndex === undefined
       ? undefined
       : (workspaceId: string, value?: unknown) =>
         this.#host.readScoreMeasureIndex!(workspaceId, value as ScoreMeasureIndexInputV1);
-    return this.read(method, input, isScoreMeasureIndexV1);
+    return await this.read(method, input, isScoreMeasureIndexV1);
   }
 
-  readMeasureRange(input: ScoreMeasureRangeInputV1): Promise<ScoreReadResult<ScoreMeasureRangeV1>> {
+  async readMeasureRange(input: ScoreMeasureRangeInputV1): Promise<ScoreReadResult<ScoreMeasureRangeV1>> {
+    if (!isScoreMeasureRangeInputV1(input)) {
+      throw new Error("乐谱小节范围读取请求无效");
+    }
     const method = this.#host.readScoreMeasureRange === undefined
       ? undefined
       : (workspaceId: string, value?: unknown) =>
         this.#host.readScoreMeasureRange!(workspaceId, value as ScoreMeasureRangeInputV1);
-    return this.read(method, input, isScoreMeasureRangeV1);
+    return await this.read(method, input, isScoreMeasureRangeV1);
   }
 
   private async read<T>(
