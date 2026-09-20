@@ -97,22 +97,37 @@ export class ScoreReadClient implements ScoreReadPort {
     if (!isScoreMeasureIndexInputV1(input)) {
       throw new Error("乐谱小节索引读取请求无效");
     }
+    const { expectedDocumentId, expectedDocumentVersion } = input;
     const method = this.#host.readScoreMeasureIndex === undefined
       ? undefined
       : (workspaceId: string, value?: unknown) =>
         this.#host.readScoreMeasureIndex!(workspaceId, value as ScoreMeasureIndexInputV1);
-    return await this.read(method, input, isScoreMeasureIndexV1);
+    const result = await this.read(method, input, isScoreMeasureIndexV1);
+    if (result.status === "ready"
+      && (result.data.documentId !== expectedDocumentId
+        || result.data.documentVersion !== expectedDocumentVersion)) {
+      throw new Error("乐谱小节索引读取结果与请求不匹配");
+    }
+    return result;
   }
 
   async readMeasureRange(input: ScoreMeasureRangeInputV1): Promise<ScoreReadResult<ScoreMeasureRangeV1>> {
     if (!isScoreMeasureRangeInputV1(input)) {
       throw new Error("乐谱小节范围读取请求无效");
     }
+    const { startMeasureId, endMeasureId, maxMeasures } = input;
     const method = this.#host.readScoreMeasureRange === undefined
       ? undefined
       : (workspaceId: string, value?: unknown) =>
         this.#host.readScoreMeasureRange!(workspaceId, value as ScoreMeasureRangeInputV1);
-    return await this.read(method, input, isScoreMeasureRangeV1);
+    const result = await this.read(method, input, isScoreMeasureRangeV1);
+    if (result.status === "ready"
+      && (result.data.startMeasureId !== startMeasureId
+        || result.data.endMeasureId !== endMeasureId
+        || result.data.measureCount > maxMeasures)) {
+      throw new Error("乐谱小节范围读取结果与请求不匹配");
+    }
+    return result;
   }
 
   private async read<T>(

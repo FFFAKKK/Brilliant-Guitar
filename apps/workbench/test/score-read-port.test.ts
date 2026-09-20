@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { ScoreReadClient } from "../src/services/score-read-port.ts";
-import { TauriWorkbenchHostBridge } from "../src/services/workbench-host-bridge.ts";
+import { TauriWorkbenchHostBridge, WorkbenchRequestError } from "../src/services/workbench-host-bridge.ts";
 import { DirectScoreReadAgentPort } from "../src/agent/direct-score-read-agent-port.ts";
 
 const workspaceId = "11111111-1111-4111-8111-111111111111";
@@ -67,6 +67,111 @@ test("ScoreReadPort rejects invalid bounded-read input before calling the host",
   );
   assert.equal(hostCalls, 0);
 });
+
+test("ScoreReadPort accepts an index for the requested document and version", async () => {
+  const input = { expectedDocumentId: "score-1", expectedDocumentVersion: 7 };
+  const index = { documentId: "score-1", documentVersion: 7, measureIds: ["m-1", "m-2"] };
+  const reads = new ScoreReadClient({
+    async readScoreMeasureIndex(boundWorkspaceId, forwarded) {
+      assert.equal(boundWorkspaceId, workspaceId);
+      assert.deepEqual(forwarded, input);
+      return index;
+    },
+  }, workspaceId);
+
+  assert.deepEqual(await reads.readMeasureIndex(input), { status: "ready", data: index });
+});
+
+for (const mismatch of [{ documentId: "other-score" }, { documentVersion: 8 }]) {
+  test(`ScoreReadPort rejects an index with mismatched ${Object.keys(mismatch)[0]}`, async () => {
+    const reads = new ScoreReadClient({
+      async readScoreMeasureIndex() {
+        return { documentId: "score-1", documentVersion: 7, measureIds: ["m-1"], ...mismatch };
+      },
+    }, workspaceId);
+
+    await assert.rejects(
+      reads.readMeasureIndex({ expectedDocumentId: "score-1", expectedDocumentVersion: 7 }),
+      /小节索引读取结果与请求不匹配/,
+    );
+  });
+}
+
+for (const count of [1, 32]) {
+  test(`ScoreReadPort accepts a matching range at the ${count}-measure budget`, async () => {
+    const ids = Array.from({ length: count }, (_, index) => `m-${index + 1}`);
+    const range = {
+      documentId: "score-1", documentVersion: 7, startMeasureId: "m-1", endMeasureId: `m-${count}`,
+      measureCount: count,
+      measures: ids.map((measureId) => ({
+        measureId, meter: { numerator: 4, denominator: 4 }, pickupDuration: null,
+      })),
+    };
+    const input = { startMeasureId: "m-1", endMeasureId: `m-${count}`, maxMeasures: count };
+    const reads = new ScoreReadClient({
+      async readScoreMeasureRange(boundWorkspaceId, forwarded) {
+        assert.equal(boundWorkspaceId, workspaceId);
+        assert.deepEqual(forwarded, input);
+        return range;
+      },
+    }, workspaceId);
+
+    assert.deepEqual(await reads.readMeasureRange(input), { status: "ready", data: range });
+  });
+}
+
+for (const scenario of [
+  { name: "startMeasureId", ids: ["m-2", "m-3"], maxMeasures: 3 },
+  { name: "endMeasureId", ids: ["m-1", "m-2"], maxMeasures: 3 },
+  { name: "maxMeasures", ids: ["m-1", "m-2", "m-3"], maxMeasures: 2 },
+]) {
+  test(`ScoreReadPort rejects a range violating the requested ${scenario.name}`, async () => {
+    const reads = new ScoreReadClient({
+      async readScoreMeasureRange() {
+        return {
+          documentId: "score-1", documentVersion: 7,
+          startMeasureId: scenario.ids[0], endMeasureId: scenario.ids.at(-1),
+          measureCount: scenario.ids.length,
+          measures: scenario.ids.map((measureId) => ({
+            measureId, meter: { numerator: 4, denominator: 4 }, pickupDuration: null,
+          })),
+        };
+      },
+    }, workspaceId);
+
+    await assert.rejects(
+      reads.readMeasureRange({ startMeasureId: "m-1", endMeasureId: "m-3", maxMeasures: scenario.maxMeasures }),
+      /小节范围读取结果与请求不匹配/,
+    );
+  });
+}
+
+for (const scenario of [
+  { name: "empty session", error: null, status: "unavailable", code: "score.session-unavailable" },
+  { name: "retryable error", error: new WorkbenchRequestError("unavailable", 503), status: "unavailable", code: "score.read-failed" },
+  { name: "definite error", error: new WorkbenchRequestError("stale", 409), status: "failed", code: "score.read-failed" },
+]) {
+  test(`ScoreReadPort preserves bounded-read ${scenario.name} results`, async () => {
+    const respond = async () => {
+      if (scenario.error !== null) throw scenario.error;
+      return null;
+    };
+    const reads = new ScoreReadClient({
+      readScoreMeasureIndex: respond,
+      readScoreMeasureRange: respond,
+    }, workspaceId);
+    const results = [
+      await reads.readMeasureIndex({ expectedDocumentId: "score-1", expectedDocumentVersion: 7 }),
+      await reads.readMeasureRange({ startMeasureId: "m-1", endMeasureId: "m-1", maxMeasures: 1 }),
+    ];
+
+    for (const result of results) {
+      assert.equal(result.status, scenario.status);
+      assert.notEqual(result.status, "ready");
+      if (result.status !== "ready") assert.equal(result.code, scenario.code);
+    }
+  });
+}
 
 test("Direct score tool adapter prefers the typed port and preserves Agent invocation identity", async () => {
   const invocationId = crypto.randomUUID();

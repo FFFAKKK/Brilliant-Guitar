@@ -109,8 +109,8 @@ export class ScoreChangeSetClient implements ScoreChangeSetPort {
     ).then((changeSet) => {
       if (changeSet.documentId !== context.documentPrecondition.documentId
         || changeSet.baseDocumentVersion !== context.documentPrecondition.documentVersion
-        || input.title !== undefined && changeSet.after.title !== input.title
-        || input.tempoBpm !== undefined && changeSet.after.tempoBpm !== input.tempoBpm) {
+        || changeSet.after.title !== (input.title ?? changeSet.before.title)
+        || changeSet.after.tempoBpm !== (input.tempoBpm ?? changeSet.before.tempoBpm)) {
         throw new ScoreChangeSetPortError(
           "Prepared metadata ChangeSet does not match the request",
           "definite-failure",
@@ -130,17 +130,24 @@ export class ScoreChangeSetClient implements ScoreChangeSetPort {
     input: TInput,
     isResult: (value: unknown) => value is TResult,
   ): Promise<TResult> {
-    if (context.workspaceId !== this.#workspaceId) {
-      throw new ScoreChangeSetPortError("Score ChangeSet workspace does not match", "definite-failure");
-    }
-    if (!context.preparationInvocationId
-      || !context.documentPrecondition.documentId
+    if (typeof context !== "object" || context === null || Array.isArray(context)
+      || typeof context.preparationInvocationId !== "string"
+      || context.preparationInvocationId.length === 0
+      || typeof context.workspaceId !== "string" || context.workspaceId.length === 0
+      || typeof context.documentPrecondition !== "object"
+      || context.documentPrecondition === null || Array.isArray(context.documentPrecondition)
+      || typeof context.documentPrecondition.documentId !== "string"
+      || context.documentPrecondition.documentId.length === 0
+      || context.documentPrecondition.documentId.length > 256
       || !Number.isSafeInteger(context.documentPrecondition.documentVersion)
       || context.documentPrecondition.documentVersion < 0) {
       throw new ScoreChangeSetPortError(
         "Score ChangeSet preparation context is invalid",
         "definite-failure",
       );
+    }
+    if (context.workspaceId !== this.#workspaceId) {
+      throw new ScoreChangeSetPortError("Score ChangeSet workspace does not match", "definite-failure");
     }
     if (method === undefined) {
       throw new ScoreChangeSetPortError("Score ChangeSet preparation port is unavailable", "unknown");

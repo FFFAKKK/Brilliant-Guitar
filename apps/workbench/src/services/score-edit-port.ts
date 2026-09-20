@@ -24,7 +24,13 @@ export class ScoreEditClient implements ScoreEditPort {
 
   async edit(input: ScoreEditRequest): Promise<ScoreSessionRead> {
     if (!isScoreEditRequest(input)) throw new Error("编辑请求无效");
-    const value = await this.#host.edit(this.#workspaceId, input);
+    // Extra runtime fields must not override the workspace-bound transport.
+    const value = await this.#host.edit(this.#workspaceId, {
+      requestId: input.requestId,
+      documentId: input.documentId,
+      expectedVersion: input.expectedVersion,
+      action: input.action,
+    });
     if (!isScoreSessionRead(value)) throw new Error("编辑结果无效");
     return value;
   }

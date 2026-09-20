@@ -6,6 +6,8 @@ import {
   ScoreChangeSetPortError,
 } from "../src/agent/score-change-set-port.ts";
 import { ScoreChangeSetClient } from "../src/services/score-change-set-port.ts";
+import type { ScoreChangeSetPreparationContext } from "../src/services/score-change-set-port.ts";
+import type { ScoreUpdateMetadataInputV1 } from "../src/contracts/capability.ts";
 import { TauriWorkbenchHostBridge } from "../src/services/workbench-host-bridge.ts";
 
 const preparationContext = {
@@ -153,27 +155,34 @@ test("ScoreChangeSetPort rejects invalid input before calling the typed host", a
   assert.equal(hostCalls, 0);
 });
 
-test("ScoreChangeSetPort binds a prepared result to the requested document and value", async () => {
-  const port = new ScoreChangeSetClient({
-    async prepareScoreTempoChange() {
-      return {
-        changeSetId: `sha256:${"a".repeat(64)}`,
-        kind: "score-tempo",
-        documentId: "other-score",
-        baseDocumentVersion: 8,
-        beforeTempoBpm: 96,
-        afterTempoBpm: 144,
-      };
-    },
-  }, "workspace-1");
+for (const mismatch of [
+  { documentId: "other-score" },
+  { baseDocumentVersion: 8 },
+  { afterTempoBpm: 144 },
+]) {
+  test(`ScoreChangeSetPort rejects a tempo result with mismatched ${Object.keys(mismatch)[0]}`, async () => {
+    const port = new ScoreChangeSetClient({
+      async prepareScoreTempoChange() {
+        return {
+          changeSetId: `sha256:${"a".repeat(64)}`,
+          kind: "score-tempo",
+          documentId: "score-1",
+          baseDocumentVersion: 7,
+          beforeTempoBpm: 96,
+          afterTempoBpm: 132,
+          ...mismatch,
+        };
+      },
+    }, "workspace-1");
 
-  await assert.rejects(
-    port.prepareTempoChange({ tempoBpm: 132 }, preparationContext),
-    (error: unknown) => error instanceof ScoreChangeSetPortError
-      && error.outcome === "definite-failure"
-      && error.message === "Prepared tempo ChangeSet does not match the request",
-  );
-});
+    await assert.rejects(
+      port.prepareTempoChange({ tempoBpm: 132 }, preparationContext),
+      (error: unknown) => error instanceof ScoreChangeSetPortError
+        && error.outcome === "definite-failure"
+        && error.message === "Prepared tempo ChangeSet does not match the request",
+    );
+  });
+}
 
 test("ScoreChangeSetPort rejects invalid preparation context before calling the host", async () => {
   let hostCalls = 0;
@@ -193,28 +202,159 @@ test("ScoreChangeSetPort rejects invalid preparation context before calling the 
   assert.equal(hostCalls, 0);
 });
 
-test("ScoreChangeSetPort binds metadata results to every requested field", async () => {
-  const port = new ScoreChangeSetClient({
-    async prepareScoreMetadataTransaction() {
-      return {
-        changeSetId: `sha256:${"b".repeat(64)}`,
-        kind: "score-metadata-transaction",
-        documentId: "score-1",
-        baseDocumentVersion: 7,
-        operations: ["set-title", "set-tempo"],
-        before: { title: "练习曲", tempoBpm: 96 },
-        after: { title: "错误标题", tempoBpm: 144 },
-      };
-    },
-  }, "workspace-1");
+for (const mismatch of [
+  { name: "documentId", data: { documentId: "other-score" } },
+  { name: "baseDocumentVersion", data: { baseDocumentVersion: 8 } },
+  { name: "title", data: { after: { title: "错误标题", tempoBpm: 132 } } },
+  { name: "tempoBpm", data: { after: { title: "夜曲", tempoBpm: 144 } } },
+]) {
+  test(`ScoreChangeSetPort rejects a metadata result with mismatched ${mismatch.name}`, async () => {
+    const port = new ScoreChangeSetClient({
+      async prepareScoreMetadataTransaction() {
+        return {
+          changeSetId: `sha256:${"b".repeat(64)}`,
+          kind: "score-metadata-transaction",
+          documentId: "score-1",
+          baseDocumentVersion: 7,
+          operations: ["set-title", "set-tempo"],
+          before: { title: "练习曲", tempoBpm: 96 },
+          after: { title: "夜曲", tempoBpm: 132 },
+          ...mismatch.data,
+        };
+      },
+    }, "workspace-1");
 
-  await assert.rejects(
-    port.prepareMetadataTransaction(
-      { title: "夜曲", tempoBpm: 132 },
-      preparationContext,
-    ),
-    (error: unknown) => error instanceof ScoreChangeSetPortError
-      && error.outcome === "definite-failure"
-      && error.message === "Prepared metadata ChangeSet does not match the request",
-  );
+    await assert.rejects(
+      port.prepareMetadataTransaction({ title: "夜曲", tempoBpm: 132 }, preparationContext),
+      (error: unknown) => error instanceof ScoreChangeSetPortError
+        && error.outcome === "definite-failure"
+        && error.message === "Prepared metadata ChangeSet does not match the request",
+    );
+  });
+}
+
+for (const input of [{ title: "夜曲" }, { tempoBpm: 132 }]) {
+  test(`ScoreChangeSetPort rejects unrequested changes in a ${Object.keys(input)[0]}-only request`, async () => {
+    const port = new ScoreChangeSetClient({
+      async prepareScoreMetadataTransaction() {
+        return {
+          changeSetId: `sha256:${"b".repeat(64)}`,
+          kind: "score-metadata-transaction",
+          documentId: "score-1",
+          baseDocumentVersion: 7,
+          operations: ["set-title", "set-tempo"],
+          before: { title: "练习曲", tempoBpm: 96 },
+          after: { title: "夜曲", tempoBpm: 132 },
+        };
+      },
+    }, "workspace-1");
+
+    await assert.rejects(
+      port.prepareMetadataTransaction(input, preparationContext),
+      (error: unknown) => error instanceof ScoreChangeSetPortError
+        && error.outcome === "definite-failure"
+        && error.message === "Prepared metadata ChangeSet does not match the request",
+    );
+  });
+}
+
+const partialMetadataCases: readonly {
+  readonly name: string;
+  readonly input: ScoreUpdateMetadataInputV1;
+  readonly operations: readonly string[];
+  readonly after: { readonly title: string; readonly tempoBpm: number };
+}[] = [
+  { name: "title only", input: { title: "夜曲" }, operations: ["set-title"], after: { title: "夜曲", tempoBpm: 96 } },
+  { name: "tempo only", input: { tempoBpm: 132 }, operations: ["set-tempo"], after: { title: "练习曲", tempoBpm: 132 } },
+  { name: "unchanged requested title", input: { title: "练习曲", tempoBpm: 132 }, operations: ["set-tempo"], after: { title: "练习曲", tempoBpm: 132 } },
+];
+
+for (const scenario of partialMetadataCases) {
+  test(`ScoreChangeSetPort accepts metadata changes with ${scenario.name}`, async () => {
+    const changeSet = {
+      changeSetId: `sha256:${"b".repeat(64)}`,
+      kind: "score-metadata-transaction",
+      documentId: "score-1",
+      baseDocumentVersion: 7,
+      operations: scenario.operations,
+      before: { title: "练习曲", tempoBpm: 96 },
+      after: scenario.after,
+    };
+    const port = new ScoreChangeSetClient({
+      async prepareScoreMetadataTransaction() { return changeSet; },
+    }, "workspace-1");
+
+    assert.deepEqual(await port.prepareMetadataTransaction(scenario.input, preparationContext), changeSet);
+  });
+}
+
+for (const operation of ["tempo", "metadata"] as const) {
+  test(`ScoreChangeSetPort validates runtime context before ${operation} preparation`, async (t) => {
+    const invalidContexts: readonly { readonly name: string; readonly value: unknown }[] = [
+      { name: "null context", value: null },
+      { name: "missing context", value: undefined },
+      { name: "array context", value: [] },
+      { name: "missing invocation id", value: { ...preparationContext, preparationInvocationId: undefined } },
+      { name: "numeric invocation id", value: { ...preparationContext, preparationInvocationId: 42 } },
+      { name: "empty invocation id", value: { ...preparationContext, preparationInvocationId: "" } },
+      { name: "numeric workspace", value: { ...preparationContext, workspaceId: 42 } },
+      { name: "empty workspace", value: { ...preparationContext, workspaceId: "" } },
+      ...[
+        { name: "missing precondition", value: undefined },
+        { name: "null precondition", value: null },
+        { name: "array precondition", value: [] },
+        { name: "primitive precondition", value: "score-1" },
+        { name: "numeric document id", value: { documentId: 42, documentVersion: 7 } },
+        { name: "empty document id", value: { documentId: "", documentVersion: 7 } },
+        { name: "oversized document id", value: { documentId: "a".repeat(257), documentVersion: 7 } },
+        { name: "missing version", value: { documentId: "score-1" } },
+        { name: "negative version", value: { documentId: "score-1", documentVersion: -1 } },
+        { name: "fractional version", value: { documentId: "score-1", documentVersion: 7.5 } },
+        { name: "infinite version", value: { documentId: "score-1", documentVersion: Infinity } },
+        { name: "unsafe version", value: { documentId: "score-1", documentVersion: Number.MAX_SAFE_INTEGER + 1 } },
+      ].map(({ name, value }) => ({ name, value: { ...preparationContext, documentPrecondition: value } })),
+    ];
+    for (const scenario of invalidContexts) {
+      await t.test(scenario.name, async () => {
+        let hostCalls = 0;
+        const respond = async () => { hostCalls += 1; return null; };
+        const port = new ScoreChangeSetClient({
+          prepareScoreTempoChange: respond,
+          prepareScoreMetadataTransaction: respond,
+        }, "workspace-1");
+        const context = scenario.value as ScoreChangeSetPreparationContext;
+
+        await assert.rejects(
+          operation === "tempo"
+            ? port.prepareTempoChange({ tempoBpm: 132 }, context)
+            : port.prepareMetadataTransaction({ title: "夜曲" }, context),
+          (error: unknown) => error instanceof ScoreChangeSetPortError
+            && error.outcome === "definite-failure"
+            && error.message === "Score ChangeSet preparation context is invalid",
+        );
+        assert.equal(hostCalls, 0);
+      });
+    }
+  });
+}
+
+test("ScoreChangeSetPort preserves the valid-context workspace mismatch error", async () => {
+  let hostCalls = 0;
+  const respond = async () => { hostCalls += 1; return null; };
+  const port = new ScoreChangeSetClient({
+    prepareScoreTempoChange: respond,
+    prepareScoreMetadataTransaction: respond,
+  }, "workspace-1");
+  const context = { ...preparationContext, workspaceId: "other-workspace" };
+  for (const operation of ["tempo", "metadata"] as const) {
+    await assert.rejects(
+      operation === "tempo"
+        ? port.prepareTempoChange({ tempoBpm: 132 }, context)
+        : port.prepareMetadataTransaction({ title: "夜曲" }, context),
+      (error: unknown) => error instanceof ScoreChangeSetPortError
+        && error.outcome === "definite-failure"
+        && error.message === "Score ChangeSet workspace does not match",
+    );
+  }
+  assert.equal(hostCalls, 0);
 });
