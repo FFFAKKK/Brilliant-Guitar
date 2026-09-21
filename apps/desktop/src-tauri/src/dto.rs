@@ -356,7 +356,7 @@ pub enum PlaybackSourceContent {
     Note { written_pitch: InputPitch },
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(
     tag = "kind",
     rename_all = "kebab-case",
@@ -367,6 +367,7 @@ pub enum NotationView {
         part_id: String,
         staff_id: String,
         clef: &'static str,
+        tempo_bpm: f64,
         measures: Vec<StaffMeasure>,
     },
     Unsupported {

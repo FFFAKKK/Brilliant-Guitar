@@ -1239,6 +1239,7 @@ fn project_notation(document: &ScoreDocumentV1, warnings: &[CoreRuleWarningV1]) 
         part_id,
         staff_id,
         clef: "treble",
+        tempo_bpm: document.metadata.tempo.bpm.get(),
         measures,
     }
 }

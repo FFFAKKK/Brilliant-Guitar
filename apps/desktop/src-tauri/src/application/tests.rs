@@ -29,6 +29,10 @@ fn create_read_and_close_session() {
     assert_eq!(created.title, "测试乐谱");
     assert_eq!(created.measure_count, 2);
     assert_eq!(created.document_version, 0);
+    match &created.notation {
+        NotationView::Staff { tempo_bpm, .. } => assert_eq!(*tempo_bpm, 96.0),
+        NotationView::Unsupported { message } => panic!("unexpected notation projection: {message}"),
+    }
     match &created.playback_source {
         PlaybackSourceProjection::Ready {
             projection_version,
@@ -59,6 +63,43 @@ fn create_read_and_close_session() {
     assert!(service.read(&workspace_id).expect("read").is_some());
     assert!(service.close(&workspace_id).expect("close"));
     assert!(service.read(&workspace_id).expect("read closed").is_none());
+}
+
+#[test]
+fn notation_tempo_serialization_tracks_edits_and_history() {
+    fn assert_wire_tempo(read: &ScoreSessionRead, expected: f64) {
+        let payload = serde_json::to_value(read).expect("serialize host response");
+        assert_eq!(payload["notation"]["kind"], "staff");
+        assert_eq!(payload["notation"]["tempoBpm"], expected);
+        assert!(payload["notation"].get("tempo_bpm").is_none());
+        assert_eq!(payload["playbackSource"]["bpm"], expected);
+    }
+
+    let mut service = ScoreSessionService::default();
+    let (workspace_id, mut current) = create(&mut service);
+    assert_wire_tempo(&current, 96.0);
+
+    for (action, expected) in [
+        (ScoreEditAction::SetTempo { tempo_bpm: 132.5 }, 132.5),
+        (ScoreEditAction::Undo, 96.0),
+        (ScoreEditAction::Redo, 132.5),
+        (
+            ScoreEditAction::SetMetadata {
+                title: "Updated tempo".into(),
+                tempo_bpm: 144.0,
+            },
+            144.0,
+        ),
+    ] {
+        current = edit(&mut service, &workspace_id, &current, action);
+        assert_wire_tempo(&current, expected);
+        let read_back = service
+            .read(&workspace_id)
+            .expect("read updated session")
+            .expect("session exists");
+        assert_wire_tempo(&read_back, expected);
+        assert_eq!(read_back, current);
+    }
 }
 
 #[test]
