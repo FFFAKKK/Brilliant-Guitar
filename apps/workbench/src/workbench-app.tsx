@@ -149,6 +149,7 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
       score.client,
       workbenchPluginPlatform.workflows(),
       agentPluginInfo.manifest.version,
+      workbenchPluginPlatform.sessionPlan(),
     );
     return createAgentPluginSession(bindings, async (change) => {
       const fresh = await score.client.read();
