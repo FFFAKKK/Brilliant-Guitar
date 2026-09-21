@@ -1,0 +1,220 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-09-21",
+  "timezone": "Asia/Shanghai",
+  "phase": "B2-Agent-and-shared-foundations",
+  "status": "B2-replayed-and-tested; full four-line integration pending",
+  "candidate": {
+    "worktree": "E:/desktop/brilliant_ideas/brilliant_guitar/.worktrees/integration-candidate-20260921",
+    "branch": "codex/integration-candidate-20260921",
+    "start": "49a2234ff79f031d360021db160e2a357213f50e",
+    "businessBase": "269112b2d85e01827e8cb81bdcc5b671afde4303",
+    "sourceDelivery": "cb918d0a86e7f5874b1efeb3059232d93dbad173",
+    "verifiedSource": "20c19924bcfa115d4fabeaba4927ec43e4615473",
+    "newWorktreeCreated": false,
+    "manualProductionEdits": false,
+    "sourceContentMatchesVerifiedCommit": true,
+    "cleanAfterGeneratedFileIndexRefresh": true,
+    "mainPromoted": false,
+    "commonDevelopmentBaselineReleased": false
+  },
+  "replays": [
+    { "source": "42039d947ed8fda9204dcea03b38368bdc5f26b1", "candidate": "0a57b370dda35fdbec16b01dc36bbeb3e0870116", "stablePatchId": "924b387a558329a2232dc6b745da1d111c6f1dea" },
+    { "source": "a09915aab91a4ae4d3a2dfc5a8e7bb761db1ac42", "candidate": "d38765bbbe05f5ccbbb342484cff7c012570665c", "stablePatchId": "720ed264b45f317da759bbc7015ba2348e3851c9" },
+    { "source": "e961868e3f7f3b98018742dbaa1ab07a4537b98e", "candidate": "9fb2fe956d649db458f279bd513090b9382f5b7b", "stablePatchId": "37edf5345428c2b79d962924ee51e5a44cfe48b0" },
+    { "source": "b8fd69d8efbd93c3118a4ccc1cb72b92d51611cc", "candidate": "eb31b01f8343cbbd98acd30f17fdf0b17fc8f0e9", "stablePatchId": "25b4f96fee2039194c819c06bb839a7592041329" },
+    { "source": "35f51c5cfaf5838074c8fd75b07b464b63dd040d", "candidate": "84958df970e1dd29517fc0f15f21dfafd8e1675c", "stablePatchId": "33bd0c24859e2b8741d58af091d3e6d3b1e381ae" },
+    { "source": "fe546976d00a6f2a76da16efbfced4c852886bb1", "candidate": "af0b5a8adac5c0350827487c287c3e034f1bb050", "stablePatchId": "662505fea8bba5c975542eef1c9250e6252b05de" },
+    { "source": "8af822958df825d7811ea57655129ad9df0f7eb3", "candidate": "d8099a237aefaf2ed16551b03ab261fec71778c2", "stablePatchId": "397b544a8424dfa921d32f97ca799d6e86d1a89e" },
+    { "source": "cb918d0a86e7f5874b1efeb3059232d93dbad173", "candidate": "20c19924bcfa115d4fabeaba4927ec43e4615473", "stablePatchId": "eb1f1c6cb1ca5252f31560abd5856f2bd9a9efcc" }
+  ],
+  "replayChecks": {
+    "mode": "git cherry-pick -x in listed order",
+    "conflicts": 0,
+    "allPatchIdsMatch": true,
+    "sourceTrailersPresent": true,
+    "onlyListedPathsChangedFromStart": true,
+    "allListedFilesMatchSourceDelivery": true,
+    "overlapWithB1AndCoordinatorChanges": 0,
+    "duplicateOriginalsNotReplayed": [
+      { "original": "925badc", "selected": "42039d9", "patchId": "924b387a558329a2232dc6b745da1d111c6f1dea" },
+      { "original": "20bf15d", "selected": "a09915a", "patchId": "720ed264b45f317da759bbc7015ba2348e3851c9" }
+    ],
+    "changedFiles": [
+      "apps/desktop/src-tauri/src/application/mod.rs",
+      "apps/desktop/src-tauri/src/application/tests.rs",
+      "apps/desktop/src-tauri/src/capability.rs",
+      "apps/desktop/src-tauri/src/commands.rs",
+      "apps/desktop/src-tauri/src/dto.rs",
+      "apps/desktop/src-tauri/src/lib.rs",
+      "apps/desktop/src-tauri/src/score_change_set.rs",
+      "apps/workbench/src/agent/action-runtime.ts",
+      "apps/workbench/src/agent/agent-assistant-session.ts",
+      "apps/workbench/src/agent/agent-plugin-runtime.ts",
+      "apps/workbench/src/agent/agent-plugin-session.ts",
+      "apps/workbench/src/agent/agent-recovery-session.ts",
+      "apps/workbench/src/agent/direct-score-read-agent-port.ts",
+      "apps/workbench/src/agent/measure-reference-read-service.ts",
+      "apps/workbench/src/agent/prepared-mutation.ts",
+      "apps/workbench/src/agent/run-controller.ts",
+      "apps/workbench/src/agent/score-change-set-port.ts",
+      "apps/workbench/src/agent/score-measure-index-port.ts",
+      "apps/workbench/src/agent/workflow-runtime.ts",
+      "apps/workbench/src/plugins/plugin-discovery.ts",
+      "apps/workbench/src/plugins/plugin-platform.ts",
+      "apps/workbench/src/plugins/plugin-sdk-adapter.ts",
+      "apps/workbench/src/plugins/plugin-sdk.ts",
+      "apps/workbench/src/plugins/plugin-security.ts",
+      "apps/workbench/src/services/score-change-set-port.ts",
+      "apps/workbench/src/services/score-edit-port.ts",
+      "apps/workbench/src/services/score-read-port.ts",
+      "apps/workbench/src/services/workbench-agent-plugin-host.ts",
+      "apps/workbench/src/services/workbench-client.ts",
+      "apps/workbench/src/services/workbench-host-bridge.ts",
+      "apps/workbench/src/ui/plugin-diagnostic.ts",
+      "apps/workbench/src/ui/plugin-manifest.ts",
+      "apps/workbench/src/workbench-app.tsx",
+      "apps/workbench/test/agent-action-runtime.test.ts",
+      "apps/workbench/test/agent-assistant-session.test.ts",
+      "apps/workbench/test/agent-evaluation.test.ts",
+      "apps/workbench/test/agent-plugin-runtime.test.ts",
+      "apps/workbench/test/agent-prepared-mutation.test.ts",
+      "apps/workbench/test/agent-run-core.test.ts",
+      "apps/workbench/test/agent-workflow-runtime.test.ts",
+      "apps/workbench/test/measure-reference-capability-port.test.ts",
+      "apps/workbench/test/measure-reference-read-service.test.ts",
+      "apps/workbench/test/plugin-sdk.test.ts",
+      "apps/workbench/test/plugin-security.test.ts",
+      "apps/workbench/test/score-change-set-port.test.ts",
+      "apps/workbench/test/score-edit-port.test.ts",
+      "apps/workbench/test/score-measure-index-port.test.ts",
+      "apps/workbench/test/score-read-port.test.ts",
+      "docs/agent-plugin-ownership-and-assembly-plan-v1.md",
+      "docs/agent-typed-port-orchestration-boundary-v1.md",
+      "docs/integration/2026-09-21-agent-evidence.json",
+      "docs/integration/2026-09-21-agent-verification.md",
+      "docs/plugin-platform-ui-contribution-and-session-freeze-plan-v1.md"
+    ]
+  },
+  "environment": {
+    "node": "v24.15.0",
+    "npm": "11.12.1",
+    "rootTypeScript": "5.9.3",
+    "workbenchTypeScript": "7.0.2",
+    "rustToolchain": "1.97.1",
+    "rustHost": "x86_64-pc-windows-msvc",
+    "cargoExecutable": "C:/Users/ATOM/.cargo/bin/cargo.exe",
+    "npmCache": "D:/DeepSeek-Harness/npm-cache",
+    "initialNodeModulesAbsent": ["node_modules", "apps/workbench/node_modules"],
+    "installs": [
+      { "command": "npm.cmd ci --offline --ignore-scripts --no-audit --no-fund", "exitCode": 0, "addedPackages": 3, "log": "npm-ci-root.log" },
+      { "command": "npm.cmd ci --prefix apps/workbench --offline --ignore-scripts --no-audit --no-fund", "exitCode": 0, "addedPackages": 66, "log": "npm-ci-workbench.log" }
+    ],
+    "topLevelNpmLsChecksPassed": ["root", "apps/workbench"],
+    "dependencyCopiesJunctionsOrAddonCopies": false,
+    "lockfileSha256": {
+      "package-lock.json": "1b2651ee9e4ecacae4aecb13c6a93d3afe75bb596bd2413539e916e2505ebaf6",
+      "apps/workbench/package-lock.json": "07ded401818282fe9a73c7c5ceb1ee1699a23ab869b46b7f96e44212f2131a1c",
+      "apps/desktop/src-tauri/Cargo.lock": "fa69f85a601d1a072a668e2d0f7d78614b93144f1ca4d64b2fc6725de0f69dc2"
+    },
+    "desktopTargetDirectory": ".cargo-target/integration-B2-desktop",
+    "initialDesktopTargetDirectoryEmpty": true,
+    "scopeLimit": "Installation scripts disabled. Desktop JavaScript CLI, product packaging and full development-environment acceptance not performed."
+  },
+  "verification": {
+    "cwd": "E:/desktop/brilliant_ideas/brilliant_guitar/.worktrees/integration-candidate-20260921",
+    "sourceCommit": "20c19924bcfa115d4fabeaba4927ec43e4615473",
+    "importedTestManifest": {
+      "path": "docs/integration/2026-09-21-agent-evidence.json",
+      "sourceCommit": "cb918d0a86e7f5874b1efeb3059232d93dbad173",
+      "gitBlob": "29fdf2901195496c1e641e066a053ee3f49c9277",
+      "use": "Only the verifiedRuns primary/neighbors file lists; results below are fresh B2 runs, not inherited results."
+    },
+    "nodeArguments": ["--experimental-strip-types", "--test", "--test-reporter=tap"],
+    "reporterDestinationPattern": "--test-reporter-destination=.local-evidence/integration-B2-20260921/<run.log>",
+    "testFilePreflight": "Require every named file to exist before running; all 42 paths are disjoint.",
+    "agentImportCoverage": { "directImportTestFiles": 27, "coveredByPrimaryAndNeighbors": true },
+    "runs": [
+      { "name": "primary", "testFilesFrom": "importedTestManifest.verifiedRuns[name=primary].testFiles", "fileCount": 27, "passed": 185, "failed": 0, "skipped": 0, "cancelled": 0, "exitCode": 0, "log": "agent-primary.tap" },
+      { "name": "neighbors", "testFilesFrom": "importedTestManifest.verifiedRuns[name=neighbors].testFiles", "fileCount": 8, "passed": 56, "failed": 0, "skipped": 0, "cancelled": 0, "exitCode": 0, "log": "agent-neighbors.tap" },
+      {
+        "name": "host-boundaries",
+        "testFiles": [
+          "apps/workbench/test/application-capability-gateway.test.ts",
+          "apps/workbench/test/initial-score.test.ts",
+          "apps/workbench/test/guitar-plugin.test.ts",
+          "apps/workbench/test/plugin-diagnostic-host.test.ts",
+          "apps/workbench/test/ui-view-contribution.test.ts",
+          "apps/workbench/test/workbench-host-bridge.test.ts",
+          "apps/workbench/test/score-capability-client.test.ts"
+        ],
+        "fileCount": 7, "passed": 35, "failed": 0, "skipped": 0, "cancelled": 0, "exitCode": 0, "log": "host-boundaries.tap"
+      }
+    ],
+    "typechecks": [
+      { "command": "npm.cmd --prefix apps/workbench run typecheck", "compilerVersion": "7.0.2", "pretypecheckHostCompilerVersion": "5.9.3", "exitCode": 0, "log": "typecheck-production.log" },
+      { "command": "node apps/workbench/node_modules/typescript/bin/tsc --noEmit -p apps/workbench/tsconfig.test.json", "compilerVersion": "7.0.2", "exitCode": 0, "log": "typecheck-tests.log" },
+      { "command": "node node_modules/typescript/bin/tsc --noEmit -p apps/workbench/tsconfig.json", "compilerVersion": "5.9.3", "exitCode": 0, "log": "root-tsc-production.log" },
+      { "command": "node node_modules/typescript/bin/tsc --noEmit -p apps/workbench/tsconfig.test.json", "compilerVersion": "5.9.3", "exitCode": 0, "log": "root-tsc-tests.log" }
+    ],
+    "desktop": {
+      "command": "cargo +1.97.1 test --manifest-path apps/desktop/src-tauri/Cargo.toml --locked --offline --target-dir .cargo-target/integration-B2-desktop",
+      "environment": "Prepend C:/Users/ATOM/.cargo/bin to command-local PATH.",
+      "passed": 65, "failed": 0, "ignored": 0, "exitCode": 0, "log": "desktop-tests.log"
+    },
+    "diffCheck": { "command": "git diff --check 49a2234ff79f031d360021db160e2a357213f50e 20c19924bcfa115d4fabeaba4927ec43e4615473 --", "exitCode": 0 },
+    "notRun": [
+      "Full Workbench npm test suite",
+      "Product Node addon rebuild and qualification",
+      "Rust workspace, Clippy and explicit soak rerun (B1 evidence remains historical; B1 files unchanged)",
+      "Desktop JavaScript CLI installation, packaging and real GUI/E2E",
+      "Full four-line integration, MSRV, multi-platform CI, power-loss and formal performance qualification"
+    ]
+  },
+  "generatedSchemaObservation": {
+    "paths": ["apps/desktop/src-tauri/gen/schemas/desktop-schema.json", "apps/desktop/src-tauri/gen/schemas/windows-schema.json"],
+    "bothRawFilesEqualHeadBlob": "24c90014ed68021de21e9f8dd5da66e448fe87d5",
+    "bothSnapshotSha256": "2a16f62c90a059a1b67e4501216bb3476f402087e99ba659dd38c9d0521f3b07",
+    "snapshotDirectory": ".local-evidence/integration-B2-20260921/generated-schemas",
+    "ordinaryIndexRefreshExit": 1,
+    "resolution": "After raw-byte blob checks, git add only these two paths refreshed index records. Staged diff was empty both before and after. No content reverted or committed."
+  },
+  "localLogs": {
+    "directory": ".local-evidence/integration-B2-20260921",
+    "scope": "Same-machine ignored generated artifacts; not an off-machine archive.",
+    "files": [
+      { "file": "agent-neighbors.tap", "bytes": 12830, "sha256": "95977a6a5d651e1dd78107ee994c7962b4de0e2be84d03dcbbac281c0d2feceb" },
+      { "file": "agent-primary.tap", "bytes": 39350, "sha256": "cdf2608b5d7b071c003ea5ee5338261733d536eb431ab4e8ea0c7c50f06a7ff3" },
+      { "file": "desktop-tests.log", "bytes": 17122, "sha256": "00c4bf254d4e0e8ed4ef8e9c910707e4ac95b7047cc07897fdb5d2f7f2facc89" },
+      { "file": "host-boundaries.tap", "bytes": 7857, "sha256": "af35f9eae69631569139183827d381d58d439c63c18ff5e680510916fb69f72b" },
+      { "file": "npm-ci-root.log", "bytes": 26, "sha256": "9391f0738507786bf1c39f0a79cf5345423b09b0be69a2fca515fccadda508fb" },
+      { "file": "npm-ci-workbench.log", "bytes": 27, "sha256": "94297b3fd2ef1842ba9584a47ff4b4a99377d4babadc3f78cc83eed3fc48f868" },
+      { "file": "root-tsc-production.log", "bytes": 96, "sha256": "2bf83f6a21b1354cc1a9d9c7eac721c4b281a427ed69f40e5c3caf524e73c1de" },
+      { "file": "root-tsc-tests.log", "bytes": 101, "sha256": "934d16b9975581ebd9667bbbbb4897534567b13ab586f2b06a276c08e38326d6" },
+      { "file": "typecheck-production.log", "bytes": 234, "sha256": "38e3f6f5ca5630102da37fbf2db53d19bbb74862f34f5282e6d8ba3fc69ecfd1" },
+      { "file": "typecheck-tests.log", "bytes": 122, "sha256": "16cf8df9e0c5dbb05354c98fc94e8ee3d1846e4fbef9bc9ef553d6a429a89bfd" }
+    ]
+  },
+  "preservation": {
+    "protectedReferenceManifest": "49a2234ff79f031d360021db160e2a357213f50e:docs/integration/2026-09-21-B1-kernel-evidence.json",
+    "protectedReferenceField": "preservation.protectedRefs",
+    "matchedReferenceCountBeforeAndAfter": 11,
+    "cleanOriginalDeliveriesBeforeAndAfter": 4,
+    "cleanAgentRepairWorktreeBeforeAndAfter": true,
+    "B1FilesAndCoordinatorEvidenceUnchanged": true,
+    "legacyVerifyCommand": "node docs/integration/2026-09-21-preserve-legacy.mjs --verify",
+    "legacyVerifiedBeforeAndAfter": true,
+    "legacyFilesUnchanged": 85,
+    "legacySourceBytes": 1006766,
+    "legacyIndexesEmpty": true,
+    "fetchPushMainUpdateOrCleanup": false
+  },
+  "stop": {
+    "nextBatch": "B3: preserve B2 typed fixtures while adding Score 3d71f63 -> 8ece0f3 -> 717cdc0",
+    "latestScoreHardeningIntegrated": false,
+    "platformResolverIntegrated": false,
+    "laterBatchesStarted": false,
+    "otherTasksDispatched": false,
+    "mainPromotionAuthorizedByThisReceipt": false
+  }
+}
