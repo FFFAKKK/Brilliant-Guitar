@@ -48,7 +48,6 @@ import type { AgentWorkspaceScope } from "./agent/agent-contracts.ts";
 import type { MeterInput } from "./contracts/note-input.ts";
 import { createWorkbenchAgentPluginBindings } from "./services/workbench-agent-plugin-host.ts";
 
-const INSTALLED_COMPONENTS = workbenchPluginPlatform.components().list();
 const NOOP_DISPOSABLE = Object.freeze({ dispose() {} });
 const INACTIVE_AGENT_RUNTIME_STORE = Object.freeze({
   subscribe: (_listener: () => void) => () => {},
@@ -114,6 +113,8 @@ export function WorkbenchApp() {
 
 function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefObject<HTMLDivElement | null> }) {
   const runtime = useWorkbenchRuntime();
+  // Module evaluation precedes plugin bootstrap; capture only when mounting the frozen session.
+  const [installedComponents] = useState(() => workbenchPluginPlatform.components().list());
   const { around: aroundLayoutMutation } = runtime.focus;
   const [inspectLayout, setInspectLayout] = useState(false);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
@@ -135,7 +136,7 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
   const helpMenuRef = useRef<HTMLButtonElement>(null);
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
   const score = useWorkbenchSession(workbenchPluginPlatform.applicationCapabilities(), runtime);
-  const workspaceConfiguration = useWorkspaceConfiguration(score.client, INSTALLED_COMPONENTS, runtime);
+  const workspaceConfiguration = useWorkspaceConfiguration(score.client, installedComponents, runtime);
   const { layout, setLayout, visibility, toggleDock, uiLayout, move, hide, setPresentation,
     dockSelection, selectDockItem } = workspaceConfiguration;
   const applicationSettings = useApplicationSettings(score.client, runtime);
@@ -412,7 +413,7 @@ function WorkbenchComposition({ scoreViewport }: { readonly scoreViewport: RefOb
     });
     if (items.length > 0) return <SharedDock slot={slot} items={items} preferredId={dockSelection[slot]}
       onSelect={(id, ids) => selectDockItem(slot, id, ids)} motionEnabled={animationsEnabled} />;
-    return inspectLayout ? <InspectSlot slot={slot} state={uiLayout} definitions={INSTALLED_COMPONENTS}
+    return inspectLayout ? <InspectSlot slot={slot} state={uiLayout} definitions={installedComponents}
       onMove={moveComponent} onHide={hideComponent} onPresentationChange={presentComponent} /> : undefined;
   };
   const groups = useMemo<readonly NavigationGroup[]>(() => [

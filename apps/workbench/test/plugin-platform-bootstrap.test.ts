@@ -5,6 +5,7 @@ import { PluginPlatform } from "../src/plugins/plugin-platform.ts";
 import { bootstrapPersistedPluginPlatform } from "../src/plugins/plugin-platform-bootstrap.ts";
 import { definePlugin } from "../src/plugins/plugin-sdk.ts";
 import { WorkbenchFeatureRegistry } from "../src/ui/plugin-manifest.ts";
+import { reconcileUiLayout } from "../src/ui/layout-state.ts";
 
 function platformWithUserPlugin(): PluginPlatform {
   const platform = new PluginPlatform({
@@ -18,6 +19,54 @@ function platformWithUserPlugin(): PluginPlatform {
     activation: "user",
   }));
   return platform;
+}
+
+for (const mode of ["desktop", "persisted"] as const) {
+  test(`${mode} startup exposes installed components before capturing the workspace layout`, async () => {
+    const platform = platformWithUserPlugin();
+    platform.register(definePlugin({
+      id: "test.bootstrap.notation",
+      name: "Notation",
+      version: "1.0.0",
+      activation: "always",
+      views: [{
+        definition: {
+          id: "notation.staff-view",
+          version: "1.0",
+          kind: "view",
+          domain: "notation",
+          slots: ["workspace"],
+          presentation: { allowed: ["inline"], default: "inline" },
+          capabilities: {},
+          permissions: { projections: [], commands: [] },
+        },
+        label: "Staff",
+        render: () => null,
+      }],
+    }));
+    const beforeBootstrap = platform.components().list();
+    assert.deepEqual(beforeBootstrap, []);
+    if (mode === "desktop") {
+      platform.start();
+    } else {
+      await bootstrapPersistedPluginPlatform(
+        platform,
+        { read: async () => null, write: async () => {} },
+        { read: async () => null, write: async () => {} },
+        () => assert.fail("bootstrap unexpectedly failed"),
+      );
+    }
+    const installedComponents = platform.components().list();
+    assert.deepEqual(beforeBootstrap, []);
+    assert.deepEqual(installedComponents.map((component) => component.id), ["notation.staff-view"]);
+    const layout = reconcileUiLayout(installedComponents, null);
+    assert.deepEqual(layout.placements.map(({ componentId, slot, visible }) => ({ componentId, slot, visible })), [
+      { componentId: "notation.staff-view", slot: "workspace", visible: true },
+    ]);
+    platform.activate("test.bootstrap.user");
+    assert.deepEqual(platform.components().list(), installedComponents);
+    assert.deepEqual(reconcileUiLayout(installedComponents, null), layout);
+  });
 }
 
 test("bootstrap restores activation before freezing the session and settings afterwards", async () => {
