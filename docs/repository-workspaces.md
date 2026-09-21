@@ -1,10 +1,166 @@
-# 工作区归档索引
+# 协作工作区与阶段索引
+
+更新日期：2026-09-21，Asia/Shanghai。
+本次只更新总协调索引，不启动业务集成、环境安装、其他任务或新架构实施。
+以下提交和证据是固定快照，不代表已检查各任务的实时运行状态。
+原主工作区同名文件的未提交记录保留，不用本文件覆盖。
+
+## 当前阶段
+
+四线交付、独立修复、遗留审计和备份已有记录，**统一业务源码候选尚未组合验收**。
+因此，下一轮共同开发基线尚未发布，不能让各任务自行拉取旧 main 后就宣布环境一致。
+
+| 项目 | 已有证据 | 尚未完成 |
+| --- | --- | --- |
+| Kernel | 代码候选截至 `256413c`；持久化边界校正文档 `3a7d870` | 进入组合候选；不能再采用未校正的 `9640b6c` 文档结论 |
+| Score | 正式交付 `717cdc0`，包含三次端口加固 | 组合验证；历史 addon manifest 缺少来源 Git SHA |
+| Agent | 正式交付 `fe54697`；验证修复代码 `8af8229`，记录 `cb918d0` | 与平台、最新 Score 组合验证 |
+| Plugin Platform | 正式交付 `7d93aa8`；身份修复代码 `4897de0`，记录 `0da9499`；组件范围修复 `ec85c6b` | 混合提交逐 hunk 提取；禁止整支合并 |
+| 遗留内容 | 审计 `430a920`；保全记录 `89c433b`，85/85 文件字节恢复演练通过 | 未清理原文件；C7 StaffProjection 候选未决 |
+| 共同环境 | 已有锁文件和 Rust 工具链约束 | 统一环境验收、组合源码 addon 重建、全量集成验证 |
+
+证据入口：
+
+- [四线提取顺序与保护范围](integration/2026-09-21-preparation.md)及[固定来源](integration/2026-09-21-evidence.json)。
+- [遗留归属审计](integration/2026-09-21-legacy-audit.md)及[逐文件处置](integration/2026-09-21-legacy-disposition.json)。
+- [备份与组件范围修复](integration/2026-09-21-preservation-and-component-scope.md)及[实际验证记录](integration/2026-09-21-component-scope-evidence.json)。
+
+这些文件分别记录当时状态，不回写旧报告冒充重新验证。独立分支通过不等于组合通过。
+
+## 职责和交付位置
+
+表中 `R` 表示 `E:/desktop/brilliant_ideas/brilliant_guitar`；
+`C` 表示 `C:/Users/ATOM/.codex/worktrees`。均为本机路径简写。
+
+| 工作线 | 主责 | 原交付工作树 | 分支 / 固定 HEAD |
+| --- | --- | --- | --- |
+| Kernel | Rust 事务、历史、checkpoint、资源边界及对应测试 | `C/4708/brilliant_guitar` | `codex/kernel-checkpoint-resource-hardening` / `9640b6c65f55c326d4b016919d42a27b123162c3` |
+| Score | typed Read/Edit/ChangeSet、prepare、Desktop Score 接线 | `C/547b/brilliant_guitar` | `codex/score-changeset-typed-migration` / `717cdc08eba0ecd6c9232baffa1960acbb855fdf` |
+| Agent | 编排、workflow 执行、预算、审批、回执、重放和恢复 | `C/agent-plugin-ownership/brilliant_guitar` | `codex/agent-plugin-ownership` / `fe546976d00a6f2a76da16efbfced4c852886bb1` |
+| Plugin Platform | manifest、SDK、grants、contribution 归属、固定会话激活和宿主装配 | `C/71fa/brilliant_guitar` | `codex/plugin-session-intent-decoupling` / `7d93aa81391cca120c5f33e36deb2b86fcc6c071` |
+| 总协调 | 依赖、职责交接、证据、集成队列和阶段汇总 | `R/.worktrees/integration-preparation-20260921` | `codex/integration-preparation-20260921`；本索引继续提交于此分支 |
+
+独立修复位置保留，不作为整支可合并或新任务开工基线：
+
+| 用途 | 工作树 | 分支 / 固定 HEAD |
+| --- | --- | --- |
+| Agent 验证修复 | `R/.worktrees/agent-verification-20260921` | `codex/agent-verification-20260921` / `cb918d0a86e7f5874b1efeb3059232d93dbad173` |
+| Kernel 文档校正 | `R/.worktrees/kernel-persistence-boundary-correction-20260921` | `codex/kernel-persistence-boundary-correction-20260921` / `3a7d87074d0a833576bd7e908ce26a249682c38c` |
+| 平台组件范围修复 | `R/.worktrees/plugin-bindings-identity-fix-20260921` | `codex/plugin-component-projection-scope-20260921` / `ec85c6b84ddb332985ecb44bcaf9ce5018288d8a` |
+
+最后一行的目录名不是分支名；旧身份修复分支
+`codex/plugin-bindings-identity-fix-20260921` 仍保留于
+`0da94996def194ebe0b9fe159b3642398887115c`。
+原独立 Agent 副本 `R/.worktrees/agent-runtime-unification-copy` 有自己的 `.git`，
+不是共享仓库的 Worktree，继续留存但不重复引入。
+
+职责按具体变更确定，不授予任何任务整个 `apps/workbench` 或 services 目录的所有权。
+共享文件一次由一个主责任务修改，其他任务提交需求或评审；跨模块实现不能顺带承接。
+Projection Composer、Playback、Guitar、功能编辑器的新工作尚未分配实施主责。
+总协调不自动成为这些业务模块的实现所有者。
+
+插件任务上下文至少包含本索引、四线提取清单、平台独立修复证据，以及交付分支内的
+`docs/plugin-platform-ui-contribution-and-session-freeze-plan-v1.md`；
+Agent 的两份 ownership/typed-port 边界文档也必须在集成时保留。
+旧规划是背景，不替代明确的本阶段范围，不创建 Trellis 任务。
+
+## 相同基线和环境，独立工作区
+
+统一的是公共接口和基线、按包固定的依赖、工具链与验证方式，
+不是让任务在同一个目录里编辑，也不是要求开发中的 HEAD 永远相同。
+各线允许在共同基线上产生各自获准的增量；公共接口变更须重新协调。
+
+| 必须对齐 | 必须隔离 |
+| --- | --- |
+| 本阶段验收基线的完整 Git SHA 和合同版本 | 每个任务自己的 Worktree、分支和暂存区 |
+| 同一包的锁文件及依赖解析结果 | 各自的可写依赖安装和构建输出目录 |
+| Node/npm、Rust/Cargo、必要原生构建工具及目标平台 | 服务端口、测试临时目录、数据库和运行状态 |
+| 配置项的语义、fixture、验证命令及执行目录 | 本地配置值和凭据，不在报告中收集秘密 |
+| addon 的实际源码状态、构建命令、平台和哈希 | 不引用另一个任务正在覆盖的 `.node` 文件 |
+
+Worktree 隔离不能消除语义冲突，也不会自动安装相同环境。
+可共享工具安装和包下载缓存，但不能把另一个任务的可写 `node_modules`、
+`target` 或运行数据当作本任务的验收环境。
+
+本轮只读核对的仓库约束：
+
+- `rust-toolchain.toml` 固定 Rust `1.97.1`，包含 rustfmt/clippy。
+- 根目录和 Workbench 的锁文件分别固定 TypeScript `5.9.3`、`7.0.2`。
+  这是按包不同的版本，不等于版本冲突，也不授权直接升级或统一二者。
+  验证必须记录编译器路径、版本和 cwd，不能用任意解析到的 `tsc` 替代。
+- 根目录、Workbench、Desktop 有各自的 npm 锁文件；不能只安装根依赖就称环境完整。
+- 现有 C6 记录使用 Node `v24.15.0`，但没有完成干净依赖安装或全量组合验证。
+  此历史版本记录不能直接等同于全项目已批准的环境基线。
+- 旧 addon 有内容哈希但缺来源提交记录。后续组合验收须重建并记录准确来源，
+  不能只复制旧产物或设置 `BRILLIANT_INTEGRATED_ADDON_PATH` 就关闭来源缺口。
+
+后续环境验收需先明确受支持的平台组合和工具版本，按同一基线锁文件准备各自依赖，
+禁止任务自行升级公共依赖或修改锁文件来绕过失败。
+任务开工检查至少回报实际路径、分支、base SHA、工具版本、锁文件一致性、
+配置/产物来源、对应模块类型检查和冒烟结果。缺少证据时记为未就绪。
+环境安装、版本约束补齐和自动检查脚本是后续独立小阶段，本轮未实施。
+
+## 后续开发和同步规则
+
+当前本地 `main` 与本地 `origin/main` 引用为
+`269112b2d85e01827e8cb81bdcc5b671afde4303`；没有 fetch，不代表服务器最新状态。
+主目录保留 21 modified、11 untracked 的遗留快照，暂存区为空。
+这些内容已经保全，不因此自动获得清理或覆盖许可。
+
+1. 总协调在授权后分批组合候选，每批检查差异和测试后停止报告。
+   保留 Score `3d71f63 -> 8ece0f3 -> 717cdc0`、Agent 回归及边界文档；
+   平台混合提交只提取获审范围，身份修复和 `ec85c6b` 单独纳入。
+2. 在组合源码上验证统一环境、重建可追溯 addon、执行组合测试。
+   形成固定候选 SHA 后汇总大阶段报告。技术验证不自动授予 main 晋升权限。
+3. 用户批准后另行处理主目录遗留内容和 main 晋升。旧文件不能直接清掉或
+   用候选整树覆盖。获准的新开发基线通常是晋升后的 main 固定 SHA；
+   若用户选择已验收但未晋升的候选，必须明确记录，不能混用多个基线。
+4. 下一阶段各任务从同一个已批准 SHA 创建自己的 `codex/<module>-<phase>`
+   分支和 Git Worktree，检查环境后仅做本线增量。当前尚无这个批准 SHA，
+   不从旧 main、混合平台分支或别人的运行目录自动开工。
+5. 已在开发中的分支先报告并提交其拥有的改动，再安排基线更新。
+   不盲目 pull/reset/rebase。上一阶段已交付时优先从新基线另开阶段分支，
+   保留原分支和回执；未交付增量如何迁移须逐项确定。
+6. 后续公共基线更新由总协调发布固定 SHA、接口变化和验证要求。
+   各任务在小阶段边界接收，不在运行中的开发/测试目录里后台自动更新。
+
+同仓库的 Worktree 共享 Git 对象和引用，无须通过 `git pull` 才能获得本地 main 的文件。
+在功能分支执行 `git pull origin main` 会把获取后的 main 按配置合并或变基进当前分支，
+它不是无副作用的“同步环境”命令。远端取回、候选集成和任务基线切换应分开执行。
+统一候选出来前如需单模块提前续做，必须另行授权，明确临时基线及依赖，
+不能把它宣布为全项目公共基线或顺带更改跨模块架构。
+
+## 交接和报告
+
+每个任务下一阶段的交接单必须明确：
+
+- 唯一主责、worktree、branch、完整 base SHA 和环境验收记录。
+- 允许修改的文件或共享文件 hunk、不做的事项、依赖与跨线交接对象。
+- 本阶段验收命令、交付条件和停止点。
+- 交付时的完整 HEAD、提交顺序、文件范围、未提交状态和未验证项。
+
+提交前审查具体文件和 staged diff，不用 `git add .` / `git add -A`；
+提交仅进入本任务分支。开发线不互相整支合并，不自行写入或推送 main。
+冲突逐 hunk 处理，不能用整文件覆盖或一概 ours/theirs 消除冲突。
+
+小阶段完成后，各任务报告分别做了什么、测试和缺口，并停止继续实施。
+大阶段由总协调汇总后交用户决定，不能自动跨到下一阶段。
+**Kernel 同样必须报告。** 唯一免除该汇报流程的是指定视觉设计任务
+`01a0b569-4eb2-7ae2-98ee-3e337d8c9ab0`，不扩大为所有前端工作；
+视觉任务仍须遵守 Worktree 隔离、文件归属和共享接口边界。
+
+本轮只整理索引，没有向任务发送开工指令，没有核验其当前是否空闲，
+没有创建任务/Worktree、安装依赖、组合业务源码、更新 main 或清理旧目录。
+
+## 2026-09-12 历史归档
+
+以下保留当时记录，其中 master、活跃入口和登记数量均为历史状态，不代表当前安排。
 
 本次采用原地归档：旧目录和分支保留，不代表仍需继续执行其中的历史任务。完整恢复包位于 `.repo-archive/2026-09-12/`。
 
 2026-09-12 主线再次整合：`master` 已包含内核 `f9ec44b`；保留三处活跃入口，清理了两条已不存在的临时目录登记，现在共有 53 条 worktree 登记。所有实际目录和分支保留，下面的历史表仍用于追溯，不代表当前登记数量。
 
-## 活跃工作区
+### 当时活跃工作区
 
 | 用途 | 分支 | 目录 |
 | --- | --- | --- |
@@ -12,7 +168,7 @@
 | 内核后续开发入口（截至 f9ec44b 已合入主线） | `codex/kernel-commercial-completion` | `.worktrees/kernel-commercial-completion` |
 | UI 设计 | `codex/ui-design` | `.worktrees/ui-design` |
 
-## 保留的历史工作区
+### 保留的历史工作区
 
 下表是第一次整理时的归档状态。其两条 `%TEMP%` 失效登记已在后续主线整合时用 `worktree prune` 清理；执行前确认目录不存在、预览仅包含这两项，且对应提交仍是 master 的祖先。清理日志在 `.repo-archive/2026-09-12/kernel-integration/worktree-prune.log`。历史来源行继续保留。
 
