@@ -1,0 +1,215 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-09-21",
+  "timezone": "Asia/Shanghai",
+  "phase": "B5-reviewed-host-wiring-and-component-scope",
+  "status": "B5 integrated and tested; formal environment and combined acceptance pending",
+  "candidate": {
+    "worktree": "E:/desktop/brilliant_ideas/brilliant_guitar/.worktrees/integration-candidate-20260921",
+    "branch": "codex/integration-candidate-20260921",
+    "start": "454589d747c60aee5590248be212d7411c744271",
+    "verifiedSource": "863e9cb00d7f919f9da3d3ad2267ae043c991a6c",
+    "cleanDuringAndAfterTests": true,
+    "newWorktreeCreated": false,
+    "mainPromoted": false,
+    "commonDevelopmentBaselineReleased": false
+  },
+  "integrations": [
+    {
+      "source": "4897de0ab391a850af262235325927b907005c43",
+      "selectedAdapterIncrementSource": "7d93aa81391cca120c5f33e36deb2b86fcc6c071",
+      "candidate": "510f968cf5adcc456334e166e5672a3a41374e78",
+      "mode": "git cherry-pick -x with reviewed manual conflict resolution",
+      "conflictedPaths": ["apps/workbench/src/services/workbench-agent-plugin-host.ts"],
+      "adaptation": "B4 lacked the scoped adapter/resolver wiring already present in the identity fix's parent. Added only that selected adapter increment, retained typed provider parameters, passed the frozen session plan, rejected caller/grant version mismatch, and returned resolved bindings plus hostAvailable.",
+      "sourceStablePatchId": "da8f5f42a4dc4d7f5a04959001caea8c4b41d747",
+      "candidateStablePatchId": "6a99785032b168243b0a3c431c7a9703afcb4be1",
+      "patchIdsMatch": false,
+      "finalAdapterAndNewTestMatchSource": true,
+      "workbenchAppChange": "Only adds workbenchPluginPlatform.sessionPlan() to the existing production adapter call relative to B4.",
+      "sourceTrailerPresent": true
+    },
+    {
+      "source": "ec85c6b84ddb332985ecb44bcaf9ce5018288d8a",
+      "candidate": "863e9cb00d7f919f9da3d3ad2267ae043c991a6c",
+      "mode": "git cherry-pick -x",
+      "conflictedPaths": [],
+      "stablePatchId": "4c92008081069e4cfa9d4c7eeb50108cbc8f6567",
+      "patchIdsMatch": true,
+      "targetPathsMatchedSourceParentBeforeReplay": true,
+      "targetPathsMatchSourceAfterReplay": true,
+      "manualEdits": false,
+      "sourceTrailerPresent": true
+    }
+  ],
+  "scopeChecks": {
+    "mixedPlatformCommitReplayed": false,
+    "onlyListedPathsChangedFromStart": true,
+    "allOtherFilesUnchangedFromB4": true,
+    "agentBoundaryDocumentsAndScoreHardeningRetained": true,
+    "platformBoundaryDocumentRetainsB2WorkflowContextAddition": true,
+    "changedFiles": [
+      "apps/workbench/src/services/workbench-agent-plugin-host.ts",
+      "apps/workbench/src/ui/plugin-manager.ts",
+      "apps/workbench/src/workbench-app.tsx",
+      "apps/workbench/test/ui-view-contribution.test.ts",
+      "apps/workbench/test/workbench-agent-plugin-host.test.ts"
+    ]
+  },
+  "environment": {
+    "node": "v24.15.0",
+    "nodeExecutable": "D:/nvm4w/nodejs/node.exe",
+    "npm": "11.12.1",
+    "rootTypeScript": "5.9.3",
+    "workbenchTypeScript": "7.0.2",
+    "dependencies": "Candidate-local isolated B2 locked/offline installation with install scripts disabled; no new install or other worktree's writable outputs reused.",
+    "lockfileSha256": {
+      "package-lock.json": "1b2651ee9e4ecacae4aecb13c6a93d3afe75bb596bd2413539e916e2505ebaf6",
+      "apps/workbench/package-lock.json": "07ded401818282fe9a73c7c5ceb1ee1699a23ab869b46b7f96e44212f2131a1c",
+      "apps/desktop/src-tauri/Cargo.lock": "fa69f85a601d1a072a668e2d0f7d78614b93144f1ca4d64b2fc6725de0f69dc2"
+    }
+  },
+  "verification": {
+    "cwd": "E:/desktop/brilliant_ideas/brilliant_guitar/.worktrees/integration-candidate-20260921",
+    "sourceCommit": "863e9cb00d7f919f9da3d3ad2267ae043c991a6c",
+    "nodeArguments": ["--experimental-strip-types", "--test", "--test-reporter=tap"],
+    "reporterDestinationPattern": "--test-reporter-destination=.local-evidence/integration-B5-20260921/<run.log>",
+    "preflight": "All 53 named test files exist and are disjoint. Includes every B4 test file, the new adapter test, all 97 Score hardening tests and six new component-scope regressions.",
+    "uniqueTestFiles": 53,
+    "totalPassed": 418,
+    "totalFailed": 0,
+    "runs": [
+      {
+        "name": "platform-primary",
+        "testFiles": [
+          "apps/workbench/test/plugin-host-bindings.test.ts",
+          "apps/workbench/test/plugin-platform-bootstrap.test.ts",
+          "apps/workbench/test/plugin-platform.test.ts",
+          "apps/workbench/test/plugin-sdk.test.ts",
+          "apps/workbench/test/plugin-session-activation.test.ts",
+          "apps/workbench/test/ui-plugin-catalog.test.ts",
+          "apps/workbench/test/ui-plugin-manager.test.ts"
+        ],
+        "fileCount": 7, "passed": 60, "failed": 0, "skipped": 0, "cancelled": 0, "exitCode": 0, "log": "platform-primary.tap"
+      },
+      {
+        "name": "retained-b3",
+        "testFiles": [
+          "apps/workbench/test/agent-action-runtime.test.ts",
+          "apps/workbench/test/agent-approval-policy.test.ts",
+          "apps/workbench/test/agent-assistant-session.test.ts",
+          "apps/workbench/test/agent-context-toolset.test.ts",
+          "apps/workbench/test/agent-conversation.test.ts",
+          "apps/workbench/test/agent-evaluation.test.ts",
+          "apps/workbench/test/agent-intent-router.test.ts",
+          "apps/workbench/test/agent-openai-provider.test.ts",
+          "apps/workbench/test/agent-plugin-runtime.test.ts",
+          "apps/workbench/test/agent-prepared-mutation.test.ts",
+          "apps/workbench/test/agent-provider-registry.test.ts",
+          "apps/workbench/test/agent-provider-stream.test.ts",
+          "apps/workbench/test/agent-recovery-session.test.ts",
+          "apps/workbench/test/agent-recovery.test.ts",
+          "apps/workbench/test/agent-run-core.test.ts",
+          "apps/workbench/test/agent-store.test.ts",
+          "apps/workbench/test/agent-task-history.test.ts",
+          "apps/workbench/test/agent-user-input-consumption.test.ts",
+          "apps/workbench/test/agent-workflow-runtime.test.ts",
+          "apps/workbench/test/measure-reference-capability-port.test.ts",
+          "apps/workbench/test/measure-reference-read-service.test.ts",
+          "apps/workbench/test/measure-reference-resolver.test.ts",
+          "apps/workbench/test/score-change-set-port.test.ts",
+          "apps/workbench/test/score-edit-port.test.ts",
+          "apps/workbench/test/score-measure-index-port.test.ts",
+          "apps/workbench/test/score-read-port.test.ts",
+          "apps/workbench/test/workflow-platform.test.ts",
+          "apps/workbench/test/capability-contract.test.ts",
+          "apps/workbench/test/conversation-progress.test.ts",
+          "apps/workbench/test/disposable-resource-lifetime.test.ts",
+          "apps/workbench/test/plugin-security.test.ts",
+          "apps/workbench/test/application-capability-gateway.test.ts",
+          "apps/workbench/test/initial-score.test.ts",
+          "apps/workbench/test/guitar-plugin.test.ts",
+          "apps/workbench/test/plugin-diagnostic-host.test.ts",
+          "apps/workbench/test/ui-view-contribution.test.ts",
+          "apps/workbench/test/workbench-host-bridge.test.ts",
+          "apps/workbench/test/score-capability-client.test.ts"
+        ],
+        "fileCount": 38, "passed": 327, "failed": 0, "skipped": 0, "cancelled": 0, "exitCode": 0, "log": "retained-b3.tap"
+      },
+      {
+        "name": "platform-neighbors",
+        "testFiles": [
+          "apps/workbench/test/plugin-kernel-adapter.test.ts",
+          "apps/workbench/test/plugin-kernel-catalog.test.ts",
+          "apps/workbench/test/plugin-package-inventory-storage.test.ts",
+          "apps/workbench/test/plugin-package-transaction.test.ts",
+          "apps/workbench/test/ui-component-registry.test.ts",
+          "apps/workbench/test/ui-plugin-projection-scope.test.ts",
+          "apps/workbench/test/ui-projection-registry.test.ts"
+        ],
+        "fileCount": 7, "passed": 26, "failed": 0, "skipped": 0, "cancelled": 0, "exitCode": 0, "log": "platform-neighbors.tap"
+      },
+      {
+        "name": "host-bindings",
+        "testFiles": ["apps/workbench/test/workbench-agent-plugin-host.test.ts"],
+        "fileCount": 1, "passed": 5, "failed": 0, "skipped": 0, "cancelled": 0, "exitCode": 0, "log": "host-bindings.tap"
+      }
+    ],
+    "typechecks": [
+      { "command": "npm.cmd --prefix apps/workbench run typecheck", "compilerVersion": "7.0.2", "pretypecheckHostCompilerVersion": "5.9.3", "exitCode": 0, "log": "typecheck-production.log" },
+      { "command": "node apps/workbench/node_modules/typescript/bin/tsc --noEmit -p apps/workbench/tsconfig.test.json", "compilerVersion": "7.0.2", "exitCode": 0, "log": "typecheck-tests.log" },
+      { "command": "node node_modules/typescript/bin/tsc --noEmit -p apps/workbench/tsconfig.json", "compilerVersion": "5.9.3", "exitCode": 0, "log": "root-tsc-production.log" },
+      { "command": "node node_modules/typescript/bin/tsc --noEmit -p apps/workbench/tsconfig.test.json", "compilerVersion": "5.9.3", "exitCode": 0, "log": "root-tsc-tests.log" }
+    ],
+    "typecheckExitEvidence": "PowerShell captured LASTEXITCODE immediately, printed it, and exited with that code. Empty compiler logs are not independently proof of successful exit.",
+    "diffCheck": { "command": "git diff --check 454589d747c60aee5590248be212d7411c744271 863e9cb00d7f919f9da3d3ad2267ae043c991a6c --", "exitCode": 0 },
+    "notRun": [
+      "Full Workbench npm test suite and product Node addon rebuild/source qualification",
+      "Rust workspace, Clippy, explicit soak and Desktop Rust rerun",
+      "Complete locked development dependency installation, including Desktop JavaScript CLI",
+      "Real browser/Tauri startup UI, GUI/E2E and Desktop packaging",
+      "Final four-line combined acceptance, MSRV, multi-platform CI, real power-loss and formal performance qualification"
+    ]
+  },
+  "localLogs": {
+    "directory": ".local-evidence/integration-B5-20260921",
+    "scope": "Same-machine ignored generated artifacts, not an off-machine archive.",
+    "files": [
+      { "file": "host-bindings.tap", "bytes": 1276, "sha256": "f0bef2afde3f624bd379ced38b9afc4de79e718a1e4b607199ba60324a96d840" },
+      { "file": "platform-neighbors.tap", "bytes": 5493, "sha256": "f87117eb347b67c6c2c489654c9bf7f7de13e611a95a1ab497d061725c90169b" },
+      { "file": "platform-primary.tap", "bytes": 13734, "sha256": "c54bbc162cdd2c86a6b1216ab75c41c7c3681f993168c59544bc0287c3f287da" },
+      { "file": "retained-b3.tap", "bytes": 66664, "sha256": "89a86e53888ce1886fa118fb87baf9666148b5c6e2625aaaae9e73ba422b19ae" },
+      { "file": "root-tsc-production.log", "bytes": 0, "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" },
+      { "file": "root-tsc-tests.log", "bytes": 0, "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" },
+      { "file": "typecheck-production.log", "bytes": 234, "sha256": "38e3f6f5ca5630102da37fbf2db53d19bbb74862f34f5282e6d8ba3fc69ecfd1" },
+      { "file": "typecheck-tests.log", "bytes": 0, "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" }
+    ]
+  },
+  "preservation": {
+    "protectedReferenceManifest": "49a2234ff79f031d360021db160e2a357213f50e:docs/integration/2026-09-21-B1-kernel-evidence.json",
+    "protectedReferenceField": "preservation.protectedRefs",
+    "matchedReferenceCountBeforeComponentReplayAndAfterTests": 11,
+    "cleanOriginalDeliveriesBeforeComponentReplayAndAfterTests": 4,
+    "cleanAgentRepairWorktreeBeforeComponentReplayAndAfterTests": true,
+    "legacyVerifyCommand": "node docs/integration/2026-09-21-preserve-legacy.mjs --verify",
+    "legacyVerifiedBeforeComponentReplayAndAfterTests": true,
+    "legacyFilesUnchanged": 85,
+    "legacySourceBytes": 1006766,
+    "legacyIndexesEmpty": true,
+    "mainWorkspace": { "modified": 21, "untracked": 11, "staged": 0 },
+    "fetchPushMainUpdateOrCleanup": false
+  },
+  "stop": {
+    "nextBatch": "Formal environment preparation and final combined acceptance; no temporary baseline for resumed development.",
+    "agentHostAdapterResolverWiringIntegrated": true,
+    "platformIdentityFixIntegrated": true,
+    "platformComponentScopeFixIntegrated": true,
+    "kernelPersistenceCorrectionImported": false,
+    "nativeAddonSourceQualificationComplete": false,
+    "completeDevelopmentEnvironmentAccepted": false,
+    "legacyC7StaffProjectionResolved": false,
+    "laterBatchesStarted": false,
+    "otherTasksDispatched": false,
+    "mainPromotionAuthorizedByThisReceipt": false
+  }
+}
