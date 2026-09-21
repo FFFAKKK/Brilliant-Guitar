@@ -7,6 +7,7 @@ import {
 } from "node:fs";
 import { relative, resolve } from "node:path";
 import { test } from "node:test";
+import { historicalSnapshot } from "../../test-infrastructure/historical-snapshot";
 
 import * as coreKernel from "../../../src/core-kernel/index";
 import { CORE_COMMAND_DEFINITIONS } from "../../../src/core-kernel/commands/catalog";
@@ -17,6 +18,7 @@ const REPAIRED_PLANNING_HEAD =
   "b944876aefc2b359b459bb8565afa38c0635765b";
 const AUDITED_IMPLEMENTATION_HEAD =
   "94387b339b5e4d9ce6b7f97597a1b56edd051f01";
+const archivedLifecycle = historicalSnapshot("063b332dd48c05796fb3450a8004f42ff2148b20");
 const MATRIX_PATH =
   ".trellis/tasks/08-20-rkp-1-seven-crate-workspace-contracts-bridge-session-smoke/research/file-test-and-rollback-matrix.md";
 const ARCHIVED_TASK_PATH =
@@ -414,11 +416,11 @@ test("RKP-0 inventories and the TypeScript default public surface have zero drif
 });
 
 test("archived RKP-1 lifecycle facts remain durable", () => {
-  const task = JSON.parse(readText(ARCHIVED_TASK_PATH)) as {
+  const task = JSON.parse(archivedLifecycle.readText(ARCHIVED_TASK_PATH)) as {
     readonly status: string;
     readonly meta: Record<string, unknown>;
   };
-  const parent = JSON.parse(readText(PARENT_PATH)) as {
+  const parent = JSON.parse(archivedLifecycle.readText(PARENT_PATH)) as {
     readonly status: string;
     readonly children: readonly string[];
     readonly meta: Record<string, unknown>;

@@ -16,6 +16,7 @@ import {
 import { tmpdir } from "node:os";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { test } from "node:test";
+import { historicalSnapshot } from "../../test-infrastructure/historical-snapshot";
 
 import * as coreKernel from "../../../src/core-kernel/index";
 import { CORE_COMMAND_DEFINITIONS } from "../../../src/core-kernel/commands/catalog";
@@ -41,6 +42,7 @@ import {
 } from "./rkp-2-scale-evidence-worker";
 
 const IMPLEMENTATION_BASE = "df40aef391440ae64ad3e266419579bee5887a1f";
+const historicalLifecycle = historicalSnapshot("6d0956c970f4414cb61e0f3d7148672a6e635032");
 const RKP2_ACCEPTED_TECHNICAL_HEAD =
   "2da959352898d4843954cbbdfb12cfd8e92a9910";
 const FULL_RUNNER_PLANNING_BASE =
@@ -1206,7 +1208,21 @@ const STABLE_FAILURE_CODES = [
 ] as const;
 
 function readText(path: string): string {
-  return readFileSync(resolve(path), "utf8").replaceAll("\r\n", "\n");
+  return readInputBytes(path).toString("utf8").replaceAll("\r\n", "\n");
+}
+
+// Only retired workflow inputs are historical; product source and fixtures stay live.
+function readInputBytes(path: string): Buffer {
+  return path.startsWith(".trellis/")
+    ? historicalLifecycle.readBytes(path)
+    : readFileSync(resolve(path));
+}
+
+function inputExists(path: string): boolean {
+  const input = relative(process.cwd(), resolve(path)).replaceAll("\\", "/");
+  return input.startsWith(".trellis/")
+    ? historicalLifecycle.hasPath(input)
+    : existsSync(path);
 }
 
 function lines(value: string): string[] {
@@ -1235,7 +1251,7 @@ function sha256(value: string): string {
 }
 
 function rawFileSha256(path: string): string {
-  return createHash("sha256").update(readFileSync(resolve(path))).digest("hex");
+  return createHash("sha256").update(readInputBytes(path)).digest("hex");
 }
 
 function rawGitFileAt(commit: string, path: string): Buffer {
@@ -1490,7 +1506,7 @@ function currentStage6CloseoutChanges(): Map<string, "A" | "M" | "D"> {
     "--name-status",
     `${STAGE_6_CLOSEOUT_BASE}..${STAGE_6_CLOSEOUT_TERMINAL_PROJECTION_COMMIT}`,
   ]);
-  if (existsSync(resolve(STAGE_6_CLOSEOUT_ARCHIVE_ROOT))) {
+  if (inputExists(STAGE_6_CLOSEOUT_ARCHIVE_ROOT)) {
     for (const line of lines(
       git([
         "diff-tree",
@@ -2060,7 +2076,7 @@ function assertFreshS62FWorkspaceLaw(): void {
   const s62Meta = s62Task.meta ?? {};
   const rkp2Meta = rkp2Task.meta ?? {};
   const rustMeta = rustTask.meta ?? {};
-  assert.equal(existsSync(resolve(S62F_ARCHIVE_EVIDENCE_PATH)), true);
+  assert.equal(inputExists(S62F_ARCHIVE_EVIDENCE_PATH), true);
 
   assertS62FWorkloadTransition(
     s62Meta.immutable_workload_inputs,
@@ -2457,7 +2473,7 @@ function currentStage6CloseoutPowerShellPreflightRepairChanges(): Map<
 }
 
 function lfNormalizedText(path: string): string {
-  const value = readFileSync(resolve(path), "utf8");
+  const value = readInputBytes(path).toString("utf8");
   assert.notEqual(value.charCodeAt(0), 0xfeff, `${path} must not contain a BOM`);
   return value.replaceAll("\r\n", "\n").replaceAll("\r", "\n");
 }
@@ -2891,27 +2907,8 @@ function assertAcceptanceProjectionPathSet(
 }
 
 function filesUnder(root: string): string[] {
-  const absoluteRoot = resolve(root);
-  if (!existsSync(absoluteRoot)) {
-    return [];
-  }
-  const result: string[] = [];
-  const visit = (absolute: string, prefix: string): void => {
-    for (const entry of readdirSync(absolute)) {
-      const child = join(absolute, entry);
-      const childRelative = prefix === "" ? entry : `${prefix}/${entry}`;
-      const stat = lstatSync(child);
-      assert.equal(stat.isSymbolicLink(), false, `${childRelative} must not be a symlink`);
-      if (stat.isDirectory()) {
-        visit(child, childRelative);
-      } else {
-        assert.equal(stat.isFile(), true, `${childRelative} must be a regular file`);
-        result.push(childRelative.replaceAll("\\", "/"));
-      }
-    }
-  };
-  visit(absoluteRoot, "");
-  return result.sort();
+  assert.ok(root.startsWith(".trellis/"), "lifecycle listing must use historical inputs");
+  return historicalLifecycle.hasPath(root) ? historicalLifecycle.filesUnder(root) : [];
 }
 
 function resolveExactlyOneTaskLocation(
@@ -2919,8 +2916,8 @@ function resolveExactlyOneTaskLocation(
   archiveRoot: string,
   manifest: readonly string[],
   input: ExactTaskLocationInput = {
-    activeFiles: existsSync(resolve(activeRoot)) ? filesUnder(activeRoot) : null,
-    archiveFiles: existsSync(resolve(archiveRoot)) ? filesUnder(archiveRoot) : null,
+    activeFiles: inputExists(activeRoot) ? filesUnder(activeRoot) : null,
+    archiveFiles: inputExists(archiveRoot) ? filesUnder(archiveRoot) : null,
   },
 ): ExactTaskLocation {
   assert.notEqual(
@@ -3072,7 +3069,7 @@ function assertAcceptanceArchiveClosurePathSet(
 }
 
 function jsonlReferenceExists(path: string): boolean {
-  if (existsSync(resolve(path))) {
+  if (inputExists(path)) {
     return true;
   }
   for (const [activeRoot, archiveRoot] of [
@@ -3086,7 +3083,7 @@ function jsonlReferenceExists(path: string): boolean {
   ] as const) {
     if (path === activeRoot || path.startsWith(`${activeRoot}/`)) {
       const archivedPath = archiveRoot + path.slice(activeRoot.length);
-      return existsSync(resolve(archivedPath));
+      return inputExists(archivedPath);
     }
   }
   return false;
@@ -3554,7 +3551,7 @@ interface Stage6CloseoutPowerShellPreflightEvidence {
 }
 
 function stage6CloseoutPowerShellPreflightScript(): string {
-  const root = existsSync(resolve(STAGE_6_CLOSEOUT_ARCHIVE_ROOT))
+  const root = inputExists(STAGE_6_CLOSEOUT_ARCHIVE_ROOT)
     ? STAGE_6_CLOSEOUT_ARCHIVE_ROOT
     : STAGE_6_CLOSEOUT_ROOT;
   const implement = readText(`${root}/implement.md`);
@@ -3592,23 +3589,39 @@ function executeStage6CloseoutPowerShellPreflight(
           "[Threading.Thread]::CurrentThread.CurrentCulture = $culture",
           "[Threading.Thread]::CurrentThread.CurrentUICulture = $culture",
         ].join("\n");
-  const output = execFileSync(
-    process.env.BRILLIANT_RKP2_PWSH ?? "pwsh",
-    [
-      "-NoLogo",
-      "-NoProfile",
-      "-NonInteractive",
-      "-Command",
-      `${culturePrefix}\n${script}`,
-    ],
-    {
-      cwd: process.cwd(),
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "pipe"],
-      timeout: 30_000,
-      maxBuffer: 1024 * 1024,
-    },
-  ).trim();
+  const fixtureRoot = mkdtempSync(join(tmpdir(), "rkp2-historical-clock-"));
+  let output: string;
+  try {
+    const fixturePath = join(fixtureRoot, "task.json");
+    writeFileSync(
+      fixturePath,
+      historicalLifecycle.readBytes(`${STAGE_6_CLOSEOUT_ARCHIVE_ROOT}/task.json`),
+    );
+    const replay = replaceStage6CloseoutPowerShellPreflightOnce(
+      script,
+      `$taskPath = '${STAGE_6_CLOSEOUT_ARCHIVE_ROOT}/task.json'`,
+      `$taskPath = '${fixturePath.replaceAll("'", "''")}'`,
+    );
+    output = execFileSync(
+      process.env.BRILLIANT_RKP2_PWSH ?? "pwsh",
+      [
+        "-NoLogo",
+        "-NoProfile",
+        "-NonInteractive",
+        "-Command",
+        `${culturePrefix}\n${replay}`,
+      ],
+      {
+        cwd: process.cwd(),
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+        timeout: 30_000,
+        maxBuffer: 1024 * 1024,
+      },
+    ).trim();
+  } finally {
+    rmSync(fixtureRoot, { recursive: true, force: true });
+  }
   const result = JSON.parse(lines(output).at(-1) ?? "") as unknown;
   assert.ok(
     result !== null && typeof result === "object" && !Array.isArray(result),
@@ -5128,10 +5141,10 @@ test("part owner repair stays anchored to its accepted six-path wire contract", 
   assert.equal(PART_OWNER_REPAIR_ACTIVE_AUTHORITY_PATHS.length, 12);
   assert.equal(PART_OWNER_REPAIR_CANDIDATE_LIFECYCLE_PATHS.length, 8);
   for (const path of PART_OWNER_REPAIR_ACTIVE_AUTHORITY_PATHS) {
-    assert.equal(existsSync(resolve(path)), false, `active repair authority remains: ${path}`);
+    assert.equal(inputExists(path), false, `active repair authority remains: ${path}`);
   }
   for (const path of PART_OWNER_REPAIR_LIFECYCLE_PATHS.slice(0, 12)) {
-    assert.equal(existsSync(resolve(path)), true, `archived repair authority missing: ${path}`);
+    assert.equal(inputExists(path), true, `archived repair authority missing: ${path}`);
   }
   const historicalCandidate = new Set(
     lines(git(["diff", "--name-only", `${PART_OWNER_REPAIR_ACCEPTED_PLANNING_HEAD}..${PART_OWNER_REPAIR_ACCEPTED_CANDIDATE}`])),
@@ -5237,7 +5250,7 @@ test("Stage 6 hostile and resource evidence consumes the existing private Rust s
   );
   assert.equal(
     task.meta?.stage_6_completed === true,
-    existsSync(resolve(`${s63Location.root}/research/implementation-evidence.md`)),
+    inputExists(`${s63Location.root}/research/implementation-evidence.md`),
     "Stage 6 completion requires the frozen S6.3 evidence record",
   );
 
@@ -7129,7 +7142,7 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     );
     assert.equal(stage6SelfRelatedFiles.length, 12);
     for (const path of stage6SelfRelatedFiles) {
-      assert.equal(existsSync(resolve(path)), true, path);
+      assert.equal(inputExists(path), true, path);
     }
     for (const name of ["implement.jsonl", "check.jsonl"] as const) {
       const source = readText(`${stage6Location.root}/${name}`);
@@ -7151,7 +7164,7 @@ test("Stage 6 semantic canonical evidence correction and E2 worker stay inside t
     );
     assert.equal(closeoutSelfRelatedFiles.length, 11);
     for (const path of closeoutSelfRelatedFiles) {
-      assert.equal(existsSync(resolve(path)), true, path);
+      assert.equal(inputExists(path), true, path);
     }
     for (const name of ["implement.jsonl", "check.jsonl"] as const) {
       const source = readText(`${closeoutLocation.root}/${name}`);
@@ -8111,10 +8124,10 @@ test("RKP-1A P4 candidate freeze is exact on accepted A3", () => {
   assert.equal(RKP1A_CURRENT_ARCHIVE_FILES.length, 13);
   for (const path of RKP1A_HISTORICAL_ACTIVE_FILES) {
     assert.doesNotThrow(() => gitTextAt(RKP1A_ACCEPTED_B, path));
-    assert.equal(existsSync(resolve(path)), false, `active authority remains after C2: ${path}`);
+    assert.equal(inputExists(path), false, `active authority remains after C2: ${path}`);
   }
   for (const path of RKP1A_CURRENT_ARCHIVE_FILES) {
-    assert.equal(existsSync(resolve(path)), true, `archive authority missing after C2: ${path}`);
+    assert.equal(inputExists(path), true, `archive authority missing after C2: ${path}`);
   }
 
   const archivedTaskPath = `${RKP1A_ARCHIVE_ROOT}/task.json`;
@@ -8328,10 +8341,10 @@ function assertFullRunnerLifecycleFixtures(): void {
     git(["rev-list", "--parents", "-n", "1", FULL_RUNNER_ARCHIVE_COMMIT]).split(" "),
     [FULL_RUNNER_ARCHIVE_COMMIT, FULL_RUNNER_ACCEPTANCE_SYNC_COMMIT],
   );
-  assert.equal(existsSync(FULL_RUNNER_ACTIVE_ROOT), false);
+  assert.equal(inputExists(FULL_RUNNER_ACTIVE_ROOT), false);
   assert.equal(ARCHIVED_CHILD_PATHS.length, 13);
   for (const path of ARCHIVED_CHILD_PATHS) {
-    assert.equal(existsSync(path), true, `missing archived authority path: ${path}`);
+    assert.equal(inputExists(path), true, `missing archived authority path: ${path}`);
   }
   assert.equal(childImplementationAcceptedAndArchived(), true);
 

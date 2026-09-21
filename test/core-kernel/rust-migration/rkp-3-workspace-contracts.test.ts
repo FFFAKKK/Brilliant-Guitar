@@ -1,9 +1,10 @@
 import assert = require("node:assert/strict");
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, lstatSync, readFileSync, readdirSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { test } from "node:test";
+import { historicalSnapshot } from "../../test-infrastructure/historical-snapshot";
 
 import { CORE_COMMAND_DEFINITIONS } from "../../../src/core-kernel/commands/catalog";
 import {
@@ -16,6 +17,7 @@ import {
 const RKP2_ACCEPTED_BASE = "6d0956c970f4414cb61e0f3d7148672a6e635032";
 const RKP3_PLANNING_HEAD = "78660bb63e249f7bbfec848b9b19e16d7dc55c25";
 const RKP3_ARCHIVE_COMPATIBILITY_HEAD = "560fd89d32026cdc41c3cf0df65285e99e015456";
+const archivedLifecycle = historicalSnapshot("902eacd50422994898eca2a0eaaab924595b8ab7");
 const RKP3_TASK_NAME = "09-04-rkp-3-transaction-overlay-changeset-core-commands";
 const RKP4_TASK_NAME = "09-04-rkp-4-history-snapshots-events-replay";
 const RKP3_ACTIVE_ROOT = `.trellis/tasks/${RKP3_TASK_NAME}`;
@@ -165,63 +167,28 @@ function gitLines(args: readonly string[]): string[] {
 }
 
 function currentRkp3Changes(): Set<string> {
-  if (existsSync(resolve(RKP3_ARCHIVE_ROOT))) {
-    return new Set(
-      gitLines([
-        "diff",
-        "--no-renames",
-        "--name-only",
-        `${RKP3_PLANNING_HEAD}..${RKP3_ARCHIVE_COMPATIBILITY_HEAD}`,
-      ]),
-    );
-  }
-  return new Set([
-    ...gitLines(["diff", "--no-renames", "--name-only", `${RKP3_PLANNING_HEAD}..HEAD`]),
-    ...gitLines(["diff", "--name-only"]),
-    ...gitLines(["diff", "--cached", "--name-only"]),
-    ...gitLines(["ls-files", "--others", "--exclude-standard"]),
-  ]);
+  return new Set(gitLines([
+    "diff", "--no-renames", "--name-only",
+    `${RKP3_PLANNING_HEAD}..${RKP3_ARCHIVE_COMPATIBILITY_HEAD}`,
+  ]));
 }
 
-function filesUnder(root: string): string[] {
-  const absoluteRoot = resolve(root);
-  const rootStat = lstatSync(absoluteRoot);
-  assert.equal(rootStat.isSymbolicLink(), false, `${root} must not be a symlink`);
-  assert.equal(rootStat.isDirectory(), true, `${root} must be a directory`);
-  const result: string[] = [];
-  const visit = (absolute: string, prefix: string): void => {
-    for (const entry of readdirSync(absolute)) {
-      const child = join(absolute, entry);
-      const childRelative = prefix === "" ? entry : `${prefix}/${entry}`;
-      const stat = lstatSync(child);
-      assert.equal(stat.isSymbolicLink(), false, `${childRelative} must not be a symlink`);
-      if (stat.isDirectory()) visit(child, childRelative);
-      else {
-        assert.equal(stat.isFile(), true, `${childRelative} must be a regular file`);
-        result.push(childRelative.replaceAll("\\", "/"));
-      }
-    }
-  };
-  visit(absoluteRoot, "");
-  return result.sort();
-}
-
-test("RKP-3 resolves one exact active or archived lifecycle authority", () => {
-  const activeExists = existsSync(resolve(RKP3_ACTIVE_ROOT));
-  const archiveExists = existsSync(resolve(RKP3_ARCHIVE_ROOT));
+test("RKP-3 resolves one exact lifecycle authority in its fixed historical snapshot", () => {
+  const activeExists = archivedLifecycle.hasPath(RKP3_ACTIVE_ROOT);
+  const archiveExists = archivedLifecycle.hasPath(RKP3_ARCHIVE_ROOT);
   assert.notEqual(activeExists, archiveExists, "exactly one RKP-3 task root must exist");
 
   const root = activeExists ? RKP3_ACTIVE_ROOT : RKP3_ARCHIVE_ROOT;
-  assert.deepEqual(filesUnder(root), [...RKP3_TASK_MANIFEST].sort());
+  assert.deepEqual(archivedLifecycle.filesUnder(root), [...RKP3_TASK_MANIFEST].sort());
 
-  const task = JSON.parse(readText(`${root}/task.json`)) as {
+  const task = JSON.parse(archivedLifecycle.readText(`${root}/task.json`)) as {
     status?: unknown;
     completedAt?: unknown;
     relatedFiles?: unknown;
     meta?: Record<string, unknown>;
   };
   const parent = JSON.parse(
-    readText(".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json"),
+    archivedLifecycle.readText(".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json"),
   ) as { meta?: Record<string, unknown> };
   const taskMeta = task.meta ?? {};
   const parentMeta = parent.meta ?? {};
@@ -366,7 +333,7 @@ test("RKP-3 adds no bridge failure and keeps stage failures data-only", () => {
     assert.equal(command.includes(forbidden), false, `data-only boundary leaked: ${forbidden}`);
 });
 
-test("RKP-3 implementation changes stay inside its literal successor allowlist", () => {
+test("RKP-3 historical implementation changes stay inside its literal successor allowlist", () => {
   assert.doesNotThrow(() =>
     execFileSync(
       "git",

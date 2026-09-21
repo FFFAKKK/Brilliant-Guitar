@@ -4,9 +4,11 @@ import { resolve } from "node:path";
 import { test } from "node:test";
 
 import { CVN7_CONTRACT_TRACE } from "./qualification/cvn-7-contract-trace";
+import { historicalSnapshot } from "../test-infrastructure/historical-snapshot";
 
 const PARENT_MATRIX =
   ".trellis/tasks/07-29-core-vnext-product-ready-extensible-kernel-completion/feature-contract-matrix.md";
+const historicalContracts = historicalSnapshot("312fde925029a37917cc7465eb5dc56162b0dab6");
 
 const QUALIFICATION_TITLES = [
   "CVN7-Q-FC001-FINITE-COMPLETION",
@@ -60,7 +62,7 @@ function literalOccurrenceCount(source: string, literal: string): number {
 }
 
 test("CVN7 contract trace exactly matches the forty-four allocated parent headings", () => {
-  const matrix = readFileSync(resolve(PARENT_MATRIX), "utf8");
+  const matrix = historicalContracts.readText(PARENT_MATRIX);
   const parentContractIds = Array.from(
     matrix.matchAll(/^### (CVN-FC-\d{3})\b/gmu),
     (match) => match[1],

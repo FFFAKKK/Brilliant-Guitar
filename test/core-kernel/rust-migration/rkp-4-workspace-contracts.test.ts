@@ -1,9 +1,10 @@
 import assert = require("node:assert/strict");
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, lstatSync, readFileSync, readdirSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { test } from "node:test";
+import { historicalSnapshot } from "../../test-infrastructure/historical-snapshot";
 
 import * as coreKernel from "../../../src/core-kernel/index";
 import { CORE_COMMAND_DEFINITIONS } from "../../../src/core-kernel/commands/catalog";
@@ -19,6 +20,7 @@ import {
 
 const RKP4_PLANNING_HEAD = "91b3f057612befa09e74665e0aa70bbf9a6eca48";
 const RKP4_AUDITED_HEAD = "902eacd50422994898eca2a0eaaab924595b8ab7";
+const auditedLifecycle = historicalSnapshot(RKP4_AUDITED_HEAD);
 const RKP4_TASK_NAME = "09-04-rkp-4-history-snapshots-events-replay";
 const RKP4_TASK_ROOT = `.trellis/tasks/${RKP4_TASK_NAME}`;
 const PARENT_PATH =
@@ -136,37 +138,14 @@ function currentRkp4Changes(): Set<string> {
   ]));
 }
 
-function filesUnder(root: string): string[] {
-  const absoluteRoot = resolve(root);
-  const rootStat = lstatSync(absoluteRoot);
-  assert.equal(rootStat.isSymbolicLink(), false, `${root} must not be a symlink`);
-  assert.equal(rootStat.isDirectory(), true, `${root} must be a directory`);
-  const result: string[] = [];
-  const visit = (absolute: string, prefix: string): void => {
-    for (const entry of readdirSync(absolute)) {
-      const child = join(absolute, entry);
-      const relative = prefix === "" ? entry : `${prefix}/${entry}`;
-      const stat = lstatSync(child);
-      assert.equal(stat.isSymbolicLink(), false, `${relative} must not be a symlink`);
-      if (stat.isDirectory()) visit(child, relative);
-      else {
-        assert.equal(stat.isFile(), true, `${relative} must be a regular file`);
-        result.push(relative.replaceAll("\\", "/"));
-      }
-    }
-  };
-  visit(absoluteRoot, "");
-  return result.sort();
-}
-
-test("RKP-4 keeps one active lifecycle authority and exactly one implementation child", () => {
-  assert.equal(existsSync(resolve(RKP4_TASK_ROOT)), true);
-  assert.deepEqual(filesUnder(RKP4_TASK_ROOT), [...RKP4_TASK_MANIFEST].sort());
-  const task = JSON.parse(readText(`${RKP4_TASK_ROOT}/task.json`)) as {
+test("RKP-4 audited snapshot has one active lifecycle authority and exactly one implementation child", () => {
+  assert.equal(auditedLifecycle.hasPath(RKP4_TASK_ROOT), true);
+  assert.deepEqual(auditedLifecycle.filesUnder(RKP4_TASK_ROOT), [...RKP4_TASK_MANIFEST].sort());
+  const task = JSON.parse(auditedLifecycle.readText(`${RKP4_TASK_ROOT}/task.json`)) as {
     status: unknown;
     meta: Record<string, unknown>;
   };
-  const parent = JSON.parse(readText(PARENT_PATH)) as {
+  const parent = JSON.parse(auditedLifecycle.readText(PARENT_PATH)) as {
     meta: Record<string, unknown>;
   };
   assert.equal(task.status, "in_progress");

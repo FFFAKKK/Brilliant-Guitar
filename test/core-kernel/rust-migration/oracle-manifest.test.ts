@@ -1,8 +1,9 @@
 import assert = require("node:assert/strict");
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { test } from "node:test";
+import { historicalSnapshot } from "../../test-infrastructure/historical-snapshot";
 
 import * as coreKernel from "../../../src/core-kernel/index";
 import * as moduleSdk from "../../../src/core-kernel/module-sdk/index";
@@ -38,6 +39,7 @@ const MATRIX_PATH = ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contra
 const SDK_MATRIX_PATH = ".trellis/tasks/archive/2026-08/08-15-rkp-0-authority-contract-oracle-freeze/research/sdk-surface-migration-matrix.md";
 const FAILURE_LEDGER_PATH = ".trellis/tasks/08-11-cvn-7-core-vnext-final-qualification/research/official-run-failure-ledger.jsonl";
 const RKP0_AUTHORITY_ARCHIVE_COMMIT = "312fde925029a37917cc7465eb5dc56162b0dab6";
+const historicalAuthority = historicalSnapshot(RKP0_AUTHORITY_ARCHIVE_COMMIT);
 const BOUNDED_REPAIR_BASE = "6073b2a9c4478d5313d4a4206324eaf0c0dfa1ef";
 const BOUNDED_REPAIR_CANDIDATE = "9bc53901a0e205a99865b21c56dc80ff1112f3a7";
 
@@ -210,7 +212,7 @@ test("RKP0-MANIFEST freezes Qualification V2 sampling, RSS, complexity, and vali
 });
 
 test("RKP0-MANIFEST freezes the sole fifth CVN-7 invalid-input ledger row without partial evidence", () => {
-  const lines = readText(FAILURE_LEDGER_PATH).split("\n");
+  const lines = historicalAuthority.readText(FAILURE_LEDGER_PATH).split("\n");
   assert.equal(lines.length, 2);
   assert.equal(lines[1], "");
   assert.deepEqual(JSON.parse(lines[0] ?? ""), {
@@ -243,10 +245,10 @@ test("RKP0-MANIFEST enforces the immutable bounded repair allowlist", () => {
   assert.deepEqual(changed.filter((path) => !allowed.has(path)), []);
 });
 
-test("RKP0-MANIFEST verifies the archived lifecycle separately from the immutable bounded repair allowlist", () => {
-  assert.equal(existsSync(resolve(ARCHIVED_RKP0_AUTHORITY_PATH)), true, "archived authority exists");
-  assert.equal(existsSync(resolve(ACTIVE_RKP0_AUTHORITY_PATH)), false, "active authority is absent");
-  const taskDirectories = readdirSync(resolve(".trellis/tasks"));
+test("RKP0-MANIFEST verifies its fixed archive snapshot separately from the immutable bounded repair allowlist", () => {
+  assert.equal(historicalAuthority.hasPath(ARCHIVED_RKP0_AUTHORITY_PATH), true, "archived authority exists");
+  assert.equal(historicalAuthority.hasPath(ACTIVE_RKP0_AUTHORITY_PATH), false, "active authority is absent");
+  const taskDirectories = historicalAuthority.directoriesUnder(".trellis/tasks");
   assert.deepEqual(taskDirectories.filter((name) => /^08-15-rkp-[1-9]/u.test(name)), []);
   assert.equal(execFileSync("git", [
     "status", "--porcelain", "--",
