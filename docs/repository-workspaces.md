@@ -1,7 +1,7 @@
 # 协作工作区与阶段索引
 
 更新日期：2026-09-21，Asia/Shanghai。
-本次完成独立集成候选的 B6 正式环境首轮核验；仍有根目录测试和其他验收缺口，未更新 main。
+本次完成独立集成候选的 B7 历史测试输入收口；根目录默认全量通过，仍有环境验收缺口，未更新 main。
 以下提交和证据是固定快照，不代表已检查各任务的实时运行状态。
 原主工作区同名文件的未提交记录保留，不用本文件覆盖。
 
@@ -11,18 +11,19 @@
 B3 Score 加固、B4 插件平台独有增量、B5 获审接线和修复已集成并完成各自批次验证，
 **统一业务源码候选尚未完成四线组合验收**。
 B6 在 `a391a86` 重建三种 addon，Workbench 615/615、Desktop Rust 65/65 和
-桌面 release 构建通过；根目录全量为 909 passed / 14 failed / 2 skipped，
-当前失败均报在历史工作流输入或 diff 检查，不能宣布正式环境全绿。
+桌面 release 构建通过。B7 在 `0f9b74a` 固定历史输入后，根目录全量为
+138 文件、924 passed / 0 failed / 2 skipped，关闭 B6 的 14 项失败；
+尚有 fmt、可重复环境预检和真实启动等缺口，不能宣布正式环境全绿。
 因此，下一轮共同开发基线尚未发布，不能让各任务自行拉取旧 main 后就宣布环境一致。
 
 | 项目 | 已有证据 | 尚未完成 |
 | --- | --- | --- |
-| Kernel | B6 workspace 667 passed，Clippy 通过，release 显式 soak 1 passed；三种 addon 均重建 | 全仓 fmt 既有问题；历史测试输入；持久化校正文档 `3a7d870` 待纳入，不引入 `9640b6c` |
+| Kernel | B6 workspace 667 passed，Clippy 通过，release 显式 soak 1 passed；三种 addon 均重建；B7 历史输入失败关闭 | 全仓 fmt 既有问题；持久化校正文档 `3a7d870` 待纳入，不引入 `9640b6c` |
 | Score | B3 三次加固保留；B6 Workbench 全量 615/615，Desktop Rust 65/65 | 正式环境整体验收；自动 addon manifest 的 Git 来源记录机制 |
 | Agent | B2 交付和修复保留；B5 resolver 接线保留；B6 Workbench/桌面测试通过 | 整体验收及真实启动验证 |
 | Plugin Platform | B4 独有增量、B5 身份及组件范围修复保留；B6 Workbench 全量通过 | 整体验收及真实启动验证；未整支合并混合交付 |
-| 遗留内容 | 审计 `430a920`、保全 `89c433b`；B6 重试复核 85/85 文件一致、index 为空 | 未清理原文件；C7 StaffProjection 候选未决 |
-| 共同环境 | 三处 npm 依赖独立锁定离线安装、禁用安装脚本；新 addon 来源见 B6；桌面 release 构建通过 | 根目录 14 失败、可重复开工预检、正式环境整体验收 |
+| 遗留内容 | 审计 `430a920`、保全 `89c433b`；B7 再次复核 85/85 文件一致、index 为空，11 个保护引用未变 | 未清理原文件；C7 StaffProjection 候选未决 |
+| 共同环境 | 三处 npm 依赖独立锁定离线安装、禁用安装脚本；产物来源见 B6；B7 根目录默认全量及类型检查通过 | 可重复开工预检、正式环境整体验收 |
 
 证据入口：
 
@@ -35,6 +36,7 @@ B6 在 `a391a86` 重建三种 addon，Workbench 615/615、Desktop Rust 65/65 和
 - [B4 平台集成报告](integration/2026-09-21-B4-platform-integration.md)及[重放与验证证据](integration/2026-09-21-B4-platform-evidence.json)。
 - [B5 接线与权限集成报告](integration/2026-09-21-B5-bindings-integration.md)及[适配与验证证据](integration/2026-09-21-B5-bindings-evidence.json)。
 - [B6 正式环境首轮核验](integration/2026-09-21-B6-environment-verification.md)及[构建、失败和保全证据](integration/2026-09-21-B6-environment-evidence.json)。
+- [B7 历史测试输入收口](integration/2026-09-21-B7-historical-test-inputs.md)及[固定来源、全量和保全证据](integration/2026-09-21-B7-historical-test-evidence.json)。
 
 这些文件分别记录当时状态，不回写旧报告冒充重新验证。独立分支通过不等于组合通过。
 
@@ -54,8 +56,10 @@ B6 在 `a391a86` 重建三种 addon，Workbench 615/615、Desktop Rust 65/65 和
 准备分支现固定于 `9aba3cbe90ab0a18ce4dd651fc7d19c76bccd9be`，不随候选移动。
 后续集成使用 `R/.worktrees/integration-candidate-20260921`，
 分支 `codex/integration-candidate-20260921`；本轮索引和证据随候选提交。
-本批验证源码 SHA 为 `a391a8636d020e02a6bc94c5116adfacaf732e8d`，
-包含 B1 至 B5 业务增量，不是新开发任务的公共开工基线。
+B6 业务组合与产物来源 SHA 为 `a391a8636d020e02a6bc94c5116adfacaf732e8d`，
+包含 B1 至 B5 业务增量；B7 测试修复及根目录全量验证 SHA 为
+`0f9b74a263e5fe633c207e63adb0f9198819e7bc`，业务和构建输入未变。
+这些仍不是新开发任务的公共开工基线。
 身份修复在候选 `510f968` 中包含手工接线适配，不能宣称与来源补丁等价；
 组件范围修复在候选 `863e9cb` 中按原补丁重放，详情见 B5 报告。
 
@@ -119,7 +123,10 @@ Worktree 隔离不能消除语义冲突，也不会自动安装相同环境。
 配置/产物来源、对应模块类型检查和冒烟结果。缺少证据时记为未就绪。
 本候选 B6 补齐了 Desktop CLI 安装，并完成新 addon、Workbench 全量、Desktop Rust
 和桌面 release 构建。三处 npm 安装仍禁用安装脚本；没有生成安装包或做真实 GUI 验收。
-根目录全量依赖未随检出提供的历史工作流输入，仍有 14 项失败；没有批量搬运隐藏任务目录。
+B7 把必要的历史工作流输入绑定到固定 Git 快照，根目录全量 924 passed / 0 failed /
+2 skipped；没有批量搬运隐藏任务目录。Git 历史对象和 `pwsh` 仍是测试前提，
+缺少对象的浅克隆或源码压缩包不能代替已验证环境，后续开工预检须明确检查。
+本轮 addon、桌面产物和锁文件 hash 与 B6 一致，没有重新构建或借用其他工作树产物。
 统一版本约束补齐、可重复的产物来源和开工预检、完整环境验收仍待后续阶段。
 
 ## 后续开发和同步规则
@@ -171,10 +178,10 @@ Worktree 隔离不能消除语义冲突，也不会自动安装相同环境。
 `01a0b569-4eb2-7ae2-98ee-3e337d8c9ab0`，不扩大为所有前端工作；
 视觉任务仍须遵守 Worktree 隔离、文件归属和共享接口边界。
 
-本轮沿用隔离的集成 Worktree 完成 B6 首轮核验，新增候选内 Desktop CLI 的锁定离线安装，
-并使用候选自己的构建目录重建产物。没有更新 main、修改源工作区或清理旧目录。
+本轮沿用隔离的集成 Worktree 完成 B7 历史测试输入修复及默认全量验证，
+沿用并重新核对 B6 的候选内依赖和产物。没有更新 main、修改源工作区或清理旧目录。
 没有向任务发送开工指令，也没有核验其当前是否空闲。
-B6 首轮核验收尾即停；后续需处理测试可重现性及报告列明的正式环境缺口。
+B7 小阶段收尾即停；后续需处理报告列明的正式环境缺口。
 按用户要求，环境整合完成前不从临时候选恢复四线开发；main 晋升和遗留处置另行报告决定。
 
 ## 2026-09-12 历史归档

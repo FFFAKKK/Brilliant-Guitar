@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-09-21",
+  "timezone": "Asia/Shanghai",
+  "phase": "B7-historical-test-inputs",
+  "status": "Default root full suite passed; formal environment acceptance remains pending",
+  "candidate": {
+    "worktree": "E:/desktop/brilliant_ideas/brilliant_guitar/.worktrees/integration-candidate-20260921",
+    "branch": "codex/integration-candidate-20260921",
+    "verifiedSource": "0f9b74a263e5fe633c207e63adb0f9198819e7bc",
+    "previousReportCommit": "a9126582d351b7442ecc04140a81fc4336528638",
+    "b6Source": "a391a8636d020e02a6bc94c5116adfacaf732e8d",
+    "implementationFiles": [
+      "test/test-infrastructure/historical-snapshot.ts",
+      "test/test-infrastructure/historical-snapshot.test.ts",
+      "test/core-kernel/cvn-7-contract-trace.test.ts",
+      "test/core-kernel/rust-migration/oracle-manifest.test.ts",
+      "test/core-kernel/rust-migration/rkp-1-workspace-contracts.test.ts",
+      "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts",
+      "test/core-kernel/rust-migration/rkp-3-workspace-contracts.test.ts",
+      "test/core-kernel/rust-migration/rkp-4-workspace-contracts.test.ts"
+    ],
+    "unchangedComparedToB6": [
+      "src", "crates", "apps", "Cargo.toml", "Cargo.lock",
+      "package.json", "package-lock.json", "scripts", "rust-toolchain.toml"
+    ],
+    "businessAndBuildInputDiffExitCode": 0,
+    "cleanBeforeAndAfterCommittedTests": true,
+    "trellisDirectoryExists": false,
+    "mainPromoted": false,
+    "commonDevelopmentBaselineReleased": false
+  },
+  "historicalInputs": {
+    "cvn7AndRkp0": "312fde925029a37917cc7465eb5dc56162b0dab6",
+    "rkp1": "063b332dd48c05796fb3450a8004f42ff2148b20",
+    "rkp2": "6d0956c970f4414cb61e0f3d7148672a6e635032",
+    "rkp3AndRkp4": "902eacd50422994898eca2a0eaaab924595b8ab7",
+    "rkp3DiffFrom": "78660bb63e249f7bbfec848b9b19e16d7dc55c25",
+    "rkp3DiffTo": "560fd89d32026cdc41c3cf0df65285e99e015456",
+    "localWorkflowFallback": false,
+    "missingObjectsFail": true,
+    "gitReplaceObjectsEnabledForSnapshotReads": false,
+    "literalPathspecs": true,
+    "historicalWorkflowMaterializedInCandidate": false,
+    "powershellReplay": "One task.json in a separate temporary directory; positive and negative assertions retained",
+    "productSourceAndFixtureReadsRemainCurrent": true,
+    "remainingPrerequisites": [
+      "Git executable and all objects referenced by existing and new historical assertions",
+      "PowerShell pwsh executable",
+      "Candidate-local dependencies and native addons"
+    ]
+  },
+  "environment": {
+    "platform": "win32",
+    "arch": "x64",
+    "osRelease": "10.0.26200",
+    "node": "v24.15.0",
+    "nodeExecutable": "D:/nvm4w/nodejs/node.exe",
+    "npm": "11.12.1",
+    "git": "2.48.1.windows.1",
+    "pwsh": "7.6.5",
+    "rootTypeScript": "5.9.3",
+    "workbenchTypeScript": "7.0.2",
+    "dependencyOrToolchainChanges": false,
+    "globalEnvironmentChanged": false
+  },
+  "verification": {
+    "committedSource": "0f9b74a263e5fe633c207e63adb0f9198819e7bc",
+    "fullSuite": {
+      "command": "npm.cmd test",
+      "BRILLIANT_INTEGRATED_ADDON_PATH": "<candidate>/target/kernel-commercial-addons/integrated-v2-09a2b1a563cd30f1d315e89db91554f965f0b6db29de7a2f2f7311ff4eb3124e.node",
+      "exitCode": 0,
+      "fileCount": 138,
+      "manifestSha256": "1b1de2bf44a3a65c964ab6c17dcc1ceee92d741a959ca120d430487b723979e1",
+      "tests": 926,
+      "passed": 924,
+      "failed": 0,
+      "skipped": 2,
+      "cancelled": 0,
+      "todo": 0,
+      "testRunnerDurationMs": 212643.8856,
+      "includesRootBuild": true,
+      "log": "full-suite.log",
+      "existingSkippedTests": [
+        { "name": "wrapped handle GC runs one bounded FinalizationRegistry journey", "reason": "No --expose-gc" },
+        { "name": "Stage 6 E2 runs the one real private scale journey only when explicitly enabled", "reason": "Requires explicit E2 stress authorization" }
+      ]
+    },
+    "committedTypecheck": {
+      "command": "npm.cmd run typecheck",
+      "exitCode": 0,
+      "log": "typecheck-committed.log"
+    },
+    "preCommitRuns": [
+      {
+        "scope": "Seven focused test files",
+        "passed": 88, "failed": 1,
+        "cause": "Initial RKP-1 snapshot preceded archived parent-state synchronization; corrected to 063b332 without changing expected assertion",
+        "log": "focused-first.tap"
+      },
+      {
+        "scope": "Same seven focused test files, final content subsequently committed unchanged",
+        "passed": 89, "failed": 0, "skipped": 0, "cancelled": 0,
+        "testRunnerDurationMs": 143669.4401,
+        "log": "focused-final.tap"
+      },
+      { "command": "npm.cmd run build", "exitCode": 0, "log": "build.log" },
+      { "command": "npm.cmd run typecheck", "exitCode": 0, "log": "typecheck.log" }
+    ],
+    "existingTestDeclarationCountsBeforeAndAfter": [4, 9, 6, 11, 7, 8],
+    "testDeclarationCountsAreNotRuntimeCounts": true,
+    "testDiscoveryOrSkipConditionsChanged": false,
+    "diffCheckExitCode": 0,
+    "notRerun": [
+      "Rust workspace, Clippy, soak and fmt",
+      "Standalone Workbench and Desktop Rust suites",
+      "Native addon or Desktop release builds"
+    ]
+  },
+  "artifacts": {
+    "evidence": "docs/integration/2026-09-21-B6-environment-evidence.json",
+    "sourceCommit": "a391a8636d020e02a6bc94c5116adfacaf732e8d",
+    "reusedCandidateLocalB6Outputs": true,
+    "rebuiltThisPhase": false,
+    "allFiveFileSizesAndHashesRechecked": true,
+    "allSixLockAndToolchainHashesRechecked": true,
+    "generatedManifestGitSourceAutomationImplemented": false,
+    "sharedOtherWorktreeOutputs": false
+  },
+  "localLogs": {
+    "directory": ".local-evidence/integration-B7-20260921",
+    "scope": "Ignored local evidence, not committed or an off-machine backup",
+    "files": [
+      { "file": "build.log", "bytes": 62, "sha256": "02b9e8065ca39ec27a3513f67fd49972baf049083669e785fde1c3e39a80c3fe" },
+      { "file": "focused-final.tap", "bytes": 16257, "sha256": "15fbdbfef162fe2955cb3d081d6da067255145de9d76045555f706903f27feea" },
+      { "file": "focused-first.tap", "bytes": 17425, "sha256": "35966ac78fd9713354dbb6089a4627bd7359625b3b4a27611a11a7de10b9595f" },
+      { "file": "full-suite.log", "bytes": 86186, "sha256": "0c0cf007b4a24c69abb24f145b6dc87abe4df065a658d1df5dd2456f71faeaac" },
+      { "file": "typecheck-committed.log", "bytes": 73, "sha256": "8ae458fecf1326f81a7b8dcb2413b8f24bbe52d498be29bb18f8d27f79ac5565" },
+      { "file": "typecheck.log", "bytes": 73, "sha256": "8ae458fecf1326f81a7b8dcb2413b8f24bbe52d498be29bb18f8d27f79ac5565" }
+    ]
+  },
+  "preservation": {
+    "command": "node docs/integration/2026-09-21-preserve-legacy.mjs --verify",
+    "exitCode": 0,
+    "restoredFiles": 85,
+    "totalBytes": 1006766,
+    "sourceFilesUnchanged": true,
+    "indexesEmpty": true,
+    "protectedReferenceManifest": "docs/integration/2026-09-21-B1-kernel-evidence.json",
+    "protectedReferenceField": "preservation.protectedRefs",
+    "matchedProtectedRefs": 11,
+    "mainWorkspace": { "modified": 21, "untracked": 11, "staged": 0 },
+    "mainAndLocalOriginMain": "269112b2d85e01827e8cb81bdcc5b671afde4303",
+    "fetchPushMainUpdateOrCleanup": false
+  },
+  "stop": {
+    "allStartedChecksFinished": true,
+    "defaultRootSuitePassed": true,
+    "formalDevelopmentEnvironmentAccepted": false,
+    "kernelBoundaryCorrectionImported": false,
+    "legacyC7StaffProjectionResolved": false,
+    "otherTasksDispatched": false,
+    "mainPromotionAuthorizedByThisReceipt": false,
+    "remainingGates": [
+      "Existing session.rs:389 fmt issue",
+      "Reviewed subset of Kernel persistence boundary correction 3a7d870",
+      "Repeatable toolchain, Git historical object and addon provenance preflight",
+      "Agreed real launch verification",
+      "Legacy disposition and explicit main promotion decision"
+    ]
+  }
+}
