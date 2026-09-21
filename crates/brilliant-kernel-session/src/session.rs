@@ -389,9 +389,9 @@ mod tests {
         KernelEventCauseV1, KernelEventV1, KernelSelectorResultV1, KernelSelectorValueV1,
         KernelSessionCreateRequestV1, KernelStage3CommandFailureV1,
         KernelStage4MarkPersistedResultV1, KernelStage4MetricsV1, ScoreEntityTargetV1,
-        ScoreOverviewV1, ScoreRangeSelectionV1, ScoreStructureSummaryV1,
-        ScoreStructureViolationV1, SelectedScoreEntityV1, decode_create_request,
-        decode_stage3_submit_request, encode_create_result, encode_read_result,
+        ScoreOverviewV1, ScoreRangeSelectionV1, ScoreStructureSummaryV1, ScoreStructureViolationV1,
+        SelectedScoreEntityV1, decode_create_request, decode_stage3_submit_request,
+        encode_create_result, encode_read_result,
     };
 
     use super::*;

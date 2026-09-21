@@ -1,5 +1,24 @@
 # Commercial kernel completion
 
+**Crash and persistence recovery boundary (2026-09-20, corrected 2026-09-21):**
+operational checkpoint, `mark_persisted` and Stage 4 semantic replay are distinct
+from physical persistence. Desktop already has lossless `.bgp.json` export/import
+through `ScoreSessionService`, `atomic_write`, save acknowledgment and background
+recovery/quarantine. This is not a missing Kernel implementation tier, and the
+canonical snapshot encoder must not replace the existing lossless file codec.
+Queued recovery is not a durable command receipt; platform sync guarantees,
+crash windows and save/session-replacement races remain qualification work.
+Kernel still owns transaction, history, dirty identity and snapshot/version
+facts, while the existing Rust Desktop command, service and file-I/O layers own
+save/recovery orchestration. New durable undo/redo, version/event continuity or
+acknowledged-command guarantees require separate cross-layer decisions and are
+not approved here. This is a reviewed adaptation of correction `3a7d870`, not
+adoption of the original `9640b6c` draft. Source boundaries and the distinction
+between development-baseline checks and release qualification are recorded in
+`docs/kernel-crash-persistence-recovery-boundary-2026-09-20.md`; current B8
+validation is recorded separately in
+`docs/integration/2026-09-21-B8-baseline-gates.md`.
+
 **Publication fault injection and recovery invariants (2026-09-20):** test-only
 reservation faults now exercise typed and Candidate submit plus both history
 directions after all session preflight but before Store adoption. A unified
