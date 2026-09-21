@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-09-21",
+  "timezone": "Asia/Shanghai",
+  "phase": "B3-Score-hardening",
+  "status": "B3-replayed-and-tested; platform and full integration pending",
+  "candidate": {
+    "worktree": "E:/desktop/brilliant_ideas/brilliant_guitar/.worktrees/integration-candidate-20260921",
+    "branch": "codex/integration-candidate-20260921",
+    "start": "c1ae2ba86882be2849e0ef5008a1f4badaa07428",
+    "scoreBase": "20bf15da3b16131a1fcccbfca1838c88db7e5273",
+    "sourceDelivery": "717cdc08eba0ecd6c9232baffa1960acbb855fdf",
+    "verifiedSource": "e4b113f62f7f5472af554c7076d1b16541d63c2f",
+    "newWorktreeCreated": false,
+    "manualProductionEdits": false,
+    "cleanDuringAndAfterTests": true,
+    "mainPromoted": false,
+    "commonDevelopmentBaselineReleased": false
+  },
+  "replays": [
+    { "source": "3d71f63f3f2c41f19ba67570c1764e966f07296d", "candidate": "8e4d4f8294db13a8e8c022d5cd8d207420877adf", "stablePatchId": "007b7bda25821df2fddc1d100694221194076e03" },
+    { "source": "8ece0f3657be5da2de9dc9a7f0fa39d14ba152bd", "candidate": "1c44d84e3c911f1e64e1bf5b9137921ab7cf14e1", "stablePatchId": "b2f5d919fe78f8148db78c90f7d180c47643f78d" },
+    { "source": "717cdc08eba0ecd6c9232baffa1960acbb855fdf", "candidate": "e4b113f62f7f5472af554c7076d1b16541d63c2f", "stablePatchId": "1e4b03e256335b92d932160ffe404eb940fe5465" }
+  ],
+  "replayChecks": {
+    "mode": "git cherry-pick -x in listed order",
+    "conflicts": 0,
+    "allPatchIdsMatch": true,
+    "sourceTrailersPresent": true,
+    "onlyListedPathsChangedFromStart": true,
+    "exactFilesFromLatestScore": [
+      "apps/workbench/src/services/score-read-port.ts",
+      "apps/workbench/src/services/score-edit-port.ts",
+      "apps/workbench/src/services/score-change-set-port.ts",
+      "apps/workbench/test/score-edit-port.test.ts",
+      "apps/workbench/test/score-change-set-port.test.ts"
+    ],
+    "sharedFile": {
+      "path": "apps/workbench/test/score-read-port.test.ts",
+      "mergedWithoutConflictsIn": ["8e4d4f8294db13a8e8c022d5cd8d207420877adf", "1c44d84e3c911f1e64e1bf5b9137921ab7cf14e1"],
+      "testName": "Direct score tool adapter prefers the typed port and preserves Agent invocation identity",
+      "method": "Parse UTF-8 Git blob text with TypeScript 5.9.3 createSourceFile (ScriptTarget.Latest, ScriptKind.TS); locate exactly one top-level test call with this string-literal name. Statement getText equals candidate.start. Concatenated text before statement.getStart and after statement.end equals sourceDelivery with the same test removed.",
+      "adapterStatementEqualsB2": true,
+      "allRemainingTextEqualsLatestScore": true,
+      "adapterStatementSha256": "86327b14960cdf4a0921ae809dd1b00cea578be8ea06516c4007835208d19e2c",
+      "scoreRemainderSha256": "f05725137bac9feb263b975c2e480fc0f7cd4dfa2bb96cc254fbf15c34a3825b",
+      "candidateGitBlobTextSha256": "509c5984b1b8b12e23dae90848f7ff86f34d067a0f18a867d9665a7e2b0edede"
+    }
+  },
+  "environment": {
+    "node": "v24.15.0",
+    "npm": "11.12.1",
+    "rootTypeScript": "5.9.3",
+    "workbenchTypeScript": "7.0.2",
+    "dependencies": "Reuse candidate-local isolated B2 locked/offline installation; no new installation, copy, junction or addon reuse.",
+    "lockfileSha256": {
+      "package-lock.json": "1b2651ee9e4ecacae4aecb13c6a93d3afe75bb596bd2413539e916e2505ebaf6",
+      "apps/workbench/package-lock.json": "07ded401818282fe9a73c7c5ceb1ee1699a23ab869b46b7f96e44212f2131a1c",
+      "apps/desktop/src-tauri/Cargo.lock": "fa69f85a601d1a072a668e2d0f7d78614b93144f1ca4d64b2fc6725de0f69dc2"
+    }
+  },
+  "verification": {
+    "cwd": "E:/desktop/brilliant_ideas/brilliant_guitar/.worktrees/integration-candidate-20260921",
+    "sourceCommit": "e4b113f62f7f5472af554c7076d1b16541d63c2f",
+    "fileListManifests": {
+      "agent": "c1ae2ba86882be2849e0ef5008a1f4badaa07428:docs/integration/2026-09-21-agent-evidence.json",
+      "B2": "c1ae2ba86882be2849e0ef5008a1f4badaa07428:docs/integration/2026-09-21-B2-agent-evidence.json",
+      "use": "File lists only; all B3 results below are newly executed."
+    },
+    "nodeArguments": ["--experimental-strip-types", "--test", "--test-reporter=tap"],
+    "reporterDestinationPattern": "--test-reporter-destination=.local-evidence/integration-B3-20260921/<run.log>",
+    "preflight": "All named files exist; 42 unique files across four runs, covering all 27 tests directly importing src/agent/.",
+    "uniqueTestFiles": 42,
+    "totalPassed": 365,
+    "totalFailed": 0,
+    "runs": [
+      {
+        "name": "score-ports",
+        "testFiles": [
+          "apps/workbench/test/score-read-port.test.ts",
+          "apps/workbench/test/score-edit-port.test.ts",
+          "apps/workbench/test/score-change-set-port.test.ts"
+        ],
+        "fileCount": 3, "passed": 97, "failed": 0, "skipped": 0, "cancelled": 0, "exitCode": 0, "log": "score-ports.tap"
+      },
+      { "name": "agent-consumers", "testFilesFrom": "agent manifest verifiedRuns[name=primary].testFiles, excluding the three score-ports files", "fileCount": 24, "passed": 177, "failed": 0, "skipped": 0, "cancelled": 0, "exitCode": 0, "log": "agent-consumers.tap" },
+      { "name": "neighbors", "testFilesFrom": "agent manifest verifiedRuns[name=neighbors].testFiles", "fileCount": 8, "passed": 56, "failed": 0, "skipped": 0, "cancelled": 0, "exitCode": 0, "log": "neighbors.tap" },
+      { "name": "host-boundaries", "testFilesFrom": "B2 manifest verification.runs[name=host-boundaries].testFiles", "fileCount": 7, "passed": 35, "failed": 0, "skipped": 0, "cancelled": 0, "exitCode": 0, "log": "host-boundaries.tap" }
+    ],
+    "typechecks": [
+      { "command": "npm.cmd --prefix apps/workbench run typecheck", "compilerVersion": "7.0.2", "pretypecheckHostCompilerVersion": "5.9.3", "exitCode": 0, "log": "typecheck-production.log" },
+      { "command": "node apps/workbench/node_modules/typescript/bin/tsc --noEmit -p apps/workbench/tsconfig.test.json", "compilerVersion": "7.0.2", "exitCode": 0, "log": "typecheck-tests.log" },
+      { "command": "node node_modules/typescript/bin/tsc --noEmit -p apps/workbench/tsconfig.json", "compilerVersion": "5.9.3", "exitCode": 0, "log": "root-tsc-production.log" },
+      { "command": "node node_modules/typescript/bin/tsc --noEmit -p apps/workbench/tsconfig.test.json", "compilerVersion": "5.9.3", "exitCode": 0, "log": "root-tsc-tests.log" }
+    ],
+    "diffCheck": { "command": "git diff --check c1ae2ba86882be2849e0ef5008a1f4badaa07428 e4b113f62f7f5472af554c7076d1b16541d63c2f --", "exitCode": 0 },
+    "notRun": [
+      "Full Workbench npm test suite",
+      "Product Node addon rebuild and qualification",
+      "Rust workspace, Clippy, explicit soak and Desktop Rust rerun; relevant B1/B2 source and lockfiles are unchanged",
+      "Desktop packaging, real GUI/E2E and complete development-environment acceptance",
+      "Four-line combined acceptance, MSRV, multi-platform CI, power-loss and formal performance qualification"
+    ]
+  },
+  "localLogs": {
+    "directory": ".local-evidence/integration-B3-20260921",
+    "scope": "Same-machine ignored generated artifacts, not an off-machine archive.",
+    "files": [
+      { "file": "agent-consumers.tap", "bytes": 37548, "sha256": "74d161f15b4c528f0b22eddddc935ff6e89962766e988faf6f4b5d1102768dba" },
+      { "file": "host-boundaries.tap", "bytes": 7856, "sha256": "818d7cf851535fb8c0ccc3e55ca46467345ed6d414aef47d10c2b45c7aa14723" },
+      { "file": "neighbors.tap", "bytes": 12825, "sha256": "c6ea058f654ba082b8fc81e56fbbb4f3fac8df80c49407e57916c85ed45c205d" },
+      { "file": "root-tsc-production.log", "bytes": 96, "sha256": "2bf83f6a21b1354cc1a9d9c7eac721c4b281a427ed69f40e5c3caf524e73c1de" },
+      { "file": "root-tsc-tests.log", "bytes": 101, "sha256": "934d16b9975581ebd9667bbbbb4897534567b13ab586f2b06a276c08e38326d6" },
+      { "file": "score-ports.tap", "bytes": 17410, "sha256": "483dcadcd52b64066354c388309e75479663ac8b3605297abae706b0f4113604" },
+      { "file": "typecheck-production.log", "bytes": 234, "sha256": "38e3f6f5ca5630102da37fbf2db53d19bbb74862f34f5282e6d8ba3fc69ecfd1" },
+      { "file": "typecheck-tests.log", "bytes": 122, "sha256": "16cf8df9e0c5dbb05354c98fc94e8ee3d1846e4fbef9bc9ef553d6a429a89bfd" }
+    ]
+  },
+  "preservation": {
+    "protectedReferenceManifest": "49a2234ff79f031d360021db160e2a357213f50e:docs/integration/2026-09-21-B1-kernel-evidence.json",
+    "protectedReferenceField": "preservation.protectedRefs",
+    "matchedReferenceCountBeforeAndAfter": 11,
+    "cleanOriginalDeliveriesBeforeAndAfter": 4,
+    "cleanAgentRepairWorktreeBeforeAndAfter": true,
+    "nonScoreB1B2FilesAndPreviousEvidenceUnchanged": true,
+    "legacyVerifyCommand": "node docs/integration/2026-09-21-preserve-legacy.mjs --verify",
+    "legacyVerifiedBeforeAndAfter": true,
+    "legacyFilesUnchanged": 85,
+    "legacySourceBytes": 1006766,
+    "legacyIndexesEmpty": true,
+    "fetchPushMainUpdateOrCleanup": false
+  },
+  "stop": {
+    "nextBatch": "B4 platform independent increments: 1200e2c -> 8ea91f8 -> b23878d",
+    "latestScoreHardeningIntegrated": true,
+    "platformResolverIntegrated": false,
+    "laterBatchesStarted": false,
+    "otherTasksDispatched": false,
+    "mainPromotionAuthorizedByThisReceipt": false
+  }
+}

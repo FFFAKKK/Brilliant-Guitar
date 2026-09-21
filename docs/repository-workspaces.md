@@ -1,21 +1,21 @@
 # 协作工作区与阶段索引
 
 更新日期：2026-09-21，Asia/Shanghai。
-本次完成独立集成候选的 B2 Agent 及公共基础批次；B3 及以后未开始，未更新 main。
+本次完成独立集成候选的 B3 Score 加固批次；B4 及以后未开始，未更新 main。
 以下提交和证据是固定快照，不代表已检查各任务的实时运行状态。
 原主工作区同名文件的未提交记录保留，不用本文件覆盖。
 
 ## 当前阶段
 
-四线交付、独立修复、遗留审计和备份已有记录。B1 Kernel、B2 Agent 及公共基础已重放并完成各自批次验证，
+四线交付、独立修复、遗留审计和备份已有记录。B1 Kernel、B2 Agent 及公共基础、B3 Score 加固已重放并完成各自批次验证，
 **统一业务源码候选尚未完成四线组合验收**。
 因此，下一轮共同开发基线尚未发布，不能让各任务自行拉取旧 main 后就宣布环境一致。
 
 | 项目 | 已有证据 | 尚未完成 |
 | --- | --- | --- |
-| Kernel | 截至 `256413c` 的五个提交已重放至候选 `426b6ab`；B1 workspace 667 passed，Clippy 和显式 soak 通过，B2 未重跑 | 全仓 fmt 仍有既有问题；持久化校正文档 `3a7d870` 待纳入，不引入 `9640b6c` |
-| Score | B2 已纳入一份 typed port 基础；最新正式交付仍固定为 `717cdc0` | B3 三次加固尚未纳入；历史 addon manifest 缺少来源 Git SHA |
-| Agent | 原交付和验证修复已重放至候选 `20c1992`；主回归 185、邻接 56、宿主边界 35 和 Desktop 65 均通过 | 与平台、最新 Score 组合验证 |
+| Kernel | 截至 `256413c` 的五个提交已重放至候选 `426b6ab`；B1 workspace 667 passed，Clippy 和显式 soak 通过，B2/B3 未重跑 | 全仓 fmt 仍有既有问题；持久化校正文档 `3a7d870` 待纳入，不引入 `9640b6c` |
+| Score | B3 已按顺序纳入 `3d71f63 -> 8ece0f3 -> 717cdc0`，候选 `e4b113f`；端口回归 97 passed | 平台组合和全量验证；历史 addon manifest 缺少来源 Git SHA |
+| Agent | B2 交付和修复完整保留；B3 在最新 Score 上重跑消费者 177、邻接 56、宿主边界 35 均通过 | 平台组合验证；Desktop 65 为 B2 结果，B3 未重跑 |
 | Plugin Platform | 正式交付 `7d93aa8`；身份修复代码 `4897de0`，记录 `0da9499`；组件范围修复 `ec85c6b` | 混合提交逐 hunk 提取；禁止整支合并 |
 | 遗留内容 | 审计 `430a920`；保全记录 `89c433b`，85/85 文件字节恢复演练通过 | 未清理原文件；C7 StaffProjection 候选未决 |
 | 共同环境 | 候选根目录和 Workbench 已按锁文件独立离线安装，禁用安装脚本；四项 TS 检查通过 | 完整开发环境验收、组合源码 addon 重建、全量集成验证 |
@@ -27,6 +27,7 @@
 - [备份与组件范围修复](integration/2026-09-21-preservation-and-component-scope.md)及[实际验证记录](integration/2026-09-21-component-scope-evidence.json)。
 - [B1 Kernel 集成报告](integration/2026-09-21-B1-kernel-integration.md)及[重放与验证证据](integration/2026-09-21-B1-kernel-evidence.json)。
 - [B2 Agent 集成报告](integration/2026-09-21-B2-agent-integration.md)及[重放与验证证据](integration/2026-09-21-B2-agent-evidence.json)。
+- [B3 Score 集成报告](integration/2026-09-21-B3-score-integration.md)及[重放与验证证据](integration/2026-09-21-B3-score-evidence.json)。
 
 这些文件分别记录当时状态，不回写旧报告冒充重新验证。独立分支通过不等于组合通过。
 
@@ -46,8 +47,8 @@
 准备分支现固定于 `9aba3cbe90ab0a18ce4dd651fc7d19c76bccd9be`，不随候选移动。
 后续集成使用 `R/.worktrees/integration-candidate-20260921`，
 分支 `codex/integration-candidate-20260921`；本轮索引和证据随候选提交。
-本批验证源码 SHA 为 `20c19924bcfa115d4fabeaba4927ec43e4615473`，
-包含 B1、B2 业务增量，不是新开发任务的公共开工基线。
+本批验证源码 SHA 为 `e4b113f62f7f5472af554c7076d1b16541d63c2f`，
+包含 B1、B2、B3 业务增量，不是新开发任务的公共开工基线。
 
 独立修复位置保留，不作为整支可合并或新任务开工基线：
 
@@ -160,10 +161,10 @@ Worktree 隔离不能消除语义冲突，也不会自动安装相同环境。
 `01a0b569-4eb2-7ae2-98ee-3e337d8c9ab0`，不扩大为所有前端工作；
 视觉任务仍须遵守 Worktree 隔离、文件归属和共享接口边界。
 
-本轮沿用隔离的集成 Worktree 重放 B2，使用自己的 npm 安装和 Desktop Rust 构建目录。
+本轮沿用隔离的集成 Worktree 重放 B3，使用候选在 B2 按锁文件安装的独立依赖。
 没有安装新工具、联网取回依赖、更新 main、修改源工作区或清理旧目录。
 没有向任务发送开工指令，也没有核验其当前是否空闲。
-B2 完成即停；下一批为 Score 三次加固，不能自动推进。
+B3 完成即停；下一批为 B4 插件平台独有增量，不能自动推进。
 
 ## 2026-09-12 历史归档
 
