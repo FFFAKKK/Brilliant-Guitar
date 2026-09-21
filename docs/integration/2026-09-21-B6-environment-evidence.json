@@ -1,0 +1,226 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-09-21",
+  "timezone": "Asia/Shanghai",
+  "phase": "B6-formal-environment-first-pass",
+  "status": "Build and verification pass completed; full acceptance remains failed",
+  "candidate": {
+    "worktree": "E:/desktop/brilliant_ideas/brilliant_guitar/.worktrees/integration-candidate-20260921",
+    "branch": "codex/integration-candidate-20260921",
+    "verifiedSource": "a391a8636d020e02a6bc94c5116adfacaf732e8d",
+    "noBusinessSourceEdits": true,
+    "normalizedDiffAfterTestsExitCode": 0,
+    "desktopCargoTomlNormalizedBlobBeforeAndAfter": "ff385c1d8bf2accf22975dab92f452099aa3404a",
+    "mainPromoted": false,
+    "commonDevelopmentBaselineReleased": false
+  },
+  "environment": {
+    "platform": "win32",
+    "arch": "x64",
+    "osRelease": "10.0.26200",
+    "rustHost": "x86_64-pc-windows-msvc",
+    "node": "v24.15.0",
+    "nodeExecutable": "D:/nvm4w/nodejs/node.exe",
+    "npm": "11.12.1",
+    "rustc": "1.97.1",
+    "rustcCommit": "8bab26f4f68e0e26f0bb7960be334d5b520ea452",
+    "cargo": "1.97.1",
+    "cargoCommit": "c980f4866141969fab6254a680546a277789d6f0",
+    "rootTypeScript": "5.9.3",
+    "workbenchTypeScript": "7.0.2",
+    "tauriCli": "2.11.4",
+    "npmInstallScriptsEnabled": false,
+    "rootAndWorkbenchInstall": "Reused candidate-local B2 locked offline installations",
+    "desktopInstall": "npm.cmd ci --prefix apps/desktop --offline --ignore-scripts --no-audit --no-fund",
+    "lockfileSha256": {
+      "Cargo.lock": "ce2c276b37eca9cb4dc958b2c18ae47b06d7a1690f9b6e1d89b539d441da3080",
+      "package-lock.json": "1b2651ee9e4ecacae4aecb13c6a93d3afe75bb596bd2413539e916e2505ebaf6",
+      "apps/workbench/package-lock.json": "07ded401818282fe9a73c7c5ceb1ee1699a23ab869b46b7f96e44212f2131a1c",
+      "apps/desktop/package-lock.json": "faa8d8b4de19e99a9f2452848ff04dfb66cdbc360461a4fef8ba7842ffc8f601",
+      "apps/desktop/src-tauri/Cargo.lock": "fa69f85a601d1a072a668e2d0f7d78614b93144f1ca4d64b2fc6725de0f69dc2",
+      "rust-toolchain.toml": "0f4df692843aa5ccf21231ea784cab268b0ac6d548e8befb7a4be2e6d39e7a18"
+    },
+    "commandEnvironment": {
+      "rustPathPrefix": "C:/Users/ATOM/.cargo/bin",
+      "integratedBuildCARGO": "C:/Users/ATOM/.cargo/bin/cargo.exe",
+      "integratedBuildCARGO_TARGET_DIR": "<candidate>/target",
+      "desktopCARGO_TARGET_DIR": "<candidate>/target/desktop-formal",
+      "testBRILLIANT_INTEGRATED_ADDON_PATH": "<candidate>/target/kernel-commercial-addons/integrated-v2-09a2b1a563cd30f1d315e89db91554f965f0b6db29de7a2f2f7311ff4eb3124e.node",
+      "globalEnvironmentChanged": false
+    }
+  },
+  "artifacts": {
+    "sourceCommit": "a391a8636d020e02a6bc94c5116adfacaf732e8d",
+    "addonBuildOrder": ["integrated-bridge-v2", "default", "wasm-bridge-v1"],
+    "copiedBeforeNextFeatureBuild": true,
+    "copyHashesChecked": true,
+    "sharedOtherWorktreeOutputs": false,
+    "generatedIntegratedManifestContainsGitSha": false,
+    "provenanceScope": "This evidence binds this run only; reusable source qualification automation remains pending",
+    "files": [
+      {
+        "path": "target/rkp-1-node/brilliant_kernel_node.node",
+        "bytes": 3605504,
+        "sha256": "c6ba5579075daecdfdf52a23c4c82b69a8f289e7089430d7f470844736d81f9f",
+        "build": "cargo +1.97.1 build -p brilliant-kernel-node --release --locked --offline --target-dir target",
+        "exitCode": 0
+      },
+      {
+        "path": "target/integrated-v2/brilliant_kernel_node.node",
+        "contentAddressedCopy": "target/kernel-commercial-addons/integrated-v2-09a2b1a563cd30f1d315e89db91554f965f0b6db29de7a2f2f7311ff4eb3124e.node",
+        "bytes": 5046784,
+        "sha256": "09a2b1a563cd30f1d315e89db91554f965f0b6db29de7a2f2f7311ff4eb3124e",
+        "build": "cargo build -p brilliant-kernel-node --release --features integrated-bridge-v2 --locked --offline",
+        "buildInvoker": "npm.cmd run test:kernel-commercial",
+        "buildExitCode": 0,
+        "invokerExitCode": 1
+      },
+      {
+        "path": "target/wasm-v1/brilliant_kernel_node.node",
+        "bytes": 6279680,
+        "sha256": "ce88cf155056e4a11ee0cb923e3c3b7d8ad603f49ea895b1cad53158d2a2191b",
+        "build": "cargo +1.97.1 build -p brilliant-kernel-node --release --features wasm-bridge-v1 --locked --offline --target-dir target",
+        "exitCode": 0
+      },
+      {
+        "path": "target/desktop-formal/release/brilliant-guitar-desktop.exe",
+        "bytes": 20896256,
+        "sha256": "3b203b683532390c43219f58138c178666bc48a7277f696798fb417baf186132",
+        "build": "npm.cmd --prefix apps/desktop run build -- --ci -- --locked --offline",
+        "effectiveTauriArguments": ["build", "--no-bundle", "--ci", "--", "--locked", "--offline"],
+        "exitCode": 0,
+        "launched": false,
+        "installerBuilt": false
+      }
+    ]
+  },
+  "verification": {
+    "sourceCommit": "a391a8636d020e02a6bc94c5116adfacaf732e8d",
+    "cwd": "E:/desktop/brilliant_ideas/brilliant_guitar/.worktrees/integration-candidate-20260921",
+    "runs": [
+      {
+        "command": "cargo +1.97.1 test --workspace --all-features --locked --offline --target-dir target",
+        "exitCode": 0, "passed": 667, "failed": 0, "ignored": 2,
+        "log": "rust-workspace-tests.log"
+      },
+      {
+        "command": "cargo +1.97.1 clippy --workspace --all-targets --all-features --locked --offline --target-dir target -- -D warnings",
+        "exitCode": 0, "log": "rust-clippy.log"
+      },
+      {
+        "command": "cargo +1.97.1 test -p brilliant-kernel-runtime --release --locked --offline --target-dir target ten_thousand_submit_history_checkpoint_soak -- --ignored --exact runtime::tests::soak::ten_thousand_submit_history_checkpoint_soak",
+        "exitCode": 0, "passed": 1, "failed": 0, "ignored": 0, "filteredOut": 399,
+        "testSeconds": 1.26, "profile": "release", "log": "rust-soak.log"
+      },
+      {
+        "command": "cargo +1.97.1 fmt --all -- --check",
+        "exitCode": 1, "log": "rust-fmt.log",
+        "blocker": "Existing import wrapping at crates/brilliant-kernel-session/src/session.rs:389"
+      },
+      {
+        "command": "npm.cmd --prefix apps/workbench test",
+        "setup": "Fresh Integrated addon also installed at the default host path",
+        "exitCode": 0, "passed": 615, "failed": 0, "skipped": 0, "cancelled": 0,
+        "log": "workbench-full-with-default-addon.log"
+      },
+      {
+        "command": "cargo +1.97.1 test --manifest-path apps/desktop/src-tauri/Cargo.toml --locked --offline",
+        "exitCode": 0, "passed": 65, "failed": 0, "ignored": 0,
+        "log": "desktop-rust-tests.log"
+      },
+      {
+        "command": "npm.cmd --prefix apps/desktop run build -- --ci -- --locked --offline",
+        "exitCode": 0, "frontendProductionTypecheckAndBuild": true,
+        "warning": "Some frontend chunks exceed 500 kB",
+        "log": "desktop-release-build.log"
+      },
+      {
+        "command": "npm.cmd test",
+        "setup": "All three newly built addons available",
+        "exitCode": 1, "passed": 909, "failed": 14, "skipped": 2, "cancelled": 0,
+        "fileCount": 137,
+        "manifestSha256": "4168fd6594cbf608d9185a556c2bed75c19c9f9f6cd888b24191459dc7f36865",
+        "log": "root-full-with-three-addons.log"
+      }
+    ],
+    "rootCurrentFailureGroups": [
+      { "path": "test/core-kernel/cvn-7-contract-trace.test.ts", "failed": 1, "cause": "Missing historical feature-contract matrix" },
+      { "path": "test/core-kernel/rust-migration/oracle-manifest.test.ts", "failed": 2, "cause": "Missing historical failure ledger and archive authority" },
+      { "path": "test/core-kernel/rust-migration/rkp-1-workspace-contracts.test.ts", "failed": 1, "cause": "Missing archived task metadata" },
+      { "path": "test/core-kernel/rust-migration/rkp-2-workspace-contracts.test.ts", "failed": 7, "cause": "Missing lifecycle and repair authorities" },
+      { "path": "test/core-kernel/rust-migration/rkp-3-workspace-contracts.test.ts", "failed": 2, "cause": "Missing lifecycle root; absence selects planning-to-current-HEAD diff against a historical allowlist" },
+      { "path": "test/core-kernel/rust-migration/rkp-4-workspace-contracts.test.ts", "failed": 1, "cause": "Missing active lifecycle authority" }
+    ],
+    "failureClassificationLimit": "Only the first failing assertion per test is known; later assertions have not been proven",
+    "priorFailedRunsRetained": [
+      {
+        "command": "npm.cmd run test:kernel-commercial",
+        "exitCode": 1,
+        "observedPassed": 700, "observedFailed": 53, "observedSkipped": 1,
+        "countsAreNotCompleteTestInventory": true,
+        "cause": "Core/Wasm addon load failures plus historical workflow dependencies",
+        "log": "kernel-commercial.log"
+      },
+      {
+        "command": "npm.cmd --prefix apps/workbench test",
+        "exitCode": 1, "passed": 555, "failed": 60,
+        "cause": "Host loads fixed Integrated addon path instead of the environment override",
+        "log": "workbench-full.log"
+      }
+    ],
+    "notRun": [
+      "Real GUI/E2E or desktop executable launch",
+      "MSI/NSIS installer, signing and installation",
+      "MSRV and multi-platform CI",
+      "Real power loss and formal performance qualification",
+      "Reusable clean-worktree environment/source preflight"
+    ]
+  },
+  "localLogs": {
+    "directory": ".local-evidence/formal-environment-20260921",
+    "scope": "Ignored local evidence, not an off-machine backup",
+    "files": [
+      { "file": "core-addon-build.log", "bytes": 378, "sha256": "b01f67eae47371a870d8ccd01c5e445e5d6f9b5fc9e6431abfa78288cd8ce602" },
+      { "file": "desktop-npm-ci.log", "bytes": 26, "sha256": "b2b899c6de2eb7130f4590075b9afcb8e97ea1c58fef582537090e8b317ed4e3" },
+      { "file": "desktop-release-build.log", "bytes": 12254, "sha256": "56768031db1b4f0c541f7d7acff4c92e848c430b8f0c14a3f0f6d62301c90d78" },
+      { "file": "desktop-rust-tests.log", "bytes": 17092, "sha256": "07da91d9d4be4ac2223b2c8dfa3e55f984361b637fb66b4a5d658b54a7ea89eb" },
+      { "file": "kernel-commercial.log", "bytes": 159362, "sha256": "81edcc87780d2a85472f059d0ac89b785b5e585dd63fbc7d1eead973751eace2" },
+      { "file": "root-full-with-three-addons.log", "bytes": 104383, "sha256": "73a0ce65931e6f25b3a1485e41ceee6647bcbbc9be3ea151c02fa36df3357e64" },
+      { "file": "rust-clippy.log", "bytes": 2850, "sha256": "138d67f571071ce34ce396cd297ec303a82cce6a9e81d94e2809f95efc9c8005" },
+      { "file": "rust-fmt.log", "bytes": 914, "sha256": "0e227f8eeea9f6bf4f8676e9105955bbe20c05a6a4b8bb9184071ab88023fd2a" },
+      { "file": "rust-soak.log", "bytes": 1573, "sha256": "073fcc75d96878bb07ef0c8101c837243f2c10aca1c06cd8f9ea198db63944f0" },
+      { "file": "rust-workspace-tests.log", "bytes": 78551, "sha256": "602555ba7d916ba58b0191e234a026efa138751e2f0c1248aacb0c4323d1b90c" },
+      { "file": "wasm-addon-build.log", "bytes": 1013, "sha256": "d02890b78afa08393a56129e08ba43ba00edd96d691b0b61e0c71065d0f7c85a" },
+      { "file": "workbench-full-with-default-addon.log", "bytes": 55444, "sha256": "317ee4d6dcece3e362b60915aa25aaa9941edae0639df8b33e6439e43438dea8" },
+      { "file": "workbench-full.log", "bytes": 149149, "sha256": "f395d641d52304ae67091d07ba6ee349f715f3e7ac7127e3bcd3bb90bea51461" }
+    ]
+  },
+  "preservation": {
+    "command": "node docs/integration/2026-09-21-preserve-legacy.mjs --verify",
+    "retryRequestedByUser": true,
+    "retryExitCode": 0,
+    "archive": "E:/desktop/brilliant_ideas/brilliant_guitar/.repo-archive/2026-09-21-legacy-preservation",
+    "restoredFiles": 85,
+    "totalBytes": 1006766,
+    "sourceFilesUnchanged": true,
+    "indexesEmpty": true,
+    "earlierAttempt": "Sandbox Git ownership check, followed by approval-service 403; not bypassed",
+    "globalGitSafetyConfigChanged": false,
+    "protectedReferenceManifest": "docs/integration/2026-09-21-B1-kernel-evidence.json",
+    "protectedReferenceField": "preservation.protectedRefs",
+    "matchedProtectedRefs": 11,
+    "mainWorkspace": { "modified": 21, "untracked": 11, "staged": 0 },
+    "mainAndLocalOriginMain": "269112b2d85e01827e8cb81bdcc5b671afde4303",
+    "fetchPushMainUpdateOrCleanup": false
+  },
+  "stop": {
+    "allStartedChecksFinished": true,
+    "fullSuiteAccepted": false,
+    "formalDevelopmentEnvironmentAccepted": false,
+    "kernelBoundaryCorrectionImported": false,
+    "legacyC7StaffProjectionResolved": false,
+    "historicalTestInputRefactorImplemented": false,
+    "otherTasksDispatched": false,
+    "mainPromotionAuthorizedByThisReceipt": false
+  }
+}
