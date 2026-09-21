@@ -1,0 +1,188 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-09-21",
+  "timezone": "Asia/Shanghai",
+  "phase": "B1-kernel-integration",
+  "status": "B1-replayed-and-tested-with-existing-workspace-format-blocker",
+  "candidate": {
+    "worktree": "E:/desktop/brilliant_ideas/brilliant_guitar/.worktrees/integration-candidate-20260921",
+    "branch": "codex/integration-candidate-20260921",
+    "gitCommonDirectory": "E:/desktop/brilliant_ideas/brilliant_guitar/.git",
+    "start": "9aba3cbe90ab0a18ce4dd651fc7d19c76bccd9be",
+    "businessBase": "269112b2d85e01827e8cb81bdcc5b671afde4303",
+    "verifiedSource": "426b6ab7f4da4b652d0f96f540bd04b3a823b20d",
+    "sourceDeliveryCutoff": "256413c5cbe97cca5c3af4db90c19389eebb42b2",
+    "newWorktreeCreated": true,
+    "sourceTreeCleanDuringTests": true,
+    "mainPromoted": false,
+    "commonDevelopmentBaselineReleased": false
+  },
+  "replays": [
+    {
+      "source": "7b1fcae42603c852fae232d8d91af59cfd4fbe30",
+      "candidate": "9db22b2d05802bdedf830aa73d4c751352c805fe",
+      "stablePatchId": "1324ebc57d42f8aaf9515709de5ce6f24787f0ec"
+    },
+    {
+      "source": "e1ae2f5e59d2a7d945227f78c45fc1dc0be044d4",
+      "candidate": "9e907af126cd97ab08cabd2883a48de25eeecaee",
+      "stablePatchId": "0d1bbc0792bfa8a1fa3723a0538d7fa9dda05214"
+    },
+    {
+      "source": "d2bcef371bb893b941b6662d38477eadffabf7f3",
+      "candidate": "84f091193b7222da242668abe2518540b30366ad",
+      "stablePatchId": "f572bd8d7507067261b7267024eaaad6bc59279c"
+    },
+    {
+      "source": "8cf2a1a1b783735fb1f59efd2d68622e1bf13247",
+      "candidate": "f79649ed8d521d670b0338195fd0da8fc7a51fb6",
+      "stablePatchId": "a84a189c211b8dc19e8a1102cb75be7d3af23d4a"
+    },
+    {
+      "source": "256413c5cbe97cca5c3af4db90c19389eebb42b2",
+      "candidate": "426b6ab7f4da4b652d0f96f540bd04b3a823b20d",
+      "stablePatchId": "cee2ef1b02a8144699c5fab56771cb77ae0e0b98"
+    }
+  ],
+  "replayChecks": {
+    "mode": "git cherry-pick -x, in listed order",
+    "conflicts": 0,
+    "manualProductionEdits": false,
+    "sourceTrailersPresent": true,
+    "allPatchIdsMatch": true,
+    "sourceFileContentsMatch": true,
+    "onlyListedPathsChangedFromStart": true,
+    "overlapWithScoreAgentPlatformAndCoordinator": 0,
+    "changedFiles": [
+      "crates/brilliant-kernel-runtime/src/checkpoint.rs",
+      "crates/brilliant-kernel-runtime/src/history.rs",
+      "crates/brilliant-kernel-runtime/src/runtime.rs",
+      "crates/brilliant-kernel-runtime/src/runtime/tests/failure_recovery.rs",
+      "crates/brilliant-kernel-runtime/src/runtime/tests/soak.rs",
+      "crates/brilliant-kernel-runtime/src/runtime/tests/state_machine.rs",
+      "crates/brilliant-kernel-runtime/src/session_projection.rs",
+      "crates/brilliant-kernel-runtime/src/transaction.rs",
+      "docs/kernel-commercial-completion.md",
+      "docs/kernel-long-sequence-soak-2026-09-20.md",
+      "docs/kernel-publication-failure-recovery-2026-09-20.md",
+      "docs/kernel-seeded-state-machine-2026-09-20.md",
+      "docs/projection-architecture-decoupling-plan-v1.md"
+    ]
+  },
+  "environment": {
+    "cargoExecutable": "C:/Users/ATOM/.cargo/bin/cargo.exe",
+    "rustfmtExecutable": "C:/Users/ATOM/.cargo/bin/rustfmt.exe",
+    "rustc": "1.97.1 (8bab26f4f 2026-07-14)",
+    "cargo": "1.97.1 (c980f4866 2026-06-30)",
+    "host": "x86_64-pc-windows-msvc",
+    "targetDirectory": ".cargo-target/integration-B1",
+    "initialTargetDirectoryEmpty": true,
+    "pathAdjustment": "Prepend C:/Users/ATOM/.cargo/bin only in the command environment.",
+    "dependencyMode": "Existing download cache, locked and offline; no dependency or tool installation.",
+    "otherWorktreeBuildOutputsUsed": false
+  },
+  "verification": {
+    "cwd": "E:/desktop/brilliant_ideas/brilliant_guitar/.worktrees/integration-candidate-20260921",
+    "sourceCommit": "426b6ab7f4da4b652d0f96f540bd04b3a823b20d",
+    "commands": [
+      {
+        "command": "cargo +1.97.1 test --workspace --all-features --locked --offline --target-dir .cargo-target/integration-B1",
+        "exitCode": 0,
+        "passed": 667,
+        "failed": 0,
+        "ignored": 2,
+        "log": "workspace-tests.log"
+      },
+      {
+        "command": "cargo +1.97.1 clippy --workspace --all-targets --all-features --locked --offline --target-dir .cargo-target/integration-B1 -- -D warnings",
+        "exitCode": 0,
+        "log": "workspace-clippy.log"
+      },
+      {
+        "command": "cargo +1.97.1 test -p brilliant-kernel-runtime --all-features --locked --offline --target-dir .cargo-target/integration-B1 runtime::tests::soak::ten_thousand_submit_history_checkpoint_soak -- --exact --ignored --nocapture",
+        "exitCode": 0,
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0,
+        "filteredOut": 399,
+        "testSeconds": 4.72,
+        "profile": "unoptimized debug",
+        "log": "explicit-soak.log"
+      },
+      {
+        "command": "rustfmt +1.97.1 --check --edition 2024 --config skip_children=true <the eight .rs paths in replayChecks.changedFiles>",
+        "exitCode": 0,
+        "log": "changed-rustfmt.log"
+      },
+      {
+        "command": "cargo +1.97.1 fmt --all -- --check",
+        "exitCode": 1,
+        "log": "workspace-fmt.log",
+        "blocker": "Existing import wrapping at crates/brilliant-kernel-session/src/session.rs:389; Git content unchanged from businessBase."
+      },
+      {
+        "command": "git diff --check 9aba3cbe90ab0a18ce4dd651fc7d19c76bccd9be 426b6ab7f4da4b652d0f96f540bd04b3a823b20d --",
+        "exitCode": 0
+      }
+    ],
+    "workspaceCrates": [
+      { "name": "brilliant-core-types", "passed": 19, "ignored": 0 },
+      { "name": "brilliant-extension-protocol", "passed": 19, "ignored": 0 },
+      { "name": "brilliant-kernel-contracts", "passed": 54, "ignored": 0 },
+      { "name": "brilliant-kernel-node", "passed": 20, "ignored": 0 },
+      { "name": "brilliant-kernel-runtime", "passed": 398, "ignored": 2 },
+      { "name": "brilliant-kernel-session", "passed": 73, "ignored": 0 },
+      { "name": "brilliant-score-foundation", "passed": 84, "ignored": 0 }
+    ],
+    "notRun": [
+      "Stage 6 isolated private scale evidence worker",
+      "Workbench, Agent, Score and Platform JavaScript/TypeScript suites",
+      "Desktop product checks and tests",
+      "Product Node addon rebuild and qualification",
+      "Full four-line combined integration",
+      "Clean JavaScript dependency environment acceptance",
+      "MSRV, multi-platform CI, formal performance qualification and real power-loss tests"
+    ]
+  },
+  "localLogs": {
+    "directory": ".local-evidence/integration-B1-20260921",
+    "scope": "Same-machine ignored generated logs, not an off-machine archive.",
+    "files": [
+      { "file": "workspace-tests.log", "bytes": 78704, "sha256": "e26fa268cacd4369beab3a70e930142bf5681c36f55da17370ff4862e4e18363" },
+      { "file": "workspace-clippy.log", "bytes": 2850, "sha256": "68f71cb61daffe52405b6e6a2afc095fbc55dd3514429803c189249b5596a6f0" },
+      { "file": "explicit-soak.log", "bytes": 1603, "sha256": "7669a6abfd9dadb9da958d76cf0a6c777cfd4687bb71eb5ebe57e0732ef55630" },
+      { "file": "workspace-fmt.log", "bytes": 914, "sha256": "0e227f8eeea9f6bf4f8676e9105955bbe20c05a6a4b8bb9184071ab88023fd2a" },
+      { "file": "changed-rustfmt.log", "bytes": 582, "sha256": "018441d6ad80cfd9703b14bcef61b0c68028f438041df73df9347687b0f1f50b" }
+    ]
+  },
+  "preservation": {
+    "legacyVerifyCommand": "node docs/integration/2026-09-21-preserve-legacy.mjs --verify",
+    "checkedBeforeAndAfterTests": true,
+    "legacyFilesUnchanged": 85,
+    "legacySourceBytes": 1006766,
+    "legacyIndexesEmpty": true,
+    "originalDeliveryWorktreesCleanBeforeAndAfter": 4,
+    "fetchPushMainUpdateOrCleanup": false,
+    "protectedRefs": {
+      "main": "269112b2d85e01827e8cb81bdcc5b671afde4303",
+      "refs/remotes/origin/main": "269112b2d85e01827e8cb81bdcc5b671afde4303",
+      "codex/integration-preparation-20260921": "9aba3cbe90ab0a18ce4dd651fc7d19c76bccd9be",
+      "codex/kernel-checkpoint-resource-hardening": "9640b6c65f55c326d4b016919d42a27b123162c3",
+      "codex/score-changeset-typed-migration": "717cdc08eba0ecd6c9232baffa1960acbb855fdf",
+      "codex/agent-plugin-ownership": "fe546976d00a6f2a76da16efbfced4c852886bb1",
+      "codex/plugin-session-intent-decoupling": "7d93aa81391cca120c5f33e36deb2b86fcc6c071",
+      "codex/agent-verification-20260921": "cb918d0a86e7f5874b1efeb3059232d93dbad173",
+      "codex/kernel-persistence-boundary-correction-20260921": "3a7d87074d0a833576bd7e908ce26a249682c38c",
+      "codex/plugin-bindings-identity-fix-20260921": "0da94996def194ebe0b9fe159b3642398887115c",
+      "codex/plugin-component-projection-scope-20260921": "ec85c6b84ddb332985ecb44bcaf9ce5018288d8a"
+    }
+  },
+  "stop": {
+    "nextBatch": "B2 Agent and shared foundations, retaining the verified Agent fixes and later Score hardening",
+    "laterBatchesStarted": false,
+    "otherTasksDispatched": false,
+    "kernelPersistenceDraftOrCorrectionImported": false,
+    "projectionImplementationAuthorized": false,
+    "mainPromotionAuthorizedByThisReceipt": false
+  }
+}

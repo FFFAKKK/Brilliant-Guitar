@@ -1,18 +1,19 @@
 # 协作工作区与阶段索引
 
 更新日期：2026-09-21，Asia/Shanghai。
-本次只更新总协调索引，不启动业务集成、环境安装、其他任务或新架构实施。
+本次完成独立集成候选的 B1 Kernel 批次；其余批次未开始，未更新 main。
 以下提交和证据是固定快照，不代表已检查各任务的实时运行状态。
 原主工作区同名文件的未提交记录保留，不用本文件覆盖。
 
 ## 当前阶段
 
-四线交付、独立修复、遗留审计和备份已有记录，**统一业务源码候选尚未组合验收**。
+四线交付、独立修复、遗留审计和备份已有记录。B1 Kernel 已重放并完成本批验证，
+**统一业务源码候选尚未完成四线组合验收**。
 因此，下一轮共同开发基线尚未发布，不能让各任务自行拉取旧 main 后就宣布环境一致。
 
 | 项目 | 已有证据 | 尚未完成 |
 | --- | --- | --- |
-| Kernel | 代码候选截至 `256413c`；持久化边界校正文档 `3a7d870` | 进入组合候选；不能再采用未校正的 `9640b6c` 文档结论 |
+| Kernel | 截至 `256413c` 的五个提交已重放至候选 `426b6ab`；本批 workspace 667 passed，Clippy 和显式 soak 通过 | 全仓 fmt 仍有既有问题；持久化校正文档 `3a7d870` 待纳入，不引入 `9640b6c` |
 | Score | 正式交付 `717cdc0`，包含三次端口加固 | 组合验证；历史 addon manifest 缺少来源 Git SHA |
 | Agent | 正式交付 `fe54697`；验证修复代码 `8af8229`，记录 `cb918d0` | 与平台、最新 Score 组合验证 |
 | Plugin Platform | 正式交付 `7d93aa8`；身份修复代码 `4897de0`，记录 `0da9499`；组件范围修复 `ec85c6b` | 混合提交逐 hunk 提取；禁止整支合并 |
@@ -24,6 +25,7 @@
 - [四线提取顺序与保护范围](integration/2026-09-21-preparation.md)及[固定来源](integration/2026-09-21-evidence.json)。
 - [遗留归属审计](integration/2026-09-21-legacy-audit.md)及[逐文件处置](integration/2026-09-21-legacy-disposition.json)。
 - [备份与组件范围修复](integration/2026-09-21-preservation-and-component-scope.md)及[实际验证记录](integration/2026-09-21-component-scope-evidence.json)。
+- [B1 Kernel 集成报告](integration/2026-09-21-B1-kernel-integration.md)及[重放与验证证据](integration/2026-09-21-B1-kernel-evidence.json)。
 
 这些文件分别记录当时状态，不回写旧报告冒充重新验证。独立分支通过不等于组合通过。
 
@@ -38,7 +40,13 @@
 | Score | typed Read/Edit/ChangeSet、prepare、Desktop Score 接线 | `C/547b/brilliant_guitar` | `codex/score-changeset-typed-migration` / `717cdc08eba0ecd6c9232baffa1960acbb855fdf` |
 | Agent | 编排、workflow 执行、预算、审批、回执、重放和恢复 | `C/agent-plugin-ownership/brilliant_guitar` | `codex/agent-plugin-ownership` / `fe546976d00a6f2a76da16efbfced4c852886bb1` |
 | Plugin Platform | manifest、SDK、grants、contribution 归属、固定会话激活和宿主装配 | `C/71fa/brilliant_guitar` | `codex/plugin-session-intent-decoupling` / `7d93aa81391cca120c5f33e36deb2b86fcc6c071` |
-| 总协调 | 依赖、职责交接、证据、集成队列和阶段汇总 | `R/.worktrees/integration-preparation-20260921` | `codex/integration-preparation-20260921`；本索引继续提交于此分支 |
+| 总协调准备快照 | 依赖、职责交接、证据、集成队列和阶段汇总 | `R/.worktrees/integration-preparation-20260921` | `codex/integration-preparation-20260921`；后续候选位置见下 |
+
+准备分支现固定于 `9aba3cbe90ab0a18ce4dd651fc7d19c76bccd9be`，不随候选移动。
+后续集成使用 `R/.worktrees/integration-candidate-20260921`，
+分支 `codex/integration-candidate-20260921`；本轮索引和证据随候选提交。
+本批验证源码 SHA 为 `426b6ab7f4da4b652d0f96f540bd04b3a823b20d`，
+仅包含 B1 业务增量，不是新开发任务的公共开工基线。
 
 独立修复位置保留，不作为整支可合并或新任务开工基线：
 
@@ -149,8 +157,10 @@ Worktree 隔离不能消除语义冲突，也不会自动安装相同环境。
 `01a0b569-4eb2-7ae2-98ee-3e337d8c9ab0`，不扩大为所有前端工作；
 视觉任务仍须遵守 Worktree 隔离、文件归属和共享接口边界。
 
-本轮只整理索引，没有向任务发送开工指令，没有核验其当前是否空闲，
-没有创建任务/Worktree、安装依赖、组合业务源码、更新 main 或清理旧目录。
+本轮新增一个隔离的集成 Worktree，重放 B1 并使用独立构建目录完成 Rust 验证。
+没有安装新工具或联网取回依赖，没有更新 main、修改源工作区或清理旧目录。
+没有向任务发送开工指令，也没有核验其当前是否空闲。
+B1 完成即停；下一批为 Agent 及公共基础，不能自动推进。
 
 ## 2026-09-12 历史归档
 
