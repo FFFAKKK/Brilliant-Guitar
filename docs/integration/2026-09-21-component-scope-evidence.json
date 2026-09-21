@@ -1,0 +1,164 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-09-21",
+  "timezone": "Asia/Shanghai",
+  "phase": "legacy-preservation-and-C6-component-projection-scope",
+  "previousAudit": "430a92076a94e36dba7ed8a3b55dcbf0c9c85f03",
+  "coordinatorBranch": "codex/integration-preparation-20260921",
+  "coordinatorWorktree": "E:/desktop/brilliant_ideas/brilliant_guitar/.worktrees/integration-preparation-20260921",
+  "code": {
+    "branch": "codex/plugin-component-projection-scope-20260921",
+    "worktree": "E:/desktop/brilliant_ideas/brilliant_guitar/.worktrees/plugin-bindings-identity-fix-20260921",
+    "gitCommonDirectory": "E:/desktop/brilliant_ideas/brilliant_guitar/.git",
+    "parent": "0da94996def194ebe0b9fe159b3642398887115c",
+    "commit": "ec85c6b84ddb332985ecb44bcaf9ce5018288d8a",
+    "cleanAfterVerification": true,
+    "newWorktreeCreated": false,
+    "files": [
+      {
+        "path": "apps/workbench/src/ui/plugin-manager.ts",
+        "rawWorkingFileSha256": "94d9a5d5bca8a52f1e7948a1e028da10acc8c071bf82998df3c28625e2ec92fd",
+        "change": "Narrow each view reader using captured component projection permissions and the existing snapshot.scoped helper."
+      },
+      {
+        "path": "apps/workbench/test/ui-view-contribution.test.ts",
+        "rawWorkingFileSha256": "cf16d1e2d21ed61b8c989126ef30779095d12f5de4f97956a69b034cb58322a7",
+        "change": "Keep original test; add six component-scope, capture, snapshot and SDK/extension/session regressions."
+      }
+    ]
+  },
+  "verification": {
+    "sourceCommit": "ec85c6b84ddb332985ecb44bcaf9ce5018288d8a",
+    "nodeVersion": "v24.15.0",
+    "gitVersion": "2.48.1.windows.1",
+    "testCwd": "E:/desktop/brilliant_ideas/brilliant_guitar/.worktrees/plugin-bindings-identity-fix-20260921/apps/workbench",
+    "testFilePreflight": "Test-Path -LiteralPath for every named file; throw before node if any file is missing",
+    "testCommandPattern": "node --experimental-strip-types --test --test-reporter=tap <exact testFiles below>",
+    "primary": {
+      "testFiles": [
+        "test/ui-view-contribution.test.ts",
+        "test/ui-plugin-manager.test.ts",
+        "test/ui-plugin-projection-scope.test.ts",
+        "test/plugin-sdk.test.ts",
+        "test/plugin-platform.test.ts",
+        "test/plugin-security.test.ts",
+        "test/plugin-session-activation.test.ts",
+        "test/plugin-platform-bootstrap.test.ts",
+        "test/plugin-host-bindings.test.ts"
+      ],
+      "passed": 71,
+      "failed": 0,
+      "skipped": 0,
+      "exitCode": 0,
+      "rerunAfterCommit": true
+    },
+    "neighbors": {
+      "testFiles": [
+        "test/ui-plugin-catalog.test.ts",
+        "test/ui-component-registry.test.ts",
+        "test/ui-layout-state.test.ts",
+        "test/workflow-platform.test.ts",
+        "test/plugin-diagnostic-host.test.ts",
+        "test/workbench-agent-plugin-host.test.ts",
+        "test/guitar-plugin.test.ts",
+        "test/plugin-kernel-adapter.test.ts"
+      ],
+      "passed": 30,
+      "failed": 0,
+      "skipped": 0,
+      "exitCode": 0,
+      "runAfterCommit": true
+    },
+    "typecheckCwd": "E:/desktop/brilliant_ideas/brilliant_guitar/.worktrees/plugin-bindings-identity-fix-20260921",
+    "typechecks": [
+      {
+        "command": "node node_modules/typescript/bin/tsc --noEmit -p apps/workbench/tsconfig.test.json",
+        "compilerVersion": "5.9.3",
+        "exitCode": 0,
+        "rerunAfterCommit": true
+      },
+      {
+        "command": "node node_modules/typescript/bin/tsc --noEmit -p apps/workbench/tsconfig.json",
+        "compilerVersion": "5.9.3",
+        "exitCode": 0,
+        "rerunAfterCommit": true
+      },
+      {
+        "command": "node apps/workbench/node_modules/typescript/bin/tsc --noEmit -p apps/workbench/tsconfig.test.json",
+        "compilerVersion": "7.0.2",
+        "exitCode": 0,
+        "runAfterCommit": true
+      },
+      {
+        "command": "node apps/workbench/node_modules/typescript/bin/tsc --noEmit -p apps/workbench/tsconfig.json",
+        "compilerVersion": "7.0.2",
+        "exitCode": 0,
+        "runAfterCommit": true
+      }
+    ],
+    "initialRegressionRun": {
+      "productionSource": "0da94996def194ebe0b9fe159b3642398887115c",
+      "testFile": "apps/workbench/test/ui-view-contribution.test.ts",
+      "workingTestState": "Original test plus first five new regressions; sibling-view test added later",
+      "passed": 1,
+      "failed": 5,
+      "exitCode": 1,
+      "reason": "Missing expected exception at component projection scope assertions"
+    },
+    "notRun": [
+      "Workbench full npm test",
+      "Native addon build",
+      "Rust workspace tests or Clippy",
+      "Desktop tests",
+      "Browser UI/E2E",
+      "Combined-source integration",
+      "Clean dependency installation"
+    ]
+  },
+  "backup": {
+    "receipt": "2026-09-21-legacy-preservation.json",
+    "script": "2026-09-21-preserve-legacy.mjs",
+    "directory": "E:/desktop/brilliant_ideas/brilliant_guitar/.repo-archive/2026-09-21-legacy-preservation",
+    "manifestSha256": "5c32572a894e3c6e460705e2f22387537f5b9d1fe9c5b8da12028c9d38c1f84a",
+    "verifiedFiles": 85,
+    "modified": 43,
+    "untracked": 42,
+    "sourceBytes": 1006766,
+    "restoreMethod": "Read snapshot files and reconstruct under independent restore-rehearsal directories; compare raw bytes and SHA-256",
+    "sourceWorktreeHeadPathSetStatusAndHashesRechecked": true,
+    "allFourSourceIndexesEmpty": true,
+    "originalWorktreesRestoredInto": false,
+    "overwriteRefusalChecked": true,
+    "isFullRepositoryOrOffMachineBackup": false,
+    "cleanupAuthorized": false
+  },
+  "protectedRefs": {
+    "refs/heads/main": "269112b2d85e01827e8cb81bdcc5b671afde4303",
+    "refs/remotes/origin/main": "269112b2d85e01827e8cb81bdcc5b671afde4303",
+    "refs/heads/codex/kernel-checkpoint-resource-hardening": "9640b6c65f55c326d4b016919d42a27b123162c3",
+    "refs/heads/codex/score-changeset-typed-migration": "717cdc08eba0ecd6c9232baffa1960acbb855fdf",
+    "refs/heads/codex/plugin-session-intent-decoupling": "7d93aa81391cca120c5f33e36deb2b86fcc6c071",
+    "refs/heads/codex/agent-plugin-ownership": "fe546976d00a6f2a76da16efbfced4c852886bb1",
+    "refs/heads/codex/plugin-bindings-identity-fix-20260921": "0da94996def194ebe0b9fe159b3642398887115c",
+    "refs/heads/codex/agent-verification-20260921": "cb918d0a86e7f5874b1efeb3059232d93dbad173",
+    "refs/heads/codex/kernel-persistence-boundary-correction-20260921": "3a7d87074d0a833576bd7e908ce26a249682c38c"
+  },
+  "integration": {
+    "codeCandidateOnly": "ec85c6b84ddb332985ecb44bcaf9ce5018288d8a",
+    "wholeBranchMergeAllowed": false,
+    "reason": "Parent chain still contains mixed Platform/Agent work and the old Score baseline. Apply only the reviewed two-file delta to a separately authorized composed candidate.",
+    "scoreHardeningStillRequired": ["3d71f63", "8ece0f3", "717cdc0"],
+    "agentVerificationStillSeparate": "cb918d0a86e7f5874b1efeb3059232d93dbad173",
+    "C6": "fixed-and-locally-verified-on-isolated-candidate-not-main",
+    "C7": "StaffProjection architecture and implementation ownership remain undecided",
+    "G5": "combined source, new addon provenance and full validation pending",
+    "legacyItemsStillUncommitted": 85,
+    "visualDesignTaskIncluded": false,
+    "trellisCreated": false,
+    "subagentsDispatched": false,
+    "merged": false,
+    "pushed": false,
+    "fetched": false,
+    "nextPhaseStarted": false
+  }
+}

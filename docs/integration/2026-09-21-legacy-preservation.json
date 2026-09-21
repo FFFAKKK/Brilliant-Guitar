@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-09-21",
+  "auditCommit": "430a92076a94e36dba7ed8a3b55dcbf0c9c85f03",
+  "archive": "E:\\desktop\\brilliant_ideas\\brilliant_guitar\\.repo-archive\\2026-09-21-legacy-preservation",
+  "manifestSha256": "5c32572a894e3c6e460705e2f22387537f5b9d1fe9c5b8da12028c9d38c1f84a",
+  "restoredFiles": 85,
+  "totalBytes": 1006766,
+  "sourceFilesUnchanged": true,
+  "indexesEmpty": true,
+  "worktrees": 4,
+  "modified": 43,
+  "untracked": 42,
+  "originalsRetained": true,
+  "originalWorktreesRestoredInto": false,
+  "cleanupAuthorized": false,
+  "backupScope": "85 reviewed dirty file contents and four tracked patches; not a full repository, Git history, ignored artifact or off-machine backup"
+}
