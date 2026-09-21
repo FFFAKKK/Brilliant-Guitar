@@ -33,10 +33,7 @@ function rangePort(inputs: unknown[]): MeasureRangeReadPort {
       const end = index.measureIds.indexOf(input.endMeasureId as typeof index.measureIds[number]);
       const measureIds = index.measureIds.slice(start, end + 1);
       return {
-        status: "completed",
-        invocationId: "internal-range",
-        capabilityId: "score.read-measure-range",
-        contractVersion: 1,
+        status: "ready",
         data: {
           documentId: index.documentId,
           documentVersion: index.documentVersion,

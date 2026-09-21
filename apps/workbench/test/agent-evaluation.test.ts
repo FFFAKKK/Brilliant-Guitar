@@ -357,10 +357,7 @@ class BaselineExecutor implements AgentEvaluationExecutor {
             maxMeasures: 3,
           });
           return {
-            status: "completed",
-            invocationId: "evaluation:internal-range",
-            capabilityId: "score.read-measure-range",
-            contractVersion: 1,
+            status: "ready",
             data: capabilityPlans["score.read-measures"].data as {
               documentId: string;
               documentVersion: number;

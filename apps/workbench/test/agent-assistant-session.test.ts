@@ -16,7 +16,6 @@ import { FirstPartyPreparedMutationCoordinator } from "../src/agent/prepared-mut
 import type { WorkflowDirectory } from "../src/contracts/workflow.ts";
 
 const readyRuntimeSnapshot: AgentPluginRuntimeSnapshot = {
-  enabled: true,
   status: "ready",
   provider: { status: "ready", providerId: "provider.test", model: "model-1", message: "Provider ready" },
   recovery: { status: "ready", items: [], message: "没有需要处理的 Agent 恢复任务" },

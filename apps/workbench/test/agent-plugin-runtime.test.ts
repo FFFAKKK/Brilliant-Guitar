@@ -191,6 +191,16 @@ const readyProvider: AgentProviderRuntimeSnapshot = {
   message: "Provider 已连接",
 };
 
+function deferredRefresh() {
+  let resolve!: () => void;
+  let reject!: (reason: Error) => void;
+  const promise = new Promise<void>((onResolve, onReject) => {
+    resolve = onResolve;
+    reject = onReject;
+  });
+  return { promise, resolve, reject };
+}
+
 test("Agent runtime construction does not start execution services", async () => {
   let recoveryFactoryCalls = 0;
   let providerFactoryCalls = 0;
@@ -366,16 +376,147 @@ test("disposal releases Provider and recovery subscriptions and ignores stale pu
   const provider = new FakeProviderSession(readyProvider);
   const runtime = new AgentPluginRuntime({ hostAvailable: true, createProviderSession: () => provider,
     createRecoverySession: () => recovery });
+  const initial = runtime.getSnapshot();
   await runtime.start();
 
   runtime.dispose();
+  const disposed = runtime.getSnapshot();
+  assert.deepEqual(disposed, initial);
+  assert.equal(Object.isFrozen(disposed), true);
+  assert.equal(runtime.getProvider(), null);
   recovery.publish(recoverySnapshot("error", true));
   provider.publish({ ...readyProvider, status: "error", message: "stale Provider error" });
+  runtime.dispose();
 
   assert.equal(recovery.unsubscribeCalls, 1);
   assert.equal(provider.unsubscribeCalls, 1);
   assert.equal(provider.disposeCalls, 1);
   assert.equal(runtime.beginRun(), null);
+  assert.deepEqual(runtime.getSnapshot(), disposed);
+});
+
+test("disposal clears recovery projections and closes every continuation entry point", async () => {
+  for (const snapshot of [
+    recoverySnapshot("ready", true),
+    selectionRecoverySnapshot(),
+    approvalRecoverySnapshot(),
+    retryRecoverySnapshot(),
+  ]) {
+    const runtime = new AgentPluginRuntime({ hostAvailable: true,
+      createProviderSession: () => new FakeProviderSession(readyProvider),
+      createRecoverySession: () => new FakeRecoverySession(snapshot) });
+    const initial = runtime.getSnapshot();
+    await runtime.start();
+    assert.equal(runtime.getSnapshot().recovery.items.length, 1);
+
+    runtime.dispose();
+
+    assert.deepEqual(runtime.getSnapshot(), initial);
+    assert.equal(runtime.beginRun(), null);
+    assert.equal(runtime.beginContinuation("run-selection", "input-selection"), null);
+    assert.equal(runtime.beginApprovalContinuation("run-approval", "approval-1"), null);
+    assert.equal(runtime.beginRetryContinuation("run-retry", "invocation-retry"), null);
+    assert.equal(await runtime.resume("run-1"), false);
+  }
+});
+
+test("pending start and refresh cannot republish state after disposal", async () => {
+  const providerRefresh = deferredRefresh();
+  const recoveryRefresh = deferredRefresh();
+  const provider = new FakeProviderSession(readyProvider);
+  const recovery = new FakeRecoverySession(recoverySnapshot("ready", true));
+  provider.refresh = () => providerRefresh.promise;
+  recovery.refresh = () => recoveryRefresh.promise;
+  const runtime = new AgentPluginRuntime({ hostAvailable: true,
+    createProviderSession: () => provider, createRecoverySession: () => recovery });
+  const initial = runtime.getSnapshot();
+  let notifications = 0;
+  runtime.subscribe(() => { notifications += 1; });
+  const starting = runtime.start();
+  const refreshing = runtime.refresh();
+
+  runtime.dispose();
+  const disposed = runtime.getSnapshot();
+  const notificationsAtDisposal = notifications;
+  provider.publish({ ...readyProvider, status: "error", message: "late Provider error" });
+  recovery.publish(recoverySnapshot());
+  providerRefresh.resolve();
+  recoveryRefresh.resolve();
+  await Promise.all([starting, refreshing]);
+
+  assert.deepEqual(disposed, initial);
+  assert.equal(runtime.getSnapshot(), disposed);
+  assert.equal(notifications, notificationsAtDisposal);
+  assert.equal(runtime.beginRun(), null);
+});
+
+for (const settlement of ["resolve", "reject"] as const) {
+  test(`pending Provider replacement cannot republish after disposal (${settlement})`, async () => {
+    const replacementRefresh = deferredRefresh();
+    const first = new FakeProviderSession(readyProvider);
+    const second = new FakeProviderSession({ ...readyProvider, model: "model-2" });
+    second.refresh = () => replacementRefresh.promise;
+    const runtime = new AgentPluginRuntime({ hostAvailable: true,
+      createProviderSession: (selection) => selection?.modelId === "model-2" ? second : first,
+      createRecoverySession: () => new FakeRecoverySession() });
+    const initial = runtime.getSnapshot();
+    await runtime.start();
+    const replacing = runtime.setProviderSelection({ providerId: "provider.example", modelId: "model-2" });
+
+    runtime.dispose();
+    const disposed = runtime.getSnapshot();
+    if (settlement === "resolve") replacementRefresh.resolve();
+    else replacementRefresh.reject(new Error("late refresh failure"));
+    await replacing;
+
+    assert.deepEqual(disposed, initial);
+    assert.equal(runtime.getSnapshot(), disposed);
+    assert.equal(first.disposeCalls, 1);
+    assert.equal(second.disposeCalls, 1);
+    assert.equal(runtime.getProvider(), null);
+    assert.equal(runtime.beginRun(), null);
+  });
+}
+
+test("explicit restart uses fresh services and ignores the old generation and run lease", async () => {
+  const oldRefresh = deferredRefresh();
+  const firstProvider = new FakeProviderSession(readyProvider);
+  const firstRecovery = new FakeRecoverySession();
+  firstProvider.refresh = () => oldRefresh.promise;
+  firstRecovery.refresh = () => oldRefresh.promise;
+  const secondProvider = new FakeProviderSession({ ...readyProvider, model: "model-2" });
+  const secondRecovery = new FakeRecoverySession();
+  let providerFactoryCalls = 0;
+  let recoveryFactoryCalls = 0;
+  const runtime = new AgentPluginRuntime({ hostAvailable: true,
+    createProviderSession: () => ++providerFactoryCalls === 1 ? firstProvider : secondProvider,
+    createRecoverySession: () => ++recoveryFactoryCalls === 1 ? firstRecovery : secondRecovery });
+  const firstStart = runtime.start();
+  const firstLease = runtime.beginRun();
+  assert.ok(firstLease);
+  runtime.dispose();
+  assert.equal(firstLease.signal.aborted, true);
+  assert.equal(runtime.getSnapshot().status, "configuring");
+
+  await runtime.start();
+  const secondLease = runtime.beginRun();
+  assert.ok(secondLease);
+  const running = runtime.getSnapshot();
+  firstProvider.publish({ ...readyProvider, status: "error", message: "old generation" });
+  firstRecovery.publish(recoverySnapshot("error", true));
+  firstLease.release();
+  oldRefresh.resolve();
+  await firstStart;
+
+  assert.equal(runtime.getSnapshot(), running);
+  assert.equal(runtime.getProvider(), secondProvider.getProvider());
+  assert.equal(secondLease.signal.aborted, false);
+  assert.equal(runtime.beginRun(), null);
+  assert.equal(providerFactoryCalls, 2);
+  assert.equal(recoveryFactoryCalls, 2);
+  secondLease.release();
+  assert.equal(runtime.getSnapshot().status, "ready");
+  runtime.dispose();
 });
 
 test("Provider control status updates the plugin without recreating the runtime", async () => {

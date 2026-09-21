@@ -1,5 +1,4 @@
 import {
-  isCapabilityResult,
   isScoreMeasureIndexInputV1,
   isScoreMeasureRangeInputV1,
 } from "../contracts/capability.ts";

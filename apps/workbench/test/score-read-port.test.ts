@@ -55,17 +55,13 @@ test("Direct score tool adapter prefers the typed port and preserves Agent invoc
   const adapter = new DirectScoreReadAgentPort({
     async invoke() { throw new Error("legacy gateway must not be used"); },
   }, {
-    scoreReadPort: () => ({
-      async readSummary() {
-        return { status: "ready", data: { documentId: "score-1", documentVersion: 3, title: "直读", measureCount: 1 } };
-      },
-      async readMetadata() { return { status: "unavailable", code: "unused", message: "unused" }; },
-      async readStructure() { return { status: "unavailable", code: "unused", message: "unused" }; },
-      async readMeasureIndex() { return { status: "unavailable", code: "unused", message: "unused" }; },
-      async readMeasureRange() { return { status: "unavailable", code: "unused", message: "unused" }; },
-    }),
-    async readScoreMeasureIndex() { throw new Error("legacy index must not be used"); },
-    async readScoreMeasureRange() { throw new Error("legacy range must not be used"); },
+    async readSummary() {
+      return { status: "ready", data: { documentId: "score-1", documentVersion: 3, title: "直读", measureCount: 1 } };
+    },
+    async readMetadata() { throw new Error("metadata read must not be used"); },
+    async readStructure() { throw new Error("structure read must not be used"); },
+    async readMeasureIndex() { throw new Error("index read must not be used"); },
+    async readMeasureRange() { throw new Error("range read must not be used"); },
   });
 
   const result = await adapter.invoke({

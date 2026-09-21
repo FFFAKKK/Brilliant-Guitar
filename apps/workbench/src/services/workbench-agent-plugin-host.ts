@@ -17,8 +17,14 @@ export function createWorkbenchAgentPluginBindings(
 ): AgentPluginHostBindingsV1 {
   const desktop = isTauri();
   const provider: AgentProviderHostPort = Object.freeze({
-    readAgentProviderCredentialStatus: (providerId) => client.readAgentProviderCredentialStatus(providerId),
-    decideAgentProvider: (request, signal, observer) => client.decideAgentProvider(request, signal, observer),
+    readAgentProviderCredentialStatus: (
+      providerId: Parameters<AgentProviderHostPort["readAgentProviderCredentialStatus"]>[0],
+    ) => client.readAgentProviderCredentialStatus(providerId),
+    decideAgentProvider: (
+      request: Parameters<AgentProviderHostPort["decideAgentProvider"]>[0],
+      signal?: Parameters<AgentProviderHostPort["decideAgentProvider"]>[1],
+      observer?: Parameters<AgentProviderHostPort["decideAgentProvider"]>[2],
+    ) => client.decideAgentProvider(request, signal, observer),
   });
   const runStore = desktop ? new TauriAgentRunStore() : new InMemoryAgentRunStore();
   return Object.freeze({

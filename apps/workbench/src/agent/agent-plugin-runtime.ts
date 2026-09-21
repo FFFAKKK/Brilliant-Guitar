@@ -238,6 +238,7 @@ export class AgentPluginRuntime {
     this.#releaseProvider();
     this.#releaseRecovery();
     this.#listeners.clear();
+    this.#snapshot = initialSnapshot(UNCONFIGURED_AGENT_PROVIDER);
   }
 
   async #replaceProvider(): Promise<void> {

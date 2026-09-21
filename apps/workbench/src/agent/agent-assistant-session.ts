@@ -7,16 +7,6 @@ import {
   isScoreTempoUpdateV1,
   isScoreTitleUpdateV1,
 } from "../contracts/capability.ts";
-import type {
-  CapabilityResult,
-  ScoreMeasureIndexInputV1,
-  ScoreMeasureIndexV1,
-  ScoreMeasureRangeInputV1,
-  ScoreMeasureRangeV1,
-  ScoreMetadataV1,
-  ScoreStructureV1,
-  ScoreSummaryV1,
-} from "../contracts/capability.ts";
 import type { WorkflowDirectory } from "../contracts/workflow.ts";
 import type {
   AgentApprovalDecision,

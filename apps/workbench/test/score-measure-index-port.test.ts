@@ -3,12 +3,20 @@ import test from "node:test";
 
 import { FIRST_PARTY_CAPABILITY_CATALOG } from "../src/agent/first-party-capabilities.ts";
 import { ScoreMeasureIndexPort } from "../src/agent/score-measure-index-port.ts";
+import type { ScoreReadPort } from "../src/services/score-read-port.ts";
 
 const request = {
   workspaceId: "workspace-1",
   expectedDocumentId: "score-1",
   expectedDocumentVersion: 7,
 } as const;
+
+const unusedReads: Omit<ScoreReadPort, "readMeasureIndex"> = {
+  async readSummary() { throw new Error("summary read must not be used"); },
+  async readMetadata() { throw new Error("metadata read must not be used"); },
+  async readStructure() { throw new Error("structure read must not be used"); },
+  async readMeasureRange() { throw new Error("range read must not be used"); },
+};
 
 test("internal measure index is absent from the model-visible capability catalog", () => {
   assert.equal(
@@ -25,9 +33,10 @@ test("internal measure index is absent from the model-visible capability catalog
   );
 });
 
-test("measure index port calls the internal capability with version-bound identity", async () => {
+test("measure index port calls the typed read port with version-bound identity", async () => {
   const inputs: unknown[] = [];
   const port = new ScoreMeasureIndexPort({
+    ...unusedReads,
     async readMeasureIndex(input) {
       inputs.push(input);
       return {
@@ -57,6 +66,7 @@ test("measure index port calls the internal capability with version-bound identi
 
 test("measure index port preserves stable failures and retryability", async () => {
   const stale = new ScoreMeasureIndexPort({
+    ...unusedReads,
     async readMeasureIndex() {
       return {
         status: "failed",
@@ -73,6 +83,7 @@ test("measure index port preserves stable failures and retryability", async () =
   });
 
   const invalid = new ScoreMeasureIndexPort({
+    ...unusedReads,
     async readMeasureIndex() {
       return {
         status: "failed",
