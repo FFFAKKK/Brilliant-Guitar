@@ -1,11 +1,11 @@
 # B9 Desktop Close Investigation
 
 Status: confirmed unresolved product-acceptance blocker.
-On 2026-09-22 (Asia/Shanghai), the user explicitly authorized merging the
+On 2026-09-21 (Asia/Shanghai), the user explicitly authorized merging the
 preserved integration result into main first, then starting an independent
 audit on that common baseline. This supersedes the earlier main-promotion
 hold, not the defect or its acceptance requirements. See
-`2026-09-22-unified-audit-baseline.md`.
+`2026-09-21-unified-audit-baseline.md`.
 No close-lifecycle fix or permission change has been implemented.
 
 ## Exact Reproduction
@@ -72,7 +72,7 @@ Two files move component capture from module evaluation to first composition mou
 Workbench tests passed 617/617 and type checks passed for those changes, but they
 have not been packaged or GUI-verified at the time of this investigation.
 The bootstrap tests were rerun (6/6), and both Workbench TypeScript configurations
-passed during the 2026-09-22 handoff. The tests exercise registry/layout ordering,
+passed during the 2026-09-21 handoff. The tests exercise registry/layout ordering,
 not the mounted React component. These changes are not present in the running
 `bf1d0da` executable and must not be described as GUI-accepted.
 

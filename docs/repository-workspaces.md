@@ -1,10 +1,10 @@
 # 协作工作区与阶段索引
 
-## 2026-09-22 最新决定
+## 2026-09-21 最新决定
 
 用户已授权先保全旧改动并将现有集成成果快进到 main，再从固定 main SHA
 创建独立审计任务，配置为 `gpt-5.6-sol / xhigh`。
-详见 [统一审计基线决定](integration/2026-09-22-unified-audit-baseline.md)
+详见 [统一审计基线决定](integration/2026-09-21-unified-audit-baseline.md)
 和 [关闭故障调查](integration/B9-close-lifecycle-investigation.md)。
 这是带已知缺陷的统一源码基线，不代表产品验收通过，也不自动恢复四线开发。
 下面 B8 阶段的“尚未授权迁移”等表述保留为当时历史状态，受本次决定覆盖。

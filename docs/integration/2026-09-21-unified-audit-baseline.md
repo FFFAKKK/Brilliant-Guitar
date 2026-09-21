@@ -1,6 +1,6 @@
 # Unified Audit Baseline Authorization
 
-Date: 2026-09-22, Asia/Shanghai.
+Date: 2026-09-21, Asia/Shanghai.
 
 ## Decision
 
