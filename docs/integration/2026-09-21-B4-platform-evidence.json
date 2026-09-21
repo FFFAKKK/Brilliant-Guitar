@@ -1,0 +1,209 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-09-21",
+  "timezone": "Asia/Shanghai",
+  "phase": "B4-Platform-independent-increments",
+  "status": "B4-replayed-and-tested; B5 and full integration pending",
+  "candidate": {
+    "worktree": "E:/desktop/brilliant_ideas/brilliant_guitar/.worktrees/integration-candidate-20260921",
+    "branch": "codex/integration-candidate-20260921",
+    "start": "0f82dccc471a3e590f87ebfb6d5d262a65c75c6a",
+    "sourceCutoff": "b23878d2b21833123e0306f1c1576932afef3c25",
+    "originalPlatformDelivery": "7d93aa81391cca120c5f33e36deb2b86fcc6c071",
+    "verifiedSource": "afed1d3c7938fc18938c35021f3c4783555d9e33",
+    "newWorktreeCreated": false,
+    "manualProductionEdits": false,
+    "cleanDuringAndAfterTests": true,
+    "mainPromoted": false,
+    "commonDevelopmentBaselineReleased": false
+  },
+  "replays": [
+    { "source": "1200e2c6b8f8da549d0c047e61103d1f9333324f", "candidate": "dcca37c9b2e2260ebdea7732b92f79ce5d266f17", "stablePatchId": "5b6f9b1005403dce0ef83f5f0cd28647b5581f1a" },
+    { "source": "8ea91f8cc682a62aced817b2beea4de4b4ee623a", "candidate": "f55bafd6a240f8538210c1df0988a943725f4ad7", "stablePatchId": "836d551b2c0a88a148651b164efe47b3f1caf1c0" },
+    { "source": "b23878d2b21833123e0306f1c1576932afef3c25", "candidate": "afed1d3c7938fc18938c35021f3c4783555d9e33", "stablePatchId": "a86f127d27c0c65194332576e775308531730fb2" }
+  ],
+  "replayChecks": {
+    "mode": "git cherry-pick -x in listed order",
+    "conflicts": 0,
+    "allPatchIdsMatch": true,
+    "sourceTrailersPresent": true,
+    "targetPathsEqualSourceParentBeforeReplay": true,
+    "sourceParent": "1200e2c6b8f8da549d0c047e61103d1f9333324f^",
+    "onlyListedPathsChangedFromStart": true,
+    "allListedFilesMatchSourceCutoff": true,
+    "allOtherFilesUnchangedFromB3": true,
+    "mixedPlatformCommitReplayed": false,
+    "changedFiles": [
+      "apps/workbench/src/plugins/agent-plugin-host-contract.ts",
+      "apps/workbench/src/plugins/plugin-host-bindings.ts",
+      "apps/workbench/src/plugins/plugin-platform-bootstrap.ts",
+      "apps/workbench/src/plugins/plugin-platform.ts",
+      "apps/workbench/src/plugins/plugin-sdk-adapter.ts",
+      "apps/workbench/src/plugins/plugin-sdk.ts",
+      "apps/workbench/src/plugins/plugin-session-activation.ts",
+      "apps/workbench/src/plugins/plugin-startup-controller.ts",
+      "apps/workbench/src/ui/first-party-plugins.ts",
+      "apps/workbench/src/ui/plugin-manager.ts",
+      "apps/workbench/src/ui/plugin-module-capture.ts",
+      "apps/workbench/src/ui/workbench-plugins.ts",
+      "apps/workbench/test/plugin-host-bindings.test.ts",
+      "apps/workbench/test/plugin-platform-bootstrap.test.ts",
+      "apps/workbench/test/plugin-platform.test.ts",
+      "apps/workbench/test/plugin-sdk.test.ts",
+      "apps/workbench/test/plugin-session-activation.test.ts",
+      "apps/workbench/test/ui-plugin-catalog.test.ts",
+      "apps/workbench/test/ui-plugin-manager.test.ts"
+    ]
+  },
+  "environment": {
+    "node": "v24.15.0",
+    "nodeExecutable": "D:/nvm4w/nodejs/node.exe",
+    "npm": "11.12.1",
+    "rootTypeScript": "5.9.3",
+    "workbenchTypeScript": "7.0.2",
+    "dependencies": "Reuse candidate-local isolated B2 locked/offline installation; no new installation, copy, junction or addon reuse.",
+    "lockfileSha256": {
+      "package-lock.json": "1b2651ee9e4ecacae4aecb13c6a93d3afe75bb596bd2413539e916e2505ebaf6",
+      "apps/workbench/package-lock.json": "07ded401818282fe9a73c7c5ceb1ee1699a23ab869b46b7f96e44212f2131a1c",
+      "apps/desktop/src-tauri/Cargo.lock": "fa69f85a601d1a072a668e2d0f7d78614b93144f1ca4d64b2fc6725de0f69dc2"
+    }
+  },
+  "verification": {
+    "cwd": "E:/desktop/brilliant_ideas/brilliant_guitar/.worktrees/integration-candidate-20260921",
+    "sourceCommit": "afed1d3c7938fc18938c35021f3c4783555d9e33",
+    "nodeArguments": ["--experimental-strip-types", "--test", "--test-reporter=tap"],
+    "reporterDestinationPattern": "--test-reporter-destination=.local-evidence/integration-B4-20260921/<run.log>",
+    "preflight": "Every named file exists; all 52 test paths are disjoint. Includes every B3 test file and all 12 tests directly importing changed production paths.",
+    "uniqueTestFiles": 52,
+    "totalPassed": 407,
+    "totalFailed": 0,
+    "runs": [
+      {
+        "name": "platform-primary",
+        "testFiles": [
+          "apps/workbench/test/plugin-host-bindings.test.ts",
+          "apps/workbench/test/plugin-platform-bootstrap.test.ts",
+          "apps/workbench/test/plugin-platform.test.ts",
+          "apps/workbench/test/plugin-sdk.test.ts",
+          "apps/workbench/test/plugin-session-activation.test.ts",
+          "apps/workbench/test/ui-plugin-catalog.test.ts",
+          "apps/workbench/test/ui-plugin-manager.test.ts"
+        ],
+        "fileCount": 7, "passed": 60, "failed": 0, "skipped": 0, "cancelled": 0, "exitCode": 0, "log": "platform-primary.tap"
+      },
+      {
+        "name": "retained-b3",
+        "testFiles": [
+          "apps/workbench/test/agent-action-runtime.test.ts",
+          "apps/workbench/test/agent-approval-policy.test.ts",
+          "apps/workbench/test/agent-assistant-session.test.ts",
+          "apps/workbench/test/agent-context-toolset.test.ts",
+          "apps/workbench/test/agent-conversation.test.ts",
+          "apps/workbench/test/agent-evaluation.test.ts",
+          "apps/workbench/test/agent-intent-router.test.ts",
+          "apps/workbench/test/agent-openai-provider.test.ts",
+          "apps/workbench/test/agent-plugin-runtime.test.ts",
+          "apps/workbench/test/agent-prepared-mutation.test.ts",
+          "apps/workbench/test/agent-provider-registry.test.ts",
+          "apps/workbench/test/agent-provider-stream.test.ts",
+          "apps/workbench/test/agent-recovery-session.test.ts",
+          "apps/workbench/test/agent-recovery.test.ts",
+          "apps/workbench/test/agent-run-core.test.ts",
+          "apps/workbench/test/agent-store.test.ts",
+          "apps/workbench/test/agent-task-history.test.ts",
+          "apps/workbench/test/agent-user-input-consumption.test.ts",
+          "apps/workbench/test/agent-workflow-runtime.test.ts",
+          "apps/workbench/test/measure-reference-capability-port.test.ts",
+          "apps/workbench/test/measure-reference-read-service.test.ts",
+          "apps/workbench/test/measure-reference-resolver.test.ts",
+          "apps/workbench/test/score-change-set-port.test.ts",
+          "apps/workbench/test/score-edit-port.test.ts",
+          "apps/workbench/test/score-measure-index-port.test.ts",
+          "apps/workbench/test/score-read-port.test.ts",
+          "apps/workbench/test/workflow-platform.test.ts",
+          "apps/workbench/test/capability-contract.test.ts",
+          "apps/workbench/test/conversation-progress.test.ts",
+          "apps/workbench/test/disposable-resource-lifetime.test.ts",
+          "apps/workbench/test/plugin-security.test.ts",
+          "apps/workbench/test/application-capability-gateway.test.ts",
+          "apps/workbench/test/initial-score.test.ts",
+          "apps/workbench/test/guitar-plugin.test.ts",
+          "apps/workbench/test/plugin-diagnostic-host.test.ts",
+          "apps/workbench/test/ui-view-contribution.test.ts",
+          "apps/workbench/test/workbench-host-bridge.test.ts",
+          "apps/workbench/test/score-capability-client.test.ts"
+        ],
+        "fileCount": 38, "passed": 321, "failed": 0, "skipped": 0, "cancelled": 0, "exitCode": 0, "log": "retained-b3.tap"
+      },
+      {
+        "name": "platform-neighbors",
+        "testFiles": [
+          "apps/workbench/test/plugin-kernel-adapter.test.ts",
+          "apps/workbench/test/plugin-kernel-catalog.test.ts",
+          "apps/workbench/test/plugin-package-inventory-storage.test.ts",
+          "apps/workbench/test/plugin-package-transaction.test.ts",
+          "apps/workbench/test/ui-component-registry.test.ts",
+          "apps/workbench/test/ui-plugin-projection-scope.test.ts",
+          "apps/workbench/test/ui-projection-registry.test.ts"
+        ],
+        "fileCount": 7, "passed": 26, "failed": 0, "skipped": 0, "cancelled": 0, "exitCode": 0, "log": "platform-neighbors.tap"
+      }
+    ],
+    "typechecks": [
+      { "command": "npm.cmd --prefix apps/workbench run typecheck", "compilerVersion": "7.0.2", "pretypecheckHostCompilerVersion": "5.9.3", "exitCode": 0, "log": "typecheck-production.log" },
+      { "command": "node apps/workbench/node_modules/typescript/bin/tsc --noEmit -p apps/workbench/tsconfig.test.json", "compilerVersion": "7.0.2", "exitCode": 0, "log": "typecheck-tests.log" },
+      { "command": "node node_modules/typescript/bin/tsc --noEmit -p apps/workbench/tsconfig.json", "compilerVersion": "5.9.3", "exitCode": 0, "log": "root-tsc-production.log" },
+      { "command": "node node_modules/typescript/bin/tsc --noEmit -p apps/workbench/tsconfig.test.json", "compilerVersion": "5.9.3", "exitCode": 0, "log": "root-tsc-tests.log" }
+    ],
+    "typecheckExitEvidence": "PowerShell captured LASTEXITCODE immediately, printed it, and exited with the same code. Three compiler logs are empty because successful tsc produced no output; hashes alone are not exit-code evidence.",
+    "diffCheck": { "command": "git diff --check 0f82dccc471a3e590f87ebfb6d5d262a65c75c6a afed1d3c7938fc18938c35021f3c4783555d9e33 --", "exitCode": 0 },
+    "notRun": [
+      "B5 host adapter integration and its identity-fix regressions",
+      "Six new component-scope regressions from ec85c6b; the current existing scope test was run",
+      "Full Workbench npm test suite",
+      "Product Node addon rebuild and source qualification",
+      "Rust workspace, Clippy, explicit soak and Desktop Rust rerun; corresponding source and locks unchanged",
+      "Real browser/Tauri bootstrap UI, GUI/E2E, Desktop packaging and complete development-environment acceptance",
+      "Final four-line combined acceptance, MSRV, multi-platform CI, power-loss and formal performance qualification"
+    ]
+  },
+  "localLogs": {
+    "directory": ".local-evidence/integration-B4-20260921",
+    "scope": "Same-machine ignored generated artifacts, not an off-machine archive.",
+    "files": [
+      { "file": "platform-neighbors.tap", "bytes": 5495, "sha256": "12de7ea880a0646715d51e277734d2faf61934f071c0ebc929dce823072c66a7" },
+      { "file": "platform-primary.tap", "bytes": 13732, "sha256": "ff27b9949630bc7fc751af3b924265146f0123229683728f8cca560aaf2a0a7e" },
+      { "file": "retained-b3.tap", "bytes": 65318, "sha256": "34edec2055a0f6ab80636b58af0bf2f870cbca47bc4431c4bd8dc5a70e56761f" },
+      { "file": "root-tsc-production.log", "bytes": 0, "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" },
+      { "file": "root-tsc-tests.log", "bytes": 0, "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" },
+      { "file": "typecheck-production.log", "bytes": 234, "sha256": "38e3f6f5ca5630102da37fbf2db53d19bbb74862f34f5282e6d8ba3fc69ecfd1" },
+      { "file": "typecheck-tests.log", "bytes": 0, "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" }
+    ]
+  },
+  "preservation": {
+    "protectedReferenceManifest": "49a2234ff79f031d360021db160e2a357213f50e:docs/integration/2026-09-21-B1-kernel-evidence.json",
+    "protectedReferenceField": "preservation.protectedRefs",
+    "matchedReferenceCountBeforeAndAfter": 11,
+    "cleanOriginalDeliveriesBeforeAndAfter": 4,
+    "cleanAgentRepairWorktreeBeforeAndAfter": true,
+    "scoreHardeningAndAgentFixesUnchanged": true,
+    "legacyVerifyCommand": "node docs/integration/2026-09-21-preserve-legacy.mjs --verify",
+    "legacyVerifiedBeforeAndAfter": true,
+    "legacyFilesUnchanged": 85,
+    "legacySourceBytes": 1006766,
+    "legacyIndexesEmpty": true,
+    "fetchPushMainUpdateOrCleanup": false
+  },
+  "stop": {
+    "nextBatch": "B5 reviewed host adapter increment plus identity and component-projection-scope fixes; never replay the entire 7d93aa8 mixed commit.",
+    "latestScoreHardeningPreserved": true,
+    "platformResolverModuleIntegrated": true,
+    "agentHostAdapterResolverWiringIntegrated": false,
+    "platformIdentityFixIntegrated": false,
+    "platformComponentScopeFixIntegrated": false,
+    "kernelPersistenceCorrectionImported": false,
+    "laterBatchesStarted": false,
+    "otherTasksDispatched": false,
+    "mainPromotionAuthorizedByThisReceipt": false
+  }
+}
