@@ -1,0 +1,237 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-09-21",
+  "timezone": "Asia/Shanghai",
+  "scope": ["G3-Agent-verification", "G6-Agent-document-formatting"],
+  "worktree": "E:/desktop/brilliant_ideas/brilliant_guitar/.worktrees/agent-verification-20260921",
+  "branch": "codex/agent-verification-20260921",
+  "parentCommit": "fe546976d00a6f2a76da16efbfced4c852886bb1",
+  "verifiedCodeCommit": "8af822958df825d7811ea57655129ad9df0f7eb3",
+  "merged": false,
+  "pushed": false,
+  "remoteFetched": false,
+  "sourceBranchRewritten": false,
+  "codePaths": [
+    "apps/workbench/src/agent/agent-assistant-session.ts",
+    "apps/workbench/src/agent/agent-plugin-runtime.ts",
+    "apps/workbench/src/agent/direct-score-read-agent-port.ts",
+    "apps/workbench/src/services/workbench-agent-plugin-host.ts",
+    "apps/workbench/test/agent-assistant-session.test.ts",
+    "apps/workbench/test/agent-evaluation.test.ts",
+    "apps/workbench/test/agent-plugin-runtime.test.ts",
+    "apps/workbench/test/measure-reference-capability-port.test.ts",
+    "apps/workbench/test/score-measure-index-port.test.ts",
+    "apps/workbench/test/score-read-port.test.ts"
+  ],
+  "environment": {
+    "node": "v24.15.0",
+    "rootTypeScript": "5.9.3",
+    "workbenchTypeScript": "7.0.2",
+    "tauriApi": "2.11.1",
+    "dependencyMethod": "independent directory copy; no network install, upgrade, junction or native addon copy",
+    "dependencySource": "E:/desktop/brilliant_ideas/brilliant_guitar/.worktrees/plugin-bindings-identity-fix-20260921",
+    "lockfileSha256": {
+      "package-lock.json": "1b2651ee9e4ecacae4aecb13c6a93d3afe75bb596bd2413539e916e2505ebaf6",
+      "apps/workbench/package-lock.json": "07ded401818282fe9a73c7c5ceb1ee1699a23ab869b46b7f96e44212f2131a1c"
+    }
+  },
+  "baseline": {
+    "commit": "fe546976d00a6f2a76da16efbfced4c852886bb1",
+    "cleanBeforeRun": true,
+    "testFileSet": "same 27 paths as verifiedRuns.primary",
+    "nodeArgumentsBeforeFiles": ["--experimental-strip-types", "--test", "--test-reporter=tap"],
+    "preflightExistingFiles": 27,
+    "passed": 175,
+    "failed": 5,
+    "skipped": 0,
+    "exitCode": 1,
+    "failures": [
+      "evaluation baseline runs through the real controller without a paid Provider",
+      "evaluation suite isolates executor failures and continues later cases",
+      "composite measure capability resolves ordinals and preserves the outer invocation identity",
+      "current-selection references use the version-bound control-plane selection",
+      "Direct score tool adapter prefers the typed port and preserves Agent invocation identity"
+    ],
+    "failureCause": "legacy fixtures no longer match the existing typed score read port",
+    "typechecks": [
+      {
+        "command": "npm --prefix apps/workbench run typecheck",
+        "exitCode": 1,
+        "failures": ["unused Agent imports", "implicit any in trusted-shell Provider facade parameters"]
+      },
+      {
+        "command": "node apps/workbench/node_modules/typescript/bin/tsc --noEmit -p apps/workbench/tsconfig.test.json",
+        "exitCode": 1,
+        "failures": [
+          "unused Agent imports",
+          "removed enabled snapshot field",
+          "legacy measure range result envelopes",
+          "incomplete ScoreReadPort fixtures",
+          "legacy client instead of direct ScoreReadPort fixture"
+        ]
+      }
+    ],
+    "log": {
+      "path": "target/agent-verification/baseline.tap",
+      "sha256": "970b08a172112899172a13774b1d8cb4032bd6107f1dc02494debdf899d528ec"
+    }
+  },
+  "redGreen": {
+    "testFile": "apps/workbench/test/agent-plugin-runtime.test.ts",
+    "beforeFix": {
+      "state": "new lifecycle tests and stronger assertions; production source still at parentCommit",
+      "passed": 13,
+      "failed": 6,
+      "skipped": 0,
+      "exitCode": 1,
+      "failure": "disposed snapshot retains ready/running/recovering state instead of existing initial snapshot",
+      "log": {
+        "path": "target/agent-verification/runtime-before-fix.tap",
+        "sha256": "b6130ce59501bb25481fccd966e67634148de60edad4ae30515e05ceeeb7f39c"
+      }
+    },
+    "afterFix": {
+      "passed": 19,
+      "failed": 0,
+      "includedInRun": "primary",
+      "originalBeginRunNullAssertionRetained": true,
+      "newPublicLifecycleStatus": false,
+      "existingExplicitRestartPreserved": true,
+      "asyncGenerationLogicChanged": false
+    }
+  },
+  "verifiedRuns": [
+    {
+      "name": "primary",
+      "testFiles": [
+        "apps/workbench/test/agent-action-runtime.test.ts",
+        "apps/workbench/test/agent-approval-policy.test.ts",
+        "apps/workbench/test/agent-assistant-session.test.ts",
+        "apps/workbench/test/agent-context-toolset.test.ts",
+        "apps/workbench/test/agent-conversation.test.ts",
+        "apps/workbench/test/agent-evaluation.test.ts",
+        "apps/workbench/test/agent-intent-router.test.ts",
+        "apps/workbench/test/agent-openai-provider.test.ts",
+        "apps/workbench/test/agent-plugin-runtime.test.ts",
+        "apps/workbench/test/agent-prepared-mutation.test.ts",
+        "apps/workbench/test/agent-provider-registry.test.ts",
+        "apps/workbench/test/agent-provider-stream.test.ts",
+        "apps/workbench/test/agent-recovery-session.test.ts",
+        "apps/workbench/test/agent-recovery.test.ts",
+        "apps/workbench/test/agent-run-core.test.ts",
+        "apps/workbench/test/agent-store.test.ts",
+        "apps/workbench/test/agent-task-history.test.ts",
+        "apps/workbench/test/agent-user-input-consumption.test.ts",
+        "apps/workbench/test/agent-workflow-runtime.test.ts",
+        "apps/workbench/test/measure-reference-capability-port.test.ts",
+        "apps/workbench/test/measure-reference-read-service.test.ts",
+        "apps/workbench/test/measure-reference-resolver.test.ts",
+        "apps/workbench/test/score-change-set-port.test.ts",
+        "apps/workbench/test/score-edit-port.test.ts",
+        "apps/workbench/test/score-measure-index-port.test.ts",
+        "apps/workbench/test/score-read-port.test.ts",
+        "apps/workbench/test/workflow-platform.test.ts"
+      ],
+      "preflightExistingFiles": 27,
+      "nodeArgumentsBeforeFiles": [
+        "--experimental-strip-types",
+        "--test",
+        "--test-reporter=tap",
+        "--test-reporter-destination=target/agent-verification/verified-primary.tap"
+      ],
+      "passed": 185,
+      "failed": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "exitCode": 0,
+      "cleanBeforeRun": true,
+      "rerunAfterCodeCommit": true,
+      "log": {
+        "path": "target/agent-verification/verified-primary.tap",
+        "sha256": "2f93d61fbf62b0d7b6b92d3ce83366dafdaa969b5fbd0e3f26202111b88e87eb"
+      }
+    },
+    {
+      "name": "neighbors",
+      "testFiles": [
+        "apps/workbench/test/capability-contract.test.ts",
+        "apps/workbench/test/conversation-progress.test.ts",
+        "apps/workbench/test/disposable-resource-lifetime.test.ts",
+        "apps/workbench/test/plugin-platform.test.ts",
+        "apps/workbench/test/plugin-sdk.test.ts",
+        "apps/workbench/test/plugin-security.test.ts",
+        "apps/workbench/test/ui-plugin-manager.test.ts",
+        "apps/workbench/test/ui-plugin-catalog.test.ts"
+      ],
+      "preflightExistingFiles": 8,
+      "nodeArgumentsBeforeFiles": [
+        "--experimental-strip-types",
+        "--test",
+        "--test-reporter=tap",
+        "--test-reporter-destination=target/agent-verification/verified-neighbors.tap"
+      ],
+      "passed": 56,
+      "failed": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "exitCode": 0,
+      "cleanBeforeRun": true,
+      "rerunAfterCodeCommit": true,
+      "log": {
+        "path": "target/agent-verification/verified-neighbors.tap",
+        "sha256": "45bb3c090805f666799ad984a73908181a602263eaf793347317fac44b5b3deb"
+      }
+    }
+  ],
+  "typechecks": [
+    {"command": "npm --prefix apps/workbench run typecheck", "exitCode": 0, "rerunAfterCodeCommit": true},
+    {"command": "node apps/workbench/node_modules/typescript/bin/tsc --noEmit -p apps/workbench/tsconfig.test.json", "exitCode": 0, "rerunAfterCodeCommit": true}
+  ],
+  "preservedIdenticallyFromParent": [
+    "apps/workbench/test/agent-action-runtime.test.ts",
+    "apps/workbench/test/agent-run-core.test.ts",
+    "apps/workbench/test/agent-workflow-runtime.test.ts",
+    "apps/workbench/test/agent-prepared-mutation.test.ts",
+    "docs/agent-typed-port-orchestration-boundary-v1.md",
+    "apps/workbench/src/contracts",
+    "apps/workbench/src/services/score-read-port.ts",
+    "apps/workbench/src/services/score-edit-port.ts",
+    "apps/workbench/src/services/score-change-set-port.ts"
+  ],
+  "formatOnlyDocument": {
+    "path": "docs/agent-plugin-ownership-and-assembly-plan-v1.md",
+    "lines": [3, 4],
+    "change": "replace trailing-space Markdown hard breaks with backslash hard breaks",
+    "designTextOrDecisionsChanged": false
+  },
+  "notRun": [
+    "full Workbench npm test suite",
+    "Desktop/Tauri checks and tests",
+    "Rust workspace tests and clippy",
+    "native addon rebuild",
+    "real UI/E2E",
+    "combined four-line integration validation",
+    "multi-platform qualification"
+  ],
+  "protectedRefs": {
+    "main": "269112b2d85e01827e8cb81bdcc5b671afde4303",
+    "origin/main": "269112b2d85e01827e8cb81bdcc5b671afde4303",
+    "codex/kernel-checkpoint-resource-hardening": "9640b6c65f55c326d4b016919d42a27b123162c3",
+    "codex/score-changeset-typed-migration": "717cdc08eba0ecd6c9232baffa1960acbb855fdf",
+    "codex/plugin-session-intent-decoupling": "7d93aa81391cca120c5f33e36deb2b86fcc6c071",
+    "codex/agent-plugin-ownership": "fe546976d00a6f2a76da16efbfced4c852886bb1",
+    "codex/integration-preparation-20260921": "3b0f1952f716a33cd46af036dd7eb1e8e4a84540",
+    "codex/plugin-bindings-identity-fix-20260921": "0da94996def194ebe0b9fe159b3642398887115c"
+  },
+  "protectedMainDirtyFiles": {
+    "count": 32,
+    "contentInventorySha256": "a71349a256d3390fcdb869f173aac5cc820879eae3f58f2103bb6ec58d9fbcfa",
+    "contentsUnchanged": true,
+    "stagedCount": 0
+  },
+  "closedAtCandidateLevel": ["G3-Agent", "G6-Agent-document-formatting"],
+  "remainingGates": ["G4-Kernel-document", "G5-combined-addon-and-validation"],
+  "scoreLatestHardeningIntegrated": false,
+  "platformResolverIntegrated": false,
+  "nextPhaseStarted": false
+}
