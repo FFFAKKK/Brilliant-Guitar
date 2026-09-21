@@ -1,0 +1,244 @@
+{
+  "schemaVersion": 1,
+  "snapshotDate": "2026-09-21",
+  "timezone": "Asia/Shanghai",
+  "phase": "preparation-only",
+  "base": "269112b2d85e01827e8cb81bdcc5b671afde4303",
+  "integration": {
+    "worktree": "E:/desktop/brilliant_ideas/brilliant_guitar/.worktrees/integration-preparation-20260921",
+    "branch": "codex/integration-preparation-20260921",
+    "gitCommonDirectory": "E:/desktop/brilliant_ideas/brilliant_guitar/.git",
+    "appliedCandidateCommits": [],
+    "businessTestsRun": false,
+    "nextPhaseAuthorized": false,
+    "mainPromotionAuthorized": false,
+    "sourceBranchesModified": false
+  },
+  "sources": [
+    {
+      "line": "Kernel",
+      "taskId": "01a0bd73-138b-7bd3-8e04-47fc5c8ab8ca",
+      "worktree": "C:/Users/ATOM/.codex/worktrees/4708/brilliant_guitar",
+      "branch": "codex/kernel-checkpoint-resource-hardening",
+      "head": "9640b6c65f55c326d4b016919d42a27b123162c3",
+      "mergeBase": "269112b2d85e01827e8cb81bdcc5b671afde4303",
+      "cleanAtInspection": true,
+      "changedFileCount": 14,
+      "diffCheck": "passed",
+      "commits": [
+        {"sha": "7b1fcae42603c852fae232d8d91af59cfd4fbe30", "disposition": "B1-candidate"},
+        {"sha": "e1ae2f5e59d2a7d945227f78c45fc1dc0be044d4", "disposition": "B1-document-only-no-projection-implementation"},
+        {"sha": "d2bcef371bb893b941b6662d38477eadffabf7f3", "disposition": "B1-candidate"},
+        {"sha": "8cf2a1a1b783735fb1f59efd2d68622e1bf13247", "disposition": "B1-candidate"},
+        {"sha": "256413c5cbe97cca5c3af4db90c19389eebb42b2", "disposition": "B1-code-ceiling"},
+        {"sha": "9640b6c65f55c326d4b016919d42a27b123162c3", "disposition": "hold-document-factual-correction"}
+      ]
+    },
+    {
+      "line": "Score",
+      "taskId": "01a0bd87-ebbf-7922-9b7c-967caa9df1cd",
+      "worktree": "C:/Users/ATOM/.codex/worktrees/547b/brilliant_guitar",
+      "branch": "codex/score-changeset-typed-migration",
+      "head": "717cdc08eba0ecd6c9232baffa1960acbb855fdf",
+      "mergeBase": "269112b2d85e01827e8cb81bdcc5b671afde4303",
+      "cleanAtInspection": true,
+      "changedFileCount": 22,
+      "diffCheck": "passed",
+      "commits": [
+        {"sha": "20bf15da3b16131a1fcccbfca1838c88db7e5273", "disposition": "skip-duplicate-use-a09915a-in-B2"},
+        {"sha": "3d71f63f3f2c41f19ba67570c1764e966f07296d", "disposition": "B3-required-hardening"},
+        {"sha": "8ece0f3657be5da2de9dc9a7f0fa39d14ba152bd", "disposition": "B3-required-hardening"},
+        {"sha": "717cdc08eba0ecd6c9232baffa1960acbb855fdf", "disposition": "B3-required-hardening"}
+      ]
+    },
+    {
+      "line": "Platform",
+      "taskId": "01a0bdcb-9dd4-79b1-9ff9-0b99a13c16b3",
+      "worktree": "C:/Users/ATOM/.codex/worktrees/71fa/brilliant_guitar",
+      "branch": "codex/plugin-session-intent-decoupling",
+      "head": "7d93aa81391cca120c5f33e36deb2b86fcc6c071",
+      "mergeBase": "269112b2d85e01827e8cb81bdcc5b671afde4303",
+      "cleanAtInspection": true,
+      "changedFileCount": 61,
+      "diffCheck": "passed",
+      "commits": [
+        {"sha": "925badcf0ab58cf6199add4f74934d88fcec1823", "disposition": "skip-duplicate-use-42039d9-in-B2"},
+        {"sha": "1200e2c6b8f8da549d0c047e61103d1f9333324f", "disposition": "B4-candidate"},
+        {"sha": "8ea91f8cc682a62aced817b2beea4de4b4ee623a", "disposition": "B4-candidate"},
+        {"sha": "b23878d2b21833123e0306f1c1576932afef3c25", "disposition": "B4-candidate"},
+        {"sha": "7d93aa81391cca120c5f33e36deb2b86fcc6c071", "disposition": "B5-selected-hunks-only-after-blockers"}
+      ]
+    },
+    {
+      "line": "Agent",
+      "taskId": "01a0ae7b-b5d0-7763-b67b-62499e8cad8c",
+      "worktree": "C:/Users/ATOM/.codex/worktrees/agent-plugin-ownership/brilliant_guitar",
+      "branch": "codex/agent-plugin-ownership",
+      "head": "fe546976d00a6f2a76da16efbfced4c852886bb1",
+      "mergeBase": "269112b2d85e01827e8cb81bdcc5b671afde4303",
+      "cleanAtInspection": true,
+      "changedFileCount": 50,
+      "diffCheck": "failed-existing-document-trailing-whitespace",
+      "diffCheckLocations": [
+        "docs/agent-plugin-ownership-and-assembly-plan-v1.md:3",
+        "docs/agent-plugin-ownership-and-assembly-plan-v1.md:4"
+      ],
+      "commits": [
+        {"sha": "42039d947ed8fda9204dcea03b38368bdc5f26b1", "disposition": "B2-one-copy-of-platform-grants"},
+        {"sha": "a09915aab91a4ae4d3a2dfc5a8e7bb761db1ac42", "disposition": "B2-one-copy-of-score-base"},
+        {"sha": "e961868e3f7f3b98018742dbaa1ab07a4537b98e", "disposition": "B2-agent-with-regressions"},
+        {"sha": "b8fd69d8efbd93c3118a4ccc1cb72b92d51611cc", "disposition": "B2-agent-with-regressions"},
+        {"sha": "35f51c5cfaf5838074c8fd75b07b464b63dd040d", "disposition": "B2-agent-documents-formatting-followup"},
+        {"sha": "fe546976d00a6f2a76da16efbfced4c852886bb1", "disposition": "B2-agent-assembly-candidate"}
+      ]
+    }
+  ],
+  "duplicatePatches": [
+    {
+      "original": "925badcf0ab58cf6199add4f74934d88fcec1823",
+      "selectedReplay": "42039d947ed8fda9204dcea03b38368bdc5f26b1",
+      "stablePatchId": "924b387a558329a2232dc6b745da1d111c6f1dea"
+    },
+    {
+      "original": "20bf15da3b16131a1fcccbfca1838c88db7e5273",
+      "selectedReplay": "a09915aab91a4ae4d3a2dfc5a8e7bb761db1ac42",
+      "stablePatchId": "720ed264b45f317da759bbc7015ba2348e3851c9"
+    }
+  ],
+  "identicalHistoricalTrees": {
+    "oldCopy": "b880379a8fa3b229eaf698c0f781aa323d16cc7f",
+    "selectedReplay": "b8fd69d8efbd93c3118a4ccc1cb72b92d51611cc",
+    "diffExitCode": 0,
+    "oldCopyCleanupAuthorized": false
+  },
+  "changedFileIntersections": [
+    {"left": "Kernel", "right": "Score", "count": 0},
+    {"left": "Kernel", "right": "Platform", "count": 0},
+    {"left": "Kernel", "right": "Agent", "count": 0},
+    {"left": "Score", "right": "Platform", "count": 22},
+    {"left": "Score", "right": "Agent", "count": 22},
+    {"left": "Agent", "right": "Platform", "count": 45}
+  ],
+  "mixedCommit": {
+    "sha": "7d93aa81391cca120c5f33e36deb2b86fcc6c071",
+    "compareAgainst": "fe546976d00a6f2a76da16efbfced4c852886bb1",
+    "fileCountRelativeToParent": 37,
+    "wholeCommitAllowed": false,
+    "files": [
+      {"path": "apps/desktop/src-tauri/src/application/mod.rs", "action": "retain-score-base-already-in-agent"},
+      {"path": "apps/desktop/src-tauri/src/application/tests.rs", "action": "retain-score-base-already-in-agent"},
+      {"path": "apps/desktop/src-tauri/src/capability.rs", "action": "retain-score-base-already-in-agent"},
+      {"path": "apps/desktop/src-tauri/src/commands.rs", "action": "retain-score-base-already-in-agent"},
+      {"path": "apps/desktop/src-tauri/src/dto.rs", "action": "retain-score-base-already-in-agent"},
+      {"path": "apps/desktop/src-tauri/src/lib.rs", "action": "retain-score-base-already-in-agent"},
+      {"path": "apps/desktop/src-tauri/src/score_change_set.rs", "action": "retain-score-base-already-in-agent"},
+      {"path": "apps/workbench/src/agent/action-runtime.ts", "action": "retain-identical-agent"},
+      {"path": "apps/workbench/src/agent/agent-assistant-session.ts", "action": "retain-agent-review-unused-imports-only-if-needed"},
+      {"path": "apps/workbench/src/agent/agent-plugin-runtime.ts", "action": "retain-agent-ignore-blank-line-delta"},
+      {"path": "apps/workbench/src/agent/agent-plugin-session.ts", "action": "retain-agent-ignore-blank-line-delta"},
+      {"path": "apps/workbench/src/agent/agent-recovery-session.ts", "action": "retain-agent-ignore-blank-line-delta"},
+      {"path": "apps/workbench/src/agent/direct-score-read-agent-port.ts", "action": "retain-agent-review-unused-imports-only-if-needed"},
+      {"path": "apps/workbench/src/agent/measure-reference-read-service.ts", "action": "retain-identical-agent"},
+      {"path": "apps/workbench/src/agent/prepared-mutation.ts", "action": "retain-agent-ignore-blank-line-delta"},
+      {"path": "apps/workbench/src/agent/run-controller.ts", "action": "retain-agent-ignore-blank-line-delta"},
+      {"path": "apps/workbench/src/agent/score-change-set-port.ts", "action": "retain-identical-agent"},
+      {"path": "apps/workbench/src/agent/score-measure-index-port.ts", "action": "retain-agent-ignore-blank-line-delta"},
+      {"path": "apps/workbench/src/agent/workflow-runtime.ts", "action": "retain-agent-ignore-blank-line-delta"},
+      {"path": "apps/workbench/src/services/score-change-set-port.ts", "action": "retain-score-717cdc0-hardening"},
+      {"path": "apps/workbench/src/services/score-edit-port.ts", "action": "retain-score-717cdc0-hardening"},
+      {"path": "apps/workbench/src/services/score-read-port.ts", "action": "retain-score-717cdc0-hardening"},
+      {"path": "apps/workbench/src/services/workbench-agent-plugin-host.ts", "action": "extract-resolver-and-scoped-facades-after-G1"},
+      {"path": "apps/workbench/src/services/workbench-client.ts", "action": "retain-score-base-already-in-agent"},
+      {"path": "apps/workbench/src/services/workbench-host-bridge.ts", "action": "retain-score-base-already-in-agent"},
+      {"path": "apps/workbench/src/workbench-app.tsx", "action": "retain-agent-ignore-blank-line-delta"},
+      {"path": "apps/workbench/test/agent-assistant-session.test.ts", "action": "review-fixture-remove-obsolete-enabled-field"},
+      {"path": "apps/workbench/test/agent-evaluation.test.ts", "action": "review-typed-range-fixture-and-no-generic-prepare-assertions"},
+      {"path": "apps/workbench/test/agent-plugin-runtime.test.ts", "action": "retain-no-run-after-dispose-assertion-review-G3"},
+      {"path": "apps/workbench/test/agent-prepared-mutation.test.ts", "action": "retain-agent-fail-closed-test"},
+      {"path": "apps/workbench/test/measure-reference-capability-port.test.ts", "action": "review-typed-ready-fixture-only"},
+      {"path": "apps/workbench/test/measure-reference-read-service.test.ts", "action": "retain-identical-agent"},
+      {"path": "apps/workbench/test/score-change-set-port.test.ts", "action": "retain-score-717cdc0-hardening"},
+      {"path": "apps/workbench/test/score-edit-port.test.ts", "action": "retain-score-717cdc0-hardening"},
+      {"path": "apps/workbench/test/score-measure-index-port.test.ts", "action": "review-complete-typed-port-fixture"},
+      {"path": "apps/workbench/test/score-read-port.test.ts", "action": "combine-direct-port-fixture-with-score-hardening-no-whole-file-copy"},
+      {"path": "docs/plugin-platform-ui-contribution-and-session-freeze-plan-v1.md", "action": "retain-agent-workflow-status-paragraph"}
+    ],
+    "agentPreservationChecklist": [
+      "apps/workbench/test/agent-action-runtime.test.ts",
+      "apps/workbench/test/agent-run-core.test.ts",
+      "apps/workbench/test/agent-workflow-runtime.test.ts",
+      "apps/workbench/test/agent-prepared-mutation.test.ts",
+      "docs/agent-plugin-ownership-and-assembly-plan-v1.md",
+      "docs/agent-typed-port-orchestration-boundary-v1.md"
+    ]
+  },
+  "historicalEvidenceOnly": {
+    "kernel": {"sourceCodeCommit": "256413c5cbe97cca5c3af4db90c19389eebb42b2", "workspacePassed": 667, "workspaceIgnored": 2, "rerunHere": false},
+    "score": {
+      "sourceCommit": "717cdc08eba0ecd6c9232baffa1960acbb855fdf",
+      "focusedPassed": 97,
+      "workbenchPassed": 572,
+      "rerunHere": false,
+      "reportedAddon": {
+        "relativePath": "target/integrated-v2/brilliant_kernel_node.node",
+        "bytes": 5056512,
+        "sha256": "7f695898644f395f05068e63b15efc70e94eb0999642f684c87a45d7a9ed1021",
+        "sourceGitSha": null,
+        "independentlyRebuiltHere": false
+      }
+    },
+    "agent": {"sourceCommit": "fe546976d00a6f2a76da16efbfced4c852886bb1", "reportedFocusedPassed": 22, "completeCommandAvailable": false, "rerunHere": false},
+    "platform": {
+      "claimedSourceCommit": "7d93aa81391cca120c5f33e36deb2b86fcc6c071",
+      "reportedFocusedPassed": 116,
+      "acceptedAsCommitValidation": false,
+      "reason": "reported command names apps/workbench/test/agent-action-runtime.test.ts, absent from committed tree",
+      "rerunHere": false
+    }
+  },
+  "protectedMain": {
+    "worktree": "E:/desktop/brilliant_ideas/brilliant_guitar",
+    "head": "269112b2d85e01827e8cb81bdcc5b671afde4303",
+    "localOriginMain": "269112b2d85e01827e8cb81bdcc5b671afde4303",
+    "remoteFetched": false,
+    "modifiedCount": 21,
+    "untrackedCount": 11,
+    "stagedCount": 0,
+    "contentInventorySha256": "a71349a256d3390fcdb869f173aac5cc820879eae3f58f2103bb6ec58d9fbcfa",
+    "inventoryAlgorithm": "PowerShell: union git diff --name-only --no-renames, git diff --cached --name-only --no-renames, git ls-files --others --exclude-standard; Sort-Object -Unique; for each path emit ordered properties path then sha256 (raw bytes, lowercase SHA256); ConvertTo-Json -InputObject @($records) -Compress; SHA256 of UTF8 bytes without BOM/newline",
+    "files": [
+      "apps/desktop/src-tauri/src/application/mod.rs",
+      "apps/desktop/src-tauri/src/application/tests.rs",
+      "apps/desktop/src-tauri/src/capability.rs",
+      "apps/desktop/src-tauri/src/commands.rs",
+      "apps/desktop/src-tauri/src/dto.rs",
+      "apps/desktop/src-tauri/src/lib.rs",
+      "apps/desktop/src-tauri/src/score_change_set.rs",
+      "apps/workbench/src/agent/agent-assistant-session.ts",
+      "apps/workbench/src/agent/direct-score-read-agent-port.ts",
+      "apps/workbench/src/agent/prepared-mutation.ts",
+      "apps/workbench/src/agent/run-controller.ts",
+      "apps/workbench/src/agent/score-change-set-port.ts",
+      "apps/workbench/src/plugins/plugin-discovery.ts",
+      "apps/workbench/src/plugins/plugin-platform.ts",
+      "apps/workbench/src/plugins/plugin-sdk-adapter.ts",
+      "apps/workbench/src/plugins/plugin-sdk.ts",
+      "apps/workbench/src/plugins/plugin-security.ts",
+      "apps/workbench/src/services/score-change-set-port.ts",
+      "apps/workbench/src/services/score-edit-port.ts",
+      "apps/workbench/src/services/score-read-port.ts",
+      "apps/workbench/src/services/workbench-client.ts",
+      "apps/workbench/src/services/workbench-host-bridge.ts",
+      "apps/workbench/src/ui/plugin-diagnostic.ts",
+      "apps/workbench/src/ui/plugin-manifest.ts",
+      "apps/workbench/test/agent-assistant-session.test.ts",
+      "apps/workbench/test/plugin-sdk.test.ts",
+      "apps/workbench/test/plugin-security.test.ts",
+      "apps/workbench/test/score-change-set-port.test.ts",
+      "apps/workbench/test/score-edit-port.test.ts",
+      "apps/workbench/test/score-read-port.test.ts",
+      "docs/plugin-platform-ui-contribution-and-session-freeze-plan-v1.md",
+      "docs/repository-workspaces.md"
+    ]
+  }
+}
