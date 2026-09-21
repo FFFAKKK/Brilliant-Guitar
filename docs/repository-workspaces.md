@@ -1,5 +1,17 @@
 # 协作工作区与阶段索引
 
+## 2026-09-22 最新决定
+
+用户已授权先保全旧改动并将现有集成成果快进到 main，再从固定 main SHA
+创建独立审计任务，配置为 `gpt-5.6-sol / xhigh`。
+详见 [统一审计基线决定](integration/2026-09-22-unified-audit-baseline.md)
+和 [关闭故障调查](integration/B9-close-lifecycle-investigation.md)。
+这是带已知缺陷的统一源码基线，不代表产品验收通过，也不自动恢复四线开发。
+下面 B8 阶段的“尚未授权迁移”等表述保留为当时历史状态，受本次决定覆盖。
+迁移后的完整 SHA、保全提交和 main 实测结果由总协调回执提供。
+
+## B8 历史快照
+
 更新日期：2026-09-21，Asia/Shanghai。
 本次完成 B8 Kernel 边界文档纳入和 workspace fmt 收口；仍待环境验收和 main 迁移，未更新 main。
 以下提交和证据是固定快照，不代表已检查各任务的实时运行状态。

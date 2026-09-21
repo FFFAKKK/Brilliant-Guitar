@@ -1,5 +1,10 @@
 # Development Environment Acceptance
 
+The 2026-09-22 user-authorized [audit-baseline decision](integration/2026-09-22-unified-audit-baseline.md)
+allows main migration before successful native smoke acceptance. The tools,
+isolation rules and checks below still apply; known failures must be reported.
+This exception establishes a common audit source, not an accepted product release.
+
 This is the Windows x64 development-baseline profile, not a cross-platform
 release, signing, installer, power-loss or performance qualification.
 Each task uses its own checkout, writable dependencies, outputs and runtime data.
