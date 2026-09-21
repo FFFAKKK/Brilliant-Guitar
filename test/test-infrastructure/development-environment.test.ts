@@ -15,6 +15,7 @@ interface Source {
 const environment = require(resolve(__dirname, "../../../scripts/development-environment.mjs")) as {
   profile: { rust: string };
   sha256: (bytes: string | Buffer) => string;
+  desktopBuildEnvironment: (root: string, targetDirectory: string, env?: Record<string, string>) => Record<string, string>;
   captureSource: (root: string, base: string, desktop?: boolean) => Source;
   ownedPath: (root: string, path: string, create?: boolean) => string;
   assertBuildEnvironment: (root: string, env: Record<string, string>) => void;
@@ -218,6 +219,28 @@ test("unrecorded environment and nested Cargo configuration overrides fail close
     }
     f.write("apps/desktop/.cargo/config.toml", "[build]\n");
     assert.throws(() => environment.assertBuildEnvironment(f.root, {}), /configuration override/u);
+  } finally {
+    f.dispose();
+  }
+});
+
+test("desktop builds use the selected Node npm CLI and isolated Rust outputs", () => {
+  const f = fixture();
+  try {
+    const result = environment.desktopBuildEnvironment(
+      f.root,
+      "target/development-build/desktop-release",
+      {
+        npm_execpath: "stale-npm-cli.js",
+        CARGO_TARGET_DIR: "stale-target",
+        RUSTUP_TOOLCHAIN: "stale-toolchain",
+        PRESERVED_BUILD_INPUT: "fixture",
+      },
+    );
+    assert.equal(result.npm_execpath, join(dirname(process.execPath), "node_modules/npm/bin/npm-cli.js"));
+    assert.equal(result.CARGO_TARGET_DIR, join(f.root, "target/development-build/desktop-release"));
+    assert.equal(result.RUSTUP_TOOLCHAIN, environment.profile.rust);
+    assert.equal(result.PRESERVED_BUILD_INPUT, "fixture");
   } finally {
     f.dispose();
   }

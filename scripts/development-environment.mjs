@@ -51,6 +51,14 @@ function npmCli() {
   assert.ok(existsSync(path), "npm CLI must be installed alongside the selected Node executable");
   return path;
 }
+export function desktopBuildEnvironment(root, targetDirectory, env = process.env) {
+  return {
+    ...env,
+    npm_execpath: npmCli(),
+    CARGO_TARGET_DIR: join(root, targetDirectory),
+    RUSTUP_TOOLCHAIN: profile.rust,
+  };
+}
 function run(command, args, root, env = process.env) {
   const child = spawnSync(command, args, { cwd: root, env, stdio: "inherit", windowsHide: true });
   if (child.error) throw child.error;
@@ -340,9 +348,7 @@ export function prepareDesktop(root, base, smoke = false) {
     const args = ["apps/desktop/scripts/run-tauri.mjs", "build", "--no-bundle", "--ci",
       ...(configuration ? ["--config", regular(root, configuration.path)] : []),
       "--", "--locked", "--offline"];
-    run(process.execPath, args, root, {
-      ...process.env, CARGO_TARGET_DIR: join(root, targetDirectory), RUSTUP_TOOLCHAIN: profile.rust,
-    });
+    run(process.execPath, args, root, desktopBuildEnvironment(root, targetDirectory));
     assert.deepEqual(captureSource(root, base, true), source, "Source changed while building");
     const built = `${targetDirectory}/release/brilliant-guitar-desktop.exe`;
     const artifact = retainFile(root, built, `target/development-artifacts/${variant}-${fileFacts(root, built).sha256}.exe`);
