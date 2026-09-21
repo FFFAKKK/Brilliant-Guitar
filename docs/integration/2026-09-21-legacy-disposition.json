@@ -1,0 +1,374 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-09-21",
+  "timezone": "Asia/Shanghai",
+  "phase": "legacy-ownership-and-duplication-audit-only",
+  "inventoryCommit": "3a7d87074d0a833576bd7e908ce26a249682c38c",
+  "comparisonFile": "2026-09-21-legacy-comparison.json",
+  "reportFile": "2026-09-21-legacy-audit.md",
+  "entryCount": 85,
+  "countUnit": "worktree plus relative path; not unique repository paths or new features",
+  "ownerAssignmentMeaning": "One disposition owner per entry. Reviewers are proposed review counterparts, not claims of reviews performed or tasks dispatched. Custody does not grant implementation ownership.",
+  "authorization": {
+    "legacySourceCommitAllowed": false,
+    "legacyCleanupAllowed": false,
+    "legacyArchiveCreated": false,
+    "newBusinessImplementationAllowed": false,
+    "trellisTaskCreated": false,
+    "otherTasksDispatched": false,
+    "mainPromotionAllowed": false,
+    "pushAllowed": false,
+    "visualDesignProgressIncluded": false
+  },
+  "owners": {
+    "Score": {"taskId": "01a0bd87-ebbf-7922-9b7c-967caa9df1cd", "scope": "Typed Score services, Desktop Score integration and cross-boundary review"},
+    "Agent": {"taskId": "01a0ae7b-b5d0-7763-b67b-62499e8cad8c", "scope": "Agent orchestration and its typed-port consumers"},
+    "Platform": {"taskId": "01a0bdcb-9dd4-79b1-9ff9-0b99a13c16b3", "scope": "Plugin identity, SDK, contribution ownership and session assembly"},
+    "Kernel": {"taskId": "01a0bd73-138b-7bd3-8e04-47fc5c8ab8ca", "scope": "Rust Kernel and interpretation of historical Kernel evidence"},
+    "Coordination": {"taskId": "01a0bda0-44ac-77b1-8323-e9e293ae5760", "scope": "Evidence custody, disposition decisions and reports; not a new business implementation owner"}
+  },
+  "worktrees": {
+    "main": "E:/desktop/brilliant_ideas/brilliant_guitar",
+    "ce04": "C:/Users/ATOM/.codex/worktrees/ce04/brilliant_guitar",
+    "rkp": "E:/desktop/brilliant_ideas/brilliant_guitar/.worktrees/rkp-2-stage-6-semantic-canonical-authority-amendment",
+    "prototype": "E:/desktop/brilliant_ideas/brilliant_guitar/.worktrees/ui-standard-notation-v1"
+  },
+  "categories": {
+    "delivered-duplicate": "Matches the selected current owner reference in full, allowing only CRLF-to-LF normalization. Do not duplicate the delivery or delete the local copy.",
+    "superseded": "An older or incomplete version relative to the selected owner/current main. Retain the current implementation; preserve the legacy bytes pending approved disposition.",
+    "nonfunctional-only": "Inspected difference is comments or blank lines only. This is not full-file equality and not a new feature.",
+    "review-required-hunk": "Potentially distinct intent mixed with stale code. Preserve and review only identified hunks after separate authorization; no whole-file copy.",
+    "historical-record": "Historical evidence or task-state snapshot, not current task authority or new runtime work.",
+    "retired-prototype": "Historical prototype marked retired in its own README. Preserve for archival assessment, not active-source integration or visual review.",
+    "coordination-record": "Unique coordination notes with older status claims; reconcile separately without overwriting the original."
+  },
+  "expectedCounts": {
+    "delivered-duplicate": 15,
+    "superseded": 30,
+    "nonfunctional-only": 4,
+    "review-required-hunk": 6,
+    "historical-record": 8,
+    "retired-prototype": 21,
+    "coordination-record": 1
+  },
+  "batches": [
+    {
+      "id": "M1",
+      "worktree": "main",
+      "category": "delivered-duplicate",
+      "primaryOwner": "Score",
+      "reviewer": "Agent",
+      "ownershipMode": "existing-module",
+      "authorityTarget": "score",
+      "reason": "Seven Desktop files and two host adapters match Score 717cdc0. Already represented by the common Score base selected in the Agent chain.",
+      "files": [
+        "apps/desktop/src-tauri/src/application/mod.rs",
+        "apps/desktop/src-tauri/src/application/tests.rs",
+        "apps/desktop/src-tauri/src/capability.rs",
+        "apps/desktop/src-tauri/src/commands.rs",
+        "apps/desktop/src-tauri/src/dto.rs",
+        "apps/desktop/src-tauri/src/lib.rs",
+        "apps/desktop/src-tauri/src/score_change_set.rs",
+        "apps/workbench/src/services/workbench-client.ts",
+        "apps/workbench/src/services/workbench-host-bridge.ts"
+      ]
+    },
+    {
+      "id": "M2",
+      "worktree": "main",
+      "category": "delivered-duplicate",
+      "primaryOwner": "Agent",
+      "reviewer": "Score",
+      "ownershipMode": "existing-module",
+      "authorityTarget": "agentVerified",
+      "reason": "The compatibility adapter file is already present at the Agent verified reference. Equality is not permission to restore it as the production fallback or delete it.",
+      "files": ["apps/workbench/src/agent/score-change-set-port.ts"]
+    },
+    {
+      "id": "M3",
+      "worktree": "main",
+      "category": "delivered-duplicate",
+      "primaryOwner": "Platform",
+      "reviewer": "Coordination",
+      "ownershipMode": "existing-module",
+      "authorityTarget": "platformFixed",
+      "reason": "These four files match the current Platform reference. Use the selected grants delivery once, not another commit of the root working copy.",
+      "files": [
+        "apps/workbench/src/plugins/plugin-discovery.ts",
+        "apps/workbench/src/plugins/plugin-security.ts",
+        "apps/workbench/src/ui/plugin-diagnostic.ts",
+        "apps/workbench/src/ui/plugin-manifest.ts"
+      ]
+    },
+    {
+      "id": "M4",
+      "worktree": "main",
+      "category": "superseded",
+      "primaryOwner": "Agent",
+      "reviewer": "Score",
+      "ownershipMode": "existing-module",
+      "authorityTarget": "agentVerified",
+      "reason": "Legacy broad host assembly and generic prepare fallback must not replace scoped typed bindings, action/workflow dispatch and fail-closed behavior. The assistant test has a same-path historical match at 952426f, not at the verified Agent reference.",
+      "files": [
+        "apps/workbench/src/agent/agent-assistant-session.ts",
+        "apps/workbench/src/agent/direct-score-read-agent-port.ts",
+        "apps/workbench/src/agent/prepared-mutation.ts",
+        "apps/workbench/src/agent/run-controller.ts",
+        "apps/workbench/test/agent-assistant-session.test.ts"
+      ]
+    },
+    {
+      "id": "M5",
+      "worktree": "main",
+      "category": "superseded",
+      "primaryOwner": "Score",
+      "reviewer": "Agent",
+      "ownershipMode": "existing-module",
+      "authorityTarget": "score",
+      "reason": "All six files match scoreBase 20bf15d, not Score 717cdc0. Preserve the full 3d71f63 -> 8ece0f3 -> 717cdc0 hardening and merge only required Agent fixture adaptations later.",
+      "files": [
+        "apps/workbench/src/services/score-change-set-port.ts",
+        "apps/workbench/src/services/score-edit-port.ts",
+        "apps/workbench/src/services/score-read-port.ts",
+        "apps/workbench/test/score-change-set-port.test.ts",
+        "apps/workbench/test/score-edit-port.test.ts",
+        "apps/workbench/test/score-read-port.test.ts"
+      ]
+    },
+    {
+      "id": "M6",
+      "worktree": "main",
+      "category": "superseded",
+      "primaryOwner": "Platform",
+      "reviewer": "Coordination",
+      "ownershipMode": "existing-module",
+      "authorityTarget": "platformFixed",
+      "reason": "All four files match grantBase 925badc and the Agent-carried baseline, not the Platform session activation/capture delivery.",
+      "files": [
+        "apps/workbench/src/plugins/plugin-platform.ts",
+        "apps/workbench/src/plugins/plugin-sdk-adapter.ts",
+        "apps/workbench/src/plugins/plugin-sdk.ts",
+        "apps/workbench/test/plugin-sdk.test.ts"
+      ]
+    },
+    {
+      "id": "M7",
+      "worktree": "main",
+      "category": "superseded",
+      "primaryOwner": "Platform",
+      "reviewer": "Agent",
+      "ownershipMode": "existing-module",
+      "authorityTarget": "agentVerified",
+      "reason": "Matches the mixed Platform document, but lacks the Agent action/workflow implementation-status addition. Reconcile facts with the Agent document; do not copy the older whole document.",
+      "files": ["docs/plugin-platform-ui-contribution-and-session-freeze-plan-v1.md"]
+    },
+    {
+      "id": "M8",
+      "worktree": "main",
+      "category": "nonfunctional-only",
+      "primaryOwner": "Platform",
+      "reviewer": "Coordination",
+      "ownershipMode": "existing-module",
+      "authorityTarget": "platformFixed",
+      "reason": "The only inspected difference is the comment about policy input capture before mutating caller-owned arrays. No added assertion or changed test behavior.",
+      "files": ["apps/workbench/test/plugin-security.test.ts"]
+    },
+    {
+      "id": "M9",
+      "worktree": "main",
+      "category": "coordination-record",
+      "primaryOwner": "Coordination",
+      "reviewer": "Platform",
+      "ownershipMode": "evidence-custody",
+      "reason": "Retain the reporting rules and ownership notes, but its 2026-09-20 heads, test counts and Agent-copy uncertainty are older than the pinned 2026-09-21 evidence. Reconcile as documentation only after approval.",
+      "files": ["docs/repository-workspaces.md"]
+    },
+    {
+      "id": "C1",
+      "worktree": "ce04",
+      "category": "delivered-duplicate",
+      "primaryOwner": "Coordination",
+      "reviewer": "Score",
+      "ownershipMode": "evidence-custody",
+      "authorityTarget": "main",
+      "reason": "The whole score-navigation file already matches main. This does not assign staff editing implementation to the Score typed-port task.",
+      "files": ["apps/workbench/src/editor/score-navigation.ts"]
+    },
+    {
+      "id": "C2",
+      "worktree": "ce04",
+      "category": "superseded",
+      "primaryOwner": "Coordination",
+      "reviewer": "Score",
+      "ownershipMode": "evidence-custody",
+      "implementationOwner": null,
+      "authorityTarget": "main",
+      "reason": "Current main has the subsequent editor implementation: application-owned intent conversion, insert-event/update-event/delete-event contract, read-only interaction directory, additional range/composition/empty-measure handling and tests. Do not revive the old contracts. Any new functional editor work needs an explicitly designated owner.",
+      "files": [
+        "apps/workbench/src/editor/staff-input-adapter.ts",
+        "apps/workbench/src/editor/use-note-overview.ts",
+        "apps/workbench/src/editor/use-score-input.ts",
+        "apps/workbench/src/editor/staff-edit-key-policy.ts",
+        "apps/workbench/src/editor/staff-interaction-contribution.ts",
+        "apps/workbench/src/editor/staff-navigation-policy.ts",
+        "apps/workbench/src/input/edit-intent.ts",
+        "apps/workbench/test/input-adapter.test.ts",
+        "apps/workbench/test/staff-edit-key-policy.test.ts",
+        "apps/workbench/test/staff-navigation-policy.test.ts"
+      ]
+    },
+    {
+      "id": "C3",
+      "worktree": "ce04",
+      "category": "superseded",
+      "primaryOwner": "Platform",
+      "reviewer": "Coordination",
+      "ownershipMode": "existing-module",
+      "authorityTarget": "main",
+      "reason": "The old registry lacks NotationInteractionDirectory and hasId; callers should not regain a mutable registration surface.",
+      "files": ["apps/workbench/src/input/notation-interaction-registry.ts"]
+    },
+    {
+      "id": "C4",
+      "worktree": "ce04",
+      "category": "superseded",
+      "primaryOwner": "Platform",
+      "reviewer": "Agent",
+      "ownershipMode": "existing-module",
+      "authorityTarget": "platformFixed",
+      "reason": "Old UI-module registration and manifest API 2 cannot replace API 3, hostFeatures/hostServices, captured declarations and current contribution topology.",
+      "files": [
+        "apps/workbench/src/ui/first-party-plugins.ts",
+        "apps/workbench/src/ui/plugin-diagnostic.ts",
+        "apps/workbench/src/ui/plugin-manifest.ts"
+      ]
+    },
+    {
+      "id": "C5",
+      "worktree": "ce04",
+      "category": "nonfunctional-only",
+      "primaryOwner": "Coordination",
+      "reviewer": "Platform",
+      "ownershipMode": "evidence-custody",
+      "authorityTarget": "main",
+      "reason": "Diff inspection found only missing explanatory comments and a trailing blank line relative to main. Not whole-file duplicates and not new input behavior.",
+      "files": [
+        "apps/workbench/src/input/input-adapter.ts",
+        "apps/workbench/src/input/input-context.ts",
+        "apps/workbench/src/input/input-signal.ts"
+      ]
+    },
+    {
+      "id": "C6",
+      "worktree": "ce04",
+      "category": "review-required-hunk",
+      "primaryOwner": "Platform",
+      "reviewer": "Coordination",
+      "ownershipMode": "existing-module",
+      "authorityTarget": "platformFixed",
+      "reason": "Preserve only the componentProjectionReader / resolveViews reader restriction idea and its component-scope regression for review. Current resolveViews passes a plugin-scoped reader and the SDK adapter forwards it; the existing scope test covers plugin scope, not this component case. No runtime reproduction or policy decision in this phase.",
+      "allowedReviewHunks": [
+        "componentProjectionReader helper",
+        "resolveViews per-component reader selection while preserving extensions and session activation",
+        "test named resolved views receive only the projections declared by their component"
+      ],
+      "forbiddenRestorations": [
+        "old manifest API",
+        "removal of component extensions",
+        "unfiltered activation",
+        "whole-file replacement"
+      ],
+      "files": [
+        "apps/workbench/src/ui/plugin-manager.ts",
+        "apps/workbench/test/ui-view-contribution.test.ts"
+      ]
+    },
+    {
+      "id": "C7",
+      "worktree": "ce04",
+      "category": "review-required-hunk",
+      "primaryOwner": "Coordination",
+      "reviewer": "Platform",
+      "ownershipMode": "evidence-custody",
+      "implementationOwner": null,
+      "authorityTarget": "main",
+      "reason": "The separate StaffProjection data/actions contract is absent at the checked reference; main still aliases StaffViewProps. This is an unapproved architectural alternative, not a missing-code conclusion. The legacy contract still imports React RefObject, renderer and playback types. Do not appoint Kernel/Score/Agent/visual-design tasks to implement it implicitly.",
+      "allowedReviewHunks": [
+        "StaffProjection contract shape",
+        "StaffView projection prop and its paired host binding"
+      ],
+      "forbiddenRestorations": [
+        "removal of Agent projections",
+        "removal of current input preferences",
+        "replacement of current session-fixed assembly",
+        "automatic Projection Composer implementation"
+      ],
+      "files": [
+        "apps/workbench/src/contracts/staff-projection.ts",
+        "apps/workbench/src/components/staff-view.tsx",
+        "apps/workbench/src/ui/first-party-plugin-projections.ts",
+        "apps/workbench/src/workbench-app.tsx"
+      ]
+    },
+    {
+      "id": "K1",
+      "worktree": "rkp",
+      "category": "historical-record",
+      "primaryOwner": "Kernel",
+      "reviewer": "Coordination",
+      "ownershipMode": "historical-evidence",
+      "reason": "Seven files match f51bcfe exactly after EOL normalization. The remaining 08-26 task.json predates that reconstruction's child/gate metadata; all eight are historical task/evidence records. bcc1c90 later archived the task. Do not restore old active statuses or treat E3 records as freshly verified results.",
+      "files": [
+        ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json",
+        ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/operator-handoff.md",
+        ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/review-candidate.md",
+        ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json",
+        ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/operator-handoff.md",
+        ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/review-candidate.md",
+        ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/task.json",
+        ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/research/implementation-evidence.md"
+      ]
+    },
+    {
+      "id": "P1",
+      "worktree": "prototype",
+      "category": "retired-prototype",
+      "primaryOwner": "Coordination",
+      "reviewer": "Score",
+      "ownershipMode": "historical-evidence",
+      "implementationOwner": null,
+      "reason": "Retired according to the 2026-09-13 README. Preserve the old Native V2 HTTP host, .score.json protocol, browser/plugin source and build metadata as one historical unit. No exact same-path match was found in the checked refs; that is not proof that no archive exists. The README's archive completeness claim was not independently verified. Score review, if authorized, concerns protocol/host evidence only, not visual design.",
+      "files": [
+        ".gitignore",
+        "package-lock.json",
+        "package.json",
+        "apps/notation-ui/README.md",
+        "apps/notation-ui/browser/kernel-client.ts",
+        "apps/notation-ui/browser/main.ts",
+        "apps/notation-ui/browser/score-views.ts",
+        "apps/notation-ui/contracts.ts",
+        "apps/notation-ui/host/editor-service.ts",
+        "apps/notation-ui/host/file-store.ts",
+        "apps/notation-ui/host/main.ts",
+        "apps/notation-ui/host/native-backend.ts",
+        "apps/notation-ui/host/server.ts",
+        "apps/notation-ui/plugins/standard-notation/index.ts",
+        "apps/notation-ui/plugins/standard-notation/input.ts",
+        "apps/notation-ui/public/index.html",
+        "apps/notation-ui/public/style.css",
+        "docs/design/README.md",
+        "scripts/build-ui.mjs",
+        "test/notation-ui/integration.test.ts",
+        "tsconfig.ui.json"
+      ]
+    }
+  ],
+  "supplementalCommits": {
+    "integratedInputCheckpoint": "3376d9a5cd25ad20bb3ff8a99ddf8e8a5ff35b63",
+    "fixedComponentTopology": "49c1426f57f7880e885a67620a9de9ba493460f3",
+    "historicalE3Reconstruction": "f51bcfeee794665e1035edcf290143b2ae7556b4",
+    "historicalTaskArchive": "bcc1c905bc58ab9810e076c23891d6683a2ae607",
+    "historicalScoreTest": "952426f342db632a75d53075349cb336a2de1008"
+  },
+  "nextPhase": "Await a separate decision on evidence backup/disposition and the two ce04 review bundles. Do not start source integration or main promotion from this audit."
+}

@@ -1,0 +1,1104 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-09-21",
+  "inventoryCommit": "3a7d87074d0a833576bd7e908ce26a249682c38c",
+  "inventoryPath": "docs/integration/2026-09-21-kernel-boundary-evidence.json",
+  "comparison": "Full-file Git blob equality, raw or CRLF-to-LF only; no whitespace/BOM trimming or semantic-equivalence inference",
+  "historyScope": "Reachable --all refs at audit time; same-path commit-tree verification for unmatched target files; not reflogs or dangling objects",
+  "deletionAuthorized": false,
+  "legacyChangesCommitted": false,
+  "targets": {
+    "main": "269112b2d85e01827e8cb81bdcc5b671afde4303",
+    "score": "717cdc08eba0ecd6c9232baffa1960acbb855fdf",
+    "agent": "fe546976d00a6f2a76da16efbfced4c852886bb1",
+    "agentVerified": "cb918d0a86e7f5874b1efeb3059232d93dbad173",
+    "platform": "7d93aa81391cca120c5f33e36deb2b86fcc6c071",
+    "platformFixed": "0da94996def194ebe0b9fe159b3642398887115c",
+    "scoreBase": "20bf15da3b16131a1fcccbfca1838c88db7e5273",
+    "grantBase": "925badcf0ab58cf6199add4f74934d88fcec1823"
+  },
+  "groups": [
+    {
+      "worktree": "E:/desktop/brilliant_ideas/brilliant_guitar",
+      "head": "269112b2d85e01827e8cb81bdcc5b671afde4303",
+      "protectedInventorySha256": "a71349a256d3390fcdb869f173aac5cc820879eae3f58f2103bb6ec58d9fbcfa",
+      "files": [
+        {
+          "path": "apps/desktop/src-tauri/src/application/mod.rs",
+          "sha256": "5b06e1fd23f131c386e8b3c5d2de06f28c9e8b1c553d01d1299d50249abc5c5d",
+          "rawBlob": "e7c2e68096cfe9aa21159c36e96d5665df3b4853",
+          "lfBlob": "e7c2e68096cfe9aa21159c36e96d5665df3b4853",
+          "baseBlob": "c45b9fdad451dbe4b4b17e061a80f8ccfc08bf8b",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [
+            "score",
+            "agent",
+            "agentVerified",
+            "platform",
+            "platformFixed",
+            "scoreBase"
+          ],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/desktop/src-tauri/src/application/tests.rs",
+          "sha256": "f24ee83c01215496e7509920955828e8b183b8b7763521b88b8d0738a812a146",
+          "rawBlob": "bb02bb813e417c9b68c81300f0ba17aac9c6b4fc",
+          "lfBlob": "bb02bb813e417c9b68c81300f0ba17aac9c6b4fc",
+          "baseBlob": "412a40c3f4ae5626de9f16c3a2f432fc41b7f87d",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [
+            "score",
+            "agent",
+            "agentVerified",
+            "platform",
+            "platformFixed",
+            "scoreBase"
+          ],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/desktop/src-tauri/src/capability.rs",
+          "sha256": "73e93c1e4df6292c2b287e94c8d4486db64385d6f65525acc19b37327a046fef",
+          "rawBlob": "ce7f7e273daac5391d3303b47dbef6d37751d476",
+          "lfBlob": "ce7f7e273daac5391d3303b47dbef6d37751d476",
+          "baseBlob": "f2573102eb39659ad617e8bf1958be3552ea7944",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [
+            "score",
+            "agent",
+            "agentVerified",
+            "platform",
+            "platformFixed",
+            "scoreBase"
+          ],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/desktop/src-tauri/src/commands.rs",
+          "sha256": "82a1425f506105d92ab59f3ea936a528abe38cc8e85f716d4e8d921f8c08fa09",
+          "rawBlob": "d5832f0643c597cb0df60d6eac7e5f534681b4a5",
+          "lfBlob": "d5832f0643c597cb0df60d6eac7e5f534681b4a5",
+          "baseBlob": "d1de857c712f2182977904dc49ceb69a168faf29",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [
+            "score",
+            "agent",
+            "agentVerified",
+            "platform",
+            "platformFixed",
+            "scoreBase"
+          ],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/desktop/src-tauri/src/dto.rs",
+          "sha256": "42812be00e70190c6460e5ea7b86621207f58d99e050a1a6a6e80e850d87c9ee",
+          "rawBlob": "9466f08f50f44dbb041b2540cac3bd40340befda",
+          "lfBlob": "9466f08f50f44dbb041b2540cac3bd40340befda",
+          "baseBlob": "c009e3b87173f92cded28517de84ec3410f69894",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [
+            "score",
+            "agent",
+            "agentVerified",
+            "platform",
+            "platformFixed",
+            "scoreBase"
+          ],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/desktop/src-tauri/src/lib.rs",
+          "sha256": "f0b395707ffe976a805e043b83729601017a4fbb72cf6765bf66a8924a034a66",
+          "rawBlob": "0b02eac999a4b5c94e9a3a973344ef52fd9a866f",
+          "lfBlob": "0b02eac999a4b5c94e9a3a973344ef52fd9a866f",
+          "baseBlob": "472a348248dd560121c8211f9dacb3a91b902365",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [
+            "score",
+            "agent",
+            "agentVerified",
+            "platform",
+            "platformFixed",
+            "scoreBase"
+          ],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/desktop/src-tauri/src/score_change_set.rs",
+          "sha256": "4e752770d18102d6f53221be935901d7c5824b382ca52a335a3740f9ceb2677f",
+          "rawBlob": "b952e36a2976d3ffc4a43c2e636cabcdaa82efe5",
+          "lfBlob": "b952e36a2976d3ffc4a43c2e636cabcdaa82efe5",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [
+            "score",
+            "agent",
+            "agentVerified",
+            "platform",
+            "platformFixed",
+            "scoreBase"
+          ],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/agent/agent-assistant-session.ts",
+          "sha256": "3bd939a1906c2169168c62a60931cbc9378dd1648fb6b8f24ed25da07ea85504",
+          "rawBlob": "34b046e7910759a44f7d854c3eb52a75f76e0081",
+          "lfBlob": "34b046e7910759a44f7d854c3eb52a75f76e0081",
+          "baseBlob": "8dc0910a3fe5ba251e306e90f166e93bbbd36fe0",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/agent/direct-score-read-agent-port.ts",
+          "sha256": "20a3998eef03fb6df5add5c17cdce6fac2c6602453f2dcb131ee43d5466c7a79",
+          "rawBlob": "4d90d99a11017da44857e68ddafb810fb5599f69",
+          "lfBlob": "4d90d99a11017da44857e68ddafb810fb5599f69",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [
+            "score",
+            "scoreBase"
+          ],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/agent/prepared-mutation.ts",
+          "sha256": "4fbcd80eda173add668896c2feadc16302e8f214092bbca63dae376fe9ad8293",
+          "rawBlob": "f50069a959f3fd1a8fdfed41be0dbcde592282f3",
+          "lfBlob": "f50069a959f3fd1a8fdfed41be0dbcde592282f3",
+          "baseBlob": "828a5595fc7a88b4bb9bcb414259a74e35b14c22",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [
+            "score",
+            "scoreBase"
+          ],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/agent/run-controller.ts",
+          "sha256": "765090aa9b9f64fd29ba4f9517f23ead307e9bb33ab00c43c734757b7b4d88fd",
+          "rawBlob": "4e4209d7777eabca7f5773756911655f30101355",
+          "lfBlob": "4e4209d7777eabca7f5773756911655f30101355",
+          "baseBlob": "81734b4c3379dccea73ab66bcba8d1bedd4525b2",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [
+            "score",
+            "scoreBase"
+          ],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/agent/score-change-set-port.ts",
+          "sha256": "1bc4cca34cc528520791785a733519ab86a04f4752f3c3380f9e362b6e5ee915",
+          "rawBlob": "629d71c23e8869117b2c5eebca7e1b41abc0f3f1",
+          "lfBlob": "629d71c23e8869117b2c5eebca7e1b41abc0f3f1",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [
+            "score",
+            "agent",
+            "agentVerified",
+            "platform",
+            "platformFixed",
+            "scoreBase"
+          ],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/plugins/plugin-discovery.ts",
+          "sha256": "e86a3c21abbdf8f87d890c3bcb001a4bdde6040d6dddf24e8c5a6868aad5e18d",
+          "rawBlob": "279a52fb3c45ebcfe1c97e386440ec193467017a",
+          "lfBlob": "279a52fb3c45ebcfe1c97e386440ec193467017a",
+          "baseBlob": "39f91c05b0155354e68f29934f425fe5e92dab62",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [
+            "agent",
+            "agentVerified",
+            "platform",
+            "platformFixed",
+            "grantBase"
+          ],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/plugins/plugin-platform.ts",
+          "sha256": "766654cc6cb1b40e12d7b3c4aaf7265a2ae7425fa4a7161c24ec06fd93703c22",
+          "rawBlob": "f44a60e6e28978b092ca2da486b9cc8a686dad64",
+          "lfBlob": "f44a60e6e28978b092ca2da486b9cc8a686dad64",
+          "baseBlob": "e128f35024a9d4bd69d18bb1849065dac41a351d",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [
+            "agent",
+            "agentVerified",
+            "grantBase"
+          ],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/plugins/plugin-sdk-adapter.ts",
+          "sha256": "fd1de6a43d3023288384883dc66a9d345bff26a706895694354ab6f8d81127df",
+          "rawBlob": "dac2d7017a7758166dc8607d2594e9dd743b3cec",
+          "lfBlob": "dac2d7017a7758166dc8607d2594e9dd743b3cec",
+          "baseBlob": "ace6b6c12c369eff37c2970505bc706ca59588d8",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [
+            "agent",
+            "agentVerified",
+            "grantBase"
+          ],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/plugins/plugin-sdk.ts",
+          "sha256": "f56b99b1b7507e34310a5c36a0af90dc2a7fb50a971c53693f6f8d9560271398",
+          "rawBlob": "fbaa2d4442b6cb0184b08d27341a91d1bfac8a30",
+          "lfBlob": "fbaa2d4442b6cb0184b08d27341a91d1bfac8a30",
+          "baseBlob": "150a6c2f56570d4e3dad56e52eba30faad66c026",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [
+            "agent",
+            "agentVerified",
+            "grantBase"
+          ],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/plugins/plugin-security.ts",
+          "sha256": "59f4c6ce5a6c1af6434eb69d43a6293baf10ec32dc04e112c2bda97876cd4cbf",
+          "rawBlob": "f21e7f67397dcef5722f7c4ab96c8b9f2e7b5d08",
+          "lfBlob": "f21e7f67397dcef5722f7c4ab96c8b9f2e7b5d08",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [
+            "agent",
+            "agentVerified",
+            "platform",
+            "platformFixed",
+            "grantBase"
+          ],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/services/score-change-set-port.ts",
+          "sha256": "f3167070d4b0280a9d30e2307848813feb1a8ea4d3d76b08b3aeec6d08abc2bb",
+          "rawBlob": "a98f8a9267d4c65c00714aeb6f37ca4397f041b1",
+          "lfBlob": "a98f8a9267d4c65c00714aeb6f37ca4397f041b1",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [
+            "agent",
+            "agentVerified",
+            "platform",
+            "platformFixed",
+            "scoreBase"
+          ],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/services/score-edit-port.ts",
+          "sha256": "76d159f0477cbf149008fd3f40b55594bd2d586dca13709f70fcc915f07feead",
+          "rawBlob": "8b19dc60175711b01b0afdf8f850c36d21b1a27a",
+          "lfBlob": "8b19dc60175711b01b0afdf8f850c36d21b1a27a",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [
+            "agent",
+            "agentVerified",
+            "platform",
+            "platformFixed",
+            "scoreBase"
+          ],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/services/score-read-port.ts",
+          "sha256": "be1b91fdfee3a40e45421a782e1d8ab5ca6712c5c16c0ab9b84c47570568875c",
+          "rawBlob": "5faca3c232877bf685ece02ec15ee7bd4af3e53f",
+          "lfBlob": "5faca3c232877bf685ece02ec15ee7bd4af3e53f",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [
+            "agent",
+            "agentVerified",
+            "platform",
+            "platformFixed",
+            "scoreBase"
+          ],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/services/workbench-client.ts",
+          "sha256": "93169be65463845e7889f37e2492333368806cd77bcfff86dca518e230b414ac",
+          "rawBlob": "e5e6d3452b24b4b9ec1d5e271b4a0a0abb2f20b0",
+          "lfBlob": "e5e6d3452b24b4b9ec1d5e271b4a0a0abb2f20b0",
+          "baseBlob": "c6cc9150210e8d23bac88f0040a81c68da1325a0",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [
+            "score",
+            "agent",
+            "agentVerified",
+            "platform",
+            "platformFixed",
+            "scoreBase"
+          ],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/services/workbench-host-bridge.ts",
+          "sha256": "531381ccde45588e2f75fa0560d4f068a25a912a29ac266c3f4f73e9dc5da541",
+          "rawBlob": "48c4bbdc9260a51da1689c8583c6cec4470b9c47",
+          "lfBlob": "48c4bbdc9260a51da1689c8583c6cec4470b9c47",
+          "baseBlob": "ae09a205ea2997c9044398b584d2b2b06db82b11",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [
+            "score",
+            "agent",
+            "agentVerified",
+            "platform",
+            "platformFixed",
+            "scoreBase"
+          ],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/ui/plugin-diagnostic.ts",
+          "sha256": "c13cf80b5a2f90462615601916f262793d32268f2dbab0913f7e7ad6366fdacf",
+          "rawBlob": "e6b5293dad77f1c274881851da39230ceb733b7d",
+          "lfBlob": "e6b5293dad77f1c274881851da39230ceb733b7d",
+          "baseBlob": "3a76ffa1f8b932a5bd62d3944877643713ac4256",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [
+            "agent",
+            "agentVerified",
+            "platform",
+            "platformFixed",
+            "grantBase"
+          ],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/ui/plugin-manifest.ts",
+          "sha256": "ad9c31ae4fd05b9db1cc3dc1625dc80ea6934c74c62db9f541270a93b3b9dd62",
+          "rawBlob": "dfe6af9a2a57de18ddf4382bed35ec723c4b47df",
+          "lfBlob": "dfe6af9a2a57de18ddf4382bed35ec723c4b47df",
+          "baseBlob": "a0ff2c4f0cc956700eeaffd364c68cf9798e2559",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [
+            "agent",
+            "agentVerified",
+            "platform",
+            "platformFixed",
+            "grantBase"
+          ],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/test/agent-assistant-session.test.ts",
+          "sha256": "d4469524b6744112b6f80dfff4c8217ec7583bc479fa4e7eb8d2a012e5daf9cb",
+          "rawBlob": "f56eec07ffad15ffa2cae0715b47d8c31742b6ac",
+          "lfBlob": "f56eec07ffad15ffa2cae0715b47d8c31742b6ac",
+          "baseBlob": "b9ca103a861d4541b4dda9ecb5a0f3e7518a63dd",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": [
+            {
+              "commit": "952426f342db632a75d53075349cb336a2de1008",
+              "blob": "f56eec07ffad15ffa2cae0715b47d8c31742b6ac"
+            }
+          ]
+        },
+        {
+          "path": "apps/workbench/test/plugin-sdk.test.ts",
+          "sha256": "83ab687eb33c7f9eb45c2f7a4d7a79ee846e1ee1052e9fd290224ec8b98e0a4f",
+          "rawBlob": "317903eb2cfd5e637eb9367b4bdf54760268de8e",
+          "lfBlob": "317903eb2cfd5e637eb9367b4bdf54760268de8e",
+          "baseBlob": "aa27e20551070ce0b602e471c5a0d9f3bd467800",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [
+            "agent",
+            "agentVerified",
+            "grantBase"
+          ],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/test/plugin-security.test.ts",
+          "sha256": "34bb9522bc83ebb2e524eee17a49e970d2564b0baf5d2470a62de6df35eed78d",
+          "rawBlob": "983410bf2c5cea78857d551e110915363a33afc3",
+          "lfBlob": "983410bf2c5cea78857d551e110915363a33afc3",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/test/score-change-set-port.test.ts",
+          "sha256": "450cf7cb241004910e50359f1c1b2761c05beaf9734ae08c3e8fc6aa920a60ea",
+          "rawBlob": "ac8d5763af3734b489333bcc96068a1f5d140ebe",
+          "lfBlob": "ac8d5763af3734b489333bcc96068a1f5d140ebe",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [
+            "agent",
+            "agentVerified",
+            "platform",
+            "platformFixed",
+            "scoreBase"
+          ],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/test/score-edit-port.test.ts",
+          "sha256": "cd6d13fd96ecef7083190297caecf0e70aa586f1417adad7df776db90dc5104c",
+          "rawBlob": "c1268bf866f6ffe1c8935ec90908ba115d60aaa5",
+          "lfBlob": "c1268bf866f6ffe1c8935ec90908ba115d60aaa5",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [
+            "agent",
+            "agentVerified",
+            "platform",
+            "platformFixed",
+            "scoreBase"
+          ],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/test/score-read-port.test.ts",
+          "sha256": "c2c67a1466d8223ff8983b6e552b5a94b9f69b52c6b5335996aee5c6ec3d1ac2",
+          "rawBlob": "9daba11a029943aeaf1964e82f293b38b87b1210",
+          "lfBlob": "9daba11a029943aeaf1964e82f293b38b87b1210",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [
+            "agent",
+            "scoreBase"
+          ],
+          "historicalMatches": []
+        },
+        {
+          "path": "docs/plugin-platform-ui-contribution-and-session-freeze-plan-v1.md",
+          "sha256": "c0444852e200f4a6225b1f9df8b12bca5c1bf077cec208aa0c51bf882d652079",
+          "rawBlob": "89f267a158eeb51383cce17c89d8cdf89d26cf8a",
+          "lfBlob": "89f267a158eeb51383cce17c89d8cdf89d26cf8a",
+          "baseBlob": "1660f82acb0e9cc92951ed84f39f19902283f435",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [
+            "platform",
+            "platformFixed"
+          ],
+          "historicalMatches": []
+        },
+        {
+          "path": "docs/repository-workspaces.md",
+          "sha256": "3f8eec82b9d4aa4a5e36281e0c0e18e797557502db50098e9c0f3e7776a8779b",
+          "rawBlob": "80d8be090ebc2b6ae93ac25878a4b3c07b7c3b3b",
+          "lfBlob": "37c0647ec8eef092ccc8f568333d9818dc9a8d55",
+          "baseBlob": "021fc183308f9b89d1a314df5ac574df319e667c",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        }
+      ]
+    },
+    {
+      "worktree": "C:/Users/ATOM/.codex/worktrees/ce04/brilliant_guitar",
+      "head": "837a22ea8ffe71d31382c2e253907a602acd9cd2",
+      "protectedInventorySha256": "1f816428f052d2cd5200d188d64f7943002c30d63d2291ab793e4304a2908bf4",
+      "files": [
+        {
+          "path": "apps/workbench/src/components/staff-view.tsx",
+          "sha256": "d205cc295e3b0ac67a7680c6960eeeedc6bd45c6a861cf6999bd972528963037",
+          "rawBlob": "9978cbd42110af93c9da09fdd7efdd7759c78a28",
+          "lfBlob": "f9d0a5ef72e6f0931f0bcf65e71b12d8e859ffe9",
+          "baseBlob": "d67ff460fdae861f99a3d9e3a946d609be381697",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/editor/score-navigation.ts",
+          "sha256": "c4f76160d6684d292539cae1e39baf3d1de83c8759b8d93b4ff3df7ecc152c9d",
+          "rawBlob": "78e6ec4d5b1884e9a010b249e80a8c5e299fc8a7",
+          "lfBlob": "9b2c2d6bc23fb29eb9bdc17afd519bcbf43e63b5",
+          "baseBlob": "3688338ecb82b44a9f740879049659253181866c",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [
+            "main",
+            "score",
+            "agent",
+            "agentVerified",
+            "platform",
+            "platformFixed",
+            "scoreBase",
+            "grantBase"
+          ],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/editor/staff-input-adapter.ts",
+          "sha256": "3a89e4ce771de088cadef97f14caa8e581768f863a3e1d5db6f30cb4a5d386e7",
+          "rawBlob": "e3846b203f11cac75511e8baf700f1ae2f3b19b3",
+          "lfBlob": "e3846b203f11cac75511e8baf700f1ae2f3b19b3",
+          "baseBlob": "8a2d8e6d108fad7d1bde7d4b0ee5ba04d67f8fc2",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/editor/use-note-overview.ts",
+          "sha256": "9e1c1b389a547ba00fc9db2dc36db84c47f6dc50700882707949120069a81683",
+          "rawBlob": "ed4123c385bcbc6470d3d88dc109176ec49350ae",
+          "lfBlob": "ed4123c385bcbc6470d3d88dc109176ec49350ae",
+          "baseBlob": "ca81dbd1d0397a3d713c3bef34d949b88ee58aee",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/editor/use-score-input.ts",
+          "sha256": "e8159aad7cda129767511545fc285b0c6052ffa7f61b8047bbc75cf8803a7841",
+          "rawBlob": "d7a22d86488c20ed744308608fe44b7285176edc",
+          "lfBlob": "7e2ee80f1e632e37636dce331690e4193ddfdd59",
+          "baseBlob": "68e6ae0db07da6df33399f838973a35cd9b3ca9e",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/ui/first-party-plugin-projections.ts",
+          "sha256": "c2b1c00f183c523d12fdbe133a93783e0e427c6416e9814dbbd36af7ba1e2b8a",
+          "rawBlob": "1f2c621b5e45b8ca292004e9de38a612bac12e5d",
+          "lfBlob": "5ffdf620a9f204415aa12ae34ef907b44a339e75",
+          "baseBlob": "7056a669e93b24aa523f3aef0715fafc38134a62",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/ui/first-party-plugins.ts",
+          "sha256": "7a1d4c6a6067f626a1b68772911985297d1ad5f11ba45680ad16b68aa232e42a",
+          "rawBlob": "98b8c8880e57ecb6b9723ceba144fd2765737fcd",
+          "lfBlob": "d8bf05f44019f5f6bf7a99fc6e520b5727ec7785",
+          "baseBlob": "a4e61113dfc17efac156fc93ad30b8a33e35ca3c",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/ui/plugin-diagnostic.ts",
+          "sha256": "d2389f2d7aa5052b3233e8c9733c5323e354306af3d5f00e3643cc70497761a8",
+          "rawBlob": "448e0184c283307e3c9220aa3de8a338bc1d64c1",
+          "lfBlob": "7c9a44bf63ccffbf7e289952e8c36b40feb1e249",
+          "baseBlob": "9fcb46b0fb8b7591438b13fdae6ef302eb32e55d",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/ui/plugin-manager.ts",
+          "sha256": "6202a65938ca8766b8d0fae5b107b934aa51cb3cb804de2b3d6d287e8f43dd87",
+          "rawBlob": "abb87237a3bdb2ec7cc21152eeae34864b655772",
+          "lfBlob": "e63ef9cdead1e0905104a70ca2f415b434c46f9f",
+          "baseBlob": "fd2d7f737ed2869f29dd36f9c81132f1ea6bf5bf",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/ui/plugin-manifest.ts",
+          "sha256": "0a7c28863860aed5d881ac6114c146cee5e8ddbf49526569151b1a8c0a6077b3",
+          "rawBlob": "dd048b4157d5f99ea49c5318805297b61aaffb6b",
+          "lfBlob": "87532b04107560e896bb51748b70055035c057f9",
+          "baseBlob": "970052ebaa2894df6427ebdcc07d6311dc056c55",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/workbench-app.tsx",
+          "sha256": "5a787d29da4d8d575af3f29941ef60f2d70c6d971e7c61d8f376cb09f4d70a1c",
+          "rawBlob": "74a413cd8275bc916492be8d78cfc04ef37496f5",
+          "lfBlob": "103f94af4c3b75fd836145cead896797a9862365",
+          "baseBlob": "ce3eb02293d72fdec87bd148cece99ae22c7ec55",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/test/ui-view-contribution.test.ts",
+          "sha256": "75ce215643c62cfa0140f60ff8a0396cf4c660c472141eb16a9c616299ac64ed",
+          "rawBlob": "85e1b4e025f7232cea9a7fbcf039e26053d64358",
+          "lfBlob": "74e5b0ef46ca2d2f650e8f16827194c6c28e57cd",
+          "baseBlob": "d09c5ec080f31eafa2f18ba47d98f5ea77649e8b",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/contracts/staff-projection.ts",
+          "sha256": "7202b0c3b2c899b2adbc400547a70a9a26fd82f02a6facc7b94fbda582f314ef",
+          "rawBlob": "832c2a8f715660e832d63f3e75dbe62647d4f92f",
+          "lfBlob": "832c2a8f715660e832d63f3e75dbe62647d4f92f",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/editor/staff-edit-key-policy.ts",
+          "sha256": "d79c323f56c66d30677928d1ca25880cf2652bed90c247dc1d384379311e4abf",
+          "rawBlob": "2eb24938646cc309ca5a3f5b54bd79b15e63400d",
+          "lfBlob": "2eb24938646cc309ca5a3f5b54bd79b15e63400d",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/editor/staff-interaction-contribution.ts",
+          "sha256": "43a1f26eb666701c4569f9cd9f0913fb73b4c7301f953315c96f2ed795b6166d",
+          "rawBlob": "2f2375bdffe3f437a30cfdce6815e09a4f7db845",
+          "lfBlob": "2f2375bdffe3f437a30cfdce6815e09a4f7db845",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/editor/staff-navigation-policy.ts",
+          "sha256": "50b14f0d352a037c4868118ae1426fd12d0d896fea4859b754ca86722e258e8e",
+          "rawBlob": "801a637060fce8abf16eb1f6650cd3f9c7bba652",
+          "lfBlob": "801a637060fce8abf16eb1f6650cd3f9c7bba652",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/input/edit-intent.ts",
+          "sha256": "e3dd6b8c24a1a9e4b5cf7c8cc251a1f07c247ab680bc3797c09bbc0bf4708e23",
+          "rawBlob": "5ec703bfb0faaf8b97575f79803b887ffd411ea9",
+          "lfBlob": "5ec703bfb0faaf8b97575f79803b887ffd411ea9",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/input/input-adapter.ts",
+          "sha256": "2ea7ea217ba8b3f820d64541af71d10b06cee3ec1ae93131c73e82c57aa88e86",
+          "rawBlob": "5f26bc2acec4438150d06c59b07a40cfd6a4116b",
+          "lfBlob": "5f26bc2acec4438150d06c59b07a40cfd6a4116b",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/input/input-context.ts",
+          "sha256": "77e204c6890ef412781984ee2e76eb32310ab5ef9674a7dc05c6f16e773dc1f7",
+          "rawBlob": "0b1002dc76cbde027a6e0206562025d37611109f",
+          "lfBlob": "0b1002dc76cbde027a6e0206562025d37611109f",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/input/input-signal.ts",
+          "sha256": "9a70b2580c50686d805d56bd157e5abdd9ff58ae064687f294c074431988bbc9",
+          "rawBlob": "e66c4c378caa85851bb69aae7df25e2aa53447ee",
+          "lfBlob": "e66c4c378caa85851bb69aae7df25e2aa53447ee",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/src/input/notation-interaction-registry.ts",
+          "sha256": "3047ab6b9921efabb79a92c232bfdac09dca63ce397d4bea28d1cd36aaca2b5b",
+          "rawBlob": "c40befd13973c39baefeb19098458d410abf8282",
+          "lfBlob": "c40befd13973c39baefeb19098458d410abf8282",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/test/input-adapter.test.ts",
+          "sha256": "b611cabb948b3f0d0e11adb4cde7f41a86aa6dd4249103ced0f34f671dfe9e69",
+          "rawBlob": "abe02866570810e60f895770ada130159c632ced",
+          "lfBlob": "abe02866570810e60f895770ada130159c632ced",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/test/staff-edit-key-policy.test.ts",
+          "sha256": "1f1679bba6e67d787d59faf35efe7fcaa18cff1fb41d95b8004ed8f9a04215b6",
+          "rawBlob": "4ac99919e0d7b38a615d7b6edf85024d1b3d3bab",
+          "lfBlob": "4ac99919e0d7b38a615d7b6edf85024d1b3d3bab",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/workbench/test/staff-navigation-policy.test.ts",
+          "sha256": "2242d5b47f1249220b1fe735bebeffa36b2e55da3b0d68c9dd46e3d629135a61",
+          "rawBlob": "b2abad2fb7d1de8eb45a8eb8f5bb1d1aa63f1a87",
+          "lfBlob": "b2abad2fb7d1de8eb45a8eb8f5bb1d1aa63f1a87",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        }
+      ]
+    },
+    {
+      "worktree": "E:/desktop/brilliant_ideas/brilliant_guitar/.worktrees/rkp-2-stage-6-semantic-canonical-authority-amendment",
+      "head": "4ad23773e9c9e1081667a4eccb84cc464b85bc89",
+      "protectedInventorySha256": "a3bd8213bfc2f2dfef1e84fc1611357946ad854cd07a468e410ae82a62fdbf0a",
+      "files": [
+        {
+          "path": ".trellis/tasks/08-15-core-rust-runtime-performance-remediation/task.json",
+          "sha256": "c53380c6a3a2e275f37ce3823b0684fc1ec07d4e2dd6426a6e3c7c74b2b5eb8a",
+          "rawBlob": "8276358d0c3ed10ec83d17eb6fccab420a1807ec",
+          "lfBlob": "41d251d38071a8f89cb17ce39f523cc07e4bcbf9",
+          "baseBlob": "d40c8a8113ec2446573c46bb7e1ce333a5ee57c7",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": [
+            {
+              "commit": "f51bcfeee794665e1035edcf290143b2ae7556b4",
+              "blob": "41d251d38071a8f89cb17ce39f523cc07e4bcbf9"
+            }
+          ]
+        },
+        {
+          "path": ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/operator-handoff.md",
+          "sha256": "e454d691cf79b9d082e3b1b09ea65aed9e756b2e252b4bcb9091be58379c237d",
+          "rawBlob": "0ccd61e0cbafb31c7bd3afc6d9586c482c361062",
+          "lfBlob": "ea8fbe41615853580aec29e92241c6de0a03452f",
+          "baseBlob": "e624cfdb7224b32ad45da8c4de0494eaee3ad1ec",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": [
+            {
+              "commit": "f51bcfeee794665e1035edcf290143b2ae7556b4",
+              "blob": "ea8fbe41615853580aec29e92241c6de0a03452f"
+            }
+          ]
+        },
+        {
+          "path": ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/review-candidate.md",
+          "sha256": "3bc3bb4d3978765024f91c7952aea5d580b824d97c024dc40ddbc576dba6a456",
+          "rawBlob": "0b1f38b43197c4375d5463e87e0f3338974fbed4",
+          "lfBlob": "0a297d28e75c0e8c3279319eda63388f78c08fd4",
+          "baseBlob": "1733541c5f218ece5a486d6342a1816445285b76",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": [
+            {
+              "commit": "f51bcfeee794665e1035edcf290143b2ae7556b4",
+              "blob": "0a297d28e75c0e8c3279319eda63388f78c08fd4"
+            }
+          ]
+        },
+        {
+          "path": ".trellis/tasks/08-24-rkp-2-indexed-live-score-store-load-encode-parity/task.json",
+          "sha256": "4b6b0562841c5812d3acdfe91de2db6d18badedb8c4cc8965a31afe73ce909f4",
+          "rawBlob": "cf8b1d9c6e09a272fac0e8258409abd608946457",
+          "lfBlob": "3c656d104dba135acb88b0988021b4638f541524",
+          "baseBlob": "50415cdc14840023cd3a8a3e9ab10fce0257b6b3",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": [
+            {
+              "commit": "f51bcfeee794665e1035edcf290143b2ae7556b4",
+              "blob": "3c656d104dba135acb88b0988021b4638f541524"
+            }
+          ]
+        },
+        {
+          "path": ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/operator-handoff.md",
+          "sha256": "35e1ed5865ca77a6d3d677b923661f71912862718e21b5ca33b8cff3288398e0",
+          "rawBlob": "6272debf970af2353c1fec6fc4c8418f717d8959",
+          "lfBlob": "69758a77e1b1b63b88203709cc3c76971700ac79",
+          "baseBlob": "1ac66c66d7fe784dbaf7f8d6f00d1bd1e47bf4d6",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": [
+            {
+              "commit": "f51bcfeee794665e1035edcf290143b2ae7556b4",
+              "blob": "69758a77e1b1b63b88203709cc3c76971700ac79"
+            }
+          ]
+        },
+        {
+          "path": ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/review-candidate.md",
+          "sha256": "5d3a59208489948fbca628e6451d329f6ef0ef3fefca280d74c5ebb72e59299d",
+          "rawBlob": "38cdc32507e1ea8442acf560ea643531f7987fb6",
+          "lfBlob": "820a75abff7ee6139e72c69de9d1168ceaa0f127",
+          "baseBlob": "042fbcf65b253fb279c9859035639b7eb0fbb2d6",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": [
+            {
+              "commit": "f51bcfeee794665e1035edcf290143b2ae7556b4",
+              "blob": "820a75abff7ee6139e72c69de9d1168ceaa0f127"
+            }
+          ]
+        },
+        {
+          "path": ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/task.json",
+          "sha256": "4fccaf95e20468881b2578d6141d41520c897e562c71d3385418780a7438e7a1",
+          "rawBlob": "49a8c1a4738ffd484c4654660007c2ebce62ef61",
+          "lfBlob": "e9fd0305085b41face7bc108990796b494e09a38",
+          "baseBlob": "817dd3e164a6bac966ca86780f45c274baaa8cc2",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": ".trellis/tasks/08-26-rkp-2-stage-6-private-scale-evidence-seam-repair/research/implementation-evidence.md",
+          "sha256": "1fdd32fd69ae48825497f4181d7824ce5de29d55ac3ba1a46a03a6747e1f8dd7",
+          "rawBlob": "e5d60c9cf887848241d906dfd85ab8637ba3d125",
+          "lfBlob": "e5d60c9cf887848241d906dfd85ab8637ba3d125",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": [
+            {
+              "commit": "f51bcfeee794665e1035edcf290143b2ae7556b4",
+              "blob": "e5d60c9cf887848241d906dfd85ab8637ba3d125"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "worktree": "E:/desktop/brilliant_ideas/brilliant_guitar/.worktrees/ui-standard-notation-v1",
+      "head": "22277639d8c02441d8eb3b86a46e1bbf93e6c8dd",
+      "protectedInventorySha256": "63d718c34a9cf15a9e986d088018fba0fa609c08de842a588692d9283d5ab539",
+      "files": [
+        {
+          "path": ".gitignore",
+          "sha256": "db14d89b86191fdd13845fc703776c12511990ae28a765e656529b86d2deb599",
+          "rawBlob": "0a5060742ca5c76d3e8943a57bd3bf00345e99b5",
+          "lfBlob": "cd435465df44fd5a97f84ebde61ffd3248a134bf",
+          "baseBlob": "d42d1e628f50cf9efe3a69af387c0a50494afc87",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "package-lock.json",
+          "sha256": "99476cdfb2664a640c8f8d007e7cafd58f47523b2de36ea21ad4ffd71b8aa0f4",
+          "rawBlob": "780eec60f015a372ed9840a90f5cb8909f9cd37d",
+          "lfBlob": "29e34a942386b23d677f4d7dc1d54801793f1e66",
+          "baseBlob": "ef6aab3061c76db00a9789b10f55873a689b781b",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "package.json",
+          "sha256": "2ffacf4a42347ffaa4c54c88de4891a8d26abc9951332383a3db134ee2544486",
+          "rawBlob": "3b424c4dc61c41b1e868118ad0f81373b31a2baa",
+          "lfBlob": "af16188add1f291a6397c68afb636c01d2580a6b",
+          "baseBlob": "2cfd3c94880c664cbed0993e808331ad0ba4a7eb",
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/notation-ui/README.md",
+          "sha256": "b98a58503496432d89af54d9b2a12513d8b87a9b48e5c23f7e5a0f0f1ce0f6e5",
+          "rawBlob": "eeae3772933547d8d6544e6785898f28a5c32ada",
+          "lfBlob": "eeae3772933547d8d6544e6785898f28a5c32ada",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/notation-ui/browser/kernel-client.ts",
+          "sha256": "ab553c62d97acfea9848b667710371f5445dd58fe07f7cda700f37b982b1be14",
+          "rawBlob": "b5f5355ddc7f2eda39be076f49c31d603072b076",
+          "lfBlob": "b5f5355ddc7f2eda39be076f49c31d603072b076",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/notation-ui/browser/main.ts",
+          "sha256": "7724d0bee0c7ab401e969183bf68a240c90eaf6d9dffc7fbc368c295d841dcc2",
+          "rawBlob": "becf2edaae73569023c86db1183ceec9eec667b0",
+          "lfBlob": "becf2edaae73569023c86db1183ceec9eec667b0",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/notation-ui/browser/score-views.ts",
+          "sha256": "c58a09edd47353a2234f8b97dc52cca94a86afe22ba6b241fba772b61ecfffad",
+          "rawBlob": "1f8cbac1efc4391970e66a5569ef38a4664a817c",
+          "lfBlob": "1f8cbac1efc4391970e66a5569ef38a4664a817c",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/notation-ui/contracts.ts",
+          "sha256": "e39f56d1c4b139b30ffd77a1e590654d79b2b5d260a57d87ae0a2e46b114eed4",
+          "rawBlob": "db94991d2e771e004e6cf5a9243265a16bfd2145",
+          "lfBlob": "db94991d2e771e004e6cf5a9243265a16bfd2145",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/notation-ui/host/editor-service.ts",
+          "sha256": "d5b1aadc15a41562b162b62feacb15e41c545487a7b01cc11ef6d9bfc14882ef",
+          "rawBlob": "fc63fe3922c8de0154d732dca342ccc6edf77b3a",
+          "lfBlob": "fc63fe3922c8de0154d732dca342ccc6edf77b3a",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/notation-ui/host/file-store.ts",
+          "sha256": "689243a8e508576469dce1700778ce1e370df3be162b2120bce075407cfcf40d",
+          "rawBlob": "ae325aa78d1c2258f2bdb1a19dac9274dd3014de",
+          "lfBlob": "ae325aa78d1c2258f2bdb1a19dac9274dd3014de",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/notation-ui/host/main.ts",
+          "sha256": "0aa8911076467f0771b9b77d17df9787a2a1631cae53ff46e3ba4425ec3aea2b",
+          "rawBlob": "6ff69e985c7877fc0b3023dd4a6be6cdcf0309dd",
+          "lfBlob": "6ff69e985c7877fc0b3023dd4a6be6cdcf0309dd",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/notation-ui/host/native-backend.ts",
+          "sha256": "a506b723e3b2d19c8b62845ce85928b7443db6f4d088c640884c0a54bb4fb1f8",
+          "rawBlob": "726f27490c84d3dee3fe79136e6f62077e6917f1",
+          "lfBlob": "726f27490c84d3dee3fe79136e6f62077e6917f1",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/notation-ui/host/server.ts",
+          "sha256": "e0a5a65226c4d328741d140ae0b45966601b367db773a551f45621e20dab560a",
+          "rawBlob": "0610c3874e830a36dc385d08b612e0cba86f8a29",
+          "lfBlob": "0610c3874e830a36dc385d08b612e0cba86f8a29",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/notation-ui/plugins/standard-notation/index.ts",
+          "sha256": "3bca8a9e580b9ded5d76658cfab75141a03056abcdc07e9fb300fa0814fb11da",
+          "rawBlob": "d4fd3d9ba86e9b4a1a7700b1a00d8d0b8ee05041",
+          "lfBlob": "d4fd3d9ba86e9b4a1a7700b1a00d8d0b8ee05041",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/notation-ui/plugins/standard-notation/input.ts",
+          "sha256": "e85aedecc052071a32a00388ab164d3b49b80af68e263eb31311da44e10e66f7",
+          "rawBlob": "27e62b44f4397e2f61656f08f382fd874f94dd0b",
+          "lfBlob": "27e62b44f4397e2f61656f08f382fd874f94dd0b",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/notation-ui/public/index.html",
+          "sha256": "8bb8898745091f72592ccafbe914b154c5ce154f79bac716f83c34c3d2b2c45f",
+          "rawBlob": "573894dbf45f8fba8cc18804735e9a39c4f595b5",
+          "lfBlob": "573894dbf45f8fba8cc18804735e9a39c4f595b5",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "apps/notation-ui/public/style.css",
+          "sha256": "5f28c436edfb12682d979b20f34a2306adb37b3f43d2a69bb68bf6f5b6592b47",
+          "rawBlob": "2ff1df6c8c2ab683c3622b180058b71c85adfe05",
+          "lfBlob": "2ff1df6c8c2ab683c3622b180058b71c85adfe05",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "docs/design/README.md",
+          "sha256": "3f92701bac46c1a4f9a0e1e0d4162d899007345ad9dac594d7f2818cbb2b11fe",
+          "rawBlob": "3c870fc328a84a16ca4646a280b95215418f13d7",
+          "lfBlob": "3c870fc328a84a16ca4646a280b95215418f13d7",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "scripts/build-ui.mjs",
+          "sha256": "81b3a11d05d2d630735a6ce9d19ec6fa1a3399b24a2b591f24aa404f083387d8",
+          "rawBlob": "805f892ec11eff38c3ffd086788757d62903c78b",
+          "lfBlob": "805f892ec11eff38c3ffd086788757d62903c78b",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "test/notation-ui/integration.test.ts",
+          "sha256": "692ec7c7cacc7f660583d40261acd2b65ebb7ce072bb6a58ee18d4836aae65fe",
+          "rawBlob": "a2113052b10e0ebef46c2aa5897919770c1c32b5",
+          "lfBlob": "a2113052b10e0ebef46c2aa5897919770c1c32b5",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        },
+        {
+          "path": "tsconfig.ui.json",
+          "sha256": "8d05a0a1550839ba51de36d0a949f7e9195049d76f8671c08052a1d360396543",
+          "rawBlob": "43b8d878102563c35652df020b5d3e90a6871799",
+          "lfBlob": "43b8d878102563c35652df020b5d3e90a6871799",
+          "baseBlob": null,
+          "sameAsWorktreeBase": false,
+          "targetMatches": [],
+          "historicalMatches": []
+        }
+      ]
+    }
+  ]
+}
