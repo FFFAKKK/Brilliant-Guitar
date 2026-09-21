@@ -271,9 +271,11 @@ export class UiPluginHost {
             `Duplicate UI view contribution: ${componentId}`, { kind: "component", id: componentId }));
           continue;
         }
+        const componentProjections = snapshot.scoped(plugin.module.projections.filter(
+          (projection) => view.definition.permissions.projections.includes(projection.id)));
         result.set(componentId, { componentId, label: view.label, ...(view.icon === undefined ? {} : { icon: view.icon }),
           ...(view.inlineZone === undefined ? {} : { inlineZone: view.inlineZone }),
-          render: () => view.render(plugin.projections, { extensions }) });
+          render: () => view.render(componentProjections, { extensions }) });
       }
     }
     return result;
