@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-09-21",
+  "timezone": "Asia/Shanghai",
+  "phase": "B8-persistence-boundary-and-format-gates",
+  "status": "Boundary correction integrated and workspace fmt passed; environment acceptance and main migration remain",
+  "candidate": {
+    "worktree": "E:/desktop/brilliant_ideas/brilliant_guitar/.worktrees/integration-candidate-20260921",
+    "branch": "codex/integration-candidate-20260921",
+    "verifiedSource": "a380262e7ed1fb31a0763b6f33dbc6b88266c401",
+    "parent": "7bdcadf07e4661261dfbba4a866fbf88b4d34fe8",
+    "implementationFiles": [
+      "crates/brilliant-kernel-session/src/session.rs",
+      "docs/kernel-commercial-completion.md",
+      "docs/kernel-crash-persistence-recovery-boundary-2026-09-20.md"
+    ],
+    "onlyRustChange": "Whitespace-only wrapping of an existing cfg(test) import",
+    "rustFileNonWhitespaceContentUnchanged": true,
+    "runtimeBehaviorChanged": false,
+    "dependenciesOrLockfilesChanged": false,
+    "mainPromoted": false,
+    "commonDevelopmentBaselineReleased": false
+  },
+  "boundaryCorrection": {
+    "sourceCommit": "3a7d87074d0a833576bd7e908ce26a249682c38c",
+    "mode": "Reviewed adaptation, not cherry-pick, whole-file equivalence or branch merge",
+    "old9640b6cDraftImported": false,
+    "historicalInventoryReportsCopiedAsCurrent": false,
+    "existingSaveRecoveryImplementationReused": true,
+    "newPersistenceArchitectureApproved": false,
+    "documentedTestSymbolsChecked": 7,
+    "documentedTestSymbolsPassedInThisRun": 7,
+    "qualificationsNotClaimed": [
+      "Desktop save completion across session replacement",
+      "Actual process termination or power loss",
+      "Complete platform filesystem durability",
+      "Exact session history recovery or acknowledged-command durability"
+    ]
+  },
+  "verification": {
+    "sourceCommit": "a380262e7ed1fb31a0763b6f33dbc6b88266c401",
+    "rustPathPrefix": "C:/Users/ATOM/.cargo/bin",
+    "runs": [
+      {
+        "command": "cargo +1.97.1 fmt --all -- --check",
+        "exitCode": 0,
+        "log": "fmt-committed.log",
+        "alsoPassedBeforeCommit": true,
+        "preCommitLog": "fmt-precommit.log"
+      },
+      {
+        "command": "cargo +1.97.1 test --workspace --all-features --locked --offline --target-dir target",
+        "exitCode": 0, "passed": 667, "failed": 0, "ignored": 2,
+        "log": "rust-workspace-tests.log"
+      },
+      {
+        "command": "cargo +1.97.1 clippy --workspace --all-targets --all-features --locked --offline --target-dir target -- -D warnings",
+        "exitCode": 0,
+        "log": "rust-clippy.log"
+      },
+      {
+        "command": "cargo +1.97.1 test --manifest-path apps/desktop/src-tauri/Cargo.toml --locked --offline --target-dir target/desktop-formal",
+        "exitCode": 0, "passed": 65, "failed": 0, "ignored": 0,
+        "log": "desktop-rust-tests.log"
+      }
+    ],
+    "workspaceIgnoredTests": [
+      "indices::tests::rkp2_stage_6_private_scale_evidence_v1",
+      "runtime::tests::soak::ten_thousand_submit_history_checkpoint_soak"
+    ],
+    "cargoConfigurationWarning": "panic setting is ignored for test profile",
+    "diffCheckExitCode": 0,
+    "notRun": [
+      "Root Node full suite and Workbench full suite",
+      "New release addon or Desktop release builds",
+      "Explicit soak or scale qualification",
+      "Real GUI launch, process crash or power loss",
+      "Reusable environment and artifact provenance preflight",
+      "Main workspace migration or environment setup"
+    ]
+  },
+  "retainedArtifacts": {
+    "evidence": "docs/integration/2026-09-21-B6-environment-evidence.json",
+    "sourceCommit": "a391a8636d020e02a6bc94c5116adfacaf732e8d",
+    "fiveArtifactFileSizesAndHashesRechecked": true,
+    "sixLockAndToolchainHashesRechecked": true,
+    "releaseArtifactsRebuiltThisPhase": false,
+    "oldArtifactsRelabeledWithNewSource": false
+  },
+  "localLogs": {
+    "directory": ".local-evidence/integration-B8-20260921",
+    "scope": "Ignored local evidence, not committed or an off-machine backup",
+    "files": [
+      { "file": "desktop-rust-tests.log", "bytes": 6880, "sha256": "ce76f0aed5a8a7f8aa91d2f9746eb68f6f2c1e29183047d81e88d29ac2a4f56f" },
+      { "file": "fmt-committed.log", "bytes": 0, "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" },
+      { "file": "fmt-precommit.log", "bytes": 0, "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" },
+      { "file": "preservation.log", "bytes": 224, "sha256": "c5b285fa936df09241c5991562af9034f3659621128a65999393c165c98614b1" },
+      { "file": "rust-clippy.log", "bytes": 553, "sha256": "7ed6a64edbcc5e379fa38b56905b41de10b482a47c92f8a6350213c23d2c6b44" },
+      { "file": "rust-workspace-tests.log", "bytes": 75811, "sha256": "d964b02b8e8435de8c70341d4631e402e88b1d11a57d082129c0ed83770f3784" }
+    ]
+  },
+  "preservation": {
+    "command": "node docs/integration/2026-09-21-preserve-legacy.mjs --verify",
+    "exitCode": 0,
+    "restoredFiles": 85,
+    "totalBytes": 1006766,
+    "sourceFilesUnchanged": true,
+    "indexesEmpty": true,
+    "matchedProtectedRefs": 11,
+    "protectedReferenceManifest": "docs/integration/2026-09-21-B1-kernel-evidence.json",
+    "protectedReferenceField": "preservation.protectedRefs",
+    "mainAndLocalOriginMain": "269112b2d85e01827e8cb81bdcc5b671afde4303",
+    "mainWorkspace": {
+      "modified": 21,
+      "untracked": 11,
+      "staged": 0,
+      "exactPathsStillMatchDisposition": true,
+      "categories": {
+        "delivered-duplicate": 14,
+        "superseded": 16,
+        "nonfunctional-only": 1,
+        "coordination-record": 1
+      }
+    },
+    "mainIsAncestorOfVerifiedSourceExitCode": 0,
+    "sandboxMainStatusOwnershipFailureRetriedWithApproval": true,
+    "globalGitSafetyConfigurationChanged": false,
+    "fetchPushMainUpdateOrCleanup": false
+  },
+  "stop": {
+    "allStartedChecksFinished": true,
+    "kernelBoundaryCorrectionImported": true,
+    "workspaceFmtGatePassed": true,
+    "formalDevelopmentEnvironmentAccepted": false,
+    "mainLegacyCustodyBranchCreated": false,
+    "legacyC7StaffProjectionAdopted": false,
+    "otherTasksDispatched": false,
+    "trellisCreated": false,
+    "remainingSteps": [
+      "Repeatable environment/source/artifact preflight and isolated real startup acceptance",
+      "Approved main legacy custody, fast-forward promotion and original-directory environment acceptance"
+    ],
+    "mainPromotionAuthorizedByThisReceipt": false
+  }
+}
