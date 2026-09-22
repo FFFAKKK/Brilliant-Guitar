@@ -1,0 +1,11 @@
+{
+  "extends": "../../../../apps/workbench/tsconfig.json",
+  "compilerOptions": {
+    "types": [],
+    "paths": {
+      "react": ["../../../../apps/workbench/node_modules/@types/react/index.d.ts"],
+      "react-dom/client": ["../../../../apps/workbench/node_modules/@types/react-dom/client.d.ts"]
+    }
+  },
+  "include": ["browser.ts", "../../../../apps/workbench/node_modules/vite/client.d.ts"]
+}
