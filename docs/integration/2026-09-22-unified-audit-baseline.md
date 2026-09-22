@@ -1,6 +1,11 @@
 # Unified Audit Baseline Authorization
 
-Date: 2026-09-21, Asia/Shanghai.
+Date: 2026-09-22, Asia/Shanghai.
+
+Date correction: `de3e3a4` incorrectly changed this handoff to September 21.
+Local command timestamps establish September 22. The preservation archive
+and earlier integration records retain their original September 21 dates.
+The completed migration receipt is `2026-09-22-main-migration-receipt.md`.
 
 ## Decision
 

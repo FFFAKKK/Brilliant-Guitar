@@ -1,6 +1,6 @@
 # Development Environment Acceptance
 
-The 2026-09-21 user-authorized [audit-baseline decision](integration/2026-09-21-unified-audit-baseline.md)
+The 2026-09-22 user-authorized [audit-baseline decision](integration/2026-09-22-unified-audit-baseline.md)
 allows main migration before successful native smoke acceptance. The tools,
 isolation rules and checks below still apply; known failures must be reported.
 This exception establishes a common audit source, not an accepted product release.
