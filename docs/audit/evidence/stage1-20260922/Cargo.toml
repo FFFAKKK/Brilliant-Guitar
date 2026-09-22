@@ -8,6 +8,10 @@ publish = false
 name = "production"
 path = "production.rs"
 
+[[test]]
+name = "cross-host-contract"
+path = "../stage4-20260922/contracts.rs"
+
 [dependencies]
 brilliant-core-types = { path = "../../../../crates/brilliant-core-types" }
 brilliant-score-foundation = { path = "../../../../crates/brilliant-score-foundation" }
