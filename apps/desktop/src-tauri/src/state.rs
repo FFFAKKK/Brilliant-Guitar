@@ -19,6 +19,7 @@ pub struct AppState {
     pub settings: ApplicationSettingsStore,
     pub plugin_activation: JsonDocumentStore,
     pub plugin_settings: JsonDocumentStore,
+    pub plugin_startup_recovery: JsonDocumentStore,
     pub workspace_configuration: WorkspaceConfigurationStore,
     pub agent_runs: AgentRunStore,
     pub capability_receipts: CapabilityReceiptStore,
@@ -88,6 +89,8 @@ impl AppState {
             .unwrap_or_else(|| PathBuf::from("diagnostics"));
         let plugin_activation_path = settings_path.with_file_name("plugin-activation.v1.json");
         let plugin_settings_path = settings_path.with_file_name("plugin-settings.v1.json");
+        let plugin_startup_recovery_path =
+            settings_path.with_file_name("plugin-startup-recovery.v1.json");
         Self {
             service: Mutex::new(ScoreSessionService::default()),
             recovery: RecoveryManager::default(),
@@ -95,6 +98,7 @@ impl AppState {
             settings: ApplicationSettingsStore::new(settings_path),
             plugin_activation: JsonDocumentStore::new(plugin_activation_path),
             plugin_settings: JsonDocumentStore::new(plugin_settings_path),
+            plugin_startup_recovery: JsonDocumentStore::new(plugin_startup_recovery_path),
             workspace_configuration: WorkspaceConfigurationStore::new(workspace_configuration_root),
             agent_runs: AgentRunStore::new(agent_run_root),
             capability_receipts: CapabilityReceiptStore::new(capability_receipt_root),

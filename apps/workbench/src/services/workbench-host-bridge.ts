@@ -623,6 +623,34 @@ export class TauriPluginSettingsStorage implements PluginSettingsStoragePort {
   }
 }
 
+/** Desktop persistence for the plugin startup recovery marker. */
+export class TauriPluginStartupRecoveryStorage implements PluginStartupRecoveryStoragePort {
+  private readonly invokeCommand: Invoke;
+
+  constructor(invokeCommand: Invoke = invoke) {
+    this.invokeCommand = invokeCommand;
+  }
+
+  async read(): Promise<unknown> {
+    const document = await invokeHostCommand<PluginStartupRecoveryDocumentV1 | null>(
+      this.invokeCommand,
+      "workbench_read_plugin_startup_recovery_v1",
+      {},
+      "无法读取插件启动恢复标记",
+    );
+    return document ?? {};
+  }
+
+  async write(document: PluginStartupRecoveryDocumentV1): Promise<void> {
+    await invokeHostCommand<void>(
+      this.invokeCommand,
+      "workbench_write_plugin_startup_recovery_v1",
+      { document },
+      "无法保存插件启动恢复标记",
+    );
+  }
+}
+
 /** Browser-only development storage for plugin activation intent. Desktop storage remains a host concern. */
 export class BrowserPluginActivationStorage implements PluginActivationStoragePort {
   private static readonly KEY = "brilliant.workbench.plugin-activation.v1";
