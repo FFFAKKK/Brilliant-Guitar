@@ -18,7 +18,12 @@ import type {
 } from "../plugins/plugin-host-bindings.ts";
 import { PluginHostServiceRegistry } from "../plugins/plugin-security.ts";
 import { AGENT_ASSISTANT_HOST_SERVICES } from "../plugins/agent-plugin-host-contract.ts";
-import { BrowserPluginActivationStorage, BrowserPluginSettingsStorage } from "../services/workbench-host-bridge.ts";
+import {
+  BrowserPluginActivationStorage,
+  BrowserPluginSettingsStorage,
+  TauriPluginActivationStorage,
+  TauriPluginSettingsStorage,
+} from "../services/workbench-host-bridge.ts";
 import { isTauri } from "@tauri-apps/api/core";
 import { UiPluginHostError, uiPluginIdentity } from "./plugin-diagnostic.ts";
 
@@ -65,16 +70,16 @@ for (const plugin of FIRST_PARTY_UI_PLUGINS) {
   }).diagnostic);
 }
 
-let browserPreviewInitialization: Promise<void> | null = null;
+let pluginInitialization: Promise<void> | null = null;
 let pluginStartup: PluginStartupController | null = null;
 let hostBindingsResolver: TrustedPluginHostBindingsResolver | null = null;
 
-function reportPreviewFailure(kind: string, error: unknown): void {
+function reportPluginInitializationFailure(kind: string, error: unknown): void {
   workbenchPluginDiagnostics.report(new UiPluginHostError({
     code: "UI-PLG-012",
     stage: "registration",
-    plugin: { id: "brilliant.browser.plugin-preview", name: "浏览器插件预览", version: "1.0.0" },
-    message: "浏览器插件预览配置恢复失败",
+    plugin: { id: "brilliant.workbench.plugin-startup", name: "工作台插件启动", version: "1.0.0" },
+    message: "工作台插件配置恢复失败",
     detail: `${kind}: ${error instanceof Error ? error.message : String(error)}`,
     cause: error,
   }).diagnostic);
@@ -84,27 +89,23 @@ function captureFrozenSession(): void {
   hostBindingsResolver ??= new TrustedPluginHostBindingsResolver(workbenchPluginPlatform.sessionPlan());
 }
 
-/** Restores browser-only plugin state before React mounts. Desktop startup is owned by Tauri. */
+/** Restores persisted plugin state before React mounts in either host. */
 export function initializeWorkbenchPluginPreview(): Promise<void> {
-  if (import.meta.env.VITE_BRILLIANT_DESKTOP === "1" || isTauri()) {
-    workbenchPluginPlatform.start();
-    captureFrozenSession();
-    return Promise.resolve();
-  }
-  if (browserPreviewInitialization) return browserPreviewInitialization;
-  browserPreviewInitialization = Promise.resolve().then(async () => {
+  if (pluginInitialization) return pluginInitialization;
+  const desktop = import.meta.env.VITE_BRILLIANT_DESKTOP === "1" || isTauri();
+  pluginInitialization = Promise.resolve().then(async () => {
     const result = await bootstrapPersistedPluginPlatform(
       workbenchPluginPlatform,
-      new BrowserPluginActivationStorage(),
-      new BrowserPluginSettingsStorage(),
-      reportPreviewFailure,
+      desktop ? new TauriPluginActivationStorage() : new BrowserPluginActivationStorage(),
+      desktop ? new TauriPluginSettingsStorage() : new BrowserPluginSettingsStorage(),
+      reportPluginInitializationFailure,
     );
     pluginStartup = result.startup;
     captureFrozenSession();
   }).catch((error: unknown) => {
-    reportPreviewFailure("initialization", error);
+    reportPluginInitializationFailure("initialization", error);
   });
-  return browserPreviewInitialization;
+  return pluginInitialization;
 }
 
 /** Saves the next-launch preference. The running workbench composition never changes. */
@@ -113,7 +114,7 @@ export async function setWorkbenchUserPluginEnabled(pluginId: string, enabled: b
     if (!pluginStartup) throw new Error("Plugin activation storage is not connected");
     await pluginStartup.setEnabled(pluginId, enabled);
   } catch (error) {
-    reportPreviewFailure(`activation:${pluginId}`, error);
+    reportPluginInitializationFailure(`activation:${pluginId}`, error);
   }
 }
 

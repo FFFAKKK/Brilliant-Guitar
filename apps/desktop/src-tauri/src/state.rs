@@ -8,6 +8,7 @@ use crate::application::ScoreSessionService;
 use crate::capability_receipt::CapabilityReceiptStore;
 use crate::diagnostics::DiagnosticLog;
 use crate::document_io::RecoveryManager;
+use crate::json_store::JsonDocumentStore;
 use crate::settings::ApplicationSettingsStore;
 use crate::workspace_configuration::WorkspaceConfigurationStore;
 
@@ -16,6 +17,8 @@ pub struct AppState {
     pub recovery: RecoveryManager,
     pub diagnostics: DiagnosticLog,
     pub settings: ApplicationSettingsStore,
+    pub plugin_activation: JsonDocumentStore,
+    pub plugin_settings: JsonDocumentStore,
     pub workspace_configuration: WorkspaceConfigurationStore,
     pub agent_runs: AgentRunStore,
     pub capability_receipts: CapabilityReceiptStore,
@@ -83,11 +86,15 @@ impl AppState {
             .parent()
             .map(|path| path.join("diagnostics"))
             .unwrap_or_else(|| PathBuf::from("diagnostics"));
+        let plugin_activation_path = settings_path.with_file_name("plugin-activation.v1.json");
+        let plugin_settings_path = settings_path.with_file_name("plugin-settings.v1.json");
         Self {
             service: Mutex::new(ScoreSessionService::default()),
             recovery: RecoveryManager::default(),
             diagnostics: DiagnosticLog::new(diagnostics_root),
             settings: ApplicationSettingsStore::new(settings_path),
+            plugin_activation: JsonDocumentStore::new(plugin_activation_path),
+            plugin_settings: JsonDocumentStore::new(plugin_settings_path),
             workspace_configuration: WorkspaceConfigurationStore::new(workspace_configuration_root),
             agent_runs: AgentRunStore::new(agent_run_root),
             capability_receipts: CapabilityReceiptStore::new(capability_receipt_root),

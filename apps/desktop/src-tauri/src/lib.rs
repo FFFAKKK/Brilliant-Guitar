@@ -9,6 +9,7 @@ mod diagnostics;
 mod document_io;
 mod dto;
 mod error;
+mod json_store;
 mod score_change_set;
 mod settings;
 mod state;
@@ -58,6 +59,10 @@ pub fn run() {
             commands::workbench_read_settings_v1,
             commands::workbench_write_settings_v1,
             commands::workbench_reset_settings_v1,
+            commands::workbench_read_plugin_activation_v1,
+            commands::workbench_write_plugin_activation_v1,
+            commands::workbench_read_plugin_settings_v1,
+            commands::workbench_write_plugin_settings_v1,
             commands::workbench_read_workspace_configuration_v1,
             commands::workbench_write_workspace_configuration_v1,
             commands::workbench_reset_workspace_configuration_v1,
