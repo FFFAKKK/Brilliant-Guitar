@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use serde_json::Value;
 use tauri::{AppHandle, State, ipc::Channel};
 use tauri_plugin_dialog::DialogExt;
 use uuid::Uuid;
@@ -478,6 +479,71 @@ pub fn workbench_reset_settings_v1(
         .settings
         .reset()
         .map_err(|_| settings_error("config.write-failed", "无法恢复默认应用配置", 503, true))
+}
+
+#[tauri::command]
+pub fn workbench_read_plugin_activation_v1(
+    state: State<'_, AppState>,
+) -> Result<Option<Value>, HostError> {
+    state.plugin_activation.read().map_err(|_| {
+        settings_error(
+            "plugin.activation-read-failed",
+            "无法读取插件启用配置",
+            503,
+            true,
+        )
+    })
+}
+
+#[tauri::command]
+pub fn workbench_write_plugin_activation_v1(
+    state: State<'_, AppState>,
+    document: Value,
+) -> Result<(), HostError> {
+    state.plugin_activation.write(document).map_err(|error| {
+        if error.kind() == std::io::ErrorKind::InvalidInput {
+            return settings_error(
+                "plugin.activation-invalid",
+                "插件启用配置格式无效",
+                422,
+                false,
+            );
+        }
+        settings_error(
+            "plugin.activation-write-failed",
+            "无法保存插件启用配置",
+            503,
+            true,
+        )
+    })
+}
+
+#[tauri::command]
+pub fn workbench_read_plugin_settings_v1(
+    state: State<'_, AppState>,
+) -> Result<Option<Value>, HostError> {
+    state
+        .plugin_settings
+        .read()
+        .map_err(|_| settings_error("plugin.settings-read-failed", "无法读取插件设置", 503, true))
+}
+
+#[tauri::command]
+pub fn workbench_write_plugin_settings_v1(
+    state: State<'_, AppState>,
+    document: Value,
+) -> Result<(), HostError> {
+    state.plugin_settings.write(document).map_err(|error| {
+        if error.kind() == std::io::ErrorKind::InvalidInput {
+            return settings_error("plugin.settings-invalid", "插件设置格式无效", 422, false);
+        }
+        settings_error(
+            "plugin.settings-write-failed",
+            "无法保存插件设置",
+            503,
+            true,
+        )
+    })
 }
 
 fn settings_error(code: &str, message: &str, status: u16, retryable: bool) -> HostError {

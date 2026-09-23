@@ -5,7 +5,7 @@ import type { NewScoreInput } from "../src/contracts/new-score.ts";
 import type { ScoreSessionRead } from "../src/contracts/score-session.ts";
 import { WorkbenchClient, resolveWorkbenchWorkspaceId } from "../src/services/workbench-client.ts";
 import { BrowserPluginActivationStorage, BrowserPluginSettingsStorage, BrowserPluginStartupRecoveryStorage,
-  BrowserWorkbenchHostBridge, TauriWorkbenchHostBridge,
+  BrowserWorkbenchHostBridge, TauriPluginActivationStorage, TauriPluginSettingsStorage, TauriWorkbenchHostBridge,
   WorkbenchRequestError } from "../src/services/workbench-host-bridge.ts";
 import type { WorkbenchHostBridge } from "../src/services/workbench-host-bridge.ts";
 import type { CloseRequestedEvent, Window as TauriWindow } from "@tauri-apps/api/window";
@@ -186,6 +186,44 @@ test("browser plugin settings storage preserves namespaced documents and isolate
   storage.setItem("brilliant.workbench.plugin-settings.v1", "{broken-json");
   assert.deepEqual(await settings.read(), {});
   assert.equal(storage.getItem("brilliant.workbench.plugin-settings.invalid.v1"), "{broken-json");
+});
+
+test("tauri plugin activation storage uses a versioned host command", async () => {
+  const calls: Array<{ command: string; args?: Record<string, unknown> }> = [];
+  const document = { schemaVersion: 1 as const, enabledPluginIds: ["brilliant.instrument.guitar"] };
+  const invoke = async <T>(command: string, args?: Record<string, unknown>): Promise<T> => {
+    calls.push({ command, ...(args ? { args } : {}) });
+    if (command === "workbench_read_plugin_activation_v1") return document as T;
+    return undefined as T;
+  };
+  const storage = new TauriPluginActivationStorage(invoke);
+
+  assert.deepEqual(await storage.read(), document);
+  await storage.write(document);
+  assert.deepEqual(calls, [
+    { command: "workbench_read_plugin_activation_v1", args: {} },
+    { command: "workbench_write_plugin_activation_v1", args: { document } },
+  ]);
+});
+
+test("tauri plugin settings storage uses a versioned host command", async () => {
+  const calls: Array<{ command: string; args?: Record<string, unknown> }> = [];
+  const document = {
+    "brilliant.instrument.guitar": { schemaVersion: 1, value: { tuning: "standard" } },
+  };
+  const invoke = async <T>(command: string, args?: Record<string, unknown>): Promise<T> => {
+    calls.push({ command, ...(args ? { args } : {}) });
+    if (command === "workbench_read_plugin_settings_v1") return document as T;
+    return undefined as T;
+  };
+  const storage = new TauriPluginSettingsStorage(invoke);
+
+  assert.deepEqual(await storage.read(), document);
+  await storage.write(document);
+  assert.deepEqual(calls, [
+    { command: "workbench_read_plugin_settings_v1", args: {} },
+    { command: "workbench_write_plugin_settings_v1", args: { document } },
+  ]);
 });
 
 test("browser preview reports credential storage as unavailable and never persists a secret", async () => {

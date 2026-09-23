@@ -114,6 +114,16 @@ function requestError(error: unknown, fallback: string): WorkbenchRequestError {
   return new WorkbenchRequestError(fallback, 503);
 }
 
+async function invokeHostCommand<T>(
+  invokeCommand: Invoke,
+  command: string,
+  args: Record<string, unknown>,
+  fallback: string,
+): Promise<T> {
+  try { return await invokeCommand<T>(command, args); }
+  catch (error) { throw requestError(error, fallback); }
+}
+
 /** Production desktop adapter. All mutable score and file state stays in Rust. */
 export class TauriWorkbenchHostBridge implements WorkbenchHostBridge {
   readonly nativeFiles = true;
@@ -133,8 +143,7 @@ export class TauriWorkbenchHostBridge implements WorkbenchHostBridge {
   }
 
   private async call<T>(command: string, args: Record<string, unknown>, fallback: string): Promise<T> {
-    try { return await this.invoke<T>(command, args); }
-    catch (error) { throw requestError(error, fallback); }
+    return invokeHostCommand(this.invoke, command, args, fallback);
   }
 
   invokeCapability(request: CapabilityTransportRequest) {
@@ -555,6 +564,62 @@ export class BrowserWorkbenchHostBridge implements WorkbenchHostBridge {
   async resetWorkspaceConfiguration(workspaceId: string): Promise<unknown> {
     this.settingsStorage?.setItem(BrowserWorkbenchHostBridge.WORKSPACE_CONFIGURATION_PREFIX + workspaceId, JSON.stringify(DEFAULT_WORKSPACE_CONFIGURATION));
     return DEFAULT_WORKSPACE_CONFIGURATION;
+  }
+}
+
+/** Desktop persistence for the next-launch plugin activation intent. */
+export class TauriPluginActivationStorage implements PluginActivationStoragePort {
+  private readonly invokeCommand: Invoke;
+
+  constructor(invokeCommand: Invoke = invoke) {
+    this.invokeCommand = invokeCommand;
+  }
+
+  async read(): Promise<unknown> {
+    const document = await invokeHostCommand<PluginActivationDocumentV1 | null>(
+      this.invokeCommand,
+      "workbench_read_plugin_activation_v1",
+      {},
+      "无法读取插件启用配置",
+    );
+    return document ?? {};
+  }
+
+  async write(document: PluginActivationDocumentV1): Promise<void> {
+    await invokeHostCommand<void>(
+      this.invokeCommand,
+      "workbench_write_plugin_activation_v1",
+      { document },
+      "无法保存插件启用配置",
+    );
+  }
+}
+
+/** Desktop persistence for namespaced plugin settings. */
+export class TauriPluginSettingsStorage implements PluginSettingsStoragePort {
+  private readonly invokeCommand: Invoke;
+
+  constructor(invokeCommand: Invoke = invoke) {
+    this.invokeCommand = invokeCommand;
+  }
+
+  async read(): Promise<unknown> {
+    const document = await invokeHostCommand<PluginSettingsDocument | null>(
+      this.invokeCommand,
+      "workbench_read_plugin_settings_v1",
+      {},
+      "无法读取插件设置",
+    );
+    return document ?? {};
+  }
+
+  async write(document: PluginSettingsDocument): Promise<void> {
+    await invokeHostCommand<void>(
+      this.invokeCommand,
+      "workbench_write_plugin_settings_v1",
+      { document },
+      "无法保存插件设置",
+    );
   }
 }
 
