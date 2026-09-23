@@ -2,6 +2,7 @@ import type {
   CapabilityResult,
   CapabilityTransportRequest,
 } from "../contracts/capability.ts";
+import { matchesCapabilityDocumentPrecondition } from "../contracts/capability.ts";
 import type {
   AgentApprovalDecision,
   AgentRequiredApproval,
@@ -91,6 +92,7 @@ export interface AgentInvocationRecord {
   readonly input: unknown;
   readonly preparedExecution?: AgentPreparedExecution | null;
   readonly baseDocumentVersion: number | null;
+  readonly documentPrecondition?: CapabilityTransportRequest["documentPrecondition"];
   readonly state: AgentInvocationState;
   readonly result: CapabilityResult<unknown> | null;
   readonly events: readonly AgentInvocationEventRecord[];
@@ -878,6 +880,9 @@ export class AgentRunController {
         const invocationEvents: AgentInvocationEventRecord[] = [];
         let invocationState: AgentInvocationState | null = null;
         let result: CapabilityResult<unknown> | null = null;
+        const invocationBaseDocumentVersion = workspace.documentVersion;
+        const invocationDocumentPrecondition = documentPrecondition(workspace);
+        const invocationWorkspaceId = workspace.workspaceId;
         const applyInvocationEvent = (event: AgentInvocationEvent): void => {
           const transition = reduceAgentInvocationState(invocationState, event);
           if (!transition.accepted) throw new Error(transition.message);
@@ -899,7 +904,8 @@ export class AgentRunController {
             capabilityId: action.capabilityId,
             contractVersion: action.contractVersion,
             input: action.input,
-            baseDocumentVersion: workspace.documentVersion,
+            baseDocumentVersion: invocationBaseDocumentVersion,
+            documentPrecondition: invocationDocumentPrecondition,
             state: invocationState,
             result,
             events: [...invocationEvents],
@@ -921,8 +927,8 @@ export class AgentRunController {
           invocationId,
           capabilityId: action.capabilityId,
           contractVersion: action.contractVersion,
-          workspaceId: workspace.workspaceId,
-          documentPrecondition: documentPrecondition(workspace),
+          workspaceId: invocationWorkspaceId,
+          documentPrecondition: invocationDocumentPrecondition,
           input: action.input,
         };
         try {
@@ -978,6 +984,22 @@ export class AgentRunController {
             });
           }
           return outcome(null, null);
+        }
+
+        if (result.status === "completed"
+          && !matchesCapabilityDocumentPrecondition(
+            result.data,
+            invocationDocumentPrecondition,
+            "same-document",
+          )) {
+          result = {
+            invocationId: result.invocationId,
+            capabilityId: result.capabilityId,
+            contractVersion: result.contractVersion,
+            status: "failed",
+            code: "document-identity-mismatch",
+            message: "应用能力结果与调用时的文档前置条件不一致",
+          };
         }
 
         if (result.status !== "completed") {
@@ -1741,6 +1763,7 @@ export class AgentRunController {
       input: action.input,
       preparedExecution,
       baseDocumentVersion: workspace.documentVersion,
+      documentPrecondition: documentPrecondition(workspace),
       state,
       result: null,
       events,

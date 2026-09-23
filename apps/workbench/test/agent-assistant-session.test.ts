@@ -1032,7 +1032,7 @@ test("assistant session approves a persisted Invocation and continues the same s
           invocationId: request.invocationId,
           capabilityId: request.capabilityId,
           contractVersion: request.contractVersion,
-          data: { documentId: "score-1", documentVersion: 8, title: "练习曲", measureCount: 32 },
+          data: { documentId: "score-1", documentVersion: 7, title: "练习曲", measureCount: 32 },
         };
       },
     },
@@ -1045,7 +1045,7 @@ test("assistant session approves a persisted Invocation and continues the same s
             invocationId: request.invocationId,
             capabilityId: request.capabilityId,
             contractVersion: request.contractVersion,
-            data: { documentId: "score-1", documentVersion: 8, title: "练习曲", measureCount: 32 },
+            data: { documentId: "score-1", documentVersion: 7, title: "练习曲", measureCount: 32 },
           };
         },
       },

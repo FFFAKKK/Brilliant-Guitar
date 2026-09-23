@@ -38,6 +38,13 @@ function request(capabilityId: string, input: unknown = { value: "ok" }): Capabi
   };
 }
 
+function scopedRequest(capabilityId: string): CapabilityTransportRequest {
+  return {
+    ...request(capabilityId),
+    documentPrecondition: { documentId: "score-1", documentVersion: 7 },
+  };
+}
+
 test("plugin platform owns capability visibility while one gateway serves UI and Agent callers", async () => {
   const platform = new PluginPlatform({ hostFeatures: new WorkbenchFeatureRegistry([]), projections: [] });
   platform.registerAll([
@@ -118,6 +125,43 @@ test("duplicate application capability ownership isolates the later plugin", () 
   assert.equal(platform.applicationCapabilities().get("test.operation.owned")?.ownerPluginId, "test.owner.first");
   assert.equal(platform.list().find((item) => item.manifest.id === "test.owner.second")?.status, "failed");
   assert.equal(platform.diagnostics.list().at(-1)?.code, "UI-PLG-008");
+});
+
+test("gateway rejects a completed result outside the request document scope", async () => {
+  const directory = {
+    get: () => ({
+      id: "test.operation.scoped",
+      ownerPluginId: "test.owner",
+      contractVersion: 1,
+      callers: ["agent"] as const,
+      validateInput: () => true,
+      validateOutput: (value: unknown) => typeof value === "object"
+        && value !== null
+        && (value as Record<string, unknown>).accepted === true,
+    }),
+    list: () => [],
+  };
+  const gateway = new ApplicationCapabilityGateway(directory, {
+    invokeCapability: async () => ({}),
+    invokeAgentCapability: async (value) => ({
+      status: "completed" as const,
+      invocationId: value.invocationId,
+      capabilityId: value.capabilityId,
+      contractVersion: value.contractVersion,
+      data: {
+        accepted: true,
+        documentId: "other-score",
+        documentVersion: 99,
+      },
+    }),
+  });
+
+  await assert.rejects(
+    gateway.forCaller("agent").invokeCapability(scopedRequest("test.operation.scoped")),
+    (error) => error instanceof ApplicationCapabilityGatewayError
+      && error.code === "result-identity-mismatch"
+      && error.outcome === "unknown",
+  );
 });
 
 test("the score plugin is the sole source of score operation contracts", () => {

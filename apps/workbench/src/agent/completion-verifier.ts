@@ -11,8 +11,9 @@ import {
   isScoreTempoUpdateV1,
   isScoreUpdateTitleInputV1,
   isScoreUpdateMetadataInputV1,
+  matchesCapabilityDocumentPrecondition,
 } from "../contracts/capability.ts";
-import type { CapabilityResult } from "../contracts/capability.ts";
+import type { CapabilityDocumentPrecondition, CapabilityResult } from "../contracts/capability.ts";
 import type { AgentContextItem } from "./agent-contracts.ts";
 import type { AgentInvocationState } from "./invocation-state.ts";
 import { isAgentPreparedExecution } from "./prepared-mutation.ts";
@@ -24,6 +25,7 @@ export interface AgentCompletionInvocation {
   readonly input: unknown;
   readonly preparedExecution?: AgentPreparedExecution | null;
   readonly baseDocumentVersion: number | null;
+  readonly documentPrecondition?: CapabilityDocumentPrecondition | null;
   readonly state: AgentInvocationState;
   readonly result: CapabilityResult<unknown> | null;
 }
@@ -60,6 +62,16 @@ function verifyCapabilityCompletion(
     return {
       satisfied: false,
       reason: missingReason,
+      evidence: [],
+    };
+  }
+  if (!matchesCapabilityDocumentPrecondition(
+    invocation.result.data,
+    invocation.documentPrecondition,
+  )) {
+    return {
+      satisfied: false,
+      reason: "读取结果与调用时的文档前置条件不一致",
       evidence: [],
     };
   }

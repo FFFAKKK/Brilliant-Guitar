@@ -50,6 +50,19 @@ test("ScoreReadPort keeps an empty session as an explicit unavailable result", a
   });
 });
 
+test("ScoreReadPort rejects a document-scoped summary outside the requested document", async () => {
+  const reads = new ScoreReadClient({
+    async readScoreSummary() {
+      return { documentId: "other-score", documentVersion: 99, title: "另一份作品", measureCount: 1 };
+    },
+  }, workspaceId);
+
+  await assert.rejects(
+    reads.readSummary({ documentId: "score-1", documentVersion: 7 }),
+    /乐谱读取结果与请求文档不匹配/,
+  );
+});
+
 test("ScoreReadPort rejects invalid bounded-read input before calling the host", async () => {
   let hostCalls = 0;
   const reads = new ScoreReadClient({
@@ -198,4 +211,35 @@ test("Direct score tool adapter prefers the typed port and preserves Agent invoc
   assert.equal(result.status, "completed");
   assert.equal(result.invocationId, invocationId);
   if (result.status === "completed") assert.equal((result.data as { title: string }).title, "直读");
+});
+
+test("Direct score tool adapter rejects a result outside the Agent document scope", async () => {
+  const reads = new ScoreReadClient({
+    async readScoreSummary() {
+      return { documentId: "other-score", documentVersion: 99, title: "另一份作品", measureCount: 1 };
+    },
+  }, workspaceId);
+  const adapter = new DirectScoreReadAgentPort({
+    async invoke() { throw new Error("fallback must not be used"); },
+  }, reads);
+
+  await assert.rejects(
+    adapter.invoke({
+      invocationId: "inv-summary",
+      capabilityId: "score.read-summary",
+      contractVersion: 1,
+      workspaceId,
+      documentPrecondition: { documentId: "score-1", documentVersion: 7 },
+      input: {},
+    }, {
+      workspace: {
+        workspaceId,
+        documentId: "score-1",
+        documentVersion: 7,
+        selection: null,
+      },
+      rangeBudget: 32,
+    }),
+    /Score read outcome is unknown/,
+  );
 });

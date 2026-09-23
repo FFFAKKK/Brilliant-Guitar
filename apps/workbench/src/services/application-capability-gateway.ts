@@ -1,4 +1,7 @@
-import { isCapabilityResult } from "../contracts/capability.ts";
+import {
+  isCapabilityResult,
+  matchesCapabilityDocumentPrecondition,
+} from "../contracts/capability.ts";
 import type {
   CapabilityResult,
   CapabilityTransportRequest,
@@ -136,6 +139,14 @@ export class ApplicationCapabilityGateway {
       throw new ApplicationCapabilityGatewayError(
         "result-identity-mismatch",
         `Application Capability result identity does not match the invocation: ${request.capabilityId}`,
+        "unknown",
+      );
+    }
+    if (result.status === "completed"
+      && !matchesCapabilityDocumentPrecondition(result.data, request.documentPrecondition, "same-document")) {
+      throw new ApplicationCapabilityGatewayError(
+        "result-identity-mismatch",
+        `Application Capability result does not match the requested document: ${request.capabilityId}`,
         "unknown",
       );
     }

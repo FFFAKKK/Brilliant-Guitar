@@ -337,6 +337,57 @@ test("approved invocation executes its persisted input and resumes the same Run"
   assert.equal(provider.exhausted, true);
 });
 
+test("controller rejects a completed capability result outside its invocation document scope", async () => {
+  const provider = new FakeAgentProvider([{
+    kind: "decision",
+    expect: { capabilityIds: ["score.read-summary"], contextSourceIds: [] },
+    decision: {
+      kind: "tool-calls",
+      calls: [{
+        callId: "read-summary",
+        capabilityId: "score.read-summary",
+        contractVersion: 1,
+        input: {},
+      }],
+    },
+  }]);
+  const controller = new AgentRunController({
+    provider,
+    capabilities: {
+      async invoke(request) {
+        return {
+          invocationId: request.invocationId,
+          capabilityId: request.capabilityId,
+          contractVersion: request.contractVersion,
+          status: "completed" as const,
+          data: {
+            documentId: "other-score",
+            documentVersion: 99,
+            title: "另一份作品",
+            measureCount: 1,
+          },
+        };
+      },
+    },
+    catalog: FIRST_PARTY_CAPABILITY_CATALOG,
+    completionVerifier: verifyScoreSummaryCompletion,
+    now: () => 100,
+    nextId: idSource(),
+  });
+
+  const outcome = await controller.run(runRequest());
+
+  assert.deepEqual(outcome.run.state, {
+    lifecycle: "terminal",
+    phase: "executing",
+    terminalReason: "failed",
+    failureCode: "capability-failed",
+  });
+  assert.equal(outcome.run.contextItems.length, 0);
+  assert.equal(outcome.run.invocations[0]?.documentPrecondition?.documentId, "score-1");
+  assert.equal(outcome.run.invocations[0]?.result?.status, "failed");
+});
+
 test("approval recovery authorizes against the persisted workflow instead of a replacement request", async () => {
   const initialWorkflows = scoreWorkflowRuntime("1.0.0");
   const provider = new FakeAgentProvider([{
@@ -1712,6 +1763,28 @@ test("capability port rejects a mismatched transport identity", async () => {
     documentPrecondition: null,
     input: {},
   }), /identity/);
+});
+
+test("capability port rejects a result from another document", async () => {
+  const port = new WorkbenchAgentCapabilityPort({
+    async invokeCapability(request) {
+      return {
+        status: "completed",
+        invocationId: request.invocationId,
+        capabilityId: request.capabilityId,
+        contractVersion: request.contractVersion,
+        data: { documentId: "other-score", documentVersion: 99, title: "", measureCount: 1 },
+      };
+    },
+  });
+  await assert.rejects(() => port.invoke({
+    invocationId: "invocation-1",
+    capabilityId: "score.read-summary",
+    contractVersion: 1,
+    workspaceId: "workspace-1",
+    documentPrecondition: { documentId: "score-1", documentVersion: 7 },
+    input: {},
+  }), /requested document/);
 });
 
 test("a model cannot turn its own failed finish proposal into user cancellation or completion", async () => {

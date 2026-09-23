@@ -8,6 +8,7 @@ import {
   isScoreSummaryV1,
 } from "../contracts/capability.ts";
 import type {
+  CapabilityDocumentPrecondition,
   ScoreMeasureIndexInputV1,
   ScoreMeasureIndexV1,
   ScoreMeasureRangeInputV1,
@@ -16,6 +17,7 @@ import type {
   ScoreStructureV1,
   ScoreSummaryV1,
 } from "../contracts/capability.ts";
+import { matchesCapabilityDocumentPrecondition } from "../contracts/capability.ts";
 import { WorkbenchRequestError } from "./workbench-host-bridge.ts";
 
 /**
@@ -26,11 +28,17 @@ export type ScoreReadResult<T> =
   | { readonly status: "unavailable" | "failed"; readonly code: string; readonly message: string };
 
 export interface ScoreReadPort {
-  readSummary(): Promise<ScoreReadResult<ScoreSummaryV1>>;
-  readMetadata(): Promise<ScoreReadResult<ScoreMetadataV1>>;
-  readStructure(): Promise<ScoreReadResult<ScoreStructureV1>>;
-  readMeasureIndex(input: ScoreMeasureIndexInputV1): Promise<ScoreReadResult<ScoreMeasureIndexV1>>;
-  readMeasureRange(input: ScoreMeasureRangeInputV1): Promise<ScoreReadResult<ScoreMeasureRangeV1>>;
+  readSummary(expectedDocument?: CapabilityDocumentPrecondition | null): Promise<ScoreReadResult<ScoreSummaryV1>>;
+  readMetadata(expectedDocument?: CapabilityDocumentPrecondition | null): Promise<ScoreReadResult<ScoreMetadataV1>>;
+  readStructure(expectedDocument?: CapabilityDocumentPrecondition | null): Promise<ScoreReadResult<ScoreStructureV1>>;
+  readMeasureIndex(
+    input: ScoreMeasureIndexInputV1,
+    expectedDocument?: CapabilityDocumentPrecondition | null,
+  ): Promise<ScoreReadResult<ScoreMeasureIndexV1>>;
+  readMeasureRange(
+    input: ScoreMeasureRangeInputV1,
+    expectedDocument?: CapabilityDocumentPrecondition | null,
+  ): Promise<ScoreReadResult<ScoreMeasureRangeV1>>;
 }
 
 interface ScoreReadHost {
@@ -72,37 +80,45 @@ export class ScoreReadClient implements ScoreReadPort {
     this.#workspaceId = workspaceId;
   }
 
-  readSummary(): Promise<ScoreReadResult<ScoreSummaryV1>> {
+  readSummary(expectedDocument: CapabilityDocumentPrecondition | null = null): Promise<ScoreReadResult<ScoreSummaryV1>> {
     const method = this.#host.readScoreSummary === undefined
       ? undefined
       : (workspaceId: string) => this.#host.readScoreSummary!(workspaceId);
-    return this.read(method, EMPTY_INPUT, isScoreSummaryV1);
+    return this.read(method, EMPTY_INPUT, isScoreSummaryV1, expectedDocument);
   }
 
-  readMetadata(): Promise<ScoreReadResult<ScoreMetadataV1>> {
+  readMetadata(expectedDocument: CapabilityDocumentPrecondition | null = null): Promise<ScoreReadResult<ScoreMetadataV1>> {
     const method = this.#host.readScoreMetadata === undefined
       ? undefined
       : (workspaceId: string) => this.#host.readScoreMetadata!(workspaceId);
-    return this.read(method, EMPTY_INPUT, isScoreMetadataV1);
+    return this.read(method, EMPTY_INPUT, isScoreMetadataV1, expectedDocument);
   }
 
-  readStructure(): Promise<ScoreReadResult<ScoreStructureV1>> {
+  readStructure(expectedDocument: CapabilityDocumentPrecondition | null = null): Promise<ScoreReadResult<ScoreStructureV1>> {
     const method = this.#host.readScoreStructure === undefined
       ? undefined
       : (workspaceId: string) => this.#host.readScoreStructure!(workspaceId);
-    return this.read(method, EMPTY_INPUT, isScoreStructureV1);
+    return this.read(method, EMPTY_INPUT, isScoreStructureV1, expectedDocument);
   }
 
-  async readMeasureIndex(input: ScoreMeasureIndexInputV1): Promise<ScoreReadResult<ScoreMeasureIndexV1>> {
+  async readMeasureIndex(
+    input: ScoreMeasureIndexInputV1,
+    expectedDocument: CapabilityDocumentPrecondition | null = null,
+  ): Promise<ScoreReadResult<ScoreMeasureIndexV1>> {
     if (!isScoreMeasureIndexInputV1(input)) {
       throw new Error("乐谱小节索引读取请求无效");
     }
     const { expectedDocumentId, expectedDocumentVersion } = input;
+    if (expectedDocument !== null
+      && (expectedDocument.documentId !== expectedDocumentId
+        || expectedDocument.documentVersion !== expectedDocumentVersion)) {
+      throw new Error("乐谱小节索引请求与当前文档不匹配");
+    }
     const method = this.#host.readScoreMeasureIndex === undefined
       ? undefined
       : (workspaceId: string, value?: unknown) =>
         this.#host.readScoreMeasureIndex!(workspaceId, value as ScoreMeasureIndexInputV1);
-    const result = await this.read(method, input, isScoreMeasureIndexV1);
+    const result = await this.read(method, input, isScoreMeasureIndexV1, null);
     if (result.status === "ready"
       && (result.data.documentId !== expectedDocumentId
         || result.data.documentVersion !== expectedDocumentVersion)) {
@@ -111,7 +127,10 @@ export class ScoreReadClient implements ScoreReadPort {
     return result;
   }
 
-  async readMeasureRange(input: ScoreMeasureRangeInputV1): Promise<ScoreReadResult<ScoreMeasureRangeV1>> {
+  async readMeasureRange(
+    input: ScoreMeasureRangeInputV1,
+    expectedDocument: CapabilityDocumentPrecondition | null = null,
+  ): Promise<ScoreReadResult<ScoreMeasureRangeV1>> {
     if (!isScoreMeasureRangeInputV1(input)) {
       throw new Error("乐谱小节范围读取请求无效");
     }
@@ -120,7 +139,7 @@ export class ScoreReadClient implements ScoreReadPort {
       ? undefined
       : (workspaceId: string, value?: unknown) =>
         this.#host.readScoreMeasureRange!(workspaceId, value as ScoreMeasureRangeInputV1);
-    const result = await this.read(method, input, isScoreMeasureRangeV1);
+    const result = await this.read(method, input, isScoreMeasureRangeV1, expectedDocument);
     if (result.status === "ready"
       && (result.data.startMeasureId !== startMeasureId
         || result.data.endMeasureId !== endMeasureId
@@ -134,6 +153,7 @@ export class ScoreReadClient implements ScoreReadPort {
     method: ((workspaceId: string, input?: unknown) => Promise<unknown | null>) | undefined,
     input: unknown,
     isData: (value: unknown) => value is T,
+    expectedDocument: CapabilityDocumentPrecondition | null,
   ): Promise<ScoreReadResult<T>> {
     if (method === undefined) throw new Error("当前宿主未提供乐谱类型化读取端口");
     let value: unknown | null;
@@ -148,6 +168,9 @@ export class ScoreReadClient implements ScoreReadPort {
     }
     if (value === null) return unavailable();
     if (!isData(value)) throw new Error("乐谱类型化读取结果无效");
+    if (!matchesCapabilityDocumentPrecondition(value, expectedDocument)) {
+      throw new Error("乐谱读取结果与请求文档不匹配");
+    }
     return Object.freeze({ status: "ready", data: value });
   }
 }
