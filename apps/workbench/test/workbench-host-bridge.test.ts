@@ -5,7 +5,8 @@ import type { NewScoreInput } from "../src/contracts/new-score.ts";
 import type { ScoreSessionRead } from "../src/contracts/score-session.ts";
 import { WorkbenchClient, resolveWorkbenchWorkspaceId } from "../src/services/workbench-client.ts";
 import { BrowserPluginActivationStorage, BrowserPluginSettingsStorage, BrowserPluginStartupRecoveryStorage,
-  BrowserWorkbenchHostBridge, TauriPluginActivationStorage, TauriPluginSettingsStorage, TauriWorkbenchHostBridge,
+  BrowserWorkbenchHostBridge, TauriPluginActivationStorage, TauriPluginSettingsStorage,
+  TauriPluginStartupRecoveryStorage, TauriWorkbenchHostBridge,
   WorkbenchRequestError } from "../src/services/workbench-host-bridge.ts";
 import type { WorkbenchHostBridge } from "../src/services/workbench-host-bridge.ts";
 import type { CloseRequestedEvent, Window as TauriWindow } from "@tauri-apps/api/window";
@@ -223,6 +224,29 @@ test("tauri plugin settings storage uses a versioned host command", async () => 
   assert.deepEqual(calls, [
     { command: "workbench_read_plugin_settings_v1", args: {} },
     { command: "workbench_write_plugin_settings_v1", args: { document } },
+  ]);
+});
+
+test("tauri plugin startup recovery storage uses a versioned host command", async () => {
+  const calls: Array<{ command: string; args?: Record<string, unknown> }> = [];
+  const document = {
+    schemaVersion: 1 as const,
+    state: "launching" as const,
+    attemptedPluginIds: ["brilliant.instrument.guitar"],
+    lastKnownGoodPluginIds: [],
+  };
+  const invoke = async <T>(command: string, args?: Record<string, unknown>): Promise<T> => {
+    calls.push({ command, ...(args ? { args } : {}) });
+    if (command === "workbench_read_plugin_startup_recovery_v1") return document as T;
+    return undefined as T;
+  };
+  const storage = new TauriPluginStartupRecoveryStorage(invoke);
+
+  assert.deepEqual(await storage.read(), document);
+  await storage.write(document);
+  assert.deepEqual(calls, [
+    { command: "workbench_read_plugin_startup_recovery_v1", args: {} },
+    { command: "workbench_write_plugin_startup_recovery_v1", args: { document } },
   ]);
 });
 

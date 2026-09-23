@@ -163,3 +163,37 @@ test("persisted preference changes after bootstrap only affect the next launch",
     enabledPluginIds: ["test.bootstrap.user"],
   });
 });
+
+test("bootstrap connects recovery persistence before launch and exposes stable marking", async () => {
+  const platform = platformWithUserPlugin();
+  const writes: unknown[] = [];
+  const result = await bootstrapPersistedPluginPlatform(
+    platform,
+    {
+      read: async () => ({ schemaVersion: 1, enabledPluginIds: ["test.bootstrap.user"] }),
+      write: async () => {},
+    },
+    { read: async () => null, write: async () => {} },
+    () => assert.fail("bootstrap unexpectedly reported a persistence failure"),
+    {
+      recoveryStorage: {
+        read: async () => null,
+        write: async (document) => { writes.push(document); },
+      },
+    },
+  );
+
+  assert.deepEqual(writes, [{
+    schemaVersion: 1,
+    state: "launching",
+    attemptedPluginIds: ["test.bootstrap.user"],
+    lastKnownGoodPluginIds: [],
+  }]);
+  await result.startup.markStable();
+  assert.deepEqual(writes.at(-1), {
+    schemaVersion: 1,
+    state: "stable",
+    attemptedPluginIds: [],
+    lastKnownGoodPluginIds: ["test.bootstrap.user"],
+  });
+});

@@ -1,5 +1,6 @@
 import type { PluginActivationStoragePort } from "./plugin-activation-persistence.ts";
 import type { PluginPlatform, PluginSessionPlanV1 } from "./plugin-platform.ts";
+import type { PluginStartupRecoveryStoragePort } from "./plugin-startup-recovery.ts";
 import type { PluginSettingsStoragePort } from "./plugin-settings-persistence.ts";
 import { PluginStartupController } from "./plugin-startup-controller.ts";
 
@@ -8,6 +9,10 @@ export type PluginPlatformBootstrapFailureKind = "activation" | "settings";
 export interface PluginPlatformBootstrapResult {
   readonly startup: PluginStartupController;
   readonly plan: PluginSessionPlanV1;
+}
+
+export interface PluginPlatformBootstrapOptions {
+  readonly recoveryStorage?: PluginStartupRecoveryStoragePort;
 }
 
 /**
@@ -19,8 +24,11 @@ export async function bootstrapPersistedPluginPlatform(
   activationStorage: PluginActivationStoragePort,
   settingsStorage: PluginSettingsStoragePort,
   onFailure: (kind: PluginPlatformBootstrapFailureKind, error: unknown) => void,
+  options: PluginPlatformBootstrapOptions = {},
 ): Promise<PluginPlatformBootstrapResult> {
-  const startup = new PluginStartupController(platform, activationStorage);
+  const startup = new PluginStartupController(platform, activationStorage, {
+    ...(options.recoveryStorage === undefined ? {} : { recoveryStorage: options.recoveryStorage }),
+  });
   try {
     await startup.prepare();
   } catch (error) {

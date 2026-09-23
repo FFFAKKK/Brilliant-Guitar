@@ -21,8 +21,10 @@ import { AGENT_ASSISTANT_HOST_SERVICES } from "../plugins/agent-plugin-host-cont
 import {
   BrowserPluginActivationStorage,
   BrowserPluginSettingsStorage,
+  BrowserPluginStartupRecoveryStorage,
   TauriPluginActivationStorage,
   TauriPluginSettingsStorage,
+  TauriPluginStartupRecoveryStorage,
 } from "../services/workbench-host-bridge.ts";
 import { isTauri } from "@tauri-apps/api/core";
 import { UiPluginHostError, uiPluginIdentity } from "./plugin-diagnostic.ts";
@@ -99,6 +101,11 @@ export function initializeWorkbenchPluginPreview(): Promise<void> {
       desktop ? new TauriPluginActivationStorage() : new BrowserPluginActivationStorage(),
       desktop ? new TauriPluginSettingsStorage() : new BrowserPluginSettingsStorage(),
       reportPluginInitializationFailure,
+      {
+        recoveryStorage: desktop
+          ? new TauriPluginStartupRecoveryStorage()
+          : new BrowserPluginStartupRecoveryStorage(),
+      },
     );
     pluginStartup = result.startup;
     captureFrozenSession();
@@ -106,6 +113,16 @@ export function initializeWorkbenchPluginPreview(): Promise<void> {
     reportPluginInitializationFailure("initialization", error);
   });
   return pluginInitialization;
+}
+
+/** Marks the plugin session stable after the first workbench frame is committed. */
+export async function markWorkbenchPluginStartupStable(): Promise<void> {
+  if (!pluginStartup) return;
+  try {
+    await pluginStartup.markStable();
+  } catch (error) {
+    reportPluginInitializationFailure("stability", error);
+  }
 }
 
 /** Saves the next-launch preference. The running workbench composition never changes. */

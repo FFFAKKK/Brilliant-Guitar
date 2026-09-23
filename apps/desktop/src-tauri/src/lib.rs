@@ -63,6 +63,8 @@ pub fn run() {
             commands::workbench_write_plugin_activation_v1,
             commands::workbench_read_plugin_settings_v1,
             commands::workbench_write_plugin_settings_v1,
+            commands::workbench_read_plugin_startup_recovery_v1,
+            commands::workbench_write_plugin_startup_recovery_v1,
             commands::workbench_read_workspace_configuration_v1,
             commands::workbench_write_workspace_configuration_v1,
             commands::workbench_reset_workspace_configuration_v1,
