@@ -1,5 +1,6 @@
 import {
   isCapabilityResult,
+  matchesCapabilityDocumentPrecondition,
 } from "../contracts/capability.ts";
 import type {
   CapabilityResult,
@@ -60,6 +61,13 @@ export class WorkbenchAgentCapabilityPort implements AgentCapabilityPort {
       || value.contractVersion !== request.contractVersion) {
       throw new AgentCapabilityPortError(
         "Agent Capability result identity does not match the invocation",
+        "unknown",
+      );
+    }
+    if (value.status === "completed"
+      && !matchesCapabilityDocumentPrecondition(value.data, request.documentPrecondition, "same-document")) {
+      throw new AgentCapabilityPortError(
+        "Agent Capability result does not match the requested document",
         "unknown",
       );
     }

@@ -43,11 +43,20 @@ export function createWorkbenchAgentPluginBindings(
   });
   const scoreRead = client.scoreReadPort();
   const scopedScoreRead = Object.freeze({
-    readSummary: () => scoreRead.readSummary(),
-    readMetadata: () => scoreRead.readMetadata(),
-    readStructure: () => scoreRead.readStructure(),
-    readMeasureIndex: (input: Parameters<typeof scoreRead.readMeasureIndex>[0]) => scoreRead.readMeasureIndex(input),
-    readMeasureRange: (input: Parameters<typeof scoreRead.readMeasureRange>[0]) => scoreRead.readMeasureRange(input),
+    readSummary: (expectedDocument: Parameters<typeof scoreRead.readSummary>[0]) =>
+      scoreRead.readSummary(expectedDocument),
+    readMetadata: (expectedDocument: Parameters<typeof scoreRead.readMetadata>[0]) =>
+      scoreRead.readMetadata(expectedDocument),
+    readStructure: (expectedDocument: Parameters<typeof scoreRead.readStructure>[0]) =>
+      scoreRead.readStructure(expectedDocument),
+    readMeasureIndex: (
+      input: Parameters<typeof scoreRead.readMeasureIndex>[0],
+      expectedDocument: Parameters<typeof scoreRead.readMeasureIndex>[1],
+    ) => scoreRead.readMeasureIndex(input, expectedDocument),
+    readMeasureRange: (
+      input: Parameters<typeof scoreRead.readMeasureRange>[0],
+      expectedDocument: Parameters<typeof scoreRead.readMeasureRange>[1],
+    ) => scoreRead.readMeasureRange(input, expectedDocument),
   });
   const scoreChangeSets = client.scoreChangeSetPort();
   const scopedScoreChangeSets = Object.freeze({

@@ -1,6 +1,7 @@
 import {
   isScoreMeasureIndexInputV1,
   isScoreMeasureRangeInputV1,
+  matchesCapabilityDocumentPrecondition,
 } from "../contracts/capability.ts";
 import type {
   CapabilityResult,
@@ -39,6 +40,20 @@ function projectTyped(request: CapabilityTransportRequest, result: ScoreReadResu
     : Object.freeze({ ...identity(request), status: result.status, code: result.code, message: result.message });
 }
 
+function expectedDocument(
+  request: CapabilityTransportRequest,
+  context: AgentCapabilityInvocationContext | undefined,
+): CapabilityTransportRequest["documentPrecondition"] {
+  if (request.documentPrecondition !== null) return request.documentPrecondition;
+  if (context === undefined
+    || context.workspace.documentId === null
+    || context.workspace.documentVersion === null) return null;
+  return {
+    documentId: context.workspace.documentId,
+    documentVersion: context.workspace.documentVersion,
+  };
+}
+
 /** Direct Tool Adapter for score queries; mutations remain on the compatibility port. */
 export class DirectScoreReadAgentPort implements AgentCapabilityPort {
   readonly #fallback: AgentCapabilityPort;
@@ -69,16 +84,30 @@ export class DirectScoreReadAgentPort implements AgentCapabilityPort {
       throw new AgentCapabilityPortError("Score measure range input is invalid", "definite-failure");
     }
 
+    const requestedDocument = expectedDocument(request, context);
     try {
       const result = request.capabilityId === "score.read-summary"
-        ? await this.#scoreRead.readSummary()
+        ? await this.#scoreRead.readSummary(requestedDocument)
         : request.capabilityId === "score.read-metadata"
-          ? await this.#scoreRead.readMetadata()
+          ? await this.#scoreRead.readMetadata(requestedDocument)
           : request.capabilityId === "score.read-structure"
-            ? await this.#scoreRead.readStructure()
+            ? await this.#scoreRead.readStructure(requestedDocument)
             : request.capabilityId === "score.read-measure-index"
-              ? await this.#scoreRead.readMeasureIndex(request.input as ScoreMeasureIndexInputV1)
-              : await this.#scoreRead.readMeasureRange(request.input as ScoreMeasureRangeInputV1);
+              ? await this.#scoreRead.readMeasureIndex(
+                request.input as ScoreMeasureIndexInputV1,
+                requestedDocument,
+              )
+              : await this.#scoreRead.readMeasureRange(
+                request.input as ScoreMeasureRangeInputV1,
+                requestedDocument,
+              );
+      if (result.status === "ready"
+        && !matchesCapabilityDocumentPrecondition(result.data, requestedDocument)) {
+        throw new AgentCapabilityPortError(
+          "Score read result does not match the requested document",
+          "unknown",
+        );
+      }
       return projectTyped(request, result);
     } catch {
       throw new AgentCapabilityPortError("Score read outcome is unknown", "unknown");

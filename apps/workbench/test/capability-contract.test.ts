@@ -26,6 +26,7 @@ import {
   verifyScoreMeasuresCompletion,
   verifyScoreMetadataCompletion,
   verifyScoreStructureCompletion,
+  verifyScoreSummaryCompletion,
   verifyScoreTitleUpdateCompletion,
 } from "../src/agent/completion-verifier.ts";
 
@@ -368,6 +369,33 @@ test("metadata and structure completion require the matching succeeded capabilit
   });
   assert.equal(measures.satisfied, true);
   assert.deepEqual(measures.evidence, ["invocation-measures", "score-1@3"]);
+
+  const wrongDocument = verifyScoreSummaryCompletion({
+    goal: "读取当前乐谱概要",
+    contextItems: [],
+    invocations: [{
+      invocationId: "invocation-wrong-document",
+      capabilityId: "score.read-summary",
+      input: {},
+      baseDocumentVersion: 3,
+      documentPrecondition: { documentId: "score-1", documentVersion: 3 },
+      state: completedState,
+      result: {
+        invocationId: "invocation-wrong-document",
+        capabilityId: "score.read-summary",
+        contractVersion: 1,
+        status: "completed",
+        data: {
+          documentId: "other-score",
+          documentVersion: 99,
+          title: "另一份作品",
+          measureCount: 1,
+        },
+      },
+    }],
+  });
+  assert.equal(wrongDocument.satisfied, false);
+  assert.equal(wrongDocument.reason, "读取结果与调用时的文档前置条件不一致");
 
   const titleInvocation = {
     invocationId: "invocation-title",
