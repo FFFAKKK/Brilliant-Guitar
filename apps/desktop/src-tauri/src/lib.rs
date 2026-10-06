@@ -77,6 +77,7 @@ pub fn run() {
             commands::workbench_agent_provider_set_credential_v1,
             commands::workbench_agent_provider_delete_credential_v1,
             commands::workbench_agent_provider_decide_v1,
+            commands::workbench_agent_model_stream_v1,
             commands::workbench_agent_provider_cancel_v1,
         ])
         .run(tauri::generate_context!())

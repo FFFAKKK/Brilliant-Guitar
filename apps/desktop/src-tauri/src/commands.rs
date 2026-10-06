@@ -8,8 +8,9 @@ use uuid::Uuid;
 use crate::{
     agent_credential::{AgentCredentialStoreError, AgentProviderCredentialStatusV1},
     agent_provider::{
-        AgentProviderDecideRequestV1, AgentProviderDecisionEnvelopeV1, AgentProviderError,
-        AgentProviderProgressObserver, AgentProviderStreamEventV1,
+        AgentModelStreamEnvelopeV1, AgentModelStreamRequestV1, AgentProviderDecideRequestV1,
+        AgentProviderDecisionEnvelopeV1, AgentProviderError, AgentProviderProgressObserver,
+        AgentProviderStreamEventV1,
     },
     agent_store::{
         AgentRunRecoverySummaryV1, AgentRunStoreCommitInputV1, AgentRunStoreCommitResultV1,
@@ -158,6 +159,46 @@ pub async fn workbench_agent_provider_decide_v1(
     let result = match secret {
         Ok(secret) => tokio::select! {
             result = state.agent_providers.decide_with_observer(secret.as_str(), request, observer) => result,
+            () = cancellation.notified() => Err(AgentProviderError::Cancelled),
+        },
+        Err(error) => {
+            state
+                .agent_provider_cancellations
+                .complete(&run_id, &turn_id);
+            return Err(error);
+        }
+    };
+    state
+        .agent_provider_cancellations
+        .complete(&run_id, &turn_id);
+    result.map_err(agent_provider_error)
+}
+
+#[tauri::command]
+pub async fn workbench_agent_model_stream_v1(
+    state: State<'_, AppState>,
+    request: AgentModelStreamRequestV1,
+    progress: Channel<AgentProviderStreamEventV1>,
+) -> Result<AgentModelStreamEnvelopeV1, HostError> {
+    let run_id = request.run_id.clone();
+    let turn_id = request.turn_id.clone();
+    let cancellation = state
+        .agent_provider_cancellations
+        .begin(&run_id, &turn_id)
+        .map_err(agent_provider_error)?;
+    let secret = state
+        .agent_credentials
+        .read_secret(&request.provider_id)
+        .map_err(agent_credential_error)
+        .and_then(|value| {
+            value.ok_or_else(|| agent_provider_error(AgentProviderError::AuthenticationRequired))
+        });
+    let observer = Some(Arc::new(move |event| {
+        let _ = progress.send(event);
+    }) as AgentProviderProgressObserver);
+    let result = match secret {
+        Ok(secret) => tokio::select! {
+            result = state.agent_providers.stream_model_with_observer(secret.as_str(), request, observer) => result,
             () = cancellation.notified() => Err(AgentProviderError::Cancelled),
         },
         Err(error) => {

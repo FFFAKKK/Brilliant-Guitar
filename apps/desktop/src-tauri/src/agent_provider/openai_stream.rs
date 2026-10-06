@@ -116,7 +116,11 @@ fn decode_frame(frame: &[u8]) -> Result<Vec<OpenAiStreamEvent>, OpenAiStreamErro
         .ok_or(OpenAiStreamError::InvalidEvent)?;
 
     match event_type {
-        "response.created" | "response.in_progress" => Ok(vec![OpenAiStreamEvent::Started]),
+        // `response.in_progress` is a lifecycle notification, not a second
+        // model-stream start. The cross-layer contract permits exactly one
+        // `response.started` event, so only `response.created` is projected.
+        "response.created" => Ok(vec![OpenAiStreamEvent::Started]),
+        "response.in_progress" => Ok(Vec::new()),
         "response.output_text.delta" => match value.get("delta").and_then(Value::as_str) {
             Some("") => Ok(Vec::new()),
             Some(delta) => Ok(vec![OpenAiStreamEvent::TextDelta(delta.to_owned())]),
@@ -248,5 +252,17 @@ mod tests {
 
         let mut decoder = OpenAiSseDecoder::new(4);
         assert_eq!(decoder.push(b"12345"), Err(OpenAiStreamError::TooLarge));
+    }
+
+    #[test]
+    fn ignores_response_in_progress_after_created() {
+        let mut decoder = OpenAiSseDecoder::new(256);
+        let events = decoder
+            .push(
+                b"data: {\"type\":\"response.created\"}\n\n\
+                   data: {\"type\":\"response.in_progress\"}\n\n",
+            )
+            .expect("lifecycle events");
+        assert_eq!(events, vec![OpenAiStreamEvent::Started]);
     }
 }

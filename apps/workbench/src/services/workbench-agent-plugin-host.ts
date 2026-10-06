@@ -29,6 +29,11 @@ export function createWorkbenchAgentPluginBindings(
       signal?: Parameters<AgentProviderHostPort["decideAgentProvider"]>[1],
       observer?: Parameters<AgentProviderHostPort["decideAgentProvider"]>[2],
     ) => client.decideAgentProvider(request, signal, observer),
+    streamAgentModel: (
+      request: Parameters<NonNullable<AgentProviderHostPort["streamAgentModel"]>>[0],
+      signal?: Parameters<NonNullable<AgentProviderHostPort["streamAgentModel"]>>[1],
+      observer?: Parameters<NonNullable<AgentProviderHostPort["streamAgentModel"]>>[2],
+    ) => client.streamAgentModel(request, signal, observer),
   });
   const runStore = desktop ? new TauriAgentRunStore() : new InMemoryAgentRunStore();
   const scopedRunStore = Object.freeze({

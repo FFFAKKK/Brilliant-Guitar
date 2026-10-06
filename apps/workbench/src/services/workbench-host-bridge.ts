@@ -18,6 +18,7 @@ import type { WorkspaceConfigurationV1 } from "../contracts/workspace-configurat
 import { isWorkbenchIssue } from "../contracts/workbench-issue.ts";
 import type { WorkbenchIssue } from "../contracts/workbench-issue.ts";
 import type { AgentProviderDecideRequestV1 } from "../contracts/agent-provider-turn.ts";
+import type { AgentModelStreamRequestV1 } from "../contracts/agent-model-stream.ts";
 import type { PluginActivationDocumentV1, PluginActivationStoragePort } from "../plugins/plugin-activation-persistence.ts";
 import type { PluginStartupRecoveryDocumentV1, PluginStartupRecoveryStoragePort } from "../plugins/plugin-startup-recovery.ts";
 import type { PluginSettingsDocument } from "../plugins/plugin-settings.ts";
@@ -76,6 +77,11 @@ export interface WorkbenchHostBridge {
   deleteAgentProviderCredential?(providerId: string): Promise<unknown>;
   decideAgentProvider?(
     request: AgentProviderDecideRequestV1,
+    signal?: AbortSignal | null,
+    observer?: ((event: unknown) => void) | null,
+  ): Promise<unknown>;
+  streamAgentModel?(
+    request: AgentModelStreamRequestV1,
     signal?: AbortSignal | null,
     observer?: ((event: unknown) => void) | null,
   ): Promise<unknown>;
@@ -296,6 +302,32 @@ export class TauriWorkbenchHostBridge implements WorkbenchHostBridge {
         "workbench_agent_provider_decide_v1",
         { request, progress },
         "模型 Provider 暂时无法完成决策",
+      );
+    } finally {
+      signal?.removeEventListener("abort", cancel);
+    }
+  }
+
+  async streamAgentModel(
+    request: AgentModelStreamRequestV1,
+    signal?: AbortSignal | null,
+    observer?: ((event: unknown) => void) | null,
+  ): Promise<unknown> {
+    if (signal?.aborted) throw new DOMException("Agent model request cancelled", "AbortError");
+    const cancel = (): void => {
+      void this.invoke<boolean>("workbench_agent_provider_cancel_v1", {
+        runId: request.runId,
+        turnId: request.turnId,
+      }).catch(() => undefined);
+    };
+    signal?.addEventListener("abort", cancel, { once: true });
+    try {
+      const progress = this.createChannel();
+      progress.onmessage = observer ?? (() => undefined);
+      return await this.call<unknown>(
+        "workbench_agent_model_stream_v1",
+        { request, progress },
+        "模型 Provider 暂时无法提供原始模型流",
       );
     } finally {
       signal?.removeEventListener("abort", cancel);

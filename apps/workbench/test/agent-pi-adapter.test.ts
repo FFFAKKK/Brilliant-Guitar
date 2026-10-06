@@ -5,9 +5,9 @@ import test from "node:test";
 
 import type { CapabilityTransportRequest } from "../src/contracts/capability.ts";
 import { WorkbenchAgentCapabilityPort } from "../src/agent/capability-port.ts";
-import { runPiAgent } from "../src/agent/pi/adapter.ts";
+import { runPiAgent } from "../src/agent/pi/legacy/adapter.ts";
 import { createScoreSummaryFakeStream } from "../src/agent/pi/fake-stream.ts";
-import type { PiAgentEvent } from "../src/agent/pi/types.ts";
+import type { PiAgentEvent } from "../src/agent/pi/legacy/types.ts";
 import { ApplicationCapabilityGateway } from "../src/services/application-capability-gateway.ts";
 import { PluginPlatform } from "../src/plugins/plugin-platform.ts";
 import { SCORE_APPLICATION_PLUGIN } from "../src/plugins/score-application-plugin.ts";

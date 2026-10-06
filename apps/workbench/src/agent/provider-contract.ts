@@ -1,6 +1,6 @@
 export type { AgentProviderSelection } from "../contracts/agent-provider-settings.ts";
 export { isAgentProviderSelection } from "../contracts/agent-provider-settings.ts";
-import type { AgentProviderPort } from "./provider.ts";
+import type { AgentDecisionProviderPort } from "./provider.ts";
 
 export type AgentProviderExecutionLocation = "remote" | "local";
 export type AgentProviderCredentialKind = "api-key" | "none";
@@ -40,7 +40,7 @@ export interface AgentProviderRuntimeSnapshot {
 
 export interface AgentProviderSessionPort {
   getSnapshot(): AgentProviderRuntimeSnapshot;
-  getProvider(): AgentProviderPort | null;
+  getProvider(): AgentDecisionProviderPort | null;
   subscribe(listener: () => void): () => void;
   refresh(): Promise<void>;
   dispose(): void;

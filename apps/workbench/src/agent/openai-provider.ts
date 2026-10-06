@@ -1,7 +1,7 @@
 import type { AgentProviderSelection } from "../contracts/agent-provider-settings.ts";
 import { createAgentProviderDecideRequestV1 } from "../contracts/agent-provider-turn.ts";
 import type {
-  AgentProviderPort,
+  AgentDecisionProviderPort,
   AgentProviderProgressObserver,
   AgentProviderRequest,
 } from "./provider.ts";
@@ -10,7 +10,7 @@ import type {
   AgentProviderRuntimeSnapshot,
   AgentProviderSessionPort,
 } from "./provider-contract.ts";
-import type { AgentProviderHostPort } from "./provider-host.ts";
+import type { AgentDecisionProviderHostPort, AgentProviderCredentialHostPort, AgentProviderHostPort } from "./provider-host.ts";
 import type { AgentProviderRegistration } from "./provider-registry.ts";
 import { reduceAgentProviderStream } from "./provider-stream.ts";
 import type { AgentProviderStreamState } from "./provider-stream.ts";
@@ -36,11 +36,11 @@ export const OPENAI_PROVIDER_DESCRIPTOR: AgentProviderDescriptor = Object.freeze
   ]),
 });
 
-export class OpenAiAgentProvider implements AgentProviderPort {
-  readonly #host: AgentProviderHostPort;
+export class OpenAiAgentProvider implements AgentDecisionProviderPort {
+  readonly #host: AgentDecisionProviderHostPort;
   readonly #modelId: string;
 
-  constructor(host: AgentProviderHostPort, modelId: string) {
+  constructor(host: AgentDecisionProviderHostPort, modelId: string) {
     this.#host = host;
     this.#modelId = modelId;
   }
@@ -84,18 +84,32 @@ export class OpenAiAgentProvider implements AgentProviderPort {
 }
 
 export class OpenAiProviderSession implements AgentProviderSessionPort {
-  readonly #host: AgentProviderHostPort;
+  readonly #host: AgentProviderCredentialHostPort;
   readonly #selection: AgentProviderSelection;
-  readonly #provider: OpenAiAgentProvider;
+  readonly #provider: AgentDecisionProviderPort;
   readonly #listeners = new Set<() => void>();
   #generation = 0;
   #disposed = false;
   #snapshot: AgentProviderRuntimeSnapshot;
 
-  constructor(host: AgentProviderHostPort, selection: AgentProviderSelection) {
+  constructor(
+    host: AgentProviderCredentialHostPort,
+    selection: AgentProviderSelection,
+    provider?: AgentDecisionProviderPort,
+  ) {
     this.#host = host;
     this.#selection = selection;
-    this.#provider = new OpenAiAgentProvider(host, selection.modelId);
+    if (provider !== undefined) {
+      this.#provider = provider;
+    } else {
+      if (!("decideAgentProvider" in host)) {
+        throw new Error("Legacy OpenAI Provider requires a decision host");
+      }
+      if (typeof host.decideAgentProvider !== "function") {
+        throw new Error("Legacy OpenAI Provider requires a decision host");
+      }
+      this.#provider = new OpenAiAgentProvider(host as AgentDecisionProviderHostPort, selection.modelId);
+    }
     this.#snapshot = Object.freeze({
       status: "checking",
       providerId: selection.providerId,
@@ -106,7 +120,7 @@ export class OpenAiProviderSession implements AgentProviderSessionPort {
 
   getSnapshot = (): AgentProviderRuntimeSnapshot => this.#snapshot;
 
-  getProvider = (): AgentProviderPort | null => this.#snapshot.status === "ready" ? this.#provider : null;
+  getProvider = (): AgentDecisionProviderPort | null => this.#snapshot.status === "ready" ? this.#provider : null;
 
   subscribe = (listener: () => void): (() => void) => {
     this.#listeners.add(listener);

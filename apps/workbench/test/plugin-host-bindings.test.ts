@@ -38,6 +38,7 @@ function bindingValues() {
     provider: Object.freeze({
       readAgentProviderCredentialStatus: () => undefined,
       decideAgentProvider: () => undefined,
+      streamAgentModel: () => undefined,
     }),
     scoreRead: Object.freeze({
       readSummary: () => undefined,

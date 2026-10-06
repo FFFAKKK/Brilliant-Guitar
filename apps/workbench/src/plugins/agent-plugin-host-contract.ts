@@ -10,7 +10,7 @@ export const AGENT_ASSISTANT_HOST_BINDINGS_CONTRACT = definePluginHostBindingsCo
     {
       key: "provider",
       hostService: "agent.provider",
-      methods: ["readAgentProviderCredentialStatus", "decideAgentProvider"],
+      methods: ["readAgentProviderCredentialStatus", "decideAgentProvider", "streamAgentModel"],
     },
     {
       key: "scoreRead",

@@ -19,13 +19,17 @@ export interface AgentProviderRequest {
   readonly toolset: ToolsetSnapshot;
 }
 
-export interface AgentProviderPort {
+/** Decision-producing port consumed by AgentRunController. */
+export interface AgentDecisionProviderPort {
   decide(
     request: AgentProviderRequest,
     signal?: AbortSignal | null,
     observer?: AgentProviderProgressObserver | null,
   ): Promise<unknown>;
 }
+
+/** @deprecated Use AgentDecisionProviderPort to distinguish it from model providers. */
+export type AgentProviderPort = AgentDecisionProviderPort;
 
 export type AgentProviderProgressObserver = (event: AgentProviderStreamEvent) => void;
 
@@ -52,7 +56,7 @@ function equalStrings(left: readonly string[], right: readonly string[]): boolea
   return left.length === right.length && left.every((value, index) => value === right[index]);
 }
 
-export class FakeAgentProvider implements AgentProviderPort {
+export class FakeAgentProvider implements AgentDecisionProviderPort {
   private readonly steps: readonly FakeProviderStep[];
   private readonly received: AgentProviderRequest[] = [];
   private cursor = 0;

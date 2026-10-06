@@ -1,12 +1,12 @@
 import type { AgentRecoverySessionSnapshot } from "./agent-recovery-session.ts";
 import type { AgentProviderSelection } from "../contracts/agent-provider-settings.ts";
 import { isAgentProviderSelection, sameAgentProviderSelection } from "../contracts/agent-provider-settings.ts";
-import { createConfiguredAgentProviderSession } from "./agent-provider-catalog.ts";
+import { createFirstPartyAgentProviderSession, type FirstPartyAgentDecisionEngine } from "./first-party-agent-session.ts";
 import type { AgentProviderRuntimeSnapshot, AgentProviderSessionPort } from "./provider-contract.ts";
 import { UNCONFIGURED_AGENT_PROVIDER } from "./provider-contract.ts";
 import { createStaticAgentProviderSession } from "./provider-session.ts";
 import type { AgentProviderHostPort } from "./provider-host.ts";
-import type { AgentProviderPort } from "./provider.ts";
+import type { AgentDecisionProviderPort } from "./provider.ts";
 
 export type { AgentProviderRuntimeSnapshot, AgentProviderRuntimeStatus } from "./provider-contract.ts";
 
@@ -34,7 +34,7 @@ export interface AgentRecoverySessionPort {
 }
 
 export interface AgentPluginRunLease {
-  readonly provider: AgentProviderPort;
+  readonly provider: AgentDecisionProviderPort;
   readonly signal: AbortSignal;
   cancel(): void;
   release(): void;
@@ -45,6 +45,7 @@ export interface AgentPluginRuntimeDependencies {
   readonly createRecoverySession: () => AgentRecoverySessionPort;
   readonly createProviderSession?: (selection: AgentProviderSelection | null) => AgentProviderSessionPort;
   readonly providerHost?: AgentProviderHostPort;
+  readonly firstPartyDecisionEngine?: FirstPartyAgentDecisionEngine;
 }
 
 const EMPTY_RECOVERY: AgentRecoverySessionSnapshot = Object.freeze({
@@ -83,13 +84,15 @@ export class AgentPluginRuntime {
     this.#hostAvailable = dependencies.hostAvailable;
     this.#createRecoverySession = dependencies.createRecoverySession;
     this.#createProviderSession = dependencies.createProviderSession
-      ?? ((selection) => createConfiguredAgentProviderSession(selection, dependencies.providerHost));
+      ?? ((selection) => createFirstPartyAgentProviderSession(
+        selection, dependencies.providerHost, dependencies.firstPartyDecisionEngine,
+      ));
     this.#snapshot = initialSnapshot(UNCONFIGURED_AGENT_PROVIDER);
   }
 
   getSnapshot = (): AgentPluginRuntimeSnapshot => this.#snapshot;
 
-  getProvider = (): AgentProviderPort | null => this.#provider?.getProvider() ?? null;
+  getProvider = (): AgentDecisionProviderPort | null => this.#provider?.getProvider() ?? null;
 
   beginRun = (): AgentPluginRunLease | null => {
     if (!this.#snapshot.canStartRun || this.#activeRun !== null) return null;
@@ -131,7 +134,7 @@ export class AgentPluginRuntime {
     return this.#createRunLease(provider);
   };
 
-  #createRunLease(provider: AgentProviderPort): AgentPluginRunLease {
+  #createRunLease(provider: AgentDecisionProviderPort): AgentPluginRunLease {
     const token = Symbol("agent-run");
     const controller = new AbortController();
     this.#activeRun = { token, controller };

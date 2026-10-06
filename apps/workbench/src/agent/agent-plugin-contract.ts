@@ -1,6 +1,6 @@
 import type { AgentDecision } from "./agent-contracts.ts";
 import type {
-  AgentProviderPort,
+  AgentDecisionProviderPort,
   AgentProviderProgressObserver,
   AgentProviderRequest,
 } from "./provider.ts";
@@ -35,7 +35,7 @@ export interface AgentPluginPort {
   ): Promise<AgentDecision>;
 }
 
-export interface AgentPluginProvider extends AgentProviderPort {
+export interface AgentPluginProvider extends AgentDecisionProviderPort {
   readonly plugin: AgentPluginDescriptor;
 }
 

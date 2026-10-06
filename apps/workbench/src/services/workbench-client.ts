@@ -44,6 +44,15 @@ import type {
   AgentProviderDecisionEnvelopeV1,
   AgentProviderStreamEventV1,
 } from "../contracts/agent-provider-turn.ts";
+import {
+  isAgentModelStreamEnvelopeV1,
+  isAgentModelStreamEventV1,
+} from "../contracts/agent-model-stream.ts";
+import type {
+  AgentModelStreamEnvelopeV1,
+  AgentModelStreamEventV1,
+  AgentModelStreamRequestV1,
+} from "../contracts/agent-model-stream.ts";
 export { WorkbenchRequestError } from "./workbench-host-bridge.ts";
 
 const SESSION_WORKSPACE_KEY = "brilliant.workbench.session.v1";
@@ -329,6 +338,35 @@ export class WorkbenchClient {
     if (!isAgentProviderDecisionEnvelopeV1(value)
       || value.providerId !== request.providerId
       || value.modelId !== request.modelId) throw new Error("模型 Provider 决策结果无效");
+    return value;
+  }
+
+  async streamAgentModel(
+    request: AgentModelStreamRequestV1,
+    signal?: AbortSignal | null,
+    observer?: ((event: AgentModelStreamEventV1) => void) | null,
+  ): Promise<AgentModelStreamEnvelopeV1> {
+    if (!isAgentProviderId(request.providerId)) throw new Error("模型 Provider 标识无效");
+    if (!this.bridge.streamAgentModel) throw new Error("当前宿主不支持原始模型流");
+    let streamError: Error | null = null;
+    const value = await this.bridge.streamAgentModel(request, signal, (event) => {
+      if (streamError !== null) return;
+      if (!isAgentModelStreamEventV1(event)
+        || event.runId !== request.runId
+        || event.turnId !== request.turnId) {
+        streamError = new Error("原始模型流事件无效");
+        return;
+      }
+      try {
+        observer?.(event);
+      } catch {
+        // Streaming progress is observational and cannot alter the result.
+      }
+    });
+    if (streamError !== null) throw streamError;
+    if (!isAgentModelStreamEnvelopeV1(value)
+      || value.providerId !== request.providerId
+      || value.modelId !== request.modelId) throw new Error("原始模型流结果无效");
     return value;
   }
 

@@ -55,6 +55,54 @@ pub struct AgentProviderDecideRequestV1 {
     pub limits: AgentProviderTurnLimitsV1,
 }
 
+/// Provider-neutral raw model request used by the first-party Pi Agent Plugin.
+/// It deliberately carries transcript projections, not AgentDecision objects.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct AgentModelStreamRequestV1 {
+    pub schema_version: u16,
+    pub provider_id: String,
+    pub model_id: String,
+    pub run_id: String,
+    pub turn_id: String,
+    pub messages: Vec<Value>,
+    pub tools: Vec<AgentModelToolV1>,
+    pub limits: AgentProviderTurnLimitsV1,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct AgentModelToolV1 {
+    pub name: String,
+    pub description: String,
+    pub parameters: Value,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(tag = "type", rename_all = "kebab-case")]
+pub enum AgentModelOutputBlockV1 {
+    Text {
+        text: String,
+    },
+    ToolCall {
+        #[serde(rename = "callId")]
+        call_id: String,
+        name: String,
+        arguments: Value,
+    },
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AgentModelStreamEnvelopeV1 {
+    pub schema_version: u16,
+    pub provider_id: String,
+    pub model_id: String,
+    pub provider_request_id: String,
+    pub output: Vec<AgentModelOutputBlockV1>,
+    pub usage: Option<AgentProviderUsageV1>,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct AgentProviderRunStateV1 {
@@ -192,9 +240,17 @@ impl AgentProviderProgressEmitter {
         request: &AgentProviderDecideRequestV1,
         observer: Option<AgentProviderProgressObserver>,
     ) -> Self {
+        Self::from_ids(&request.run_id, &request.turn_id, observer)
+    }
+
+    fn from_ids(
+        run_id: &str,
+        turn_id: &str,
+        observer: Option<AgentProviderProgressObserver>,
+    ) -> Self {
         Self {
-            run_id: request.run_id.clone(),
-            turn_id: request.turn_id.clone(),
+            run_id: run_id.to_owned(),
+            turn_id: turn_id.to_owned(),
             next_sequence: Arc::new(AtomicU64::new(1)),
             observer,
         }
@@ -425,11 +481,13 @@ impl AgentProviderHttpTransport for ReqwestAgentProviderTransport {
                             total_tokens,
                         }),
                         OpenAiStreamEvent::Completed(value) => {
+                            // The completed event is emitted by the adapter only after the
+                            // final response envelope passes semantic validation. Emitting it
+                            // here would make a malformed response look successful.
                             response_body = Some(
                                 serde_json::to_vec(&value)
                                     .map_err(|_| AgentProviderError::ResponseInvalid)?,
                             );
-                            progress.emit(AgentProviderStreamPayloadV1::Completed);
                         }
                         OpenAiStreamEvent::Failed(code) => {
                             failed = true;
@@ -494,6 +552,7 @@ where
         validate_request(&request)?;
         let (body, tool_names) = build_openai_request(&request)?;
         let progress = AgentProviderProgressEmitter::new(&request, observer);
+        let terminal_progress = progress.clone();
         let response = self
             .transport
             .post_openai(
@@ -508,7 +567,43 @@ where
         if !(200..300).contains(&response.status) {
             return Err(classify_status(response.status));
         }
-        decode_openai_response(&request, &tool_names, response)
+        let decoded = decode_openai_response(&request, &tool_names, response);
+        if decoded.is_ok() {
+            terminal_progress.emit(AgentProviderStreamPayloadV1::Completed);
+        }
+        decoded
+    }
+
+    async fn stream_model_with_observer(
+        &self,
+        secret: &str,
+        request: AgentModelStreamRequestV1,
+        observer: Option<AgentProviderProgressObserver>,
+    ) -> Result<AgentModelStreamEnvelopeV1, AgentProviderError> {
+        validate_model_request(&request)?;
+        let (body, tool_names) = build_openai_model_request(&request)?;
+        let progress =
+            AgentProviderProgressEmitter::from_ids(&request.run_id, &request.turn_id, observer);
+        let terminal_progress = progress.clone();
+        let response = self
+            .transport
+            .post_openai(
+                secret,
+                ProviderHttpRequest {
+                    body,
+                    timeout: Duration::from_millis(request.limits.timeout_ms),
+                },
+                progress,
+            )
+            .await?;
+        if !(200..300).contains(&response.status) {
+            return Err(classify_status(response.status));
+        }
+        let decoded = decode_openai_model_response(&request, &tool_names, response);
+        if decoded.is_ok() {
+            terminal_progress.emit(AgentProviderStreamPayloadV1::Completed);
+        }
+        decoded
     }
 }
 
@@ -538,6 +633,20 @@ impl AgentProviderService {
         }
         self.openai
             .decide_with_observer(secret, request, observer)
+            .await
+    }
+
+    pub async fn stream_model_with_observer(
+        &self,
+        secret: &str,
+        request: AgentModelStreamRequestV1,
+        observer: Option<AgentProviderProgressObserver>,
+    ) -> Result<AgentModelStreamEnvelopeV1, AgentProviderError> {
+        if request.provider_id != OPENAI_PROVIDER_ID {
+            return Err(AgentProviderError::InvalidRequest);
+        }
+        self.openai
+            .stream_model_with_observer(secret, request, observer)
             .await
     }
 }
@@ -637,6 +746,10 @@ fn valid_user_text(value: &str, max_length: usize) -> bool {
     !value.trim().is_empty() && value.len() <= max_length && !value.contains('\0')
 }
 
+fn valid_model_text(value: &str, max_length: usize) -> bool {
+    value.len() <= max_length && !value.contains('\0')
+}
+
 fn build_openai_request(
     request: &AgentProviderDecideRequestV1,
 ) -> Result<(Value, OpenAiToolMap), AgentProviderError> {
@@ -705,6 +818,278 @@ fn build_openai_request(
         }),
         names,
     ))
+}
+
+fn validate_model_request(request: &AgentModelStreamRequestV1) -> Result<(), AgentProviderError> {
+    let serialized = serde_json::to_vec(request).map_err(|_| AgentProviderError::InvalidRequest)?;
+    if serialized.len() > MAX_REQUEST_BYTES
+        || request.schema_version != 1
+        || request.provider_id != OPENAI_PROVIDER_ID
+        || !OPENAI_MODELS.contains(&request.model_id.as_str())
+        || !valid_identifier(&request.run_id, 160)
+        || !valid_identifier(&request.turn_id, 160)
+        || request.messages.len() > MAX_CONTEXT_ITEMS * 4
+        || request.tools.len() > MAX_TOOLS
+        || !(1_000..=120_000).contains(&request.limits.timeout_ms)
+        || !(64..=8_192).contains(&request.limits.max_output_tokens)
+    {
+        return Err(AgentProviderError::InvalidRequest);
+    }
+    for message in &request.messages {
+        validate_model_message(message)?;
+    }
+    let mut names = HashSet::new();
+    for tool in &request.tools {
+        if !names.insert(tool.name.as_str())
+            || !valid_short_text(&tool.name, 256)
+            || !valid_user_text(&tool.description, 4_096)
+            || tool.parameters.get("type").and_then(Value::as_str) != Some("object")
+        {
+            return Err(AgentProviderError::InvalidRequest);
+        }
+    }
+    Ok(())
+}
+
+fn has_only_keys(value: &serde_json::Map<String, Value>, keys: &[&str]) -> bool {
+    value.len() == keys.len() && value.keys().all(|key| keys.contains(&key.as_str()))
+}
+
+fn validate_model_message(message: &Value) -> Result<(), AgentProviderError> {
+    let object = message
+        .as_object()
+        .ok_or(AgentProviderError::InvalidRequest)?;
+    let role = object
+        .get("role")
+        .and_then(Value::as_str)
+        .ok_or(AgentProviderError::InvalidRequest)?;
+    match role {
+        "system" | "user" => {
+            if !has_only_keys(object, &["role", "content"]) {
+                return Err(AgentProviderError::InvalidRequest);
+            }
+            let content = object
+                .get("content")
+                .and_then(Value::as_str)
+                .ok_or(AgentProviderError::InvalidRequest)?;
+            if !valid_model_text(content, 32_768) {
+                return Err(AgentProviderError::InvalidRequest);
+            }
+        }
+        "assistant" => {
+            if !has_only_keys(object, &["role", "content"]) {
+                return Err(AgentProviderError::InvalidRequest);
+            }
+            let content = object
+                .get("content")
+                .and_then(Value::as_array)
+                .ok_or(AgentProviderError::InvalidRequest)?;
+            if content.is_empty() {
+                return Err(AgentProviderError::InvalidRequest);
+            }
+            for item in content {
+                let item = item.as_object().ok_or(AgentProviderError::InvalidRequest)?;
+                match item.get("type").and_then(Value::as_str) {
+                    Some("text") => {
+                        if !has_only_keys(item, &["type", "text"])
+                            || !item
+                                .get("text")
+                                .and_then(Value::as_str)
+                                .is_some_and(|text| valid_model_text(text, 32_768))
+                        {
+                            return Err(AgentProviderError::InvalidRequest);
+                        }
+                    }
+                    Some("tool-call") => {
+                        if !has_only_keys(item, &["type", "callId", "name", "arguments"])
+                            || !item
+                                .get("callId")
+                                .and_then(Value::as_str)
+                                .is_some_and(|id| valid_identifier(id, 256))
+                            || !item
+                                .get("name")
+                                .and_then(Value::as_str)
+                                .is_some_and(|name| valid_short_text(name, 256))
+                            || !item.get("arguments").is_some_and(Value::is_object)
+                        {
+                            return Err(AgentProviderError::InvalidRequest);
+                        }
+                    }
+                    _ => return Err(AgentProviderError::InvalidRequest),
+                }
+            }
+        }
+        "tool" => {
+            if !has_only_keys(
+                object,
+                &["role", "toolCallId", "toolName", "content", "isError"],
+            ) || !object
+                .get("toolCallId")
+                .and_then(Value::as_str)
+                .is_some_and(|id| valid_identifier(id, 256))
+                || !object
+                    .get("toolName")
+                    .and_then(Value::as_str)
+                    .is_some_and(|name| valid_short_text(name, 256))
+                || !object
+                    .get("content")
+                    .and_then(Value::as_str)
+                    .is_some_and(|text| valid_model_text(text, 32_768))
+                || !object.get("isError").is_some_and(Value::is_boolean)
+            {
+                return Err(AgentProviderError::InvalidRequest);
+            }
+        }
+        _ => return Err(AgentProviderError::InvalidRequest),
+    }
+    Ok(())
+}
+
+fn build_openai_model_request(
+    request: &AgentModelStreamRequestV1,
+) -> Result<(Value, HashMap<String, String>), AgentProviderError> {
+    let mut tools = Vec::with_capacity(request.tools.len());
+    let mut names = HashMap::new();
+    for (index, tool) in request.tools.iter().enumerate() {
+        let name = openai_tool_name(index, &tool.name);
+        names.insert(name.clone(), tool.name.clone());
+        tools.push(json!({
+            "type": "function",
+            "name": name,
+            "description": tool.description,
+            "parameters": tool.parameters,
+            "strict": false,
+        }));
+    }
+    let mut input = Vec::new();
+    let mut seen_call_ids = HashSet::new();
+    for message in &request.messages {
+        input.extend(model_message_to_openai(
+            message,
+            &names,
+            &mut seen_call_ids,
+        )?);
+    }
+    Ok((
+        json!({
+            "model": request.model_id,
+            "instructions": "You are the model inside Brilliant Guitar. Tool calls are proposals captured by the Pi Agent Plugin; do not claim execution.",
+            "input": input,
+            "tools": tools,
+            "tool_choice": "auto",
+            "parallel_tool_calls": true,
+            "max_output_tokens": request.limits.max_output_tokens,
+            "stream": true,
+            "store": false,
+        }),
+        names,
+    ))
+}
+
+fn model_message_to_openai(
+    message: &Value,
+    tool_names: &HashMap<String, String>,
+    seen_call_ids: &mut HashSet<String>,
+) -> Result<Vec<Value>, AgentProviderError> {
+    let role = message
+        .get("role")
+        .and_then(Value::as_str)
+        .ok_or(AgentProviderError::InvalidRequest)?;
+    match role {
+        "system" | "user" => {
+            let content = message
+                .get("content")
+                .and_then(Value::as_str)
+                .filter(|value| !value.contains('\0'))
+                .ok_or(AgentProviderError::InvalidRequest)?;
+            if role == "system" {
+                Ok(vec![json!({ "role": role, "content": content })])
+            } else {
+                Ok(vec![json!({
+                    "role": role,
+                    "content": [{ "type": "input_text", "text": content }],
+                })])
+            }
+        }
+        "assistant" => {
+            let content = message
+                .get("content")
+                .and_then(Value::as_array)
+                .ok_or(AgentProviderError::InvalidRequest)?;
+            let mut projected = Vec::with_capacity(content.len());
+            for item in content {
+                match item.get("type").and_then(Value::as_str) {
+                    Some("text") => {
+                        let text = item
+                            .get("text")
+                            .and_then(Value::as_str)
+                            .ok_or(AgentProviderError::InvalidRequest)?;
+                        projected.push(json!({
+                            "type": "message",
+                            "role": "assistant",
+                            "content": [{ "type": "output_text", "text": text, "annotations": [] }],
+                            "status": "completed",
+                        }));
+                    }
+                    Some("tool-call") => {
+                        let canonical_name = item
+                            .get("name")
+                            .and_then(Value::as_str)
+                            .ok_or(AgentProviderError::InvalidRequest)?;
+                        let openai_name = tool_names
+                            .iter()
+                            .find_map(|(safe, canonical)| {
+                                (canonical == canonical_name).then_some(safe.clone())
+                            })
+                            .ok_or(AgentProviderError::InvalidRequest)?;
+                        let call_id = item
+                            .get("callId")
+                            .and_then(Value::as_str)
+                            .filter(|value| valid_identifier(value, 256))
+                            .ok_or(AgentProviderError::InvalidRequest)?;
+                        let arguments = item
+                            .get("arguments")
+                            .ok_or(AgentProviderError::InvalidRequest)?;
+                        if !seen_call_ids.insert(call_id.to_owned()) {
+                            return Err(AgentProviderError::InvalidRequest);
+                        }
+                        projected.push(json!({
+                            "type": "function_call",
+                            "call_id": call_id,
+                            "name": openai_name,
+                            "arguments": serde_json::to_string(arguments)
+                                .map_err(|_| AgentProviderError::InvalidRequest)?,
+                        }));
+                    }
+                    _ => return Err(AgentProviderError::InvalidRequest),
+                }
+            }
+            Ok(projected)
+        }
+        "tool" => {
+            let call_id = message
+                .get("toolCallId")
+                .and_then(Value::as_str)
+                .filter(|value| valid_identifier(value, 256))
+                .ok_or(AgentProviderError::InvalidRequest)?;
+            let content = message
+                .get("content")
+                .and_then(Value::as_str)
+                .filter(|value| valid_model_text(value, 32_768))
+                .ok_or(AgentProviderError::InvalidRequest)?;
+            let _tool_name = message
+                .get("toolName")
+                .and_then(Value::as_str)
+                .filter(|value| tool_names.values().any(|candidate| candidate == value))
+                .ok_or(AgentProviderError::InvalidRequest)?;
+            Ok(vec![json!({
+                "type": "function_call_output",
+                "call_id": call_id,
+                "output": content,
+            })])
+        }
+        _ => Err(AgentProviderError::InvalidRequest),
+    }
 }
 
 fn openai_tool_name(index: usize, capability_id: &str) -> String {
@@ -890,6 +1275,109 @@ fn decode_openai_response(
     })
 }
 
+fn decode_openai_model_response(
+    request: &AgentModelStreamRequestV1,
+    tool_names: &HashMap<String, String>,
+    response: ProviderHttpResponse,
+) -> Result<AgentModelStreamEnvelopeV1, AgentProviderError> {
+    let value: Value =
+        serde_json::from_slice(&response.body).map_err(|_| AgentProviderError::ResponseInvalid)?;
+    let root = value
+        .as_object()
+        .ok_or(AgentProviderError::ResponseInvalid)?;
+    let response_id = root
+        .get("id")
+        .and_then(Value::as_str)
+        .filter(|value| valid_identifier(value, 256))
+        .or(response.request_id.as_deref())
+        .ok_or(AgentProviderError::ResponseInvalid)?
+        .to_owned();
+    match root.get("status").and_then(Value::as_str) {
+        Some("completed") => {}
+        Some("incomplete" | "failed" | "cancelled") => {
+            return Err(AgentProviderError::ResponseIncomplete);
+        }
+        _ => return Err(AgentProviderError::ResponseInvalid),
+    }
+
+    let output = root
+        .get("output")
+        .and_then(Value::as_array)
+        .ok_or(AgentProviderError::ResponseInvalid)?;
+    let mut blocks = Vec::new();
+    let mut seen_call_ids = HashSet::new();
+    for item in output {
+        match item.get("type").and_then(Value::as_str) {
+            Some("function_call") => {
+                let name = item
+                    .get("name")
+                    .and_then(Value::as_str)
+                    .ok_or(AgentProviderError::ResponseInvalid)?;
+                let canonical_name = tool_names
+                    .get(name)
+                    .ok_or(AgentProviderError::ResponseInvalid)?
+                    .clone();
+                let call_id = item
+                    .get("call_id")
+                    .and_then(Value::as_str)
+                    .filter(|value| valid_identifier(value, 256))
+                    .ok_or(AgentProviderError::ResponseInvalid)?
+                    .to_owned();
+                if !seen_call_ids.insert(call_id.clone()) {
+                    return Err(AgentProviderError::ResponseInvalid);
+                }
+                let arguments = item
+                    .get("arguments")
+                    .and_then(Value::as_str)
+                    .ok_or(AgentProviderError::ResponseInvalid)?;
+                let arguments: Value = serde_json::from_str(arguments)
+                    .map_err(|_| AgentProviderError::ResponseInvalid)?;
+                if !arguments.is_object() {
+                    return Err(AgentProviderError::ResponseInvalid);
+                }
+                blocks.push(AgentModelOutputBlockV1::ToolCall {
+                    call_id,
+                    name: canonical_name,
+                    arguments,
+                });
+            }
+            Some("message") => {
+                let content = item
+                    .get("content")
+                    .and_then(Value::as_array)
+                    .ok_or(AgentProviderError::ResponseInvalid)?;
+                for part in content {
+                    let kind = part.get("type").and_then(Value::as_str);
+                    if matches!(kind, Some("output_text") | Some("text")) {
+                        let text = part
+                            .get("text")
+                            .and_then(Value::as_str)
+                            .ok_or(AgentProviderError::ResponseInvalid)?;
+                        if !text.is_empty() {
+                            blocks.push(AgentModelOutputBlockV1::Text {
+                                text: text.to_owned(),
+                            });
+                        }
+                    }
+                }
+            }
+            Some("reasoning") => {}
+            Some(_) | None => return Err(AgentProviderError::ResponseInvalid),
+        }
+    }
+    if blocks.is_empty() {
+        return Err(AgentProviderError::ResponseInvalid);
+    }
+    Ok(AgentModelStreamEnvelopeV1 {
+        schema_version: 1,
+        provider_id: request.provider_id.clone(),
+        model_id: request.model_id.clone(),
+        provider_request_id: response_id,
+        output: blocks,
+        usage: decode_usage(root.get("usage"))?,
+    })
+}
+
 fn decode_usage(value: Option<&Value>) -> Result<Option<AgentProviderUsageV1>, AgentProviderError> {
     let Some(value) = value else {
         return Ok(None);
@@ -912,7 +1400,7 @@ fn decode_usage(value: Option<&Value>) -> Result<Option<AgentProviderUsageV1>, A
         .get("total_tokens")
         .and_then(Value::as_u64)
         .ok_or(AgentProviderError::ResponseInvalid)?;
-    if total_tokens < input_tokens || total_tokens < output_tokens {
+    if total_tokens != input_tokens.saturating_add(output_tokens) {
         return Err(AgentProviderError::ResponseInvalid);
     }
     Ok(Some(AgentProviderUsageV1 {
@@ -1043,6 +1531,160 @@ mod tests {
             captured,
             credential_seen,
         )
+    }
+
+    fn model_request() -> AgentModelStreamRequestV1 {
+        AgentModelStreamRequestV1 {
+            schema_version: 1,
+            provider_id: OPENAI_PROVIDER_ID.into(),
+            model_id: "gpt-5.4-mini".into(),
+            run_id: "run-model-1".into(),
+            turn_id: "turn-model-1".into(),
+            messages: vec![
+                json!({ "role": "system", "content": "你是乐谱助手" }),
+                json!({ "role": "user", "content": "读取概要" }),
+            ],
+            tools: vec![AgentModelToolV1 {
+                name: "score.read-summary".into(),
+                description: "读取乐谱概要".into(),
+                parameters: json!({
+                    "type": "object",
+                    "properties": {},
+                    "additionalProperties": false,
+                }),
+            }],
+            limits: AgentProviderTurnLimitsV1 {
+                timeout_ms: 45_000,
+                max_output_tokens: 1_500,
+            },
+        }
+    }
+
+    #[test]
+    fn raw_model_stream_returns_text_and_canonical_tool_calls() {
+        let (adapter, captured, credential_seen) = adapter(Ok(response(json!([
+            {
+                "type": "message",
+                "content": [{ "type": "output_text", "text": "正在读取" }]
+            },
+            {
+                "type": "function_call",
+                "call_id": "call-model-1",
+                "name": "cap_0_score_read-summary",
+                "arguments": "{}"
+            }
+        ]))));
+        let result = tauri::async_runtime::block_on(adapter.stream_model_with_observer(
+            "secret-token",
+            model_request(),
+            None,
+        ))
+        .expect("raw model stream");
+        assert_eq!(
+            result.output,
+            vec![
+                AgentModelOutputBlockV1::Text {
+                    text: "正在读取".into()
+                },
+                AgentModelOutputBlockV1::ToolCall {
+                    call_id: "call-model-1".into(),
+                    name: "score.read-summary".into(),
+                    arguments: json!({}),
+                },
+            ]
+        );
+        assert!(credential_seen.load(Ordering::Relaxed));
+        let captured = captured.lock().expect("captured model request");
+        assert_eq!(
+            captured[0].get("tool_choice").and_then(Value::as_str),
+            Some("auto")
+        );
+        assert_eq!(
+            captured[0].get("stream").and_then(Value::as_bool),
+            Some(true)
+        );
+        assert!(captured[0].to_string().contains("cap_0_score_read-summary"));
+    }
+
+    #[test]
+    fn raw_model_request_flattens_tool_history_into_responses_items() {
+        let mut request = model_request();
+        request.messages.push(json!({
+            "role": "assistant",
+            "content": [{
+                "type": "tool-call",
+                "callId": "call-history-1",
+                "name": "score.read-summary",
+                "arguments": {}
+            }]
+        }));
+        request.messages.push(json!({
+            "role": "tool",
+            "toolCallId": "call-history-1",
+            "toolName": "score.read-summary",
+            "content": "{\"measureCount\":12}",
+            "isError": false
+        }));
+        let (body, _) = build_openai_model_request(&request).expect("build model request");
+        let input = body
+            .get("input")
+            .and_then(Value::as_array)
+            .expect("input items");
+        assert!(
+            input
+                .iter()
+                .any(|item| item.get("type").and_then(Value::as_str) == Some("function_call"))
+        );
+        assert!(
+            input.iter().any(
+                |item| item.get("type").and_then(Value::as_str) == Some("function_call_output")
+            )
+        );
+        let all_have_no_nested_call = input.iter().all(|item| {
+            item.get("content")
+                .and_then(Value::as_array)
+                .map_or(true, |content| {
+                    content.iter().all(|part| {
+                        part.get("type").and_then(Value::as_str) != Some("function_call")
+                    })
+                })
+        });
+        assert!(all_have_no_nested_call);
+    }
+
+    #[test]
+    fn raw_model_response_rejects_duplicate_call_ids_and_impossible_usage() {
+        let (duplicate_adapter, _, _) = adapter(Ok(response(json!([
+            { "type": "function_call", "call_id": "duplicate", "name": "cap_0_score_read-summary", "arguments": "{}" },
+            { "type": "function_call", "call_id": "duplicate", "name": "cap_0_score_read-summary", "arguments": "{}" }
+        ]))));
+        assert_eq!(
+            tauri::async_runtime::block_on(duplicate_adapter.stream_model_with_observer(
+                "secret-token",
+                model_request(),
+                None
+            )),
+            Err(AgentProviderError::ResponseInvalid)
+        );
+
+        let (usage_adapter, _, _) = adapter(Ok(ProviderHttpResponse {
+            status: 200,
+            request_id: Some("req-header".into()),
+            body: serde_json::to_vec(&json!({
+                "id": "resp-usage-invalid",
+                "status": "completed",
+                "output": [{ "type": "message", "content": [{ "type": "output_text", "text": "ok" }] }],
+                "usage": { "input_tokens": 2, "output_tokens": 3, "total_tokens": 99 }
+            })).expect("serialize response"),
+        }));
+        assert_eq!(
+            tauri::async_runtime::block_on(usage_adapter.stream_model_with_observer(
+                "secret-token",
+                model_request(),
+                None
+            )),
+            Err(AgentProviderError::ResponseInvalid)
+        );
     }
 
     #[test]

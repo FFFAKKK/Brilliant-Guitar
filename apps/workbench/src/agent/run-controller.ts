@@ -39,7 +39,7 @@ import type {
   AgentInvocationEventRecord,
   AgentInvocationState,
 } from "./invocation-state.ts";
-import type { AgentProviderPort } from "./provider.ts";
+import type { AgentDecisionProviderPort } from "./provider.ts";
 import type { AgentRunStorePort } from "./agent-store.ts";
 import {
   AgentPreparedMutationError,
@@ -161,7 +161,7 @@ export class AgentRunResumeError extends Error {
 }
 
 export interface AgentRunControllerDependencies {
-  readonly provider: AgentProviderPort;
+  readonly provider: AgentDecisionProviderPort;
   readonly capabilities: AgentCapabilityPort;
   readonly catalog: readonly AgentCapabilityDescriptor[];
   readonly completionVerifier: AgentCompletionVerifier;
@@ -298,7 +298,7 @@ async function waitForEffect<T>(effect: Promise<T>, signal: AbortSignal | null):
 }
 
 export class AgentRunController {
-  private readonly provider: AgentProviderPort;
+  private readonly provider: AgentDecisionProviderPort;
   private readonly capabilities: AgentCapabilityPort;
   private readonly catalog: readonly AgentCapabilityDescriptor[];
   private readonly completionVerifier: AgentCompletionVerifier;
