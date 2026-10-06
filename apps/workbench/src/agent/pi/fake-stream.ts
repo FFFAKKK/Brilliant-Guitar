@@ -34,6 +34,44 @@ function measureCountFromToolResult(messages: readonly AgentMessage[]): number {
   return -1;
 }
 
+function measureCountFromContextPrompt(messages: readonly AgentMessage[]): number {
+  const findMeasureCount = (value: unknown): number | null => {
+    if (typeof value !== "object" || value === null) return null;
+    if (!Array.isArray(value)) {
+      const candidate = value as Record<string, unknown>;
+      if (typeof candidate.measureCount === "number") return candidate.measureCount;
+      for (const child of Object.values(candidate)) {
+        const found = findMeasureCount(child);
+        if (found !== null) return found;
+      }
+      return null;
+    }
+    for (const child of value) {
+      const found = findMeasureCount(child);
+      if (found !== null) return found;
+    }
+    return null;
+  };
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+    if (message?.role !== "user") continue;
+    try {
+      const content = typeof message.content === "string"
+        ? message.content
+        : message.content
+          .filter((item): item is Extract<typeof item, { type: "text" }> => item.type === "text")
+          .map((item) => item.text)
+          .join("");
+      const parsed: unknown = JSON.parse(content);
+      const count = findMeasureCount(parsed);
+      if (count !== null) return count;
+    } catch {
+      // The ordinary goal prompt is not a serialized context envelope.
+    }
+  }
+  return -1;
+}
+
 /**
  * A deterministic two-turn model: request the real score summary first, then
  * read that tool result from the transcript before composing the answer.
@@ -50,7 +88,10 @@ export function createScoreSummaryFakeStream(): ScoreSummaryFakeStream {
       { stopReason: "toolUse" },
     ),
     (context) => {
-      const measureCount = measureCountFromToolResult(context.messages);
+      const measureCount = Math.max(
+        measureCountFromToolResult(context.messages),
+        measureCountFromContextPrompt(context.messages),
+      );
       return fauxAssistantMessage(
         `当前乐谱共有 ${measureCount} 个小节。`,
         { stopReason: "stop" },
