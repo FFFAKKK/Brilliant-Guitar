@@ -1,7 +1,9 @@
 import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 import { StandaloneAgentHost } from "../src/server/agent-host.ts";
 import { createStandaloneServer } from "../src/server/http-server.ts";
 import { createModelFixture, textReply } from "./model-fixture.ts";
+import { FileConnectionSettingsStore } from "../src/server/connection-store.ts";
 
 // Explicit test entry only. Production startup never imports a fixture or fills a credential.
 const fixture = await createModelFixture((request, count) => {
@@ -16,7 +18,9 @@ const fixture = await createModelFixture((request, count) => {
   if (request.headers.authorization === "Bearer fixture-slow") return { hang: true };
   return { value: { data: [{ id: "fixture-model" }, { id: "fixture-secondary" }] } };
 } });
-const host = new StandaloneAgentHost();
+const dataIndex = process.argv.indexOf("--data-dir");
+if (dataIndex >= 0 && (!process.argv[dataIndex + 1] || process.argv[dataIndex + 1]!.startsWith("--"))) throw new Error("Fixture data directory is missing");
+const host = dataIndex >= 0 ? await StandaloneAgentHost.open({ settingsStore: new FileConnectionSettingsStore(resolve(process.argv[dataIndex + 1]!)) }) : new StandaloneAgentHost();
 await host.configure({ providerId: "openai-compatible", protocol: "chat-completions", baseUrl: fixture.baseUrl, modelId: "fixture-model" });
 const server = createStandaloneServer({ host, clientDirectory: fileURLToPath(new URL("../dist/client/", import.meta.url)) });
 server.listen(8788, "127.0.0.1", () => {

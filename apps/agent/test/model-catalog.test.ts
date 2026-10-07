@@ -50,7 +50,7 @@ test("discovery works before configuration/activation and keeps drafts and crede
   assert.deepEqual(host.getSnapshot(), before);
   assert.equal(host.getSnapshot().credentialPresent, false);
   await assert.rejects(host.discoverModels({ connection: connection(fixture.baseUrl) }), /API Key/);
-  await host.configure({ ...connection(fixture.baseUrl), modelId: "custom" }); host.saveCredential(sentinel);
+  await host.configure({ ...connection(fixture.baseUrl), modelId: "custom" }); await host.saveCredential(sentinel);
   const saved = host.getSnapshot();
   const result = await host.discoverModels({ connection: { ...connection(fixture.baseUrl), baseUrl: `${fixture.baseUrl}/` } });
   assert.equal(result.models[0]?.id, "fixture-model"); assert.deepEqual(host.getSnapshot(), saved);
@@ -108,7 +108,7 @@ test("host lifecycle invalidates outstanding metadata without enabling the Agent
 test("active generation rejects discovery without metadata traffic", async (t) => {
   const fixture = await createModelFixture([{ hang: true }]); t.after(fixture.close);
   const host = new StandaloneAgentHost(); t.after(() => host.dispose());
-  await host.configure({ ...connection(fixture.baseUrl), modelId: "fixture-model" }); host.saveCredential(sentinel); await host.setEnabled(true);
+  await host.configure({ ...connection(fixture.baseUrl), modelId: "fixture-model" }); await host.saveCredential(sentinel); await host.setEnabled(true);
   host.submit("挂起回复"); await waitUntil(() => host.getSnapshot().session.status === "running");
   await assert.rejects(host.discoverModels({ connection: connection(fixture.baseUrl) }), (error: unknown) => error instanceof AgentHostError && error.code === "busy");
   assert.equal(fixture.catalogRequests.length, 0); await host.cancel();

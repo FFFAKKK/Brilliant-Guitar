@@ -8,6 +8,7 @@ target/
 /.repo-archive/
 /.local-evidence/
 /.tmp/
+.agent-data/
 /tmp/
 __pycache__/
 *.pyc

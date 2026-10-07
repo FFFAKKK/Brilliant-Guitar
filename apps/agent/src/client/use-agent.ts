@@ -40,7 +40,7 @@ export function useAgent() {
     const epoch = connectionEpoch.current;
     try {
       const value = await requestAgent(path, body, signal);
-      if (path === "model-catalog" && epoch !== connectionEpoch.current) throw new Error("宿主连接已更新，请重新获取模型列表。");
+      if (epoch !== connectionEpoch.current) throw new Error("宿主连接已更新，请重新检查设置后操作。");
       if (!["model-test", "model-catalog"].includes(path) && epoch === connectionEpoch.current) accept(value);
       return value;
     } catch (failure) {

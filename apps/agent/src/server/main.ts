@@ -1,9 +1,14 @@
 import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 import { StandaloneAgentHost } from "./agent-host.ts";
 import { createStandaloneServer } from "./http-server.ts";
+import { FileConnectionSettingsStore } from "./connection-store.ts";
 
 const development = process.argv.includes("--dev");
-const host = new StandaloneAgentHost();
+const dataIndex = process.argv.indexOf("--data-dir");
+if (dataIndex >= 0 && (!process.argv[dataIndex + 1] || process.argv[dataIndex + 1]!.startsWith("--"))) throw new Error("Agent data directory is missing");
+const dataDirectory = resolve(dataIndex >= 0 ? process.argv[dataIndex + 1]! : ".agent-data");
+const host = await StandaloneAgentHost.open({ settingsStore: new FileConnectionSettingsStore(dataDirectory) });
 const appRoot = fileURLToPath(new URL("../../", import.meta.url));
 const vite = development ? await (await import("vite")).createServer({ root: appRoot, server: { middlewareMode: true }, appType: "spa" }) : null;
 const server = createStandaloneServer({ host, ...(vite ? { middleware: vite.middlewares } : { clientDirectory: fileURLToPath(new URL("../client/", import.meta.url)) }) });

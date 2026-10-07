@@ -19,7 +19,7 @@ export function waitForHost(host: StandaloneAgentHost, predicate: (snapshot: Sta
 async function configuredHost(baseUrl: string, tools?: AgentToolRegistry) {
   const host = new StandaloneAgentHost(tools ? { tools } : {});
   await host.configure({ providerId: "deepseek", protocol: "chat-completions", modelId: "fixture-model", baseUrl });
-  host.saveCredential(sentinel);
+  await host.saveCredential(sentinel);
   return host;
 }
 
