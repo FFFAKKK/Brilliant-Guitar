@@ -4,6 +4,7 @@ import { resolve, relative, extname } from "node:path";
 import type { Server as ViteServer } from "node:http";
 import type { StandaloneAgentHost } from "./agent-host.ts";
 import { AgentHostError } from "./agent-host.ts";
+import { ModelCatalogError } from "./model-catalog.ts";
 
 interface Options {
   readonly host: StandaloneAgentHost;
@@ -33,11 +34,13 @@ function field(body: Record<string, unknown>, key: string): unknown {
 
 export function createStandaloneServer(options: Options): ViteServer {
   const server = createServer((request, response) => { void handle(request, response).catch((error: unknown) => {
-    if (!response.headersSent) send(response, error instanceof AgentHostError && error.code === "busy" ? 409 : 400,
-      { code: error instanceof AgentHostError ? error.code : "invalid-input", error: error instanceof AgentHostError ? error.message : "请求未完成，请检查输入或模型配置" });
+    if (!response.headersSent) send(response, error instanceof AgentHostError && error.code === "busy" ? 409
+      : error instanceof ModelCatalogError ? (error.code === "catalog-timeout" ? 504 : 502) : 400,
+      { code: error instanceof AgentHostError || error instanceof ModelCatalogError ? error.code : "invalid-input", error: error instanceof AgentHostError || error instanceof ModelCatalogError ? error.message : "请求未完成，请检查输入或模型配置" });
     else response.end();
   }); });
   function send(response: ServerResponse, status: number, data: unknown): void {
+    if (response.destroyed) return;
     response.writeHead(status, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
     response.end(JSON.stringify(data));
   }
@@ -71,6 +74,14 @@ export function createStandaloneServer(options: Options): ViteServer {
       switch (`${request.method} ${pathname}`) {
         case "PUT /api/model-config": await options.host.configure(body); break;
         case "PUT /api/model-credential": options.host.saveCredential(field(body, "apiKey")); break;
+        case "POST /api/model-catalog": {
+          const controller = new AbortController();
+          const abort = (): void => { if (!response.writableEnded) controller.abort(); };
+          response.once("close", abort);
+          try { send(response, 200, await options.host.discoverModels(body, controller.signal)); }
+          finally { response.removeListener("close", abort); }
+          return;
+        }
         case "POST /api/session/enable": {
           const enabled = field(body, "enabled");
           if (typeof enabled !== "boolean") throw new Error("启用状态无效");

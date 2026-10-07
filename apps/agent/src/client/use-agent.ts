@@ -35,15 +35,16 @@ export function useAgent() {
     return () => { disposed = true; events.close(); };
   }, [accept]);
 
-  const action = useCallback(async (path: string, body: unknown): Promise<unknown> => {
+  const action = useCallback(async (path: string, body: unknown, signal?: AbortSignal): Promise<unknown> => {
     setError("");
     const epoch = connectionEpoch.current;
     try {
-      const value = await requestAgent(path, body);
-      if (path !== "model-test" && epoch === connectionEpoch.current) accept(value);
+      const value = await requestAgent(path, body, signal);
+      if (path === "model-catalog" && epoch !== connectionEpoch.current) throw new Error("宿主连接已更新，请重新获取模型列表。");
+      if (!["model-test", "model-catalog"].includes(path) && epoch === connectionEpoch.current) accept(value);
       return value;
     } catch (failure) {
-      setError(failure instanceof Error ? failure.message : "请求未完成");
+      if (path !== "model-catalog") setError(failure instanceof Error ? failure.message : "请求未完成");
       throw failure;
     }
   }, [accept]);

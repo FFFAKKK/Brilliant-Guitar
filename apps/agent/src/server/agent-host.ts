@@ -5,6 +5,8 @@ import { isAgentProviderCredentialSecret } from "@brilliant-guitar/agent-runtime
 import type { AgentDecisionProviderPort } from "@brilliant-guitar/agent-runtime/runtime/provider";
 import type { StandaloneAgentSnapshot } from "../contracts/host.ts";
 import { createCompletionsModel, createCompletionsModelHost } from "./model-host.ts";
+import { matchesModelConnection, parseModelCatalogRequest, type AgentModelCatalog } from "../contracts/model-catalog.ts";
+import { fetchModelCatalog } from "./model-catalog.ts";
 
 export class AgentHostError extends Error {
   readonly code: "busy" | "not-enabled" | "invalid-input" | "disposed";
@@ -18,6 +20,7 @@ export class StandaloneAgentHost {
   #testing: AgentSession | null = null;
   #changing = false;
   #disposed = false;
+  readonly #catalogRequests = new Set<AbortController>();
   readonly session: AgentSession;
   readonly #listeners = new Set<(snapshot: StandaloneAgentSnapshot) => void>();
   readonly #provider: AgentDecisionProviderPort;
@@ -52,6 +55,7 @@ export class StandaloneAgentHost {
     const targetChanged = configuration.baseUrl !== this.#configuration.baseUrl || configuration.providerId !== this.#configuration.providerId;
     this.#changing = true;
     try {
+      this.#abortCatalogs();
       this.#configuration = configuration;
       if (targetChanged) { this.#apiKey = ""; await this.session.setEnabled(false); }
       this.#publish();
@@ -61,6 +65,7 @@ export class StandaloneAgentHost {
   saveCredential(value: unknown): void {
     this.#assertIdle();
     if (!isAgentProviderCredentialSecret(value)) throw new AgentHostError("invalid-input", "密钥为空或格式无效");
+    this.#abortCatalogs();
     this.#apiKey = value;
     this.#publish();
   }
@@ -68,6 +73,7 @@ export class StandaloneAgentHost {
   async setEnabled(enabled: boolean): Promise<void> {
     this.#assertAvailable();
     if (enabled && !this.#apiKey) throw new AgentHostError("invalid-input", "请先保存模型配置和密钥");
+    if (!enabled) this.#abortCatalogs();
     if (!enabled && this.#testing) await this.#testing.cancel();
     await this.session.setEnabled(enabled);
   }
@@ -89,6 +95,18 @@ export class StandaloneAgentHost {
     }
   }
 
+  async discoverModels(value: unknown, signal?: AbortSignal): Promise<AgentModelCatalog> {
+    this.#assertIdle();
+    const request = parseModelCatalogRequest(value);
+    const apiKey = request.apiKey ?? (matchesModelConnection(request.connection, this.#configuration) ? this.#apiKey : "");
+    if (!apiKey) throw new AgentHostError("invalid-input", "请填写当前服务的 API Key，再获取模型。");
+    const controller = new AbortController();
+    this.#catalogRequests.add(controller);
+    try {
+      return await fetchModelCatalog(request.connection, apiKey, { signal: signal ? AbortSignal.any([controller.signal, signal]) : controller.signal });
+    } finally { this.#catalogRequests.delete(controller); }
+  }
+
   submit(message: string): void {
     this.#assertIdle();
     if (!this.session.getSnapshot().enabled) throw new AgentHostError("not-enabled", "请先启用 Agent");
@@ -96,6 +114,7 @@ export class StandaloneAgentHost {
   }
 
   async cancel(): Promise<void> {
+    this.#abortCatalogs();
     await Promise.all([this.session.cancel(), this.#testing?.cancel()]);
   }
 
@@ -108,6 +127,7 @@ export class StandaloneAgentHost {
 
   async dispose(): Promise<void> {
     this.#disposed = true;
+    this.#abortCatalogs();
     await this.#testing?.dispose();
     await this.session.dispose();
     this.#apiKey = "";
@@ -118,6 +138,10 @@ export class StandaloneAgentHost {
   #assertIdle(): void {
     this.#assertAvailable();
     if (this.#changing || ["running", "cancelling"].includes(this.session.getSnapshot().status) || this.#testing) throw new AgentHostError("busy", "请先停止当前任务，再修改配置或发送消息");
+  }
+
+  #abortCatalogs(): void {
+    for (const controller of this.#catalogRequests) controller.abort();
   }
 
   #assertAvailable(): void {

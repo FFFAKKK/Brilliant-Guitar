@@ -4,6 +4,7 @@ import { setTimeout as delay } from "node:timers/promises";
 export interface ModelRequest { readonly url: string; readonly headers: IncomingHttpHeaders; readonly body: Record<string, unknown> }
 export type FixtureReply = { readonly chunks: readonly Record<string, unknown>[]; readonly delayMs?: number; readonly unfinished?: boolean }
   | { readonly error: string } | { readonly hang: true };
+export type CatalogFixtureReply = { readonly value?: unknown; readonly status?: number; readonly raw?: string; readonly hang?: boolean; readonly delayMs?: number; readonly location?: string };
 
 const delta = (value: Record<string, unknown>, finishReason: string | null = null) => ({ id: "fixture-request", object: "chat.completion.chunk", model: "fixture", choices: [{ index: 0, delta: value, finish_reason: finishReason }] });
 export function textReply(text: string, options: { readonly unfinished?: boolean; readonly delayMs?: number } = {}): FixtureReply {
@@ -14,11 +15,24 @@ export function toolReply(name: string, argumentsText: string, id = "fixture-too
     delta({ tool_calls: [{ index: 0, function: { arguments: argumentsText.slice(3) } }] }), delta({}, "tool_calls")] };
 }
 
-export async function createModelFixture(replies: readonly FixtureReply[] | ((request: ModelRequest, count: number) => FixtureReply)) {
+export async function createModelFixture(replies: readonly FixtureReply[] | ((request: ModelRequest, count: number) => FixtureReply), options: { readonly catalog?: CatalogFixtureReply | ((request: { readonly headers: IncomingHttpHeaders }) => CatalogFixtureReply) } = {}) {
   const requests: ModelRequest[] = [];
+  const catalogRequests: { readonly url: string; readonly headers: IncomingHttpHeaders }[] = [];
+  let catalogClosed = 0;
   const responses = new Set<ServerResponse>();
   const server = createServer((request, response) => { void (async () => {
     responses.add(response); response.on("close", () => responses.delete(response));
+    if (request.method === "GET" && request.url?.endsWith("/models")) {
+      catalogRequests.push({ url: request.url, headers: request.headers });
+      response.on("close", () => { ++catalogClosed; });
+      const reply = typeof options.catalog === "function" ? options.catalog({ headers: request.headers })
+        : options.catalog ?? { value: { object: "list", data: [{ id: "fixture-model" }, { id: "fixture-secondary" }] } };
+      if (reply.delayMs) await delay(reply.delayMs);
+      if (response.destroyed) return;
+      response.writeHead(reply.status ?? 200, { "content-type": "application/json", ...(reply.location ? { location: reply.location } : {}) });
+      if (reply.hang) { response.flushHeaders(); return; }
+      response.end(reply.raw ?? JSON.stringify(reply.value ?? { error: "fixture-catalog-error" })); return;
+    }
     const parts: Buffer[] = [];
     for await (const part of request) parts.push(Buffer.from(part));
     requests.push({ url: request.url ?? "", headers: request.headers, body: JSON.parse(Buffer.concat(parts).toString("utf8")) });
@@ -36,7 +50,7 @@ export async function createModelFixture(replies: readonly FixtureReply[] | ((re
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   const address = server.address();
   if (!address || typeof address === "string") throw new Error("Fixture address is missing");
-  return { requests, baseUrl: `http://127.0.0.1:${address.port}/v1`, close: async () => {
+  return { requests, catalogRequests, get catalogClosed() { return catalogClosed; }, baseUrl: `http://127.0.0.1:${address.port}/v1`, close: async () => {
     for (const response of responses) response.destroy();
     server.closeAllConnections();
     await new Promise<void>((resolve) => server.close(() => resolve()));

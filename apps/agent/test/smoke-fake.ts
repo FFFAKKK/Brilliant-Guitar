@@ -10,7 +10,12 @@ const fixture = await createModelFixture((request, count) => {
   if (context.includes("[fail]")) return { error: "fixture-request-failed" };
   return textReply(count === 1 ? "这是本地模型 fixture 的流式回复，用于检查界面和传输链路。它没有调用 DeepSeek。"
     : "这是后续本地测试回复。宿主已把预算内的上一轮完整内容放进新的请求上下文。", { delayMs: 250 });
-});
+}, { catalog: (request) => {
+  if (request.headers.authorization === "Bearer fixture-unauthorized") return { status: 401, value: { error: "fixture-only-auth-failure" } };
+  if (request.headers.authorization === "Bearer fixture-empty") return { value: { data: [] } };
+  if (request.headers.authorization === "Bearer fixture-slow") return { hang: true };
+  return { value: { data: [{ id: "fixture-model" }, { id: "fixture-secondary" }] } };
+} });
 const host = new StandaloneAgentHost();
 await host.configure({ providerId: "openai-compatible", protocol: "chat-completions", baseUrl: fixture.baseUrl, modelId: "fixture-model" });
 const server = createStandaloneServer({ host, clientDirectory: fileURLToPath(new URL("../dist/client/", import.meta.url)) });

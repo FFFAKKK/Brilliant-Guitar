@@ -1,9 +1,9 @@
 import { isStandaloneAgentSnapshot, type StandaloneAgentSnapshot } from "../contracts/host.ts";
 
-export async function requestAgent(path: string, body?: unknown): Promise<unknown> {
-  const response = await fetch(`/api/${path}`, body === undefined ? { cache: "no-store" } : {
+export async function requestAgent(path: string, body?: unknown, signal?: AbortSignal): Promise<unknown> {
+  const response = await fetch(`/api/${path}`, body === undefined ? { cache: "no-store", signal: signal ?? null } : {
     method: path.startsWith("model-config") || path.startsWith("model-credential") ? "PUT" : "POST",
-    headers: { "content-type": "application/json" }, body: JSON.stringify(body), cache: "no-store",
+    headers: { "content-type": "application/json" }, body: JSON.stringify(body), cache: "no-store", signal: signal ?? null,
   });
   const value: unknown = await response.json();
   if (!response.ok) {
