@@ -1,0 +1,51 @@
+{
+  "name": "@brilliant-guitar/agent-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./pi": {
+      "types": "./dist/pi/decision-adapter.d.ts",
+      "import": "./dist/pi/decision-adapter.js"
+    },
+    "./runtime/*": {
+      "types": "./dist/runtime/*.d.ts",
+      "import": "./dist/runtime/*.js"
+    },
+    "./contracts/*": {
+      "types": "./dist/contracts/*.d.ts",
+      "import": "./dist/contracts/*.js"
+    },
+    "./pi/*": {
+      "types": "./dist/pi/*.d.ts",
+      "import": "./dist/pi/*.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --experimental-strip-types --test test/*.test.ts",
+    "check:boundaries": "node scripts/check-boundaries.mjs",
+    "test:standalone": "node scripts/test-standalone.mjs"
+  },
+  "dependencies": {
+    "@earendil-works/pi-agent-core": "1.0.3",
+    "@earendil-works/pi-ai": "1.0.3",
+    "typebox": "1.3.27"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2",
+    "@types/node": "^24.0.0"
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  }
+}
