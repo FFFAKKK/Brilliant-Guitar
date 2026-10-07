@@ -4,6 +4,11 @@
   "private": true,
   "description": "Brilliant Guitar Rust microkernel, React workbench, and Tauri desktop product.",
   "scripts": {
+    "agent:dev": "npm --prefix apps/agent run dev",
+    "agent:build": "npm --prefix apps/agent run build",
+    "agent:start": "npm --prefix apps/agent run start",
+    "agent:typecheck": "npm --prefix apps/agent run typecheck",
+    "agent:test": "npm --prefix apps/agent run test",
     "ui:dev": "npm --prefix apps/workbench run dev",
     "ui:build": "npm --prefix apps/workbench run build",
     "ui:typecheck": "npm --prefix apps/workbench run typecheck",
