@@ -6,6 +6,7 @@ import type { StandaloneAgentHost } from "./agent-host.ts";
 import { AgentHostError } from "./agent-host.ts";
 import { ModelCatalogError } from "./model-catalog.ts";
 import { SettingsStoreError } from "./connection-store.ts";
+import { SessionStoreError } from "./session-store.ts";
 
 interface Options {
   readonly host: StandaloneAgentHost;
@@ -36,8 +37,8 @@ function field(body: Record<string, unknown>, key: string): unknown {
 export function createStandaloneServer(options: Options): ViteServer {
   const server = createServer((request, response) => { void handle(request, response).catch((error: unknown) => {
     if (!response.headersSent) send(response, error instanceof AgentHostError && error.code === "busy" ? 409
-      : error instanceof SettingsStoreError ? 503 : error instanceof ModelCatalogError ? (error.code === "catalog-timeout" ? 504 : 502) : 400,
-      { code: error instanceof AgentHostError || error instanceof ModelCatalogError || error instanceof SettingsStoreError ? error.code : "invalid-input", error: error instanceof AgentHostError || error instanceof ModelCatalogError || error instanceof SettingsStoreError ? error.message : "请求未完成，请检查输入或模型配置" });
+      : error instanceof SettingsStoreError || error instanceof SessionStoreError ? 503 : error instanceof ModelCatalogError ? (error.code === "catalog-timeout" ? 504 : 502) : 400,
+      { code: error instanceof AgentHostError || error instanceof ModelCatalogError || error instanceof SettingsStoreError || error instanceof SessionStoreError ? error.code : "invalid-input", error: error instanceof AgentHostError || error instanceof ModelCatalogError || error instanceof SettingsStoreError || error instanceof SessionStoreError ? error.message : "请求未完成，请检查输入或模型配置" });
     else response.end();
   }); });
   function send(response: ServerResponse, status: number, data: unknown): void {
@@ -78,6 +79,16 @@ export function createStandaloneServer(options: Options): ViteServer {
         case "POST /api/profiles/save": await options.host.saveProfile(body); break;
         case "POST /api/profiles/select": await options.host.selectProfile(field(body, "profileId")); break;
         case "POST /api/profiles/delete": await options.host.deleteProfile(field(body, "profileId")); break;
+        case "POST /api/conversations/select": await options.host.selectConversation(field(body, "sessionId")); break;
+        case "POST /api/conversations/rename": {
+          if (Object.keys(body).length !== 2 || !Object.hasOwn(body, "sessionId") || !Object.hasOwn(body, "title")) throw new Error("请求格式无效");
+          await options.host.renameConversation(body.sessionId, body.title); break;
+        }
+        case "POST /api/conversations/archive": {
+          if (Object.keys(body).length !== 2 || !Object.hasOwn(body, "sessionId") || !Object.hasOwn(body, "archived")) throw new Error("请求格式无效");
+          await options.host.archiveConversation(body.sessionId, body.archived); break;
+        }
+        case "POST /api/conversations/save": if (Object.keys(body).length) throw new Error("请求格式无效"); await options.host.retrySessionSave(); break;
         case "POST /api/model-catalog": {
           const controller = new AbortController();
           const abort = (): void => { if (!response.writableEnded) controller.abort(); };

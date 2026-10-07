@@ -131,7 +131,7 @@ test("invalid and future disk files remain intact; live-directory lock rejects a
   assert.equal(parseStoredConnectionSettings(JSON.parse(await readFile(path, "utf8"))).profiles.length, 1);
 });
 
-test("profile HTTP commands enforce schemas and busy state, with v2 SSE metadata free of credentials", async (t) => {
+test("profile HTTP commands enforce schemas and busy state, with v3 SSE metadata free of credentials", async (t) => {
   const fixture = await createModelFixture([{ hang: true }]); t.after(fixture.close);
   const host = new StandaloneAgentHost(); t.after(() => host.dispose());
   const server = createStandaloneServer({ host });

@@ -27,7 +27,61 @@ button { display: inline-flex; align-items: center; justify-content: center; gap
 button:hover:not(:disabled) { background: var(--color-hover); }
 button:disabled { opacity: .42; cursor: default; }
 :focus-visible { outline: 2px solid #679aef; outline-offset: 3px; }
-.agent-app { height: 100dvh; min-height: 380px; display: flex; flex-direction: column; }
+.agent-app { height: 100dvh; min-height: 380px; display: flex; }
+.agent-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.conversation-sidebar { width: 248px; flex: none; min-height: 0; display: flex; flex-direction: column; padding: 16px; border-right: 1px solid var(--color-border); background: #151617; }
+.sidebar-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.session-tabs { display: flex; gap: 8px; margin: 4px 0 14px; }
+.session-tabs button { background: transparent; border: 0; min-height: 30px; padding: 5px 10px; color: var(--color-tertiary); font-size: 12px; }
+.session-tabs button[aria-pressed="true"] { color: var(--color-text); background: var(--color-hover); }
+.session-list { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; }
+.session-row { position: relative; margin-bottom: 6px; }
+.session-select { display: flex; flex-direction: column; align-items: stretch; text-align: left; gap: 7px; width: 100%; padding: 12px; border: 0; background: transparent; }
+.session-select[aria-current="true"] { background: #27292c; }
+.session-select:disabled { opacity: .7; }
+.session-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
+.session-detail { font-size: 11px; color: var(--color-tertiary); }
+.restore-session { position: absolute; right: 12px; bottom: 7px; font-size: 11px; }
+.selected-session-actions { padding: 16px 4px 12px; border-top: 1px solid var(--color-border); margin-top: 16px; }
+.selected-title { display: block; color: var(--color-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; margin-bottom: 8px; }
+.selected-session-actions > div, .rename-form > div { display: flex; align-items: center; gap: 20px; }
+.rename-form label { margin-bottom: 8px; }
+.rename-form button { min-height: 30px; font-size: 12px; padding: 5px 8px; }
+.sidebar-storage, .sidebar-empty { color: var(--color-tertiary); font-size: 11px; line-height: 1.7; }
+.sidebar-storage { padding: 12px 4px 0; }
+.sidebar-empty { padding: 16px 12px; }
+.mobile-sessions-button { display: none; }
+.sessions-dialog { width: min(340px, calc(100vw - 32px)); height: min(680px, calc(100dvh - 32px)); padding: 20px; border: 1px solid var(--color-border); border-radius: var(--radius-surface); background: #1b1c1f; color: var(--color-text); }
+.sessions-dialog[open] { display: flex; flex-direction: column; }
+.sessions-dialog::backdrop { background: rgb(0 0 0 / 65%); }
+.close-sessions { position: absolute; top: 16px; right: 16px; }
+.sessions-dialog .sidebar-heading { padding-right: 42px; }
+.unsaved-feedback { display: flex; gap: 12px; align-items: center; justify-content: space-between; }
+.message-content.markdown { white-space: normal; }
+.markdown > :first-child { margin-top: 0; }
+.markdown > :last-child { margin-bottom: 0; }
+.markdown p, .markdown ul, .markdown ol { margin: 0 0 16px; }
+.markdown li { margin: 4px 0; }
+.markdown h1, .markdown h2, .markdown h3, .markdown h4 { line-height: 1.5; margin: 24px 0 12px; font-size: 18px; font-weight: 600; letter-spacing: normal; }
+.markdown h1 { font-size: 22px; }
+.markdown blockquote { border-left: 3px solid #465466; margin: 16px 0; padding-left: 16px; color: var(--color-secondary); }
+.markdown a { color: #91b5ef; text-underline-offset: 3px; }
+.markdown :not(pre) > code { font-size: 13px; padding: 2px 5px; background: #303135; border-radius: 4px; }
+.code-block { border: 1px solid var(--color-border); border-radius: 10px; background: #131416; margin: 16px 0; overflow: hidden; }
+.code-heading { display: flex; align-items: center; justify-content: space-between; padding: 6px 14px; font-size: 11px; color: var(--color-secondary); border-bottom: 1px solid var(--color-border); }
+.code-block pre { margin: 0; padding: 16px; overflow-x: auto; white-space: pre; overflow-wrap: normal; font-size: 13px; line-height: 1.7; }
+.markdown code { font-family: Consolas, "Cascadia Code", monospace; }
+.table-scroll { overflow-x: auto; margin: 16px 0; }
+.markdown table { border-collapse: collapse; font-size: 13px; }
+.markdown th, .markdown td { border: 1px solid var(--color-border); text-align: left; padding: 8px 12px; }
+.markdown th { background: var(--color-surface); }
+.copy-button { font-size: 11px; color: var(--color-tertiary); margin-top: 6px; white-space: normal; text-align: left; }
+.code-heading .copy-button { margin: 0; }
+.image-placeholder { color: var(--color-secondary); font-size: 12px; }
+@media (max-width: 800px) {
+  .conversation-sidebar { display: none; }
+  .mobile-sessions-button { display: inline-flex; }
+}
 .app-header { height: 72px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; border-bottom: 1px solid var(--color-border); }
 .app-identity, nav { display: flex; align-items: center; gap: 12px; }
 .brand-mark { display: grid; place-items: center; color: #82a9e8; }

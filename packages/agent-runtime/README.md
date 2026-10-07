@@ -16,7 +16,11 @@ await session.dispose();
 
 `AgentToolRegistry` 接受显式注册的工具。默认无工具；通用聊天 Session 只允许无文档的 query/analysis 工具。涉及乐谱修改、审批和恢复的宿主通过 Controller 的相应端口装配，不能绕过统一执行链。
 
-Session 提供 `getSnapshot/subscribe/submit/cancel/reset/setEnabled/dispose`。默认保存最近 16 轮完整成功对话；发送下一轮时按上下文预算整轮省略较早内容，失败和取消不进入成功历史。默认 UI 消息保留 16 轮，内存运行存储保留 32 个终结记录。新会话取消旧任务并隔离迟到输出；本包不承诺进程重启恢复。
+Session 提供 `getSnapshot/subscribe/submit/cancel/reset/setEnabled/dispose`。默认保存最近16轮成功对话供模型使用；下一轮按字符估算的上下文预算整轮省略，失败、取消与中断不进入成功历史。旧消费者默认显示最近16轮，内存RunStore保留32个终结记录。
+
+独立宿主可选择`retainTranscript: true`保留完整显示记录（最多4096条），以`checkpoint(snapshot)`在请求前和终结后保存，并用`restoreTranscript(sessionId, messages)`恢复会话及预算内的成功历史。`hasActiveRun()`覆盖终结后的保存阶段。`SessionStorePort`、`AgentSessionLibrary`及`parseSessionLibrary/parseTranscript`定义聊天存储边界，Node文件实现由宿主注入；运行包不自行访问文件或凭据。恢复记录不会启用Agent或重放执行。聊天SessionStore与Controller RunStore职责不同。
+
+Runtime的`reset()`保持原来的清空语义；独立Host的“新会话”负责先保存旧记录，再创建并选择新记录。软件旧宿主仍复用同一个Controller，不要求采用独立应用的会话文件。
 
 迁移期间保留原 Run/事件/外部协议 v1 的 DTO，包括历史业务输入的兼容形状。业务匹配、乐谱读写及完成验证仍由软件注入，包内没有乐谱执行实现。
 

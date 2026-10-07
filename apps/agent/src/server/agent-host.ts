@@ -10,8 +10,10 @@ import { fetchModelCatalog } from "./model-catalog.ts";
 import { defaultConnectionSettings, isConnectionId, parseSaveConnectionRequest } from "../contracts/connection-settings.ts";
 import { parseStoredConnectionSettings, publicConnectionSettings, type StoredConnectionSettings, type StoredConnectionProfile, type ConnectionSettingsStorePort } from "./connection-store.ts";
 import { WindowsCredentialProtector, type CredentialProtectorPort } from "./credential-protector.ts";
+import { MAX_SESSIONS, parseSessionLibrary, parseSessionTitle, isSessionId, type AgentSessionLibrary, type AgentSessionRecord, type SessionStorePort } from "@brilliant-guitar/agent-runtime";
+import { SessionStoreError } from "./session-store.ts";
 
-interface HostOptions { readonly tools?: AgentToolRegistry; readonly settingsStore?: ConnectionSettingsStorePort; readonly credentialProtector?: CredentialProtectorPort }
+interface HostOptions { readonly tools?: AgentToolRegistry; readonly settingsStore?: ConnectionSettingsStorePort; readonly credentialProtector?: CredentialProtectorPort; readonly sessionStore?: SessionStorePort }
 
 export class AgentHostError extends Error {
   readonly code: "busy" | "not-enabled" | "invalid-input" | "disposed";
@@ -30,6 +32,13 @@ export class StandaloneAgentHost {
   #pendingChange: Promise<void> | null = null;
   readonly #settingsStore: ConnectionSettingsStorePort | null;
   readonly #credentialProtector: CredentialProtectorPort;
+  readonly #sessionStore: SessionStorePort | null;
+  #library: AgentSessionLibrary;
+  #sessionNotice: string | null = null;
+  #saveTail: Promise<void> = Promise.resolve();
+  #saveCount = 0;
+  #checkpointTimer: ReturnType<typeof setTimeout> | null = null;
+  #opening = false;
   readonly #keys = new Map<string, string>();
   readonly #catalogRequests = new Set<AbortController>();
   readonly session: AgentSession;
@@ -39,6 +48,7 @@ export class StandaloneAgentHost {
 
   constructor(options: HostOptions = {}) {
     this.#settingsStore = options.settingsStore ?? null;
+    this.#sessionStore = options.sessionStore ?? null;
     this.#credentialProtector = options.credentialProtector ?? new WindowsCredentialProtector();
     this.#provider = { decide: async (request, signal, observer) => {
       if (!this.#apiKey) throw new Error("模型凭据未配置");
@@ -49,12 +59,25 @@ export class StandaloneAgentHost {
         streamFn: createHostPiStreamFn(host, request, { providerId: configuration.providerId, modelId: configuration.modelId }, model) });
       return createAgentPluginProvider(plugin).decide(request, signal, observer);
     } };
-    this.session = createAgentSession({ provider: this.#provider, ...(options.tools ? { tools: options.tools } : {}) });
-    this.#unsubscribe = this.session.subscribe(() => this.#publish());
+    this.session = createAgentSession({ provider: this.#provider, retainTranscript: true,
+      checkpoint: async () => { this.#clearCheckpointTimer(); await this.#saveLibrary(this.#library); },
+      ...(options.tools ? { tools: options.tools } : {}) });
+    const first = newConversation(this.session.getSnapshot().sessionId);
+    this.#library = { schemaVersion: 1, selectedSessionId: first.sessionId, sessions: [first] };
+    this.#unsubscribe = this.session.subscribe(() => {
+      if (this.#captureTranscript() && this.session.hasActiveRun() && !this.#checkpointTimer) {
+        this.#checkpointTimer = setTimeout(() => {
+          this.#checkpointTimer = null;
+          void this.#saveLibrary(this.#library).catch(() => undefined);
+        }, 250);
+      }
+      this.#publish();
+    });
   }
 
   static async open(options: HostOptions = {}): Promise<StandaloneAgentHost> {
     const host = new StandaloneAgentHost(options);
+    host.#opening = true;
     try {
       const loaded = await options.settingsStore?.load();
       if (loaded) host.#settings = parseStoredConnectionSettings(loaded);
@@ -62,13 +85,23 @@ export class StandaloneAgentHost {
       const restored = await host.#restoreKey(profile);
       host.#configuration = profile.configuration; host.#apiKey = restored.key; host.#storageNotice = restored.notice;
       if (restored.key) host.#keys.set(profile.id, restored.key);
+      const library = await options.sessionStore?.load();
+      if (library) {
+        const parsed = parseSessionLibrary(library);
+        host.#library = parseSessionLibrary({ ...parsed, sessions: parsed.sessions.map((record) => ({ ...record, messages: record.messages.map((message) => message.status === "streaming" ? { ...message, status: "interrupted" } : message) })) });
+        if (JSON.stringify(parsed) !== JSON.stringify(host.#library)) await host.#saveLibrary(host.#library);
+      } else if (options.sessionStore) await host.#saveLibrary(host.#library);
+      const selected = host.#currentConversation();
+      await host.session.restoreTranscript(selected.sessionId, selected.messages);
+      host.#opening = false;
       return host;
     } catch (error) { await host.dispose(); throw error; }
   }
 
   getSnapshot(): StandaloneAgentSnapshot {
-    return Object.freeze({ schemaVersion: 2, sequence: this.#sequence, configuration: this.#configuration, credentialPresent: Boolean(this.#apiKey), testingConnection: this.#testing !== null, session: this.session.getSnapshot(),
-      connections: publicConnectionSettings(this.#settings), storage: Object.freeze({ configuration: this.#settingsStore?.kind ?? "memory", credentialProtection: this.#settingsStore?.kind === "file" ? this.#credentialProtector.kind : "unavailable", notice: this.#storageNotice }) });
+    return Object.freeze({ schemaVersion: 3, sequence: this.#sequence, configuration: this.#configuration, credentialPresent: Boolean(this.#apiKey), testingConnection: this.#testing !== null, session: this.session.getSnapshot(),
+      connections: publicConnectionSettings(this.#settings), storage: Object.freeze({ configuration: this.#settingsStore?.kind ?? "memory", credentialProtection: this.#settingsStore?.kind === "file" ? this.#credentialProtector.kind : "unavailable", notice: this.#storageNotice }),
+      conversations: Object.freeze({ selectedSessionId: this.#library.selectedSessionId, items: Object.freeze(this.#library.sessions.map(({ messages, ...record }) => Object.freeze({ ...record, messageCount: messages.length }))), storage: this.#sessionStore?.kind ?? "memory", saving: this.#saveCount > 0, notice: this.#sessionNotice }) });
   }
 
   subscribe(listener: (snapshot: StandaloneAgentSnapshot) => void): () => void {
@@ -179,22 +212,73 @@ export class StandaloneAgentHost {
   }
 
   async reset(): Promise<void> {
-    this.#assertAvailable();
-    if (this.#changing) throw new AgentHostError("busy", "配置正在保存，请稍后再新建会话");
-    this.#changing = true;
-    try { await this.cancel(); await this.session.reset(); }
-    finally { this.#changing = false; }
+    await this.#change(async () => {
+      await this.cancel(); await this.#flushTranscript();
+      const record = this.#newConversation();
+      const next = { ...this.#library, selectedSessionId: record.sessionId, sessions: [...this.#library.sessions, record] };
+      await this.#saveLibrary(next);
+      this.#library = next;
+      await this.session.restoreTranscript(record.sessionId, record.messages);
+    }, true);
   }
+
+  async selectConversation(value: unknown): Promise<void> {
+    await this.#change(async () => {
+      await this.#flushTranscript();
+      const record = isSessionId(value) ? this.#library.sessions.find((item) => item.sessionId === value && !item.archived) : null;
+      if (!record) throw new AgentHostError("invalid-input", "会话不存在或已归档，请重新选择");
+      const next = { ...this.#library, selectedSessionId: record.sessionId };
+      await this.#saveLibrary(next); this.#library = next;
+      await this.session.restoreTranscript(record.sessionId, record.messages);
+    });
+  }
+
+  async renameConversation(value: unknown, titleValue: unknown): Promise<void> {
+    const title = parseSessionTitle(titleValue);
+    await this.#change(async () => {
+      await this.#flushTranscript();
+      if (!isSessionId(value) || !this.#library.sessions.some((item) => item.sessionId === value)) throw new AgentHostError("invalid-input", "会话不存在");
+      const next = { ...this.#library, sessions: this.#library.sessions.map((record) => record.sessionId === value ? { ...record, title, updatedAt: Date.now() } : record) };
+      await this.#saveLibrary(next); this.#library = next; this.#publish();
+    });
+  }
+
+  async archiveConversation(value: unknown, archived: unknown): Promise<void> {
+    if (typeof archived !== "boolean") throw new AgentHostError("invalid-input", "归档状态无效");
+    await this.#change(async () => {
+      await this.#flushTranscript();
+      if (!isSessionId(value) || !this.#library.sessions.some((item) => item.sessionId === value)) throw new AgentHostError("invalid-input", "会话不存在");
+      const sessions = this.#library.sessions.map((record) => record.sessionId === value ? { ...record, archived, updatedAt: Date.now() } : record);
+      let selectedSessionId = this.#library.selectedSessionId;
+      if (archived && value === selectedSessionId) {
+        const replacement = sessions.filter((record) => !record.archived).sort((a, b) => b.updatedAt - a.updatedAt)[0] ?? this.#newConversation();
+        if (!sessions.some((record) => record.sessionId === replacement.sessionId)) sessions.push(replacement);
+        selectedSessionId = replacement.sessionId;
+      }
+      const next = { ...this.#library, selectedSessionId, sessions };
+      await this.#saveLibrary(next); this.#library = next;
+      const selected = this.#currentConversation();
+      if (selected.sessionId !== this.session.getSnapshot().sessionId) await this.session.restoreTranscript(selected.sessionId, selected.messages);
+      else this.#publish();
+    });
+  }
+
+  async retrySessionSave(): Promise<void> { await this.#change(() => this.#flushTranscript()); }
 
   async dispose(): Promise<void> {
     this.#disposed = true;
     await this.#pendingChange?.catch(() => undefined);
     this.#abortCatalogs();
     await this.#testing?.dispose();
+    await this.session.cancel();
+    this.#clearCheckpointTimer();
+    if (!this.#opening) await this.#flushTranscript().catch(() => undefined);
+    await this.#saveTail;
     await this.session.dispose();
     this.#apiKey = "";
     this.#keys.clear();
     await this.#settingsStore?.dispose?.();
+    await this.#sessionStore?.dispose?.();
     this.#unsubscribe();
     this.#listeners.clear();
   }
@@ -216,15 +300,19 @@ export class StandaloneAgentHost {
     if (restored.key) this.#keys.set(next.selectedProfileId, restored.key); else this.#keys.delete(next.selectedProfileId);
     this.#publish();
   }
-  async #change(operation: () => Promise<void>): Promise<void> {
-    this.#assertIdle(); this.#changing = true; this.#abortCatalogs();
+  async #change(operation: () => Promise<void>, allowActive = false): Promise<void> {
+    if (allowActive) {
+      this.#assertAvailable();
+      if (this.#changing) throw new AgentHostError("busy", "配置或会话正在保存，请稍后再试");
+    } else this.#assertIdle();
+    this.#changing = true; this.#abortCatalogs();
     const pending = Promise.resolve().then(operation); this.#pendingChange = pending;
     try { await pending; } finally { this.#pendingChange = null; this.#changing = false; }
   }
 
   #assertIdle(): void {
     this.#assertAvailable();
-    if (this.#changing || ["running", "cancelling"].includes(this.session.getSnapshot().status) || this.#testing) throw new AgentHostError("busy", "请先停止当前任务，再修改配置或发送消息");
+    if (this.#changing || this.session.hasActiveRun() || this.#testing) throw new AgentHostError("busy", "请先停止当前任务，再修改配置或发送消息");
   }
 
   #abortCatalogs(): void {
@@ -235,11 +323,44 @@ export class StandaloneAgentHost {
     if (this.#disposed) throw new AgentHostError("disposed", "Agent 宿主已退出");
   }
 
+  #currentConversation(): AgentSessionRecord { return this.#library.sessions.find((record) => record.sessionId === this.#library.selectedSessionId)!; }
+  #newConversation(): AgentSessionRecord {
+    if (this.#library.sessions.length >= MAX_SESSIONS) throw new AgentHostError("invalid-input", "最多保存200个会话，已有记录仍保留");
+    return newConversation(crypto.randomUUID());
+  }
+  #captureTranscript(): boolean {
+    const snapshot = this.session.getSnapshot();
+    const record = this.#currentConversation();
+    if (snapshot.sessionId !== record.sessionId || (snapshot.messages.length === record.messages.length && snapshot.messages.every((message, index) => {
+      const old = record.messages[index]!; return message.id === old.id && message.content === old.content && message.status === old.status;
+    }))) return false;
+    const first = snapshot.messages[0]?.content.replace(/\s+/g, " ").trim().slice(0, 80);
+    const next = { ...record, title: record.title === "新会话" && first ? first : record.title, updatedAt: Date.now(), messages: snapshot.messages };
+    this.#library = { ...this.#library, sessions: this.#library.sessions.map((item) => item.sessionId === record.sessionId ? next : item) };
+    return true;
+  }
+  #clearCheckpointTimer(): void { if (this.#checkpointTimer) clearTimeout(this.#checkpointTimer); this.#checkpointTimer = null; }
+  async #flushTranscript(): Promise<void> { this.#clearCheckpointTimer(); await this.#saveLibrary(this.#library); }
+  async #saveLibrary(value: AgentSessionLibrary): Promise<void> {
+    if (!this.#sessionStore) return;
+    ++this.#saveCount; this.#publish();
+    const pending = this.#saveTail.then(() => this.#sessionStore!.save(value));
+    this.#saveTail = pending.catch(() => undefined);
+    try { await pending; this.#sessionNotice = null; }
+    catch { this.#sessionNotice = "聊天记录尚未保存。当前内容仍在内存中，请检查数据目录后重试保存。"; throw new SessionStoreError("sessions-unavailable", this.#sessionNotice); }
+    finally { --this.#saveCount; this.#publish(); }
+  }
+
   #publish(): void {
     ++this.#sequence;
     const snapshot = this.getSnapshot();
     for (const listener of this.#listeners) { try { listener(snapshot); } catch { /* Read-only observers. */ } }
   }
+}
+
+function newConversation(sessionId: string): AgentSessionRecord {
+  const now = Date.now();
+  return { sessionId, title: "新会话", createdAt: now, updatedAt: now, archived: false, messages: [] };
 }
 
 function credentialContext(profile: StoredConnectionProfile): string {

@@ -1,5 +1,4 @@
-import { open, readFile, rename, stat, unlink, mkdir, type FileHandle } from "node:fs/promises";
-import { resolve } from "node:path";
+import { LockedJsonFile, JsonFileLockError } from "./json-file.ts";
 import { parseConnectionSettings, type ConnectionSettings, type ConnectionProfile } from "../contracts/connection-settings.ts";
 
 export interface StoredConnectionProfile extends Omit<ConnectionProfile, "credentialRemembered"> { readonly sealedCredential: string | null }
@@ -37,63 +36,28 @@ export class FileConnectionSettingsStore implements ConnectionSettingsStorePort 
   readonly kind = "file";
   readonly directory: string;
   readonly path: string;
-  readonly #lockPath: string;
-  #lock: FileHandle | null = null;
+  readonly #file: LockedJsonFile;
   constructor(directory: string) {
-    this.directory = resolve(directory); this.path = resolve(this.directory, "connections.json"); this.#lockPath = resolve(this.directory, "connections.lock");
+    this.#file = new LockedJsonFile(directory, "connections"); this.directory = this.#file.directory; this.path = this.#file.path;
   }
   async load(): Promise<StoredConnectionSettings | null> {
-    await this.#acquire();
     try {
-      if ((await stat(this.path)).size > 262144) throw new Error("settings oversized");
-      const content = await readFile(this.path, "utf8");
-      if (Buffer.byteLength(content) > 262144) throw new Error("settings oversized");
-      return parseStoredConnectionSettings(JSON.parse(content));
+      const value = await this.#file.read(262144);
+      return value === undefined ? null : parseStoredConnectionSettings(value);
     } catch (error) {
-      if (code(error) === "ENOENT") return null;
+      if (error instanceof JsonFileLockError) throw new SettingsStoreError("settings-unavailable", "无法使用连接数据目录。可能已有Agent使用该目录，请关闭它或用--data-dir选择其他目录。");
       throw new SettingsStoreError("settings-invalid", "连接配置文件无法读取或版本不受支持，已保留原文件。请检查数据目录。");
     }
   }
   async save(value: StoredConnectionSettings): Promise<void> {
     const settings = parseStoredConnectionSettings(value);
-    await this.#acquire();
-    const temporary = resolve(this.directory, `connections.${crypto.randomUUID()}.tmp`);
-    let handle: FileHandle | null = null;
     try {
-      handle = await open(temporary, "wx", 0o600);
-      await handle.writeFile(JSON.stringify(settings) + "\n", "utf8"); await handle.sync(); await handle.close(); handle = null;
-      await rename(temporary, this.path);
+      await this.#file.write(settings, 262144);
     } catch {
       throw new SettingsStoreError("settings-unavailable", "连接配置保存失败，原配置仍保留。请检查数据目录是否可写。");
-    } finally { await handle?.close().catch(() => undefined); await unlink(temporary).catch(() => undefined); }
-  }
-  async dispose(): Promise<void> {
-    const lock = this.#lock; this.#lock = null;
-    if (lock) { await lock.close(); await unlink(this.#lockPath).catch(() => undefined); }
-  }
-  async #acquire(): Promise<void> {
-    if (this.#lock) return;
-    try {
-      await mkdir(this.directory, { recursive: true });
-      for (let attempt = 0; attempt < 2; ++attempt) {
-        try {
-          this.#lock = await open(this.#lockPath, "wx", 0o600);
-          await this.#lock.writeFile(JSON.stringify({ pid: process.pid }), "utf8"); return;
-        } catch (error) {
-          if (code(error) !== "EEXIST" || attempt !== 0) throw error;
-          const owner: unknown = JSON.parse(await readFile(this.#lockPath, "utf8"));
-          if (typeof owner !== "object" || owner === null || !("pid" in owner) || !Number.isSafeInteger(owner.pid) || Number(owner.pid) < 1) throw error;
-          try { process.kill(Number(owner.pid), 0); throw error; }
-          catch (check) { if (code(check) !== "ESRCH") throw error; }
-          await unlink(this.#lockPath);
-        }
-      }
-    } catch {
-      await this.dispose();
-      throw new SettingsStoreError("settings-unavailable", "无法使用连接数据目录。可能已有Agent使用该目录，请关闭它或用--data-dir选择其他目录。");
     }
   }
-}
-function code(value: unknown): string | null {
-  return typeof value === "object" && value !== null && "code" in value && typeof value.code === "string" ? value.code : null;
+  async dispose(): Promise<void> {
+    await this.#file.dispose();
+  }
 }

@@ -143,7 +143,7 @@ export function SettingsDialog({ snapshot, action, onClose }: Props) {
     <div className="connection-controls"><div><strong>{snapshot.session.enabled ? "Agent 已启用" : "Agent 已停用"}</strong><p>启用后，发送消息或测试连接才会调用模型。</p></div>
       <button disabled={pending || !snapshot.credentialPresent || active || changed} onClick={() => void perform(async () => { await action("session/enable", { enabled: !snapshot.session.enabled }); })}>{snapshot.session.enabled ? "停用" : "启用 Agent"}</button></div>
     {testResult && <p className="notice">生成接口：{testResult}</p>}
-    <div className="dialog-footer"><span className="notice" role="status" data-failed={failed}>{active ? "任务正在运行，请先停止再修改配置。" : notice || snapshot.storage.notice || (snapshot.storage.configuration === "file" ? "连接设置保存在本机，聊天记录暂未保存。" : "测试宿主：设置与聊天仅在本次运行中保留。")}</span>
+    <div className="dialog-footer"><span className="notice" role="status" data-failed={failed}>{active ? "任务正在运行，请先停止再修改配置。" : notice || snapshot.storage.notice || (snapshot.conversations.storage === "file" ? "连接设置和聊天记录保存在本机。" : "聊天记录仅在本次运行中保留。")}</span>
       {discovering ? <button onClick={() => catalogAbort.current?.abort()}>停止获取</button>
         : snapshot.testingConnection ? <button onClick={() => void action("session/cancel", {}).catch(() => undefined)}>停止测试</button>
         : <button disabled={pending || active || !snapshot.session.enabled || changed} onClick={() => void perform(async () => {

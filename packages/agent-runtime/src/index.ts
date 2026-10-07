@@ -8,5 +8,6 @@ export * from "./runtime/completion-verifier.ts";
 export * from "./contracts/capability.ts";
 export * from "./session/agent-session.ts";
 export * from "./session/tool-registry.ts";
+export * from "./session/session-store.ts";
 export * from "./contracts/model-config.ts";
 export * from "./contracts/session-snapshot.ts";

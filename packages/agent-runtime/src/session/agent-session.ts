@@ -4,13 +4,14 @@ import type { AgentDecisionProviderPort } from "../runtime/provider.ts";
 import type { AgentContextBudget, AgentContextItem } from "../runtime/agent-contracts.ts";
 import type { AgentRunProgressEvent } from "../runtime/run-progress.ts";
 import { AgentToolRegistry } from "./tool-registry.ts";
+import { MAX_SESSION_MESSAGES, isSessionId, parseTranscript } from "./session-store.ts";
 
 export interface AgentChatMessage {
   readonly id: string;
   readonly runId: string;
   readonly role: "user" | "assistant";
   readonly content: string;
-  readonly status: "complete" | "streaming" | "failed" | "cancelled";
+  readonly status: "complete" | "streaming" | "failed" | "cancelled" | "interrupted";
 }
 
 export interface AgentSessionSnapshot {
@@ -34,6 +35,8 @@ export interface AgentSessionOptions {
   readonly tools?: AgentToolRegistry;
   readonly store?: AgentRunStorePort;
   readonly budget?: Partial<AgentContextBudget>;
+  readonly retainTranscript?: boolean;
+  readonly checkpoint?: (snapshot: AgentSessionSnapshot) => Promise<void>;
 }
 
 interface HistoryTurn { readonly runId: string; readonly user: string; readonly assistant: string }
@@ -43,8 +46,11 @@ export class AgentSession {
   readonly #controller: AgentRunController;
   readonly #tools: AgentToolRegistry;
   readonly #budget: AgentContextBudget;
+  readonly #retainTranscript: boolean;
+  readonly #checkpoint: ((snapshot: AgentSessionSnapshot) => Promise<void>) | undefined;
   readonly #listeners = new Set<(event: AgentSessionEvent) => void>();
   #history: HistoryTurn[] = [];
+  #successfulTurnCount = 0;
   #generation = 0;
   #disposed = false;
   #resetting = false;
@@ -53,6 +59,8 @@ export class AgentSession {
   #snapshot: AgentSessionSnapshot = Object.freeze({ sessionId: crypto.randomUUID(), sequence: 0, enabled: false, status: "disabled", runId: null, messages: Object.freeze([]), message: "请先配置模型并启用 Agent", omittedHistoryTurns: 0 });
 
   constructor(options: AgentSessionOptions) {
+    this.#retainTranscript = options.retainTranscript ?? false;
+    this.#checkpoint = options.checkpoint;
     this.#tools = options.tools ?? new AgentToolRegistry();
     this.#budget = Object.freeze({ tokenBudget: 8192, itemCountBudget: 64, toolResultSizeBudget: 16384, rangeBudget: 0, historyTurnBudget: 16, ...options.budget });
     if (!Number.isSafeInteger(this.#budget.historyTurnBudget) || this.#budget.historyTurnBudget < 1 || this.#budget.historyTurnBudget > 64) throw new Error("会话历史预算需在 1 到 64 轮之间");
@@ -67,6 +75,7 @@ export class AgentSession {
   }
 
   getSnapshot(): AgentSessionSnapshot { return this.#snapshot; }
+  hasActiveRun(): boolean { return this.#active !== null; }
 
   subscribe(listener: (event: AgentSessionEvent) => void): () => void {
     if (this.#disposed) throw new Error("Agent session is disposed");
@@ -92,6 +101,7 @@ export class AgentSession {
     this.#assertAvailable();
     if (!this.#snapshot.enabled) throw new Error("请先启用 Agent");
     if (this.#active) throw new Error("当前对话仍在运行，请先停止");
+    if (this.#retainTranscript && this.#snapshot.messages.length + 2 > MAX_SESSION_MESSAGES) throw new Error("当前会话已达到记录上限，请新建会话；已有记录仍保留");
     const goal = message.trim();
     if (!goal || Math.ceil(JSON.stringify(goal).length / 4) + 256 > this.#budget.tokenBudget) throw new Error("消息为空或超过当前上下文预算");
     const generation = this.#generation;
@@ -99,7 +109,7 @@ export class AgentSession {
     const assistantId = crypto.randomUUID();
     const contextItems = this.#historyContext(goal);
     const messages: AgentChatMessage[] = [
-      ...(this.#budget.historyTurnBudget > 1 ? this.#snapshot.messages.slice(-(this.#budget.historyTurnBudget * 2 - 2)) : []),
+      ...(this.#retainTranscript ? this.#snapshot.messages : this.#budget.historyTurnBudget > 1 ? this.#snapshot.messages.slice(-(this.#budget.historyTurnBudget * 2 - 2)) : []),
       { id: crypto.randomUUID(), runId, role: "user", content: goal, status: "complete" },
       { id: assistantId, runId, role: "assistant", content: "", status: "streaming" },
     ];
@@ -109,32 +119,39 @@ export class AgentSession {
     let reject!: (error: unknown) => void;
     const done = new Promise<AgentRunOutcome>((yes, no) => { resolve = yes; reject = no; });
     this.#active = { abort, done };
-    this.#publish({ status: "running", runId, messages, message: "正在思考", omittedHistoryTurns: this.#history.length - contextItems.length });
+    this.#publish({ status: "running", runId, messages, message: "正在思考", omittedHistoryTurns: (this.#retainTranscript ? this.#successfulTurnCount : this.#history.length) - contextItems.length });
     const catalog = this.#tools.catalog.filter((item) => !item.requiresDocument && (item.kind === "query" || item.kind === "analysis"));
-    void this.#controller.run({
-      runId, goal, workspace: { workspaceId: this.#snapshot.sessionId, documentId: null, documentVersion: null, selection: null },
-      intent: { kind: "analyze", requestedCapabilityIds: catalog.map((item) => item.id), scope: "none" },
-      policy: { policyVersion: 1, allowedCapabilityIds: catalog.map((item) => item.id), allowedKinds: catalog.length ? ["query", "analysis"] : [], maxToolsPerTurn: 4, maxCostClass: "constant", approvalMode: "disallow" },
-      budget: this.#budget, initialContextItems: contextItems, maxTurns: 16,
-    }, abort.signal, (event) => {
-      if (generation === this.#generation && !this.#disposed && this.#active?.abort === abort) this.#progress(assistantId, event);
-    }).then((outcome) => {
+    void Promise.resolve().then(async () => {
+      // Persist the accepted run marker before any model or tool can execute.
+      await this.#checkpoint?.(this.#snapshot);
+      return this.#controller.run({
+        runId, goal, workspace: { workspaceId: this.#snapshot.sessionId, documentId: null, documentVersion: null, selection: null },
+        intent: { kind: "analyze", requestedCapabilityIds: catalog.map((item) => item.id), scope: "none" },
+        policy: { policyVersion: 1, allowedCapabilityIds: catalog.map((item) => item.id), allowedKinds: catalog.length ? ["query", "analysis"] : [], maxToolsPerTurn: 4, maxCostClass: "constant", approvalMode: "disallow" },
+        budget: this.#budget, initialContextItems: contextItems, maxTurns: 16,
+      }, abort.signal, (event) => {
+        if (generation === this.#generation && !this.#disposed && this.#active?.abort === abort) this.#progress(assistantId, event);
+      });
+    }).then(async (outcome) => {
       if (generation === this.#generation && !this.#disposed) {
         const completed = outcome.run.state.lifecycle === "terminal" && outcome.run.state.terminalReason === "completed";
         const cancelled = outcome.run.state.lifecycle === "terminal" && outcome.run.state.terminalReason === "cancelled";
         const content = outcome.response ?? this.#snapshot.messages.find((item) => item.id === assistantId)?.content ?? "";
         if (completed) {
+          ++this.#successfulTurnCount;
           this.#history.push({ runId, user: goal, assistant: content });
           this.#history = this.#history.slice(-this.#budget.historyTurnBudget);
         }
         this.#publish({ messages: this.#snapshot.messages.map((item) => item.id === assistantId ? { ...item, content, status: completed ? "complete" : cancelled ? "cancelled" : "failed" } : item),
           status: completed ? "completed" : cancelled ? "cancelled" : "failed", message: completed ? "回复完成" : cancelled ? "已停止" : "本次请求未完成，请检查配置或重试" });
+        try { await this.#checkpoint?.(this.#snapshot); } catch { /* Host exposes unsaved output; execution result is unchanged. */ }
         this.#active = null;
       }
       resolve(outcome);
-    }, () => {
+    }, async () => {
       if (generation === this.#generation && !this.#disposed) {
-        this.#publish({ messages: this.#snapshot.messages.map((item) => item.id === assistantId ? { ...item, content: "", status: "failed" } : item), status: "failed", message: "Agent 请求失败" });
+        this.#publish({ messages: this.#snapshot.messages.map((item) => item.id === assistantId ? { ...item, status: "failed" } : item), status: "failed", message: "Agent 请求失败" });
+        try { await this.#checkpoint?.(this.#snapshot); } catch { /* Keep the failed record in memory. */ }
         this.#active = null;
       }
       reject(new Error("Agent 请求失败"));
@@ -158,8 +175,27 @@ export class AgentSession {
     try {
       await this.cancel();
       this.#history = [];
+      this.#successfulTurnCount = 0;
       this.#publish({ sessionId: crypto.randomUUID(), runId: null, messages: [], status: this.#snapshot.enabled ? "idle" : "disabled", message: "已开始新会话", omittedHistoryTurns: 0 });
     } finally { this.#resetting = false; }
+  }
+
+  async restoreTranscript(sessionId: string, value: readonly AgentChatMessage[]): Promise<void> {
+    this.#assertAvailable();
+    if (this.#active) throw new Error("请先停止当前对话，再切换会话");
+    if (!isSessionId(sessionId)) throw new Error("会话ID无效");
+    const messages = parseTranscript(value);
+    if (messages.some((message) => message.status === "streaming")) throw new Error("未完成记录需先标记中断");
+    ++this.#generation;
+    this.#history = [];
+    for (let i = 0; i < messages.length; i += 2) {
+      const user = messages[i]!;
+      const assistant = messages[i + 1]!;
+      if (assistant.status === "complete") this.#history.push({ runId: user.runId, user: user.content, assistant: assistant.content });
+    }
+    this.#successfulTurnCount = this.#history.length;
+    this.#history = this.#history.slice(-this.#budget.historyTurnBudget);
+    this.#publish({ sessionId, messages, runId: null, status: this.#snapshot.enabled ? "idle" : "disabled", message: this.#snapshot.enabled ? "可以继续对话" : "会话已恢复，启用后可继续", omittedHistoryTurns: 0 });
   }
 
   async dispose(): Promise<void> {

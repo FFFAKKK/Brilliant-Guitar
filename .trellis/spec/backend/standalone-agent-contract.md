@@ -7,20 +7,27 @@ Applies to `packages/agent-runtime`, `apps/agent`, and Workbench compatibility a
 ## 2. Signatures
 
 ```ts
-createAgentSession({ provider, tools?, store?, budget? }): AgentSession
+createAgentSession({ provider, tools?, store?, budget?, retainTranscript?, checkpoint? }): AgentSession
 session.getSnapshot(): AgentSessionSnapshot
 session.subscribe(listener): () => void
 session.setEnabled(enabled): Promise<void>
 session.submit(message): Promise<AgentRunOutcome>
 session.cancel/reset/dispose(): Promise<void>
+session.hasActiveRun(): boolean
+session.restoreTranscript(sessionId, messages): Promise<void>
+parseSessionLibrary(value): AgentSessionLibrary
+parseTranscript(value): readonly AgentChatMessage[]
 new AgentToolRegistry(tools?: readonly RegisteredAgentTool[])
 new StandaloneAgentHost({ tools? })
-await StandaloneAgentHost.open({ tools?, settingsStore?, credentialProtector? })
+await StandaloneAgentHost.open({ tools?, settingsStore?, credentialProtector?, sessionStore? })
 host.saveCredential(apiKey): Promise<void>
 host.saveProfile({ profileId: string|null, name, configuration, rememberCredential, apiKey? }): Promise<void>
 host.selectProfile(profileId)/deleteProfile(profileId): Promise<void>
 new FileConnectionSettingsStore(directory): ConnectionSettingsStorePort
 new WindowsCredentialProtector(): CredentialProtectorPort
+new FileSessionStore(directory): SessionStorePort
+host.selectConversation(sessionId)/renameConversation(sessionId, title)/archiveConversation(sessionId, archived): Promise<void>
+host.retrySessionSave(): Promise<void>
 host.discoverModels({ connection, apiKey? }, signal?): Promise<AgentModelCatalog>
 parseAgentModelConnection(value): AgentModelConnection
 ```
@@ -38,6 +45,10 @@ Root commands: `agent:dev`, `agent:build`, `agent:start`, `agent:typecheck`, `ag
 | POST `/api/session/enable` | exact `{enabled: boolean}` → snapshot |
 | POST `/api/session/messages` | exact `{message: string}` → accepted snapshot, completion through SSE |
 | POST `/api/session/cancel`, `/api/session/reset` | exact `{}` → snapshot |
+| POST `/api/conversations/select` | exact `{sessionId: string}` → v3 snapshot |
+| POST `/api/conversations/rename` | exact `{sessionId: string,title: string}` → v3 snapshot |
+| POST `/api/conversations/archive` | exact `{sessionId: string,archived: boolean}` → v3 snapshot |
+| POST `/api/conversations/save` | exact `{}` → v3 snapshot, retries disk save only |
 | POST `/api/model-test` | exact `{}` → `{connected: boolean}`, isolated probe Session |
 | POST `/api/model-catalog` | exact `{connection: {providerId, protocol, baseUrl}, apiKey?: string}` → `{connection, models: [{id}]}` |
 
@@ -46,9 +57,13 @@ Root commands: `agent:dev`, `agent:build`, `agent:start`, `agent:typecheck`, `ag
 - Common public contracts are defined in the runtime package. Application decoders consume them; UI does not implement a second run state machine. Workbench old imports are thin exports or business compositions over the same Controller.
 - Preserve historical Run/event/External Protocol v1 DTOs, including measure input compatibility fields. Actual selection matching, score reading/mutation and completion verification stay with the software host. Missing business recovery handlers reject input restoration.
 - Default Session has no tools. Injected query/analysis tools require no document and use the same resolved allowlist, validation and invocation path. Pi tools capture decisions; they never execute the registry.
-- Default context retains the latest 16 successful complete user/assistant pairs. Budget overflow omits whole older pairs and exposes `omittedHistoryTurns`; failures/cancellation do not enter successful history. Visible messages are bounded to 16 pairs; the default in-memory Session store keeps 32 terminal records. Software stores retain their existing behavior.
+- Default context retains the latest 16 successful complete user/assistant pairs. Budget overflow omits whole older pairs and exposes `omittedHistoryTurns`; failure/cancellation/interruption do not enter successful history. Legacy Session consumers keep a bounded display window. Standalone opts into `retainTranscript=true`: visible/persisted messages keep all accepted turns up to4096 messages; omission counts include earlier successful turns beyond the model window. The default in-memory RunStore keeps32 terminal runs; it is distinct from SessionStore. Software stores retain their existing behavior.
 - Reserve an active run before publishing snapshots. Observer reentry cannot submit another run. Repeated enable does not change a running state. Disabling revokes submissions before awaiting cancellation. Reset/dispose invalidate the old generation; late progress must match the active run and generation.
-- `StandaloneAgentSnapshot` v2 has exact fields: `schemaVersion=2`, `sequence`, `configuration`, `credentialPresent`, `testingConnection`, `session`, `connections`, `storage`. `connections={schemaVersion:1,selectedProfileId,profiles:[{id,name,configuration,recentModels,credentialRemembered}]}`; selected configuration must equal the top-level configuration. `storage={configuration:memory|file,credentialProtection:windows-dpapi|unavailable,notice:string|null}`. No credential values or ciphertext. Session and model config retain existing decoders; v1 standalone snapshots are explicitly rejected and the client must reload after the upgrade. Runtime/External Protocol DTOs are unchanged.
+- `StandaloneAgentSnapshot` v3 has exact fields: `schemaVersion=3`, `sequence`, `configuration`, `credentialPresent`, `testingConnection`, `session`, `connections`, `storage`, `conversations`. `connections={schemaVersion:1,selectedProfileId,profiles:[{id,name,configuration,recentModels,credentialRemembered}]}`; selected configuration equals the top-level configuration. `storage={configuration:memory|file,credentialProtection:windows-dpapi|unavailable,notice:string|null}`. `conversations={selectedSessionId,items:[{sessionId,title,createdAt,updatedAt,archived,messageCount}],storage:memory|file,saving:boolean,notice:string|null}`. Selected session ID/messageCount must agree with the active Session snapshot, and cannot select an archived record. No credential values/ciphertext. Old standalone snapshots require client reload; connection filev1 and Runtime/External decision DTOs retain their versions.
+- `SessionStorePort={kind:memory|file,load():Promise<AgentSessionLibrary|null>,save(library):Promise<void>,dispose?():Promise<void>}`. `sessions.json`v1 exact `{schemaVersion:1,selectedSessionId,sessions:[{sessionId,title,createdAt,updatedAt,archived,messages}]}`. 1–200 unique sessions; safe IDs 1–160 characters; titles1–80 characters without controls; nonnegative safe timestamps with updatedAt>=createdAt; up to4096 messages/session, each content<=32768 chars, library<=16MiB. Messages are exact `{id,runId,role,content,status}`, alternating complete user and assistant with matching run IDs, unique message/run IDs per conversation. Assistant status includes interrupted. Shared Runtime decoder owns persistent and restoration validation; private/extra/future fields fail.
+- Runtime `checkpoint(snapshot)` is awaited before Controller starts and after terminal messages. Start failure sends zero model/tool requests and retains a failed record. End failure keeps actual completed output/outcome in memory; host shows unsaved notice. Host coalesces streaming checkpoints at250ms and serializes all writes; record saves are temporary/fsync/rename with file PID lock. `hasActiveRun` remains true through terminal checkpoint, preventing overlap. No user-visible disk success before completion; explicit retry saves without generation. An absent file is `undefined` at the Node file adapter boundary, so literal JSON null remains invalid and is never treated as missing.
+- Startup normalizes streaming assistant messages to interrupted, persists the normalization, restores transcript and successful history while staying disabled, and never resumes tools/model. Startup failure disposal must not write default data over invalid files. Host has one active Session; new-session cancels and preserves the old transcript, persists a new record before selecting it. Idle select/rename/archive persist metadata first; active changes409. Archiving the selected session chooses another unarchived record or creates one. Model configuration remains global. Probe Sessions have no chat store. Shutdown cancels and flushes before releasing storage locks.
+- UI uses the authoritative v3 projection for desktop/sidebar and mobile native dialog; searches conversation names and supports archive restore. Session mutations freeze composer input until accepted selection is installed. Assistant Markdown uses react-markdown10.1.0 + remark-gfm4.0.1; raw HTML skipped, remote images rendered as text, links retain default URL filtering. User text is literal. Message/code copies preserve source; Windows clipboard newline normalization is expected. Markdown whitespace must override plain-text pre-wrap by a scoped `.message-content.markdown` selector.
 - Provider IDs: `deepseek` or `openai-compatible`; protocol: `chat-completions`. Base URL is HTTPS, or loopback HTTP for fixtures; no URL credentials/query/fragment. Model ID is trimmed, nonempty, <=160 characters, without controls.
 - Credentials default to process memory and are passed explicitly to Pi's completions transport without environment discovery. Opt-in remembering uses host-side Windows DPAPI/CurrentUser; plaintext never enters browser persistence or files. Each profile's key is bound to its ID, provider, protocol and normalized full URL. Changing a profile's service target invalidates that profile's memory key/ciphertext and disables Agent; selecting another profile uses only its own key and disables Agent. Draft target changes clear the unsaved key and model list. Saving/opening/reading/activation sends no supplier traffic; enabled submission or explicit probe sends generation, explicit discovery sends metadata only while disabled.
 - `connections.json` v1: exact `{schemaVersion:1,selectedProfileId,profiles:[{id,name,configuration,recentModels,sealedCredential:string|null}]}`. IDs match `[a-zA-Z0-9_-]{1,80}`, names have 1–80 non-control characters, 1–20 distinct profiles, at most 5 distinct valid recent model IDs; selected ID must exist. Validated ciphertext is bounded base64 <=8192 characters. Unknown/private fields and future versions fail; <=256 KiB file. The shared connection contract owns normalization and public projection.
@@ -76,9 +91,13 @@ Root commands: `agent:dev`, `agent:build`, `agent:start`, `agent:typecheck`, `ag
 | Unknown alias/incomplete JSON/missing finish | one failed stream terminal; zero tool executions |
 | Cancellation/timeout | abort corresponding model transport; isolate late results |
 | New service target | key absent and Agent disabled |
-| Reset | cancel current work; new session ID; empty history/messages |
+| Host reset | cancel current work; persist old conversation and new selected ID; new active history empty, previous transcript retained |
 | Dispose | cancel work, clear memory keys and listeners; remembered ciphertext can restore on next startup |
-| Remembered startup | restore settings/selected key if decryptable; Agent disabled, no supplier traffic; chats not persisted |
+| Remembered startup | restore settings/selected key if decryptable and selected chat; Agent disabled, no supplier traffic |
+| Interrupted startup | keep partial content, mark interrupted, exclude from successful model history; no execution replay |
+| Conversation mutation during run/probe/save | 409 busy; current selection/metadata remain authoritative |
+| Session disk write failure | 503 sessions-unavailable or async unsaved notice; in-memory content retained, metadata selection unchanged |
+| Invalid/future/null session file or file lock | startup sessions-invalid; original file unchanged, no disposal overwrite |
 | Profile save failure | 503 `settings-unavailable`; old public configuration and memory key remain authoritative |
 | Unsupported remembering | 400 with explicit explanation; no plaintext persistence |
 | Protector failure | 503 `credential-unavailable`; stable diagnostic, no raw stderr/secret |
@@ -99,6 +118,7 @@ Root commands: `agent:dev`, `agent:build`, `agent:start`, `agent:typecheck`, `ag
 - Base: production standalone UI opens disabled with no model traffic, even if a remembered key restores; user configures or manually activates.
 - Bad: UI calls the model SDK, reuses a key for a new address, fills fake production replies, or maintains another Controller.
 - Good: get model IDs with an unsaved target/key while Agent is disabled, select one, then explicitly save. Catalog failure leaves custom input usable.
+- Good: restore40 messages, supply only budgeted successful turns to Pi, mark partial old streams interrupted and let the user explicitly submit a new request.
 
 ## 6. Tests Required
 
@@ -111,6 +131,7 @@ Root commands: `agent:dev`, `agent:build`, `agent:start`, `agent:typecheck`, `ag
 - Real DeepSeek remains a separate acceptance step with the user entering their own key in the UI. Never infer real API success from Fake/fixture tests.
 - Catalog fixture: exact GET path/Bearer, no generation or snapshot mutation, temporary vs target-bound saved key, strict input/output, deduplication/stripped metadata, empty list, 401/403/404/500, malformed/oversized response, redirects, timeout, caller/host/HTTP-close cancellation and busy rejection. Browser: fetch/select/save, preserved custom ID, key input clearing, error/empty/cancel, target invalidation, desktop/narrow layout.
 - M1 persistence: real file restart with two suppliers and independent Bearer headers; memory-only key absent after restart; actual Windows DPAPI round-trip, wrong target rejection, remembered restart/forget/target change; public snapshot/file free of plaintext key; future/malformed files unchanged; second host lock rejection; injected write failure rolls back state; pending save rejects select/enable; strict profile HTTP schemas and busy status. Actual desktop/narrow browser: create/save/select/delete, remember/forget, model search/recent IDs, probe/chat/stop, password clearing, no vendor traffic beyond local fixture.
+- M2: >16 turns survive disk restart; earlier content visible but omitted from budgeted model input; two sessions isolate context; failed/cancelled/interrupted partial replies retained and excluded from successful memory; pre-request write failure sends zero supplier requests; terminal failure retains actual output and explicit save repairs disk without new generation; streaming checkpoint crash restore does not replay; corrupt/null/future files preserved through failed Host.open/dispose; file lock, write serialization, strictv3/HTTP. Browser verifies name search, new/rename/select/archive/restore, refresh, GFM table/list/code and clipboard (normalized CRLF), mobile390px no overflow and pageerror0. Workbench Agent tests/typecheck and packed Runtime smoke protect existing consumers.
 
 ## 7. Wrong vs Correct
 
@@ -136,3 +157,7 @@ Catalog correct: explicitly query the validated three-field connection, use a pr
 Persistence wrong: write the API key to JSON/localStorage, update the active model before fsync succeeds, or restore an enabled flag on startup.
 
 Persistence correct: user opts in, the host protects the secret with profile/target binding, atomically saves the versioned file, then installs the public configuration; restore starts disabled and the browser receives presence only.
+
+Conversation wrong: truncate stored transcript to the16-turn context window, replay a pending tool from a restored chat, or overwrite corrupt data during failed startup cleanup.
+
+Conversation correct: persist complete bounded records separately, rebuild model memory only from successful pairs, restore unfinished messages as interrupted, and flush only after startup loading succeeds.

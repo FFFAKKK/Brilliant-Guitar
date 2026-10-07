@@ -1,0 +1,1 @@
+export const MAX_SESSION_MESSAGES = 4096;
