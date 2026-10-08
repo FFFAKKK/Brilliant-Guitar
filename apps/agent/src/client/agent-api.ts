@@ -14,6 +14,6 @@ export async function requestAgent(path: string, body?: unknown, signal?: AbortS
 }
 
 export function decodeSnapshot(value: unknown): StandaloneAgentSnapshot {
-  if (!isStandaloneAgentSnapshot(value)) throw new Error("Agent 状态格式无效，请重新连接");
+  if (!isStandaloneAgentSnapshot(value)) throw new Error("Agent 状态版本或格式无效，请刷新页面后重新连接");
   return value;
 }

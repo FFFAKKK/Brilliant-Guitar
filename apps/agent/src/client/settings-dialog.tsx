@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { DEFAULT_DEEPSEEK_CONFIGURATION, parseAgentModelConfiguration, parseAgentModelConnection, type AgentModelConfiguration } from "@brilliant-guitar/agent-runtime";
+import { DEFAULT_DEEPSEEK_CONFIGURATION, DEFAULT_MODEL_INPUT_POLICY, parseModelInputPolicy, parseAgentModelConfiguration, parseAgentModelConnection, type AgentModelConfiguration, type ModelInputPolicyV1 } from "@brilliant-guitar/agent-runtime";
 import type { StandaloneAgentSnapshot } from "../contracts/host.ts";
 import { matchesModelConnection, parseModelCatalog, type AgentModelCatalog } from "../contracts/model-catalog.ts";
 import { Icon } from "./icons.tsx";
@@ -18,6 +18,8 @@ export function SettingsDialog({ snapshot, action, onClose }: Props) {
   const [profileId, setProfileId] = useState<string | null>(selected.id);
   const [profileName, setProfileName] = useState(selected.name);
   const [rememberCredential, setRememberCredential] = useState(selected.credentialRemembered);
+  const [inputBudget, setInputBudget] = useState(String(selected.inputPolicy.inputTokenBudget));
+  const [contextWindow, setContextWindow] = useState(selected.inputPolicy.declaredContextWindow === null ? "" : String(selected.inputPolicy.declaredContextWindow));
   const [modelSearch, setModelSearch] = useState("");
   const [testResult, setTestResult] = useState("");
   const [apiKey, setApiKey] = useState("");
@@ -31,7 +33,8 @@ export function SettingsDialog({ snapshot, action, onClose }: Props) {
   const catalogAbort = useRef<AbortController | null>(null);
   const mounted = useRef(true);
   const active = ["running", "cancelling"].includes(snapshot.session.status) || snapshot.testingConnection;
-  const changed = profileId !== selected.id || profileName !== selected.name || rememberCredential !== selected.credentialRemembered || JSON.stringify(draft) !== JSON.stringify(snapshot.configuration) || Boolean(apiKey);
+  const changed = profileId !== selected.id || profileName !== selected.name || rememberCredential !== selected.credentialRemembered || JSON.stringify(draft) !== JSON.stringify(snapshot.configuration) || Boolean(apiKey)
+    || inputBudget !== String(selected.inputPolicy.inputTokenBudget) || contextWindow !== (selected.inputPolicy.declaredContextWindow === null ? "" : String(selected.inputPolicy.declaredContextWindow));
   let sameTarget = false;
   try { sameTarget = matchesModelConnection(parseAgentModelConnection({ providerId: draft.providerId, protocol: draft.protocol, baseUrl: draft.baseUrl }), snapshot.configuration); } catch { /* Incomplete editable URL. */ }
   const credentialAvailable = Boolean(apiKey) || (profileId === selected.id && sameTarget && snapshot.credentialPresent);
@@ -45,20 +48,32 @@ export function SettingsDialog({ snapshot, action, onClose }: Props) {
     return () => { mounted.current = false; catalogAbort.current?.abort(); };
   }, []);
 
+  function loadInputPolicy(policy: ModelInputPolicyV1) {
+    setInputBudget(String(policy.inputTokenBudget));
+    setContextWindow(policy.declaredContextWindow === null ? "" : String(policy.declaredContextWindow));
+  }
+
   function updateTarget(configuration: AgentModelConfiguration) {
     catalogAbort.current?.abort();
     setDraft(configuration); setApiKey(""); setModels([]); setCustomModel(true); setNotice(""); setFailed(false);
     modelEdited.current = false;
     setRememberCredential(false); setModelSearch(""); setTestResult("");
+    loadInputPolicy(DEFAULT_MODEL_INPUT_POLICY);
   }
 
   function loadProfile(value: StandaloneAgentSnapshot) {
     const profile = value.connections.profiles.find((item) => item.id === value.connections.selectedProfileId)!;
     updateTarget(profile.configuration); setProfileId(profile.id); setProfileName(profile.name); setRememberCredential(profile.credentialRemembered);
+    loadInputPolicy(profile.inputPolicy);
+  }
+
+  function updateModel(modelId: string) {
+    if (modelId !== draft.modelId) loadInputPolicy(DEFAULT_MODEL_INPUT_POLICY);
+    setDraft({ ...draft, modelId }); setTestResult("");
   }
 
   function chooseModel(modelId: string) {
-    modelEdited.current = true; setDraft({ ...draft, modelId }); setTestResult("");
+    modelEdited.current = true; updateModel(modelId);
     setCustomModel(!models.some((model) => model.id === modelId));
   }
 
@@ -80,7 +95,7 @@ export function SettingsDialog({ snapshot, action, onClose }: Props) {
       setModels(catalog.models);
       if (!catalog.models.length) { setCustomModel(true); setNotice("此服务没有返回可用模型，可以手动填写模型 ID。"); return; }
       if (catalog.models.some((model) => model.id === draft.modelId)) setCustomModel(false);
-      else if (!modelEdited.current || !draft.modelId.trim()) { setDraft({ ...draft, modelId: catalog.models[0]!.id }); setCustomModel(false); }
+      else if (!modelEdited.current || !draft.modelId.trim()) { updateModel(catalog.models[0]!.id); setCustomModel(false); }
       else setCustomModel(true);
       setNotice(`已获取 ${catalog.models.length} 个模型，选择后保存即可生效。`);
     } catch (error) {
@@ -96,10 +111,12 @@ export function SettingsDialog({ snapshot, action, onClose }: Props) {
       <button className="icon-button" aria-label="关闭设置" onClick={() => { catalogAbort.current?.abort(); dialog.current?.close(); }}><Icon name="close"/></button></div>
     <form autoComplete="off" onSubmit={(event) => { event.preventDefault(); void perform(async () => {
       const configuration = parseAgentModelConfiguration(draft);
-      const saved = decodeSnapshot(await action("profiles/save", { profileId, name: profileName, configuration, rememberCredential, ...(apiKey ? { apiKey } : {}) }));
+      const inputPolicy = parseModelInputPolicy({ schemaVersion: 1, inputTokenBudget: Number(inputBudget), declaredContextWindow: contextWindow.trim() ? Number(contextWindow) : null });
+      const saved = decodeSnapshot(await action("connections/profiles-v2", { schemaVersion: 2, profileId, name: profileName, configuration, inputPolicy, rememberCredential, ...(apiKey ? { apiKey } : {}) }));
       setApiKey(""); setDraft(configuration);
       const profile = saved.connections.profiles.find((item) => item.id === saved.connections.selectedProfileId)!;
       setProfileId(profile.id); setProfileName(profile.name); setRememberCredential(profile.credentialRemembered); setTestResult("");
+      loadInputPolicy(profile.inputPolicy);
       setNotice("配置已保存。手动启用后即可对话。");
     }); }}>
       <fieldset disabled={active || pending}>
@@ -130,13 +147,20 @@ export function SettingsDialog({ snapshot, action, onClose }: Props) {
             {filteredModels.length === 0 && <span className="notice">没有匹配模型，可清除搜索或手动填写。</span>}</>
           : <input id="model-id" aria-label="模型 ID" value={draft.modelId} placeholder="获取模型列表，或填写模型 ID"
             required maxLength={160} spellCheck={false}
-            onChange={(event) => { modelEdited.current = true; setDraft({ ...draft, modelId: event.target.value }); setTestResult(""); }} />}
+            onChange={(event) => { modelEdited.current = true; updateModel(event.target.value); }} />}
         <div className="model-field-help"><span>{models.length ? `供应商返回 ${models.length} 个模型` : "填写地址与密钥后，可直接获取模型。"}</span>
           {models.length > 0 && <button type="button" className="text-button" onClick={() => {
-            if (customModel && !models.some((model) => model.id === draft.modelId)) setDraft({ ...draft, modelId: models[0]!.id });
+            if (customModel && !models.some((model) => model.id === draft.modelId)) chooseModel(models[0]!.id);
             setCustomModel(!customModel); modelEdited.current = true;
           }}>{customModel ? "从列表选择" : "自定义模型"}</button>}</div>
         {recentModels.length > 0 && <div className="recent-models"><span>最近选择</span>{recentModels.map((id) => <button key={id} type="button" className="text-button" title={id} onClick={() => chooseModel(id)}>{id}</button>)}</div>}
+        <details className="input-policy-settings">
+          <summary>高级 · 输入预算</summary>
+          <label>输入估算预算<input aria-label="输入估算预算" type="number" min={1024} max={65536} step={1} required value={inputBudget} onChange={(event) => { setInputBudget(event.target.value); setTestResult(""); }}/></label>
+          <p className="field-help">按输入 JSON 的 UTF-8 字节数估算，默认8192。仅对当前连接与模型生效；更换模型或服务后重置。</p>
+          <label>用户声明的上下文容量<input aria-label="用户声明的上下文容量" type="number" min={1} max={1048576} step={1} placeholder="未知（留空）" value={contextWindow} onChange={(event) => { setContextWindow(event.target.value); setTestResult(""); }}/></label>
+          <p className="field-help">{contextWindow.trim() ? "容量由你声明，未经供应商验证。输入预算加1500输出预留须在该容量内。" : "供应商上下文容量未知。请确认服务支持后调整预算，估算值不等于精确 token 数。"} 保存配置不会调用模型或重试旧任务。</p>
+        </details>
         <button className="primary-button save-button" type="submit">保存配置</button>
       </fieldset>
     </form>

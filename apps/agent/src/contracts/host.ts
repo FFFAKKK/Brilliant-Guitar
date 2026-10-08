@@ -5,7 +5,7 @@ import { isTextResourcesSnapshot, type TextResourcesSnapshot } from "./resources
 import { isToolActivitiesSnapshot, type ToolActivitiesSnapshot } from "./tool-activities.ts";
 
 export interface StandaloneAgentSnapshot {
-  readonly schemaVersion: 4;
+  readonly schemaVersion: 5;
   readonly sequence: number;
   readonly configuration: AgentModelConfiguration;
   readonly credentialPresent: boolean;
@@ -31,7 +31,7 @@ export function isStandaloneAgentSnapshot(value: unknown): value is StandaloneAg
   } catch { return false; }
   const session = item.session;
   const conversations = item.conversations;
-  return item.schemaVersion === 4 && Number.isSafeInteger(item.sequence) && Number(item.sequence) >= 0
+  return item.schemaVersion === 5 && Number.isSafeInteger(item.sequence) && Number(item.sequence) >= 0
     && typeof item.credentialPresent === "boolean" && typeof item.testingConnection === "boolean" && isAgentSessionSnapshot(session) && isConversationsSnapshot(conversations)
     && isTextResourcesSnapshot(item.resources) && item.resources.sessionId === session.sessionId
     && isToolActivitiesSnapshot(item.activities) && item.activities.runId === session.runId

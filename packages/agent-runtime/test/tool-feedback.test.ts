@@ -130,17 +130,24 @@ test("standalone final feedback overflow retains actual execution records and se
 });
 
 for (const policy of [undefined, STANDALONE_CONTEXT_POLICY]) test(`External v1 gets every actual invocation through the shared Controller (${policy ?? "legacy"})`, async (t) => {
-  let count = 0; const executed: number[] = [];
+  let count = 0, samples = 0, budget = 16384; const executed: number[] = [];
   const transport = new FakeExternalAgentTransport({ respond: (request) => createDecisionResponse(request, ++count === 1
     ? { kind: "tool-calls", calls: [0, 1, 0].map((page, i) => ({ callId: `external-${i}`, capabilityId: "demo.read", contractVersion: 1, input: { page } })) }
     : { kind: "finish", reason: "completed", text: "Done" }) });
   const adapter = new ExternalAgentAdapter({ transport, pluginId: "example.external.agent", pluginVersion: "1.0.0", pluginLabel: "External" });
   await adapter.activate();
-  const session = createAgentSession({ provider: createAgentPluginProvider(adapter.plugin), ...(policy ? { contextSelectionPolicy: policy } : {}),
-    tools: new AgentToolRegistry([tool(async (input) => { const page = (input as { page: number }).page; executed.push(page); return { text: `actual-${page}` }; })]) });
+  const provider = createAgentPluginProvider(adapter.plugin); const budgets: number[] = [];
+  const session = createAgentSession({ provider: { decide: (...args: Parameters<typeof provider.decide>) => {
+    budgets.push(args[0].context.budget.tokenBudget); return provider.decide(...args);
+  } }, ...(policy ? { contextSelectionPolicy: policy } : {}),
+    inputTokenBudget: () => { ++samples; return budget; },
+    tools: new AgentToolRegistry([tool(async (input) => { budget = 1024; const page = (input as { page: number }).page; executed.push(page); return { text: `actual-${page}` }; })]) });
   t.after(async () => { await session.dispose(); await adapter.dispose(); }); await session.setEnabled(true);
   const outcome = await session.submit("Read"); assert.equal(outcome.response, "Done"); assert.deepEqual(executed, [0, 1, 0]);
   assert.equal(transport.requests.length, 2);
+  assert.equal(samples, 1); assert.deepEqual(budgets, [16384, 16384]);
+  // External v1 transmits selected context only; do not invent a budget field in that wire schema.
+  assert.ok(transport.requests.every((request) => Object.keys(request.context).join() === "items"));
   const wire = transport.requests[1]!;
   const results = wire.context.items.filter((item) => item.sourceType === "capability-result");
   assert.deepEqual(results.map((item) => item.id), outcome.run.invocations.map((item) => `capability-result:${item.invocationId}`));

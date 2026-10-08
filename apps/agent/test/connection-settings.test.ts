@@ -25,7 +25,7 @@ function request(profileId: string | null, baseUrl: string, apiKey?: string, rem
 
 test("connection decoders reject invalid selection, duplicate IDs, future schemas and private public fields", () => {
   const settings = defaultConnectionSettings();
-  assert.throws(() => parseConnectionSettings({ ...settings, schemaVersion: 2 }));
+  assert.throws(() => parseConnectionSettings({ ...settings, schemaVersion: 3 }));
   assert.throws(() => parseConnectionSettings({ ...settings, selectedProfileId: "unknown" }));
   assert.throws(() => parseConnectionSettings({ ...settings, profiles: [settings.profiles[0], settings.profiles[0]] }));
   assert.throws(() => parseConnectionSettings({ ...settings, profiles: [{ ...settings.profiles[0], apiKey: "sentinel" }] }));
@@ -82,9 +82,15 @@ test("Windows DPAPI remembered key survives restart, is target-bound, and can be
   const stored = parseStoredConnectionSettings(JSON.parse(disk));
   assert.ok(stored.profiles[0]?.sealedCredential); assert.ok(!disk.includes(sentinel));
   assert.ok(!JSON.stringify(host.getSnapshot()).includes(stored.profiles[0]!.sealedCredential!));
+  await host.saveProfileV2({ ...request(id, "https://dpapi-fixture.example.test/v1", undefined, true), schemaVersion: 2,
+    inputPolicy: { schemaVersion: 1, inputTokenBudget: 16384, declaredContextWindow: 32768 } });
+  const budgetOnly = parseStoredConnectionSettings(JSON.parse(await readFile(store.path, "utf8")));
+  assert.equal(budgetOnly.profiles[0]?.sealedCredential, stored.profiles[0]?.sealedCredential);
+  assert.equal(host.getSnapshot().credentialPresent, true); assert.equal(host.getSnapshot().connections.profiles[0]?.credentialRemembered, true);
   await host.dispose();
   store = new FileConnectionSettingsStore(directory); host = await StandaloneAgentHost.open({ settingsStore: store, credentialProtector: protector });
   assert.equal(host.getSnapshot().credentialPresent, true); assert.equal(host.getSnapshot().session.enabled, false);
+  assert.equal(host.getSnapshot().connections.profiles[0]?.inputPolicy.inputTokenBudget, 16384);
   await host.saveProfile(request(id, "https://dpapi-fixture.example.test/v1", undefined, false));
   assert.equal(host.getSnapshot().credentialPresent, true);
   assert.equal(parseStoredConnectionSettings(JSON.parse(await readFile(store.path, "utf8"))).profiles[0]?.sealedCredential, null);
@@ -132,7 +138,7 @@ test("invalid and future disk files remain intact; live-directory lock rejects a
   assert.equal(parseStoredConnectionSettings(JSON.parse(await readFile(path, "utf8"))).profiles.length, 1);
 });
 
-test("profile HTTP commands enforce schemas and busy state, with v4 SSE metadata free of credentials", async (t) => {
+test("profile HTTP commands enforce schemas and busy state, with v5 SSE metadata free of credentials", async (t) => {
   const fixture = await createModelFixture([{ hang: true }]); t.after(fixture.close);
   const host = new StandaloneAgentHost(); t.after(() => host.dispose());
   const server = createStandaloneServer({ host });

@@ -26,6 +26,7 @@ import { budgetModelInput } from "./model-input-budget.ts";
 import { projectPiJsonObject as jsonObject, projectPiJsonValue as jsonValue } from "./json-values.ts";
 import { projectPiInput } from "./input-projection.ts";
 import type { ContextSelectionReportV1 } from "../contracts/context-selection.ts";
+import { MODEL_INPUT_OUTPUT_RESERVE } from "../contracts/model-input-policy.ts";
 
 const ZERO_USAGE: Usage = Object.freeze({
   input: 0,
@@ -253,7 +254,7 @@ function liveStream(
 function createRequest(request: AgentProviderRequest, selection: AgentProviderSelection,
   context: TranscriptContext): AgentModelStreamRequestV1 {
   return createAgentModelStreamRequestV1(selection.providerId, selection.modelId, request.runId, request.turnId,
-    projectMessages(context), projectTools(context, request), { timeoutMs: 45_000, maxOutputTokens: 1_500 });
+    projectMessages(context), projectTools(context, request), { timeoutMs: 45_000, maxOutputTokens: MODEL_INPUT_OUTPUT_RESERVE });
 }
 
 export function createHostPiStreamFn(host: AgentModelProviderHostPort, request: AgentProviderRequest,

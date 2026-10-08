@@ -1,15 +1,17 @@
 import { DEFAULT_DEEPSEEK_CONFIGURATION, isAgentModelId, parseAgentModelConfiguration, type AgentModelConfiguration } from "@brilliant-guitar/agent-runtime";
 import { isAgentProviderCredentialSecret } from "@brilliant-guitar/agent-runtime/contracts/agent-provider-credential";
+import { DEFAULT_MODEL_INPUT_POLICY, parseModelInputPolicy, type ModelInputPolicyV1 } from "@brilliant-guitar/agent-runtime";
 
 export interface ConnectionProfile {
   readonly id: string;
   readonly name: string;
   readonly configuration: AgentModelConfiguration;
+  readonly inputPolicy: ModelInputPolicyV1;
   readonly recentModels: readonly string[];
   readonly credentialRemembered: boolean;
 }
 export interface ConnectionSettings {
-  readonly schemaVersion: 1;
+  readonly schemaVersion: 2;
   readonly selectedProfileId: string;
   readonly profiles: readonly ConnectionProfile[];
 }
@@ -19,6 +21,10 @@ export interface SaveConnectionRequest {
   readonly configuration: AgentModelConfiguration;
   readonly rememberCredential: boolean;
   readonly apiKey?: string;
+}
+export interface SaveConnectionRequestV2 extends SaveConnectionRequest {
+  readonly schemaVersion: 2;
+  readonly inputPolicy: ModelInputPolicyV1;
 }
 export interface SettingsStorageStatus {
   readonly configuration: "memory" | "file";
@@ -42,18 +48,18 @@ function name(value: unknown): string {
 }
 export function parseConnectionProfile(value: unknown): ConnectionProfile {
   const item = record(value);
-  keys(item, ["id", "name", "configuration", "recentModels", "credentialRemembered"]);
+  keys(item, ["id", "name", "configuration", "inputPolicy", "recentModels", "credentialRemembered"]);
   if (!isConnectionId(item.id) || typeof item.credentialRemembered !== "boolean" || !Array.isArray(item.recentModels)
     || item.recentModels.length > 5 || !item.recentModels.every(isAgentModelId) || new Set(item.recentModels).size !== item.recentModels.length) throw new Error("连接配置格式无效");
-  return Object.freeze({ id: item.id, name: name(item.name), configuration: parseAgentModelConfiguration(item.configuration), recentModels: Object.freeze([...item.recentModels]), credentialRemembered: item.credentialRemembered });
+  return Object.freeze({ id: item.id, name: name(item.name), configuration: parseAgentModelConfiguration(item.configuration), inputPolicy: parseModelInputPolicy(item.inputPolicy), recentModels: Object.freeze([...item.recentModels]), credentialRemembered: item.credentialRemembered });
 }
 export function parseConnectionSettings(value: unknown): ConnectionSettings {
   const item = record(value);
   keys(item, ["schemaVersion", "selectedProfileId", "profiles"]);
-  if (item.schemaVersion !== 1 || !isConnectionId(item.selectedProfileId) || !Array.isArray(item.profiles) || item.profiles.length < 1 || item.profiles.length > 20) throw new Error("连接配置版本或数量无效");
+  if (item.schemaVersion !== 2 || !isConnectionId(item.selectedProfileId) || !Array.isArray(item.profiles) || item.profiles.length < 1 || item.profiles.length > 20) throw new Error("连接配置版本或数量无效");
   const profiles = item.profiles.map(parseConnectionProfile);
   if (new Set(profiles.map((profile) => profile.id)).size !== profiles.length || !profiles.some((profile) => profile.id === item.selectedProfileId)) throw new Error("所选连接无效");
-  return Object.freeze({ schemaVersion: 1, selectedProfileId: item.selectedProfileId, profiles: Object.freeze(profiles) });
+  return Object.freeze({ schemaVersion: 2, selectedProfileId: item.selectedProfileId, profiles: Object.freeze(profiles) });
 }
 export function parseSaveConnectionRequest(value: unknown): SaveConnectionRequest {
   const item = record(value);
@@ -63,6 +69,13 @@ export function parseSaveConnectionRequest(value: unknown): SaveConnectionReques
   return { profileId: item.profileId, name: name(item.name), configuration: parseAgentModelConfiguration(item.configuration), rememberCredential: item.rememberCredential,
     ...(Object.hasOwn(item, "apiKey") ? { apiKey: item.apiKey as string } : {}) };
 }
+export function parseSaveConnectionRequestV2(value: unknown): SaveConnectionRequestV2 {
+  const item = record(value);
+  keys(item, ["schemaVersion", "profileId", "name", "configuration", "inputPolicy", "rememberCredential"], ["apiKey"]);
+  if (item.schemaVersion !== 2) throw new Error("连接请求版本无效");
+  const { schemaVersion: _version, inputPolicy, ...legacy } = item;
+  return Object.freeze({ ...parseSaveConnectionRequest(legacy), schemaVersion: 2, inputPolicy: parseModelInputPolicy(inputPolicy) });
+}
 export function parseSettingsStorageStatus(value: unknown): SettingsStorageStatus {
   const item = record(value);
   keys(item, ["configuration", "credentialProtection", "notice"]);
@@ -71,5 +84,5 @@ export function parseSettingsStorageStatus(value: unknown): SettingsStorageStatu
   return item as unknown as SettingsStorageStatus;
 }
 export function defaultConnectionSettings(): ConnectionSettings {
-  return parseConnectionSettings({ schemaVersion: 1, selectedProfileId: "default-deepseek", profiles: [{ id: "default-deepseek", name: "DeepSeek", configuration: DEFAULT_DEEPSEEK_CONFIGURATION, recentModels: [], credentialRemembered: false }] });
+  return parseConnectionSettings({ schemaVersion: 2, selectedProfileId: "default-deepseek", profiles: [{ id: "default-deepseek", name: "DeepSeek", configuration: DEFAULT_DEEPSEEK_CONFIGURATION, inputPolicy: DEFAULT_MODEL_INPUT_POLICY, recentModels: [], credentialRemembered: false }] });
 }

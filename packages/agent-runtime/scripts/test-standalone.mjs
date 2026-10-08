@@ -18,14 +18,22 @@ writeFileSync(join(scratch, "package.json"), '{"private":true,"type":"module"}')
 command(["install", join(scratch, packed.filename), "--cache", join(scratch, "cache"), "--no-audit", "--no-fund"], scratch);
 writeFileSync(join(scratch, "smoke.mjs"), `
 import assert from 'node:assert/strict';
-import { createAgentSession, STANDALONE_CONTEXT_POLICY, isContextSelectionReportV1 } from '@brilliant-guitar/agent-runtime';
+import { createAgentSession, STANDALONE_CONTEXT_POLICY, isContextSelectionReportV1, parseModelInputPolicy, DEFAULT_MODEL_INPUT_POLICY } from '@brilliant-guitar/agent-runtime';
+assert.equal(parseModelInputPolicy(DEFAULT_MODEL_INPUT_POLICY).inputTokenBudget, 8192);
+assert.throws(() => parseModelInputPolicy({ ...DEFAULT_MODEL_INPUT_POLICY, extra: true }));
 for (const policy of [undefined, STANDALONE_CONTEXT_POLICY]) {
+  let samples = 0;
   const session = createAgentSession({ ...(policy ? { contextSelectionPolicy: policy } : {}),
-    provider: { decide: async () => ({ kind: 'finish', reason: 'completed', text: 'isolated response' }) } });
+    inputTokenBudget: () => { ++samples; return 16384; },
+    provider: { decide: async (request) => {
+      assert.equal(request.context.budget.tokenBudget, 16384);
+      return { kind: 'finish', reason: 'completed', text: 'isolated response' };
+    } } });
   await session.setEnabled(true);
   assert.equal((await session.submit('headless standalone')).response, 'isolated response');
   assert.equal(session.getSnapshot().status, 'completed');
   await session.submit('continue');
+  assert.equal(samples, 2);
   const report = session.getContextSelection();
   if (policy) {
     assert.ok(isContextSelectionReportV1(report));

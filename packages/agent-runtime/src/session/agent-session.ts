@@ -6,6 +6,7 @@ import type { AgentRunProgressEvent } from "../runtime/run-progress.ts";
 import { AgentToolRegistry } from "./tool-registry.ts";
 import { MAX_SESSION_MESSAGES, isSessionId, parseTranscript } from "./session-store.ts";
 import { DEFAULT_MODEL_INPUT_TOKEN_BUDGET } from "../contracts/model-input.ts";
+import { parseModelInputTokenBudget } from "../contracts/model-input-policy.ts";
 import { freezeContextSelectionReport, isContextSelectionReportV1, STANDALONE_CONTEXT_POLICY, type ContextSelectionPolicyId, type ContextSelectionReportV1 } from "../contracts/context-selection.ts";
 
 export interface AgentChatMessage {
@@ -33,6 +34,7 @@ export interface AgentSessionEvent {
 }
 
 export interface AgentSessionOptions {
+  readonly inputTokenBudget?: () => number;
   readonly contextSelectionPolicy?: ContextSelectionPolicyId;
   readonly onContextSelection?: (report: ContextSelectionReportV1) => void;
   readonly provider: AgentDecisionProviderPort;
@@ -53,6 +55,7 @@ export class AgentSession {
   readonly #controller: AgentRunController;
   readonly #tools: AgentToolRegistry;
   readonly #budget: AgentContextBudget;
+  readonly #inputTokenBudget: AgentSessionOptions["inputTokenBudget"];
   readonly #retainTranscript: boolean;
   readonly #checkpoint: ((snapshot: AgentSessionSnapshot) => Promise<void>) | undefined;
   readonly #contextItems: AgentSessionOptions["contextItems"];
@@ -74,10 +77,12 @@ export class AgentSession {
   #disposed = false;
   #resetting = false;
   #changingEnabled = false;
+  #samplingBudget = false;
   #active: { abort: AbortController; done: Promise<AgentRunOutcome> } | null = null;
   #snapshot: AgentSessionSnapshot = Object.freeze({ sessionId: crypto.randomUUID(), sequence: 0, enabled: false, status: "disabled", runId: null, messages: Object.freeze([]), message: "请先配置模型并启用 Agent", omittedHistoryTurns: 0 });
 
   constructor(options: AgentSessionOptions) {
+    this.#inputTokenBudget = options.inputTokenBudget;
     this.#retainTranscript = options.retainTranscript ?? false;
     this.#checkpoint = options.checkpoint;
     this.#contextItems = options.contextItems;
@@ -169,11 +174,18 @@ export class AgentSession {
     if (this.#active) throw new Error("当前对话仍在运行，请先停止");
     if (this.#retainTranscript && this.#snapshot.messages.length + 2 > MAX_SESSION_MESSAGES) throw new Error("当前会话已达到记录上限，请新建会话；已有记录仍保留");
     const goal = message.trim();
-    if (!goal || Math.ceil(JSON.stringify(goal).length / 4) + 256 > this.#budget.tokenBudget) throw new Error("消息为空或超过当前上下文预算");
+    // Sample once before reserving a run or publishing/persisting any transcript.
+    let budget = this.#budget;
+    if (this.#inputTokenBudget) {
+      this.#samplingBudget = true;
+      try { budget = Object.freeze({ ...budget, tokenBudget: parseModelInputTokenBudget(this.#inputTokenBudget()) }); }
+      finally { this.#samplingBudget = false; }
+    }
+    if (!goal || Math.ceil(JSON.stringify(goal).length / 4) + 256 > budget.tokenBudget) throw new Error("消息为空或超过当前上下文预算");
     const generation = this.#generation;
     const runId = crypto.randomUUID();
     const assistantId = crypto.randomUUID();
-    const historyItems = this.#historyContext(goal);
+    const historyItems = this.#historyContext(goal, budget.tokenBudget);
     const contextItems = [...historyItems, ...(this.#contextItems?.(this.#snapshot.sessionId) ?? [])];
     // Sample host policy before reserving a run: a failed callback must leave the session idle.
     const allowed = this.#allowedToolIds ? new Set(this.#allowedToolIds()) : null;
@@ -205,7 +217,7 @@ export class AgentSession {
         runId, goal, workspace: { workspaceId: this.#snapshot.sessionId, documentId: null, documentVersion: null, selection: null },
         intent: { kind: "analyze", requestedCapabilityIds: catalog.map((item) => item.id), scope: "none" },
         policy: { policyVersion: 1, allowedCapabilityIds: catalog.map((item) => item.id), allowedKinds: catalog.length ? ["query", "analysis"] : [], maxToolsPerTurn: 4, maxCostClass: "constant", approvalMode: "disallow" },
-        budget: this.#budget, initialContextItems: contextItems, maxTurns: 16,
+        budget, initialContextItems: contextItems, maxTurns: 16,
       }, abort.signal, (event) => {
         if (generation === this.#generation && !this.#disposed && this.#active?.abort === abort && event.runId === runId) {
           this.#progress(assistantId, event);
@@ -295,10 +307,11 @@ export class AgentSession {
     if (this.#disposed) throw new Error("Agent session is disposed");
     if (this.#resetting) throw new Error("正在开始新会话，请稍后再发送");
     if (this.#changingEnabled) throw new Error("启用状态正在更新，请稍后再发送");
+    if (this.#samplingBudget) throw new Error("输入预算正在读取，请稍后再发送");
   }
 
-  #historyContext(goal: string): readonly AgentContextItem[] {
-    let remaining = this.#budget.tokenBudget - Math.ceil(JSON.stringify(goal).length / 4) - 256;
+  #historyContext(goal: string, tokenBudget: number): readonly AgentContextItem[] {
+    let remaining = tokenBudget - Math.ceil(JSON.stringify(goal).length / 4) - 256;
     const retained: AgentContextItem[] = [];
     for (const turn of [...this.#history].reverse()) {
       const content = { user: turn.user, assistant: turn.assistant };

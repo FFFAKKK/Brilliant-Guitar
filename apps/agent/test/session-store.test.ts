@@ -203,7 +203,7 @@ test("metadata mutations serialize with writes and leave the original active con
   assert.ok(isStandaloneAgentSnapshot(host.getSnapshot()));
 });
 
-test("conversation HTTP commands validate exact bodies, publish v4 and preserve metadata on failure", async (t) => {
+test("conversation HTTP commands validate exact bodies, publish v5 and preserve metadata on failure", async (t) => {
   const host = new StandaloneAgentHost(); t.after(() => host.dispose());
   const server = createStandaloneServer({ host });
   await listenForTest(server);
@@ -219,7 +219,7 @@ test("conversation HTTP commands validate exact bodies, publish v4 and preserve 
   assert.equal((await api("conversations/rename", { sessionId: id, title: "\n" })).status, 400);
   assert.equal((await api("conversations/archive", { sessionId: id, archived: "true" })).status, 400);
   const renamed = await api("conversations/rename", { sessionId: id, title: "HTTP会话" });
-  assert.equal(renamed.status, 200); assert.ok(isStandaloneAgentSnapshot(renamed.value)); assert.equal(renamed.value.schemaVersion, 4);
+  assert.equal(renamed.status, 200); assert.ok(isStandaloneAgentSnapshot(renamed.value)); assert.equal(renamed.value.schemaVersion, 5);
   assert.equal((await api("conversations/archive", { sessionId: id, archived: true })).status, 200);
   assert.equal(host.getSnapshot().conversations.items.length, 2);
   assert.equal((await api("conversations/select", { sessionId: id })).status, 400);

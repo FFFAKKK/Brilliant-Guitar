@@ -1,5 +1,7 @@
 # Standalone Agent Contract
 
+Current standalone snapshot is v5, connection storage/public settings v2, chat file/External protocol v1. Earlier milestone sections record their original boundaries; c1 below supersedes their standalone budget/settings versions.
+
 ## 1. Scope / Trigger
 
 Applies to `packages/agent-runtime`, `apps/agent`, and Workbench compatibility adapters. An independent page is insufficient: the runtime must install and run without Workbench, Guitar, Tauri, React, or score implementations. Pi 1.0.3 is reused; the Controller remains the sole capability execution owner.
@@ -21,7 +23,8 @@ new AgentToolRegistry(tools?: readonly RegisteredAgentTool[])
 new StandaloneAgentHost({ tools? })
 await StandaloneAgentHost.open({ tools?, settingsStore?, credentialProtector?, sessionStore? })
 host.saveCredential(apiKey): Promise<void>
-host.saveProfile({ profileId: string|null, name, configuration, rememberCredential, apiKey? }): Promise<void>
+host.saveProfile({ profileId: string|null, name, configuration, rememberCredential, apiKey? }): Promise<void> // legacy bridge
+host.saveProfileV2({ schemaVersion:2, profileId, name, configuration, inputPolicy, rememberCredential, apiKey? }): Promise<void>
 host.selectProfile(profileId)/deleteProfile(profileId): Promise<void>
 new FileConnectionSettingsStore(directory): ConnectionSettingsStorePort
 new WindowsCredentialProtector(): CredentialProtectorPort
@@ -40,15 +43,16 @@ Root commands: `agent:dev`, `agent:build`, `agent:start`, `agent:typecheck`, `ag
 | GET `/api/session/events` | SSE snapshot, monotonically increasing sequence per host process |
 | PUT `/api/model-config` | exact `{providerId, protocol, baseUrl, modelId}` → snapshot |
 | PUT `/api/model-credential` | exact `{apiKey}` → snapshot containing presence only |
-| POST `/api/profiles/save` | exact `{profileId: string|null, name, configuration, rememberCredential, apiKey?: string}` → v2 snapshot |
-| POST `/api/profiles/select`, `/api/profiles/delete` | exact `{profileId: string}` → v2 snapshot |
+| POST `/api/profiles/save` | exact `{profileId: string|null, name, configuration, rememberCredential, apiKey?: string}` → v5 snapshot |
+| POST `/api/connections/profiles-v2` | exact `{schemaVersion:2,profileId,name,configuration,inputPolicy,rememberCredential,apiKey?}` → v5 snapshot |
+| POST `/api/profiles/select`, `/api/profiles/delete` | exact `{profileId: string}` → v5 snapshot |
 | POST `/api/session/enable` | exact `{enabled: boolean}` → snapshot |
 | POST `/api/session/messages` | exact `{message: string}` → accepted snapshot, completion through SSE |
 | POST `/api/session/cancel`, `/api/session/reset` | exact `{}` → snapshot |
-| POST `/api/conversations/select` | exact `{sessionId: string}` → v3 snapshot |
-| POST `/api/conversations/rename` | exact `{sessionId: string,title: string}` → v3 snapshot |
-| POST `/api/conversations/archive` | exact `{sessionId: string,archived: boolean}` → v3 snapshot |
-| POST `/api/conversations/save` | exact `{}` → v3 snapshot, retries disk save only |
+| POST `/api/conversations/select` | exact `{sessionId: string}` → v5 snapshot |
+| POST `/api/conversations/rename` | exact `{sessionId: string,title: string}` → v5 snapshot |
+| POST `/api/conversations/archive` | exact `{sessionId: string,archived: boolean}` → v5 snapshot |
+| POST `/api/conversations/save` | exact `{}` → v5 snapshot, retries disk save only |
 | POST `/api/model-test` | exact `{}` → `{connected: boolean}`, isolated probe Session |
 | POST `/api/model-catalog` | exact `{connection: {providerId, protocol, baseUrl}, apiKey?: string}` → `{connection, models: [{id}]}` |
 
@@ -59,14 +63,14 @@ Root commands: `agent:dev`, `agent:build`, `agent:start`, `agent:typecheck`, `ag
 - Default Session has no tools. Injected query/analysis tools require no document and use the same resolved allowlist, validation and invocation path. Pi tools capture decisions; they never execute the registry.
 - Default context retains the latest 16 successful complete user/assistant pairs. Budget overflow omits whole older pairs and exposes `omittedHistoryTurns`; failure/cancellation/interruption do not enter successful history. Legacy Session consumers keep a bounded display window. Standalone opts into `retainTranscript=true`: visible/persisted messages keep all accepted turns up to4096 messages; omission counts include earlier successful turns beyond the model window. The default in-memory RunStore keeps32 terminal runs; it is distinct from SessionStore. Software stores retain their existing behavior.
 - Reserve an active run before publishing snapshots. Observer reentry cannot submit another run. Repeated enable does not change a running state. Disabling revokes submissions before awaiting cancellation. Reset/dispose invalidate the old generation; late progress must match the active run and generation.
-- `StandaloneAgentSnapshot` v3 has exact fields: `schemaVersion=3`, `sequence`, `configuration`, `credentialPresent`, `testingConnection`, `session`, `connections`, `storage`, `conversations`. `connections={schemaVersion:1,selectedProfileId,profiles:[{id,name,configuration,recentModels,credentialRemembered}]}`; selected configuration equals the top-level configuration. `storage={configuration:memory|file,credentialProtection:windows-dpapi|unavailable,notice:string|null}`. `conversations={selectedSessionId,items:[{sessionId,title,createdAt,updatedAt,archived,messageCount}],storage:memory|file,saving:boolean,notice:string|null}`. Selected session ID/messageCount must agree with the active Session snapshot, and cannot select an archived record. No credential values/ciphertext. Old standalone snapshots require client reload; connection filev1 and Runtime/External decision DTOs retain their versions.
+- `StandaloneAgentSnapshot` v5 has exact fields: `schemaVersion=5`, `sequence`, `configuration`, `credentialPresent`, `testingConnection`, `session`, `connections`, `storage`, `conversations`, `resources`, `activities`. Resource sessionId and activity runId must match Session (M3.1 shapes below). `connections={schemaVersion:2,selectedProfileId,profiles:[{id,name,configuration,inputPolicy,recentModels,credentialRemembered}]}`; selected configuration equals the top-level configuration. `storage={configuration:memory|file,credentialProtection:windows-dpapi|unavailable,notice:string|null}`. `conversations={selectedSessionId,items:[{sessionId,title,createdAt,updatedAt,archived,messageCount}],storage:memory|file,saving:boolean,notice:string|null}`. Selected session ID/messageCount must agree with the active Session snapshot, and cannot select an archived record. No credential values/ciphertext. Old standalone snapshots require client reload; connection filev1 is strictly migrated in memory to v2 (c1 below), Runtime/External decision DTOs retain their versions.
 - `SessionStorePort={kind:memory|file,load():Promise<AgentSessionLibrary|null>,save(library):Promise<void>,dispose?():Promise<void>}`. `sessions.json`v1 exact `{schemaVersion:1,selectedSessionId,sessions:[{sessionId,title,createdAt,updatedAt,archived,messages}]}`. 1–200 unique sessions; safe IDs 1–160 characters; titles1–80 characters without controls; nonnegative safe timestamps with updatedAt>=createdAt; up to4096 messages/session, each content<=32768 chars, library<=16MiB. Messages are exact `{id,runId,role,content,status}`, alternating complete user and assistant with matching run IDs, unique message/run IDs per conversation. Assistant status includes interrupted. Shared Runtime decoder owns persistent and restoration validation; private/extra/future fields fail.
 - Runtime `checkpoint(snapshot)` is awaited before Controller starts and after terminal messages. Start failure sends zero model/tool requests and retains a failed record. End failure keeps actual completed output/outcome in memory; host shows unsaved notice. Host coalesces streaming checkpoints at250ms and serializes all writes; record saves are temporary/fsync/rename with file PID lock. `hasActiveRun` remains true through terminal checkpoint, preventing overlap. No user-visible disk success before completion; explicit retry saves without generation. An absent file is `undefined` at the Node file adapter boundary, so literal JSON null remains invalid and is never treated as missing.
 - Startup normalizes streaming assistant messages to interrupted, persists the normalization, restores transcript and successful history while staying disabled, and never resumes tools/model. Startup failure disposal must not write default data over invalid files. Host has one active Session; new-session cancels and preserves the old transcript, persists a new record before selecting it. Idle select/rename/archive persist metadata first; active changes409. Archiving the selected session chooses another unarchived record or creates one. Model configuration remains global. Probe Sessions have no chat store. Shutdown cancels and flushes before releasing storage locks.
-- UI uses the authoritative v3 projection for desktop/sidebar and mobile native dialog; searches conversation names and supports archive restore. Session mutations freeze composer input until accepted selection is installed. Assistant Markdown uses react-markdown10.1.0 + remark-gfm4.0.1; raw HTML skipped, remote images rendered as text, links retain default URL filtering. User text is literal. Message/code copies preserve source; Windows clipboard newline normalization is expected. Markdown whitespace must override plain-text pre-wrap by a scoped `.message-content.markdown` selector.
+- UI uses the authoritative v5 projection for desktop/sidebar and mobile native dialog; searches conversation names and supports archive restore. Session mutations freeze composer input until accepted selection is installed. Assistant Markdown uses react-markdown10.1.0 + remark-gfm4.0.1; raw HTML skipped, remote images rendered as text, links retain default URL filtering. User text is literal. Message/code copies preserve source; Windows clipboard newline normalization is expected. Markdown whitespace must override plain-text pre-wrap by a scoped `.message-content.markdown` selector.
 - Provider IDs: `deepseek` or `openai-compatible`; protocol: `chat-completions`. Base URL is HTTPS, or loopback HTTP for fixtures; no URL credentials/query/fragment. Model ID is trimmed, nonempty, <=160 characters, without controls.
 - Credentials default to process memory and are passed explicitly to Pi's completions transport without environment discovery. Opt-in remembering uses host-side Windows DPAPI/CurrentUser; plaintext never enters browser persistence or files. Each profile's key is bound to its ID, provider, protocol and normalized full URL. Changing a profile's service target invalidates that profile's memory key/ciphertext and disables Agent; selecting another profile uses only its own key and disables Agent. Draft target changes clear the unsaved key and model list. Saving/opening/reading/activation sends no supplier traffic; enabled submission or explicit probe sends generation, explicit discovery sends metadata only while disabled.
-- `connections.json` v1: exact `{schemaVersion:1,selectedProfileId,profiles:[{id,name,configuration,recentModels,sealedCredential:string|null}]}`. IDs match `[a-zA-Z0-9_-]{1,80}`, names have 1–80 non-control characters, 1–20 distinct profiles, at most 5 distinct valid recent model IDs; selected ID must exist. Validated ciphertext is bounded base64 <=8192 characters. Unknown/private fields and future versions fail; <=256 KiB file. The shared connection contract owns normalization and public projection.
+- `connections.json` v2: exact `{schemaVersion:2,selectedProfileId,profiles:[{id,name,configuration,inputPolicy,recentModels,sealedCredential:string|null}]}`. Exact v1 (without inputPolicy) migrates in memory only; see c1 below. IDs match `[a-zA-Z0-9_-]{1,80}`, names have 1–80 non-control characters, 1–20 distinct profiles, at most 5 distinct valid recent model IDs; selected ID must exist. Validated ciphertext is bounded base64 <=8192 characters. Unknown/private fields and future versions fail; <=256 KiB file. The shared connection contract owns normalization and public projection.
 - Production startup uses `.agent-data` relative to cwd, overridable by `--data-dir <directory>`; root npm scripts run the standalone package so the normal directory is `apps/agent/.agent-data`. Saving is temporary write + fsync + rename; host installs/publishes the new configuration only after storage succeeds. Mutation serialization blocks enable/reset/submit during save. Disposal waits for pending saves before releasing resources. A PID lock prevents simultaneous hosts using a directory; only a definitely exited owner permits stale-lock removal. Invalid/future data is preserved rather than reset.
 - DPAPI receives data and entropy via stdin of a hidden fixed-command PowerShell child; no user values in command arguments, no raw stderr in errors. 10-second deadline and bounded stdout. Unsupported platform or failure never falls back to plaintext. Remembering requires a file store and supported protector; UI leaves the option unavailable otherwise. Forgetting removes ciphertext while the current memory key can remain usable. Startup restore failure preserves ciphertext but exposes absent credential plus a stable notice; startup always remains disabled and sends no model request.
 - Legacy model-config/model-credential endpoints bridge through the same profile mutations. `saveCredential` is now async: callers must await it before enabling or querying. The settings UI uses one atomic profile save, clears its password on success, supports named profiles/new/select/delete, service presets, model search and recent choices. New unsaved profiles cannot reuse an active profile's credential in the UI. Disconnected client epochs discard stale results for every action.
@@ -528,3 +532,56 @@ Actual temporary files with two injected rename failures and final fs.rename; ol
 
 ### 7. Wrong vs Correct
 Wrong: catch all save errors or delete the current sessions.json before writing. Correct: only retry the specific bounded atomic rename, keeping existing failure/rollback contracts.
+
+
+## M3.2c1 Explicit Input Policy
+
+### 1. Scope / Trigger
+Per-connection/model input estimates replace the fixed standalone budget for new Runs. Runtime/Controller remain the sole policy path; no Pi fork, automatic budget increase, feedback deletion, retry or summarization. The default is still8192. This does not certify provider capacity or arbitrary-length tasks.
+
+### 2. Signatures
+```ts
+interface ModelInputPolicyV1 {
+  readonly schemaVersion: 1;
+  readonly inputTokenBudget: number;
+  readonly declaredContextWindow: number | null;
+}
+parseModelInputPolicy(value: unknown): ModelInputPolicyV1;
+parseModelInputTokenBudget(value: unknown): number;
+AgentSessionOptions.inputTokenBudget?: () => number;
+// ConnectionSettings and StoredConnectionSettings schemaVersion:2
+// profiles: old fields + inputPolicy; sealedCredential stays private
+// StandaloneAgentSnapshot schemaVersion:5, connections:v2
+POST /api/connections/profiles-v2
+// exact {schemaVersion:2,profileId,name,configuration,inputPolicy,rememberCredential,apiKey?}
+```
+
+### 3. Contracts
+Runtime contracts own validation, default policy and the1500 output reserve shared by Pi stream limits. Budget is a safe integer1024–65536. Declared capacity is null or a safe integer1–1048576; non-null requires budget+1500<=capacity. UI says input estimate budget and user-declared context capacity, with unknown explicit. Do not infer capacity from model ID, catalog IDs or fixed Pi assembly metadata.
+
+Public settings strictly accept v2. Stored settings accept exact v1/v2: validate every old field before injecting defaults, normalize v1 to v2 in memory, never write merely on load/close. Future, malformed and extra/private fields fail closed and preserve original bytes. Only explicit successful mutations write v2. Save failure leaves authoritative config/key/policy unchanged.
+
+Both save endpoints enter one private save flow. Legacy same-target+same-model saves retain policy; new target/model defaults it. New v2 saves use explicitly supplied validated policy. Changing the model resets the UI draft across manual, catalog, recent, automatic catalog fallback and preset paths. New drafts default; loading saved profiles restores their own policy. Key-only changes preserve policy. Budget is not DPAPI identity: budget/capacity-only edits preserve the key, ciphertext and remember choice. Same target model changes preserve existing credential isolation rules.
+
+Session samples its hook synchronously once before message precheck/history projection/run reservation/checkpoint. Hook throw, invalid value or synchronous reentry creates no partial transcript or model/tool side effect. Freeze that budget across all Controller/Pi rounds; other static limits remain. No hook preserves existing Workbench behavior. In-process external plugin/adapter receives the same public context.budget; External v1 wire contains selected context.items only, so do not add/claim remote budget metadata without a new protocol contract. Probe remains a separate default8192 Session with no resources/tools and cannot replace main reports. Host Run/probe/change activity blocks mutation with409. Saving, refreshing and reconnecting never generate or resume failed Runs.
+
+### 4. Validation & Error Matrix
+| Condition | Behavior |
+| --- | --- |
+| Wrong policy version/fields, unsafe/fractional/out-of-range budget/capacity | 400 stable validation error; original state retained |
+| Budget+1500 exceeds user declaration | 400 explain reserve; no save |
+| v1 disk load | Memory v2 defaults, unchanged bytes, disabled, zero generation |
+| Future/private/malformed stored fields | Preserve file; stable settings error |
+| v2 write fails | Old configuration/key/policy remain authoritative |
+| Mutation while Run/probe/change is active | 409, no partial policy install |
+| Actual protected input exceeds selected budget | Block next transport; retain entire actual feedback and partial reply |
+| Host v4/old public settings received by new client | Strict reject; refresh/version error |
+
+### 5. Good / Base / Bad Cases
+Good: explicit16384 permits the existing two-page Chinese fixture and actual provider case, with actual diagnostics16384 and complete feedback. Base: default8192 reproduces the bounded failure honestly. Bad: raise the global default silently, advertise Pi metadata as verified capacity, mutate active Run budget, truncate executed results or extend External v1 without versioning.
+
+### 6. Tests Required
+Shared strict parser/ranges/reserve; exact v2 route/public decoder; v1 memory migration and original-byte preservation; write rollback; real Windows DPAPI ciphertext identity and restart; target/model/profile isolation and legacy bridges. Session hook once, throw/invalid/reentry zero effects, sampled precheck/history, multi-turn Pi and in-process/external-v1 adapter equivalence. Actual HTTP Chinese/ASCII7465 characters at8192/16384: two complete invocations, paired call/result bodies exactly once, final diagnostic/report actual budget and zero next request on overflow. Busy Run/probe409 and cancellation/session/late-report isolation. Real settings UI, keyboard/narrow metrics and no automatic generation; Runtime/App/Agent-related Workbench types/tests, production build, boundaries and packed install. Record unrelated whole-repository failures separately, do not edit another window's files. Real provider completion/marker review is separate from local fixture proof; native IME remains separate.
+
+### 7. Wrong vs Correct
+Wrong: spread an old stored profile into a new DTO then delete unknown fields, or change only Pi context limits. Correct: exact old-schema validation before memory migration, and one Session-frozen budget consumed by Controller plus final Pi estimator. Wrong: claim External v1 wire has a budget because its in-process adapter sees context.budget. Correct: preserve wire v1 selected-context shape and document the metadata boundary.

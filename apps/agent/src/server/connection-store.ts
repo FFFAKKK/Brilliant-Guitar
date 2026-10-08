@@ -1,8 +1,9 @@
 import { LockedJsonFile, JsonFileLockError } from "./json-file.ts";
 import { parseConnectionSettings, type ConnectionSettings, type ConnectionProfile } from "../contracts/connection-settings.ts";
+import { DEFAULT_MODEL_INPUT_POLICY } from "@brilliant-guitar/agent-runtime";
 
 export interface StoredConnectionProfile extends Omit<ConnectionProfile, "credentialRemembered"> { readonly sealedCredential: string | null }
-export interface StoredConnectionSettings { readonly schemaVersion: 1; readonly selectedProfileId: string; readonly profiles: readonly StoredConnectionProfile[] }
+export interface StoredConnectionSettings { readonly schemaVersion: 2; readonly selectedProfileId: string; readonly profiles: readonly StoredConnectionProfile[] }
 export interface ConnectionSettingsStorePort {
   readonly kind: "memory" | "file";
   load(): Promise<StoredConnectionSettings | null>;
@@ -19,16 +20,19 @@ export function publicConnectionSettings(value: StoredConnectionSettings): Conne
 export function parseStoredConnectionSettings(value: unknown): StoredConnectionSettings {
   if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error("存储格式无效");
   const item = value as Record<string, unknown>;
-  if (Object.keys(item).length !== 3 || !["schemaVersion", "selectedProfileId", "profiles"].every((key) => Object.hasOwn(item, key)) || !Array.isArray(item.profiles)) throw new Error("存储格式无效");
+  if (Object.keys(item).length !== 3 || !["schemaVersion", "selectedProfileId", "profiles"].every((key) => Object.hasOwn(item, key)) || !Array.isArray(item.profiles)
+    || (item.schemaVersion !== 1 && item.schemaVersion !== 2)) throw new Error("存储格式或版本无效");
+  const required = ["id", "name", "configuration", "recentModels", "sealedCredential", ...(item.schemaVersion === 2 ? ["inputPolicy"] : [])];
   const profiles = item.profiles.map((value: unknown) => {
     if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error("存储连接无效");
     const profile = value as Record<string, unknown>;
-    if (Object.keys(profile).length !== 5 || !["id", "name", "configuration", "recentModels", "sealedCredential"].every((key) => Object.hasOwn(profile, key))
+    if (Object.keys(profile).length !== required.length || !required.every((key) => Object.hasOwn(profile, key))
       || (profile.sealedCredential !== null && (typeof profile.sealedCredential !== "string" || profile.sealedCredential.length > 8192 || !/^[A-Za-z0-9+/]+={0,2}$/.test(profile.sealedCredential)))) throw new Error("存储密文无效");
-    return profile;
+    // Validate exact old fields before injecting defaults; loading never writes the migration.
+    return item.schemaVersion === 1 ? { ...profile, inputPolicy: DEFAULT_MODEL_INPUT_POLICY } : profile;
   });
-  const parsed = parseConnectionSettings({ ...item, profiles: profiles.map(({ sealedCredential, ...profile }) => ({ ...profile, credentialRemembered: sealedCredential !== null })) });
-  return Object.freeze({ schemaVersion: 1, selectedProfileId: parsed.selectedProfileId, profiles: Object.freeze(parsed.profiles.map(({ credentialRemembered: _remembered, ...profile }, index) => Object.freeze({ ...profile, sealedCredential: profiles[index]!.sealedCredential as string | null }))) });
+  const parsed = parseConnectionSettings({ ...item, schemaVersion: 2, profiles: profiles.map(({ sealedCredential, ...profile }) => ({ ...profile, credentialRemembered: sealedCredential !== null })) });
+  return Object.freeze({ schemaVersion: 2, selectedProfileId: parsed.selectedProfileId, profiles: Object.freeze(parsed.profiles.map(({ credentialRemembered: _remembered, ...profile }, index) => Object.freeze({ ...profile, sealedCredential: profiles[index]!.sealedCredential as string | null }))) });
 }
 
 /** Only this application's settings file is read; invalid data is never overwritten. */

@@ -82,6 +82,7 @@ export function createStandaloneServer(options: Options): ViteServer {
         case "PUT /api/model-config": await options.host.configure(body); break;
         case "PUT /api/model-credential": await options.host.saveCredential(field(body, "apiKey")); break;
         case "POST /api/profiles/save": await options.host.saveProfile(body); break;
+        case "POST /api/connections/profiles-v2": await options.host.saveProfileV2(body); break;
         case "POST /api/profiles/select": await options.host.selectProfile(field(body, "profileId")); break;
         case "POST /api/profiles/delete": await options.host.deleteProfile(field(body, "profileId")); break;
         case "POST /api/conversations/select": await options.host.selectConversation(field(body, "sessionId")); break;

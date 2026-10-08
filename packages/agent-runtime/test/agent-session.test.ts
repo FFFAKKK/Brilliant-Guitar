@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createFauxCore, fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai";
 import { createPiDecisionPlugin } from "../src/pi/decision-adapter.ts";
-import { createAgentPluginProvider } from "../src/runtime/agent-plugin-contract.ts";
+import { createAgentPluginProvider, createExternalAgentPlugin } from "../src/runtime/agent-plugin-contract.ts";
 import { createAgentSession } from "../src/session/agent-session.ts";
 import { AgentToolRegistry, type RegisteredAgentTool } from "../src/session/tool-registry.ts";
 import type { AgentProviderRequest } from "../src/runtime/provider.ts";
@@ -157,5 +157,62 @@ test("the displayed message window is bounded in whole turns", async () => {
   await session.submit("第一轮"); await session.submit("第二轮");
   assert.equal(session.getSnapshot().messages.length, 2);
   assert.equal(session.getSnapshot().messages[0]?.content, "第二轮");
+  await session.dispose();
+});
+
+test("input budget hook samples once per Run, freezes all Pi rounds and preserves item limits", async () => {
+  const { model, provider, requests } = fixture();
+  let budget = 16384, samples = 0;
+  model.setResponses([fauxAssistantMessage(fauxToolCall("demo.echo", {}, { id: "budget-call" }), { stopReason: "toolUse" }), fauxAssistantMessage("done"), fauxAssistantMessage("next")]);
+  const session = createAgentSession({ provider, inputTokenBudget: () => { ++samples; return budget; },
+    budget: { itemCountBudget: 32, historyTurnBudget: 3, toolResultSizeBudget: 4096 },
+    tools: new AgentToolRegistry([echoTool(async () => { budget = 1024; return { text: "frozen-run" }; })]) });
+  await session.setEnabled(true); const outcome = await session.submit("read");
+  assert.equal(samples, 1); assert.equal(requests.length, 2);
+  for (const request of requests) {
+    assert.equal(request.context.budget.tokenBudget, 16384);
+    assert.equal(request.context.budget.itemCountBudget, 32);
+  }
+  assert.equal(outcome.run.invocations[0]?.state.status, "succeeded");
+  await session.submit("next"); assert.equal(samples, 2); assert.equal(requests[2]?.context.budget.tokenBudget, 1024);
+  await session.dispose();
+});
+
+test("invalid or throwing hooks leave zero transcript, checkpoints, provider and tool side effects", async () => {
+  let budget: number = NaN, samples = 0, checkpoints = 0, requests = 0, executions = 0;
+  const session = createAgentSession({ retainTranscript: true, budget: { tokenBudget: 512 }, inputTokenBudget: () => { ++samples; if (budget === -1) throw new Error("hook failed"); return budget; },
+    checkpoint: async () => { ++checkpoints; }, provider: { decide: async () => { ++requests; return { kind: "finish", reason: "completed", text: "ok" }; } },
+    tools: new AgentToolRegistry([echoTool(async () => { ++executions; return {}; })]) });
+  await session.setEnabled(true); const before = session.getSnapshot();
+  for (budget of [NaN, Infinity, 1.5, 1023, 65537, -1]) {
+    assert.throws(() => session.submit("rejected")); assert.equal(session.getSnapshot(), before); assert.equal(session.hasActiveRun(), false);
+  }
+  assert.equal(samples, 6); assert.equal(checkpoints + requests + executions, 0);
+  budget = 1024; assert.throws(() => session.submit("x".repeat(4000)), /预算/); assert.equal(session.getSnapshot(), before);
+  budget = 16384; await session.submit("x".repeat(4000)); assert.equal(requests, 1);
+  await session.dispose();
+});
+
+test("external plugin receives the same frozen Controller budget and hook reentry is rejected", async () => {
+  let session: ReturnType<typeof createAgentSession>, samples = 0;
+  const plugin = createExternalAgentPlugin({ id: "example.external", label: "External", version: "1", decide: async (request) => {
+    assert.equal(request.context.budget.tokenBudget, 16384);
+    return { kind: "finish", reason: "completed", text: "external response" };
+  } });
+  session = createAgentSession({ provider: createAgentPluginProvider(plugin), inputTokenBudget: () => {
+    ++samples; assert.throws(() => session.submit("reenter"), /预算正在读取/); return 16384;
+  } });
+  await session.setEnabled(true); await session.submit("external");
+  assert.equal(samples, 1); assert.equal(session.getSnapshot().messages.length, 2); await session.dispose();
+});
+
+test("legacy history projection uses the newly sampled budget without changing its retained window", async () => {
+  const { model, provider, requests } = fixture(); let budget = 16384;
+  model.setResponses([fauxAssistantMessage("x".repeat(4000)), fauxAssistantMessage("small")]);
+  const session = createAgentSession({ provider, inputTokenBudget: () => budget, budget: { historyTurnBudget: 3 } });
+  await session.setEnabled(true); await session.submit("first"); budget = 1024;
+  await session.submit("next"); assert.equal(session.getSnapshot().omittedHistoryTurns, 1);
+  assert.equal(requests[1]?.context.budget.tokenBudget, 1024);
+  assert.ok(!JSON.stringify(requests[1]?.context).includes("x".repeat(4000)));
   await session.dispose();
 });

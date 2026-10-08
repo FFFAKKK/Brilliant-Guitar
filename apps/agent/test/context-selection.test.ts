@@ -19,7 +19,7 @@ async function http(t: TestContext, host: StandaloneAgentHost) {
   return `http://127.0.0.1:${address.port}`;
 }
 
-test("context-selection GET reports actual corrected history privately and read-only; probes/reconnect/switch keep v4 isolated", async (t) => {
+test("context-selection GET reports actual corrected history privately and read-only; probes/reconnect/switch keep v5 isolated", async (t) => {
   const fixture = await createModelFixture([textReply("按20分钟安排"), textReply("已改为12分钟"), textReply("继续按12分钟"), textReply("连接正常")]);
   t.after(fixture.close); const host = new StandaloneAgentHost(); t.after(() => host.dispose());
   const base = await http(t, host), url = `${base}/api/context-selection`;
@@ -40,7 +40,7 @@ test("context-selection GET reports actual corrected history privately and read-
   await fetch(`${base}/api/session`); await fetch(url);
   for (let i = 0; i < 2; ++i) {
     const events = await fetch(`${base}/api/session/events`); const reader = events.body!.getReader();
-    const chunk = await reader.read(); assert.match(new TextDecoder().decode(chunk.value), /"schemaVersion":4/); await reader.cancel();
+    const chunk = await reader.read(); assert.match(new TextDecoder().decode(chunk.value), /"schemaVersion":5/); await reader.cancel();
   }
   assert.equal(fixture.requests.length, 4); assert.equal(host.getContextSelection(), report);
   assert.equal((await fetch(url, { headers: { origin: "http://other.local" } })).status, 403);

@@ -218,7 +218,7 @@ test("cancelled slow actual tool cannot upgrade activity or generate after late 
   assert.equal(executions, 1); assert.equal(fixture.requests.length, 1);
 });
 
-test("public v4 decoder rejects unknown fields, forged session/run identities and malformed activity", async (t) => {
+test("public v5 decoder rejects unknown fields, forged session/run identities and malformed activity", async (t) => {
   const host = new StandaloneAgentHost(); t.after(() => host.dispose()); const snapshot = host.getSnapshot();
   assert.ok(isStandaloneAgentSnapshot(snapshot));
   for (const changed of [{ ...snapshot, schemaVersion: 3 }, { ...snapshot, extra: true },

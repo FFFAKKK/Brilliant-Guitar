@@ -33,3 +33,8 @@ Runtime的`reset()`保持原来的清空语义；独立Host的“新会话”负
 迁移期间保留原 Run/事件/外部协议 v1 的 DTO，包括历史业务输入的兼容形状。业务匹配、乐谱读写及完成验证仍由软件注入，包内没有乐谱执行实现。
 
 开发验证：`npm run build`、`npm test`、`npm run check:boundaries`、`npm run test:standalone`。隔离 smoke 使用打包产物和 Fake 决策，不代表真实模型验收。
+
+
+宿主可以注入`inputTokenBudget: () => number`。Session在每次submit创建记录前同步采样一次，使用同一冻结值进行预检查、历史投影、Controller轮次和Pi最终预算；非法值或抛错不产生半条记录或请求。无hook保持静态budget/旧消费者行为。共享`parseModelInputPolicy`接受精确v1策略：预算1024–65536，声明容量null或1–1048576，非null要求预算+1500不超过声明。默认8192/未知容量，声明不代表供应商验证。
+
+外部进程内插件/适配器入口获得Controller的`context.budget`；External v1线协议仅含已选择的context.items，未增加预算字段。远端显式预算协商需要后续版本化合同。

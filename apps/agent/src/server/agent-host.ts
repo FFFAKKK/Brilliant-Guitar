@@ -8,7 +8,8 @@ import type { StandaloneAgentSnapshot } from "../contracts/host.ts";
 import { createCompletionsModel, createCompletionsModelHost } from "./model-host.ts";
 import { matchesModelConnection, parseModelCatalogRequest, type AgentModelCatalog } from "../contracts/model-catalog.ts";
 import { fetchModelCatalog } from "./model-catalog.ts";
-import { defaultConnectionSettings, isConnectionId, parseSaveConnectionRequest } from "../contracts/connection-settings.ts";
+import { defaultConnectionSettings, isConnectionId, parseSaveConnectionRequest, parseSaveConnectionRequestV2, type SaveConnectionRequest, type SaveConnectionRequestV2 } from "../contracts/connection-settings.ts";
+import { DEFAULT_MODEL_INPUT_POLICY } from "@brilliant-guitar/agent-runtime";
 import { parseStoredConnectionSettings, publicConnectionSettings, type StoredConnectionSettings, type StoredConnectionProfile, type ConnectionSettingsStorePort } from "./connection-store.ts";
 import { WindowsCredentialProtector, type CredentialProtectorPort } from "./credential-protector.ts";
 import { MAX_SESSIONS, parseSessionLibrary, parseSessionTitle, isSessionId, type AgentSessionLibrary, type AgentSessionRecord, type SessionStorePort } from "@brilliant-guitar/agent-runtime";
@@ -79,6 +80,7 @@ export class StandaloneAgentHost {
     const tools = (options.tools ?? new AgentToolRegistry()).withTools([createTextResourceTool(this.#resources, (sessionId) =>
       !this.#disposed && this.session.getSnapshot().sessionId === sessionId && this.session.getSnapshot().status === "running")]);
     this.session = createAgentSession({ provider: this.#provider, retainTranscript: true, tools,
+      inputTokenBudget: () => this.#selected().inputPolicy.inputTokenBudget,
       contextSelectionPolicy: STANDALONE_CONTEXT_POLICY,
       contextItems: (sessionId) => this.#resources.context(sessionId),
       allowedToolIds: () => tools.catalog.filter((tool) => tool.id !== TEXT_RESOURCE_CAPABILITY_ID || this.#resources.getSnapshot().items.length > 0).map((tool) => tool.id),
@@ -128,7 +130,7 @@ export class StandaloneAgentHost {
   }
 
   getSnapshot(): StandaloneAgentSnapshot {
-    return Object.freeze({ schemaVersion: 4, sequence: this.#sequence, configuration: this.#configuration, credentialPresent: Boolean(this.#apiKey), testingConnection: this.#testing !== null, session: this.session.getSnapshot(),
+    return Object.freeze({ schemaVersion: 5, sequence: this.#sequence, configuration: this.#configuration, credentialPresent: Boolean(this.#apiKey), testingConnection: this.#testing !== null, session: this.session.getSnapshot(),
       connections: publicConnectionSettings(this.#settings), storage: Object.freeze({ configuration: this.#settingsStore?.kind ?? "memory", credentialProtection: this.#settingsStore?.kind === "file" ? this.#credentialProtector.kind : "unavailable", notice: this.#storageNotice }),
       conversations: Object.freeze({ selectedSessionId: this.#library.selectedSessionId, items: Object.freeze(this.#library.sessions.map(({ messages, ...record }) => Object.freeze({ ...record, messageCount: messages.length }))), storage: this.#sessionStore?.kind ?? "memory", saving: this.#saveCount > 0, notice: this.#sessionNotice }),
       resources: this.#resources.getSnapshot(), activities: this.#activities });
@@ -197,22 +199,30 @@ export class StandaloneAgentHost {
   }
 
   async saveProfile(value: unknown): Promise<void> {
-    const request = parseSaveConnectionRequest(value);
+    await this.#saveProfile(parseSaveConnectionRequest(value));
+  }
+
+  async saveProfileV2(value: unknown): Promise<void> {
+    await this.#saveProfile(parseSaveConnectionRequestV2(value));
+  }
+
+  async #saveProfile(request: SaveConnectionRequest | SaveConnectionRequestV2): Promise<void> {
     await this.#change(async () => {
       const old = request.profileId === null ? null : this.#settings.profiles.find((profile) => profile.id === request.profileId);
       if (request.profileId !== null && !old) throw new AgentHostError("invalid-input", "连接不存在，请重新选择");
       if (!old && this.#settings.profiles.length >= 20) throw new AgentHostError("invalid-input", "最多保存20个连接");
       const id = old?.id ?? crypto.randomUUID();
       const sameTarget = old !== null && old !== undefined && matchesModelConnection(old.configuration, request.configuration);
+      const inputPolicy = "inputPolicy" in request ? request.inputPolicy : sameTarget && old?.configuration.modelId === request.configuration.modelId ? old.inputPolicy : DEFAULT_MODEL_INPUT_POLICY;
       const restored = request.apiKey ? { key: request.apiKey, notice: null } : sameTarget && old ? await this.#restoreKey(old) : { key: "", notice: null };
-      const profile: StoredConnectionProfile = { id, name: request.name, configuration: request.configuration, recentModels: [...new Set([request.configuration.modelId, ...(sameTarget ? old?.recentModels ?? [] : [])])].slice(0, 5), sealedCredential: null };
+      const profile: StoredConnectionProfile = { id, name: request.name, configuration: request.configuration, inputPolicy, recentModels: [...new Set([request.configuration.modelId, ...(sameTarget ? old?.recentModels ?? [] : [])])].slice(0, 5), sealedCredential: null };
       let sealedCredential: string | null = null;
       if (request.rememberCredential) {
         if (this.#settingsStore?.kind !== "file" || this.#credentialProtector.kind === "unavailable") throw new AgentHostError("invalid-input", "当前宿主不支持记住密钥，请取消该选项");
         if (!restored.key) throw new AgentHostError("invalid-input", "请填写密钥后再选择记住密钥");
         sealedCredential = sameTarget && old?.sealedCredential && !request.apiKey ? old.sealedCredential : await this.#credentialProtector.protect(restored.key, credentialContext(profile));
       }
-      const next = parseStoredConnectionSettings({ schemaVersion: 1, selectedProfileId: id, profiles: old ? this.#settings.profiles.map((item) => item.id === id ? { ...profile, sealedCredential } : item) : [...this.#settings.profiles, { ...profile, sealedCredential }] });
+      const next = parseStoredConnectionSettings({ schemaVersion: 2, selectedProfileId: id, profiles: old ? this.#settings.profiles.map((item) => item.id === id ? { ...profile, sealedCredential } : item) : [...this.#settings.profiles, { ...profile, sealedCredential }] });
       await this.#install(next, restored, id !== this.#settings.selectedProfileId || !matchesModelConnection(request.configuration, this.#configuration));
     });
   }
@@ -232,7 +242,7 @@ export class StandaloneAgentHost {
       if (this.#settings.profiles.length === 1) throw new AgentHostError("invalid-input", "至少保留一个连接");
       const profiles = this.#settings.profiles.filter((item) => item.id !== value);
       const selected = value === this.#settings.selectedProfileId ? profiles[0]! : this.#selected();
-      await this.#install({ schemaVersion: 1, selectedProfileId: selected.id, profiles }, await this.#restoreKey(selected), value === this.#settings.selectedProfileId);
+      await this.#install({ schemaVersion: 2, selectedProfileId: selected.id, profiles }, await this.#restoreKey(selected), value === this.#settings.selectedProfileId);
       this.#keys.delete(value);
     });
   }
