@@ -18,12 +18,21 @@ writeFileSync(join(scratch, "package.json"), '{"private":true,"type":"module"}')
 command(["install", join(scratch, packed.filename), "--cache", join(scratch, "cache"), "--no-audit", "--no-fund"], scratch);
 writeFileSync(join(scratch, "smoke.mjs"), `
 import assert from 'node:assert/strict';
-import { createAgentSession } from '@brilliant-guitar/agent-runtime';
-const session = createAgentSession({ provider: { decide: async () => ({ kind: 'finish', reason: 'completed', text: 'isolated response' }) } });
-await session.setEnabled(true);
-assert.equal((await session.submit('headless standalone')).response, 'isolated response');
-assert.equal(session.getSnapshot().status, 'completed');
-await session.dispose();
+import { createAgentSession, STANDALONE_CONTEXT_POLICY, isContextSelectionReportV1 } from '@brilliant-guitar/agent-runtime';
+for (const policy of [undefined, STANDALONE_CONTEXT_POLICY]) {
+  const session = createAgentSession({ ...(policy ? { contextSelectionPolicy: policy } : {}),
+    provider: { decide: async () => ({ kind: 'finish', reason: 'completed', text: 'isolated response' }) } });
+  await session.setEnabled(true);
+  assert.equal((await session.submit('headless standalone')).response, 'isolated response');
+  assert.equal(session.getSnapshot().status, 'completed');
+  await session.submit('continue');
+  const report = session.getContextSelection();
+  if (policy) {
+    assert.ok(isContextSelectionReportV1(report));
+    assert.equal(report.selected.filter((item) => item.reason === 'recent-conversation').length, 1);
+  } else assert.equal(report, null);
+  await session.dispose();
+}
 console.log('Packed Agent runs without Guitar, Workbench, Tauri or UI.');
 `);
 const result = spawnSync(process.execPath, [join(scratch, "smoke.mjs")], { cwd: scratch, encoding: "utf8", env: { ...process.env, NODE_PATH: "" } });

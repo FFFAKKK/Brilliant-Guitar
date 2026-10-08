@@ -10,6 +10,7 @@ import type {
   AgentProviderStreamState,
 } from "./provider-stream.ts";
 import type { AgentToolFeedbackGroup } from "./tool-feedback.ts";
+import type { ContextSelectionPlan } from "../contracts/context-selection.ts";
 
 export interface AgentProviderRequest {
   readonly runId: string;
@@ -19,6 +20,7 @@ export interface AgentProviderRequest {
   readonly context: ContextBuildResult;
   readonly toolset: ToolsetSnapshot;
   readonly toolFeedback?: readonly AgentToolFeedbackGroup[];
+  readonly contextSelection?: ContextSelectionPlan;
 }
 
 /** Decision-producing port consumed by AgentRunController. */

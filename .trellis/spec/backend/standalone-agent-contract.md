@@ -293,3 +293,77 @@ const input = projectPiInput(request, model);
 if (input.continueFromTools) await agent.continue();
 else await agent.prompt(input.prompt);
 ```
+
+
+## M3.2a Shared Context Selection and Protected Final Budgets
+
+### 1. Scope / Trigger
+
+Shared ContextBuilder, Session/Controller, Pi final projection and standalone read-only API. The Node host explicitly enables `standalone-context-v1`; Workbench keeps its existing selection policy. Distinct actual invocation identity is fixed for both policies. No Pi fork, second executor, scoring, long-term memory, AGENTS.md or automatic file indexing. External v1, raw model-stream v1, Host v4, chat file v1 and stored Run DTO shapes remain unchanged.
+
+### 2. Signatures
+
+```ts
+AgentSessionOptions.contextSelectionPolicy?: "standalone-context-v1";
+AgentSessionOptions.onContextSelection?: (report: ContextSelectionReportV1) => void;
+AgentRunControllerDependencies.contextSelectionPolicy?: ContextSelectionPolicyId;
+AgentRunControllerDependencies.onContextSelection?: (report: ContextSelectionReportV1) => void;
+ContextBuilder.build(input: ContextBuildInput, selection?: ContextSelectionOptions): ContextBuildResult;
+// selection = {policy, turnId, executedResultIds: ReadonlySet<string>, onSelection(plan)}
+AgentProviderRequest.contextSelection?: ContextSelectionPlan;
+// plan = {report, optionalRemovalOrder: readonly string[]} -- request-local, deeply frozen metadata
+session.getContextSelection(): ContextSelectionReportV1 | null;
+session.reportContextSelection(report: ContextSelectionReportV1): boolean;
+createHostPiStreamFn(..., {onInput?, onSelection?});
+host.getContextSelection(): ContextSelectionReportV1 | null;
+GET /api/context-selection // no-store, same Host/Origin validation as other APIs
+```
+
+### 3. Contracts
+
+- Session supplies its full bounded successful-history window (default16), without preemptive token clipping under this policy. Protect the latest `min(2, historyTurnBudget, available successful turns)` whole user/assistant pairs, using input order instead of regenerated timestamps. Select older optional pairs newest-first, project selected history in original order. Keep displayed/persisted transcript complete; failed/cancelled/interrupted answers are excluded from successful history.
+- ContextBuilder remains the one selector. Before retention, validate exact conversation envelope and current-session resource catalog, expiry, nonnegative safe-integer estimate and serializable content. Required/protected items get no validation exemption. Estimates use at least JSON content characters/4. Only compare a document's version with the current version when its documentId matches. Executed results preserve old evidence/version warnings.
+- Controller supplies actual succeeded/completed invocation context IDs for protection. Capability-result key includes full `capability-result:<invocationId>` for both policies. Different invocations reading the same page stay separate; identical duplicates of one identity collapse once. Conflicting same-ID identity/content fails the new policy. Other sources keep their source/object/version/scope deduplication.
+- Required items, recent pairs and all actual result units are protected. Other candidates use existing priorities and stable input order; optional conversations at equal priority select newest-first. The plan's optionalRemovalOrder is the reverse optional-selection order. Final Pi budget removes only these complete optional units, reprojects messages and estimates after each removal; never clips a protected pair, goal or native feedback group. Pi bodies appear once per invocation, while External v1 receives every selected actual result through its existing context fields.
+- The plan is a Provider request sidecar, never a new ContextBuildResult/stored Run field. Final projected UTF-8 JSON bytes/3 plus message/tool overhead is an engineering estimate, not supplier usage. Default8192 input estimate,1500 output and45000ms timeout remain. Exceeding required input stops before the next transport; already completed executions remain recorded.
+- Selection Report v1 exact top-level keys: `schemaVersion:1, policyVersion:"standalone-context-v1", runId, turnId, stage, status, estimator, selected, omitted, budget`. stage is context-selection or model-input, estimator respectively json-characters-div4-v1 or utf8-json-bytes-div3-v1. status is ready, budget-exceeded or invalid-context. IDs are nonempty strings<=512; arrays<=4096. selected exact `{contextItemId, protected, reason}` where reason required|recent-conversation|executed-result|priority and protected iff reason is not priority. Selected IDs are unique. omitted exact `{contextItemId, reason}`; reasons are duplicate|item-count-budget|token-budget|history-turn-budget|expired|invalid-estimate|out-of-scope|identity-conflict|invalid-content|version-mismatch|model-input-budget. Same-ID duplicate omissions can coexist with a selected identity.
+- Report budget exact `{estimatedTokens,itemCount,tokenBudget,itemCountBudget,exceeded}` uses nonnegative safe integers; itemCount equals selected length, exceeded equals token/count overflow. Ready/budget-exceeded status matches exceeded; invalid-context can occur independently. Decoder rejects extra keys at every level, future schema and mismatched estimator/stage/protection/counts. Frozen reports contain metadata only, no bodies, keys, URLs or body fingerprints.
+- Only the Controller establishes a current selection Turn. Public reports must match the current active Run/Turn and enabled policy; context-selection cannot overwrite that Turn's model-input report. Probe, cancelled/resetting/disposed/inactive state, old Run/Turn and invalid reports reject without mutation. Per-request omission counts are unique actual history IDs plus outside-window base, never cumulative per tool decision. Synchronous observers that reset/cancel invalidate pending observations before invoking further callbacks. Observer exceptions are isolated.
+- GET returns null before selection/new Run, after new/switch/disable/stop/dispose. Completed/failed Run retains its latest report while enabled. Reports are process-local, not restored or added to snapshot v4; probes and refresh/SSE reconnect perform no new work. Final Pi reporting is wired explicitly by the Node host; External reports remain at shared context-selection stage.
+
+### 4. Validation & Error Matrix
+
+| Condition | Behavior |
+|---|---|
+| Protected count/token overflow at shared selection | Existing run.failed budget-exceeded; zero Provider requests; explicit standalone budget message |
+| Required/protected expired, invalid estimate, wrong envelope/scope, non-JSON or identity conflict | Report invalid-context; existing run.failed invalid-decision; zero Provider requests; explicit standalone invalid-context message |
+| Optional invalid/stale data | Omit whole unit with reason; same-object required stale version fails; foreign document is not compared with current document's numeric version |
+| Optional final input overflow | Remove according to optionalRemovalOrder, reproject, record model-input-budget; full transcript unchanged |
+| Protected final messages/tools/feedback still exceed input estimate | Diagnostic/report budget-exceeded, zero next transport; existing provider-failed path; actual invocation records remain completed |
+| Wrong Run/Turn/stage, future/extra report field, cancelled/disposed state | reportContextSelection returns false; no mutation |
+| Report callback throws or synchronously resets/cancels | Observer failure isolated; no stale report publication or new transport after cancellation |
+| Foreign HTTP Host/Origin |403; no model traffic |
+
+### 5. Good / Base / Bad Cases
+
+- Good:20-minute instruction followed by12-minute correction and then “继续” retains both original user/assistant pairs and one current goal. If their final encoding cannot fit, stop explicitly instead of silently forgetting the correction.
+- Base: Workbench without policy retains original history selection/version warnings and approval/recovery contracts, with the distinct-invocation feedback fix shared by both plugins.
+- Bad: same resource/page under different invocations gets collapsed by capabilityId; final Pi budget deletes protected recent pairs; required metadata bypasses scope/expiry; a report is appended to strict Host v4 or stored Run DTO.
+
+### 6. Tests Required
+
+- Runtime context-selection:1/2/16 history windows, original ordering, distinct/repeated invocation identity, wrong scope/expired/invalid/duplicate/conflicting IDs, same/foreign document versions, truthful count/minimum estimates, zero Provider on protected failure, frozen report/strict decoder, stale Turn/probe/stage downgrade/cancel/reset and observer reentry isolation.
+- Runtime model-input/tool-feedback: actual Controller/Pi/raw requests for protected recent pairs and zero transport overflow; restored optional history whole-pair removal and replacement counts; optional host-data reprojection; multiple/repeated-page calls with one body per invocation; actual completed records retained on final group overflow; real ExternalAgentAdapter plus serializing FakeExternalAgentTransport under both policies, all invocation IDs/results present and no sidecar leaking to External v1.
+- App context-selection: local HTTP Completions wire captures20→12→继续 and repeated-page reads, exact report/no-store/null, no body/key/base URL, probe and SSE reconnect do not change report/generate; real pending transport stop, new/switch/disable/dispose and old-report rejection; Host/Origin403; snapshot v4 unchanged.
+- Refresh installed runtime before Workbench Agent/External/score/approval/recovery tests and typechecks. Build isolated App output so old preview processes do not serve mismatched artifacts. Packed standalone install/boundaries remain required. User-triggered DeepSeek quality remains M32-A8 and earlier pending real acceptance; local mechanism tests cannot satisfy them.
+
+### 7. Wrong vs Correct
+
+```ts
+// Wrong: deduplicate actual calls by tool name, or let Pi alone select common evidence.
+const resultKey = item.sourceId;
+// Correct: one common selector protects actual identities; Pi applies the same plan to final messages.
+const resultKey = isInvocationContext(item) ? item.contextItemId : sourceObjectVersionScopeKey(item);
+createAgentSession({ provider, contextSelectionPolicy: "standalone-context-v1" });
+// ContextSelectionPlan stays request-local; GET has its own versioned report contract.
+```

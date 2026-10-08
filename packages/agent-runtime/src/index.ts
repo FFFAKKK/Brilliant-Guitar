@@ -13,3 +13,4 @@ export * from "./contracts/model-config.ts";
 export * from "./contracts/session-snapshot.ts";
 export type { AgentModelInputDiagnosticV1 } from "./contracts/model-input.ts";
 export { DEFAULT_MODEL_INPUT_TOKEN_BUDGET } from "./contracts/model-input.ts";
+export * from "./contracts/context-selection.ts";

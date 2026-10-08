@@ -24,6 +24,8 @@ import type { PiAgentStreamFn } from "./types.ts";
 import type { AgentModelInputDiagnosticV1 } from "../contracts/model-input.ts";
 import { budgetModelInput } from "./model-input-budget.ts";
 import { projectPiJsonObject as jsonObject, projectPiJsonValue as jsonValue } from "./json-values.ts";
+import { projectPiInput } from "./input-projection.ts";
+import type { ContextSelectionReportV1 } from "../contracts/context-selection.ts";
 
 const ZERO_USAGE: Usage = Object.freeze({
   input: 0,
@@ -256,7 +258,8 @@ function createRequest(request: AgentProviderRequest, selection: AgentProviderSe
 
 export function createHostPiStreamFn(host: AgentModelProviderHostPort, request: AgentProviderRequest,
   selection: AgentProviderSelection, model: Model<Api> = modelFor(selection),
-  options: { readonly onInput?: (diagnostic: AgentModelInputDiagnosticV1) => void } = {}): PiAgentStreamFn {
+  options: { readonly onInput?: (diagnostic: AgentModelInputDiagnosticV1) => void;
+    readonly onSelection?: (report: ContextSelectionReportV1) => void } = {}): PiAgentStreamFn {
   return (_streamModel, context, streamOptions?: SimpleStreamOptions) => {
     if (streamOptions?.signal?.aborted) {
       const stream = createAssistantMessageEventStream();
@@ -269,8 +272,13 @@ export function createHostPiStreamFn(host: AgentModelProviderHostPort, request: 
       stream.push({ type: "error", reason: "error", error: message }); stream.end(message); return stream;
     }
     try {
-      const input = budgetModelInput(createRequest(request, selection, context), request, model.api);
+      const input = budgetModelInput(createRequest(request, selection, context), request, model.api, (filtered) => {
+        const projected = projectPiInput(filtered, model);
+        return projectMessages({ ...context, messages: [...context.messages.filter((message) => message.role === "system"), ...projected.history,
+          ...(projected.continueFromTools ? [] : [{ role: "user" as const, content: projected.prompt, timestamp: Date.now() }])] });
+      });
       try { options.onInput?.(input.diagnostic); } catch { /* Diagnostics observers cannot change execution. */ }
+      try { if (input.contextSelection) options.onSelection?.(input.contextSelection); } catch { /* Selection reports are observational. */ }
       if (input.diagnostic.status === "budget-exceeded") throw new Error("模型必需输入超过当前上下文预算，请缩短问题或减少资料");
       return liveStream(model, input.request, host, streamOptions?.signal);
     }

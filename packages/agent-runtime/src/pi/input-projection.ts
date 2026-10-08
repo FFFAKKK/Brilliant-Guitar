@@ -3,6 +3,7 @@ import type { AgentContextItem } from "../runtime/agent-contracts.ts";
 import type { AgentProviderRequest } from "../runtime/provider.ts";
 import type { PiAgentModel } from "./types.ts";
 import { projectPiJsonObject, projectPiJsonValue } from "./json-values.ts";
+import { conversationContent } from "../runtime/context-identity.ts";
 
 export const PI_INSTRUCTIONS_VERSION = "general-task-v1";
 export const PI_BASE_INSTRUCTIONS = `你是通用任务助手。根据当前用户目标、会话中仍适用的要求和提供的资料完成任务。
@@ -35,13 +36,8 @@ export function conversationInputTurns(request: AgentProviderRequest): readonly 
   if (typeof sessionId !== "string") return [];
   const turns: ConversationInputTurn[] = [];
   for (const item of request.context.contextItems) {
-    const content = object(item.content);
-    if (item.kind !== "task-history" || item.sourceType !== "conversation"
-      || item.contextItemId !== `conversation:${item.sourceId}` || item.scope !== sessionId
-      || item.documentId !== null || item.documentVersion !== null || item.trustLevel !== "user-provided"
-      || content === null || Object.keys(content).length !== 2
-      || typeof content.user !== "string" || !content.user.trim()
-      || typeof content.assistant !== "string" || !content.assistant.trim()) continue;
+    const content = conversationContent(item, sessionId);
+    if (!content) continue;
     turns.push({ item, user: content.user, assistant: content.assistant });
   }
   return turns;

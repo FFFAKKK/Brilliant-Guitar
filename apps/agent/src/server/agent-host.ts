@@ -1,4 +1,4 @@
-import { createAgentSession, createAgentPluginProvider, DEFAULT_DEEPSEEK_CONFIGURATION, parseAgentModelConfiguration, AgentToolRegistry, type AgentSession, type AgentModelConfiguration } from "@brilliant-guitar/agent-runtime";
+import { createAgentSession, createAgentPluginProvider, DEFAULT_DEEPSEEK_CONFIGURATION, parseAgentModelConfiguration, AgentToolRegistry, STANDALONE_CONTEXT_POLICY, type AgentSession, type AgentModelConfiguration, type ContextSelectionReportV1 } from "@brilliant-guitar/agent-runtime";
 import { createPiDecisionPlugin } from "@brilliant-guitar/agent-runtime/pi";
 import { createHostPiStreamFn } from "@brilliant-guitar/agent-runtime/pi/openai-stream";
 import { isAgentProviderCredentialSecret } from "@brilliant-guitar/agent-runtime/contracts/agent-provider-credential";
@@ -65,6 +65,7 @@ export class StandaloneAgentHost {
       const model = createCompletionsModel(configuration);
       const plugin = createPiDecisionPlugin({ id: "brilliant.pi", version: "0.1.0", label: "Pi", model,
         streamFn: createHostPiStreamFn(host, request, { providerId: configuration.providerId, modelId: configuration.modelId }, model, {
+          onSelection: (report) => { this.session.reportContextSelection(report); },
           onInput: (diagnostic) => {
             if (this.#disposed || this.session.getSnapshot().runId !== diagnostic.runId) return;
             const accepted = this.session.reportModelInput(diagnostic.runId, {
@@ -78,6 +79,7 @@ export class StandaloneAgentHost {
     const tools = (options.tools ?? new AgentToolRegistry()).withTools([createTextResourceTool(this.#resources, (sessionId) =>
       !this.#disposed && this.session.getSnapshot().sessionId === sessionId && this.session.getSnapshot().status === "running")]);
     this.session = createAgentSession({ provider: this.#provider, retainTranscript: true, tools,
+      contextSelectionPolicy: STANDALONE_CONTEXT_POLICY,
       contextItems: (sessionId) => this.#resources.context(sessionId),
       allowedToolIds: () => tools.catalog.filter((tool) => tool.id !== TEXT_RESOURCE_CAPABILITY_ID || this.#resources.getSnapshot().items.length > 0).map((tool) => tool.id),
       onProgress: (event) => this.#toolProgress(event),
@@ -133,6 +135,7 @@ export class StandaloneAgentHost {
   }
 
   getModelInput(): AgentModelInputDiagnosticV1 | null { return this.#modelInput; }
+  getContextSelection(): ContextSelectionReportV1 | null { return this.session.getContextSelection(); }
 
   addResource(value: unknown): void {
     this.#assertIdle();

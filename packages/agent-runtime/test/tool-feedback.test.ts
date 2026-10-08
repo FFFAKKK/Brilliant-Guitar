@@ -10,6 +10,9 @@ import type { AgentModelInputDiagnosticV1 } from "../src/contracts/model-input.t
 import { createPiDecisionPlugin } from "../src/pi/decision-adapter.ts";
 import { createHostPiStreamFn } from "../src/pi/openai-stream.ts";
 import { projectPiInput } from "../src/pi/input-projection.ts";
+import { STANDALONE_CONTEXT_POLICY } from "../src/contracts/context-selection.ts";
+import { ExternalAgentAdapter, createDecisionResponse } from "../src/runtime/external-agent-adapter.ts";
+import { FakeExternalAgentTransport } from "../src/runtime/external-agent-fake-transport.ts";
 
 const model = createFauxCore({ api: "fake-chat", provider: "fake", models: [{ id: "feedback", name: "Feedback" }] }).getModel();
 function tool(execute: RegisteredAgentTool["execute"], id = "demo.read"): RegisteredAgentTool {
@@ -33,7 +36,8 @@ function fixture(outputs: readonly (readonly AgentModelOutputBlockV1[])[], regis
         return { schemaVersion: 1, providerId: input.providerId, modelId: input.modelId, providerRequestId: `fixture-${wire.length}`,
           output: outputs[wire.length - 1] ?? [{ type: "text", text: "Done" }], usage: null };
       },
-    }, request, { providerId: model.provider, modelId: model.id }, model, { onInput: (diagnostic) => diagnostics.push(diagnostic) });
+    }, request, { providerId: model.provider, modelId: model.id }, model, { onInput: (diagnostic) => diagnostics.push(diagnostic),
+      onSelection: (report) => { session.reportContextSelection(report); } });
     return createAgentPluginProvider(createPiDecisionPlugin({ id: "brilliant.pi", version: "0.1.0", label: "Pi", model, streamFn })).decide(request, signal, observer);
   } } });
   return { session, wire, decisions, diagnostics };
@@ -93,6 +97,57 @@ test("large actual result stays an entire call/result group; final overflow send
   assert.equal(f.diagnostics.at(-1)?.status, "budget-exceeded");
   assert.deepEqual(f.diagnostics.at(-1)?.roles, ["system", "user", "assistant", "tool"]);
   assert.equal(f.session.getSnapshot().status, "failed");
+});
+
+test("standalone selection preserves repeated-page invocations in public context and Pi feedback exactly once per call", async (t) => {
+  const executions: number[] = [];
+  const f = fixture([[call("a", 0), call("b", 1)], [call("c", 0)], [{ type: "text", text: "Done" }]],
+    tool(async (input) => { const page = (input as { page: number }).page; executions.push(page); return { text: `page-${page}` }; }),
+    { contextSelectionPolicy: STANDALONE_CONTEXT_POLICY, budget: { tokenBudget: 3200 },
+      contextItems: () => [{ contextItemId: "optional-host", kind: "task-history", content: { text: "资料哨兵".repeat(800) },
+        sourceType: "host", sourceId: "optional", documentId: null, documentVersion: null, scope: "none", trustLevel: "untrusted",
+        priority: "normal", createdAt: 1, expiresAt: null, estimatedTokens: 1 }] });
+  t.after(() => f.session.dispose()); await f.session.setEnabled(true); const outcome = await f.session.submit("Read");
+  assert.deepEqual(executions, [0, 1, 0]); assert.equal(f.wire.length, 3);
+  assert.equal(f.decisions[2]?.context.contextItems.filter((item) => item.sourceType === "capability-result").length, 3);
+  assert.equal(f.wire[2]?.messages.filter((m) => m.role === "tool").length, 3);
+  assert.equal(JSON.stringify(f.wire[2]?.messages).split("page-0").length - 1, 2);
+  assert.equal(f.session.getContextSelection()?.selected.filter((item) => item.reason === "executed-result").length, 3);
+  assert.ok(f.session.getContextSelection()?.omitted.some((item) => item.contextItemId === "optional-host" && item.reason === "model-input-budget"));
+  assert.ok(!JSON.stringify(f.wire[2]?.messages).includes("资料哨兵"));
+  assert.equal(outcome.run.invocations.length, 3);
+});
+
+test("standalone final feedback overflow retains actual execution records and sends no continuation", async (t) => {
+  const f = fixture([[call("large", 0)]], tool(async () => ({ text: "资料".repeat(2300) })),
+    { contextSelectionPolicy: STANDALONE_CONTEXT_POLICY, budget: { tokenBudget: 2400 } });
+  t.after(() => f.session.dispose()); await f.session.setEnabled(true); const outcome = await f.session.submit("Read");
+  assert.equal(f.wire.length, 1); assert.equal(outcome.run.invocations.length, 1);
+  assert.equal(outcome.run.invocations[0]?.result?.status, "completed");
+  assert.equal(f.session.getContextSelection()?.status, "budget-exceeded");
+  assert.equal(f.session.getContextSelection()?.selected.filter((item) => item.reason === "executed-result").length, 1);
+  assert.deepEqual(f.diagnostics.at(-1)?.roles, ["system", "user", "assistant", "tool"]);
+});
+
+for (const policy of [undefined, STANDALONE_CONTEXT_POLICY]) test(`External v1 gets every actual invocation through the shared Controller (${policy ?? "legacy"})`, async (t) => {
+  let count = 0; const executed: number[] = [];
+  const transport = new FakeExternalAgentTransport({ respond: (request) => createDecisionResponse(request, ++count === 1
+    ? { kind: "tool-calls", calls: [0, 1, 0].map((page, i) => ({ callId: `external-${i}`, capabilityId: "demo.read", contractVersion: 1, input: { page } })) }
+    : { kind: "finish", reason: "completed", text: "Done" }) });
+  const adapter = new ExternalAgentAdapter({ transport, pluginId: "example.external.agent", pluginVersion: "1.0.0", pluginLabel: "External" });
+  await adapter.activate();
+  const session = createAgentSession({ provider: createAgentPluginProvider(adapter.plugin), ...(policy ? { contextSelectionPolicy: policy } : {}),
+    tools: new AgentToolRegistry([tool(async (input) => { const page = (input as { page: number }).page; executed.push(page); return { text: `actual-${page}` }; })]) });
+  t.after(async () => { await session.dispose(); await adapter.dispose(); }); await session.setEnabled(true);
+  const outcome = await session.submit("Read"); assert.equal(outcome.response, "Done"); assert.deepEqual(executed, [0, 1, 0]);
+  assert.equal(transport.requests.length, 2);
+  const wire = transport.requests[1]!;
+  const results = wire.context.items.filter((item) => item.sourceType === "capability-result");
+  assert.deepEqual(results.map((item) => item.id), outcome.run.invocations.map((item) => `capability-result:${item.invocationId}`));
+  assert.equal(new Set(results.map((item) => item.id)).size, 3);
+  assert.equal(JSON.stringify(results).split("actual-0").length - 1, 2);
+  assert.equal("contextSelection" in wire, false); assert.equal("report" in wire.context, false);
+  assert.equal(wire.schemaVersion, 1);
 });
 
 test("host context/policy callback failure leaves no active run or partial transcript", async (t) => {

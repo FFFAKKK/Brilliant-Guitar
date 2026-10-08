@@ -60,6 +60,7 @@ import type {
 } from "./run-state.ts";
 import { ToolsetResolver } from "./toolset-resolver.ts";
 import { snapshotToolFeedback, type AgentToolFeedbackCall, type AgentToolFeedbackGroup } from "./tool-feedback.ts";
+import type { ContextSelectionPlan, ContextSelectionPolicyId, ContextSelectionReportV1 } from "../contracts/context-selection.ts";
 import type { AgentWorkflowRuntime } from "./workflow-runtime.ts";
 
 type ToolCallAction = Extract<ValidatedAction, { readonly kind: "tool-call" }>;
@@ -162,6 +163,8 @@ export class AgentRunResumeError extends Error {
 }
 
 export interface AgentRunControllerDependencies {
+  readonly contextSelectionPolicy?: ContextSelectionPolicyId;
+  readonly onContextSelection?: (report: ContextSelectionReportV1) => void;
   readonly validateProvidedInput?: (required: AgentRequiredUserInput, provided: AgentProvidedUserInput, workspace: AgentWorkspaceScope) => boolean;
   readonly provider: AgentDecisionProviderPort;
   readonly capabilities: AgentCapabilityPort;
@@ -299,9 +302,13 @@ export class AgentRunController {
   private readonly nextId: (kind: "event" | "turn" | "invocation" | "user-input") => string;
   private readonly reportProgressError: ((error: unknown) => void) | null;
   private readonly contextBuilder = new ContextBuilder();
+  private readonly contextSelectionPolicy: ContextSelectionPolicyId | undefined;
+  private readonly onContextSelection: AgentRunControllerDependencies["onContextSelection"];
   private readonly toolsetResolver = new ToolsetResolver();
 
   constructor(dependencies: AgentRunControllerDependencies) {
+    this.contextSelectionPolicy = dependencies.contextSelectionPolicy;
+    this.onContextSelection = dependencies.onContextSelection;
     this.validateProvidedInput = dependencies.validateProvidedInput;
     this.provider = dependencies.provider;
     this.capabilities = dependencies.capabilities;
@@ -521,6 +528,7 @@ export class AgentRunController {
       }
 
       const turnId = this.nextId("turn");
+      let contextSelection: ContextSelectionPlan | undefined;
       const context = this.contextBuilder.build({
         runId: request.runId,
         goal,
@@ -530,7 +538,9 @@ export class AgentRunController {
         items: contextItems,
         budget: request.budget,
         now: this.now(),
-      });
+      }, this.contextSelectionPolicy ? { policy: this.contextSelectionPolicy, turnId,
+        executedResultIds: new Set(invocations.filter((item) => item.state.status === "succeeded" && item.result?.status === "completed")
+          .map((item) => `capability-result:${item.invocationId}`)), onSelection: (plan) => { contextSelection = plan; } } : undefined);
       const toolset = this.toolsetResolver.resolve({
         runState: currentState(),
         policy,
@@ -539,6 +549,15 @@ export class AgentRunController {
         rangeBudget: request.budget.rangeBudget,
         catalog: this.catalog,
       });
+      if (contextSelection) {
+        try { this.onContextSelection?.(contextSelection.report); } catch { /* Selection observations never own execution. */ }
+        if (signal?.aborted) { await applyRunEvent({ type: "cancellation.requested" }); return outcome(null, null); }
+        if (contextSelection.report.status !== "ready") {
+          upsertTurn({ turnId, status: "failed", context, toolset: toolset.snapshot, decision: null, validation: null });
+          await applyRunEvent({ type: "run.failed", code: contextSelection.report.status === "budget-exceeded" ? "budget-exceeded" : "invalid-decision" });
+          return outcome(null, null);
+        }
+      }
 
       let decision: unknown;
       let messageStarted = false;
@@ -561,6 +580,7 @@ export class AgentRunController {
           context,
           toolset: toolset.snapshot,
           ...(toolFeedback.length ? { toolFeedback: snapshotToolFeedback(toolFeedback) } : {}),
+          ...(contextSelection ? { contextSelection } : {}),
         }, signal, (event) => {
           if (event.type !== "response.text-delta") return;
           if (!messageStarted) {

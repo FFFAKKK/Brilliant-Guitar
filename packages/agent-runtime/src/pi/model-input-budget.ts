@@ -2,6 +2,7 @@ import type { AgentProviderRequest } from "../runtime/provider.ts";
 import type { AgentModelStreamRequestV1 } from "../contracts/agent-model-stream.ts";
 import type { AgentModelInputDiagnosticV1 } from "../contracts/model-input.ts";
 import { conversationInputTurns, PI_BASE_INSTRUCTIONS, PI_INSTRUCTIONS_VERSION } from "./input-projection.ts";
+import { freezeContextSelectionReport, type ContextSelectionReportV1 } from "../contracts/context-selection.ts";
 
 /** Heuristic input estimate, not a tokenizer or a supplier context-window guarantee. */
 function estimate(request: AgentModelStreamRequestV1): number {
@@ -9,23 +10,42 @@ function estimate(request: AgentModelStreamRequestV1): number {
   return Math.ceil(bytes / 3) + request.messages.length * 8 + request.tools.length * 12 + 32;
 }
 
-export function budgetModelInput(input: AgentModelStreamRequestV1, decision: AgentProviderRequest, modelApi: string): {
+export function budgetModelInput(input: AgentModelStreamRequestV1, decision: AgentProviderRequest, modelApi: string,
+  reproject?: (decision: AgentProviderRequest) => AgentModelStreamRequestV1["messages"]): {
   readonly request: AgentModelStreamRequestV1;
   readonly diagnostic: AgentModelInputDiagnosticV1;
+  readonly contextSelection?: ContextSelectionReportV1;
 } {
   const budget = decision.context.budget.tokenBudget;
   if (!Number.isSafeInteger(budget) || budget < 1) throw new Error("模型输入预算无效");
-  const messages = [...input.messages];
+  let messages = [...input.messages];
   const turns = conversationInputTurns(decision);
   const selectedIds = new Set(decision.context.contextItems.map((item) => item.contextItemId));
-  const omitted: AgentModelInputDiagnosticV1["omittedHistory"][number][] = [...new Set(decision.context.omittedItems
+  const omitted: AgentModelInputDiagnosticV1["omittedHistory"][number][] = [...new Set([...decision.context.omittedItems,
+    ...(decision.contextSelection?.report.omitted ?? [])]
     .filter((item) => item.contextItemId.startsWith("conversation:") && !selectedIds.has(item.contextItemId))
     .map((item) => item.contextItemId))].map((contextItemId) => ({ contextItemId, reason: "context-selection" }));
   const removed = new Set<string>();
   let tokens = estimate(input);
   let retainedHistoryTurns = turns.length;
   let offset = messages[0]?.role === "system" ? 1 : 0;
-  for (const turn of turns) {
+  if (decision.contextSelection) {
+    if (!reproject) throw new Error("上下文选择策略缺少最终消息投影");
+    const plan = decision.contextSelection;
+    if (plan.report.runId !== decision.runId || plan.report.turnId !== decision.turnId || plan.report.status !== "ready") throw new Error("上下文选择身份或状态无效");
+    const protectedIds = new Set(plan.report.selected.filter((item) => item.protected).map((item) => item.contextItemId));
+    for (const contextItemId of plan.optionalRemovalOrder) {
+      if (protectedIds.has(contextItemId) || !selectedIds.has(contextItemId)) throw new Error("上下文移除顺序包含必需或未知信息");
+      if (tokens <= budget) break;
+      removed.add(contextItemId);
+      messages = [...reproject({ ...decision, context: { ...decision.context,
+        contextItems: decision.context.contextItems.filter((item) => !removed.has(item.contextItemId)) } })];
+      if (turns.some((turn) => turn.item.contextItemId === contextItemId)) {
+        omitted.push({ contextItemId, reason: "model-input-budget" }); --retainedHistoryTurns;
+      }
+      tokens = estimate({ ...input, messages });
+    }
+  } else for (const turn of turns) {
     const user = messages[offset];
     const assistant = messages[offset + 1];
     // Never remove a tool call/result or an unrelated message by guessing its role.
@@ -59,5 +79,11 @@ export function budgetModelInput(input: AgentModelStreamRequestV1, decision: Age
     inputTokenBudget: budget, timeoutMs: input.limits.timeoutMs, maxOutputTokens: input.limits.maxOutputTokens,
     status: tokens > budget ? "budget-exceeded" : "ready",
   });
-  return { request: { ...input, messages }, diagnostic };
+  const report = decision.contextSelection?.report;
+  const finalSelection = report ? freezeContextSelectionReport({ ...report, stage: "model-input", status: diagnostic.status,
+    estimator: diagnostic.estimator, selected: report.selected.filter((item) => !removed.has(item.contextItemId)),
+    omitted: [...report.omitted, ...[...removed].map((contextItemId) => ({ contextItemId, reason: "model-input-budget" as const }))],
+    budget: { ...report.budget, estimatedTokens: tokens, itemCount: report.selected.length - removed.size,
+      exceeded: tokens > budget || report.selected.length - removed.size > report.budget.itemCountBudget } }) : undefined;
+  return { request: { ...input, messages }, diagnostic, ...(finalSelection ? { contextSelection: finalSelection } : {}) };
 }

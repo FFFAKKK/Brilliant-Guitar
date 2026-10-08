@@ -6,6 +6,7 @@ import type { AgentRunProgressEvent } from "../runtime/run-progress.ts";
 import { AgentToolRegistry } from "./tool-registry.ts";
 import { MAX_SESSION_MESSAGES, isSessionId, parseTranscript } from "./session-store.ts";
 import { DEFAULT_MODEL_INPUT_TOKEN_BUDGET } from "../contracts/model-input.ts";
+import { freezeContextSelectionReport, isContextSelectionReportV1, STANDALONE_CONTEXT_POLICY, type ContextSelectionPolicyId, type ContextSelectionReportV1 } from "../contracts/context-selection.ts";
 
 export interface AgentChatMessage {
   readonly id: string;
@@ -32,6 +33,8 @@ export interface AgentSessionEvent {
 }
 
 export interface AgentSessionOptions {
+  readonly contextSelectionPolicy?: ContextSelectionPolicyId;
+  readonly onContextSelection?: (report: ContextSelectionReportV1) => void;
   readonly provider: AgentDecisionProviderPort;
   readonly tools?: AgentToolRegistry;
   readonly store?: AgentRunStorePort;
@@ -55,11 +58,17 @@ export class AgentSession {
   readonly #contextItems: AgentSessionOptions["contextItems"];
   readonly #allowedToolIds: AgentSessionOptions["allowedToolIds"];
   readonly #onProgress: AgentSessionOptions["onProgress"];
+  readonly #contextSelectionPolicy: AgentSessionOptions["contextSelectionPolicy"];
+  readonly #onContextSelection: AgentSessionOptions["onContextSelection"];
+  #selectionReport: ContextSelectionReportV1 | null = null;
+  #selectionTurnId: string | null = null;
+  #inputContextInvalid = false;
   readonly #listeners = new Set<(event: AgentSessionEvent) => void>();
   #history: HistoryTurn[] = [];
   #successfulTurnCount = 0;
   #inputHistoryBase = 0;
   #inputHistoryCount = 0;
+  #inputHistoryIds = new Set<string>();
   #inputBudgetExceeded = false;
   #generation = 0;
   #disposed = false;
@@ -74,10 +83,20 @@ export class AgentSession {
     this.#contextItems = options.contextItems;
     this.#allowedToolIds = options.allowedToolIds;
     this.#onProgress = options.onProgress;
+    this.#contextSelectionPolicy = options.contextSelectionPolicy;
+    this.#onContextSelection = options.onContextSelection;
+    if (this.#contextSelectionPolicy && this.#contextSelectionPolicy !== STANDALONE_CONTEXT_POLICY) throw new Error("未知上下文选择策略");
     this.#tools = options.tools ?? new AgentToolRegistry();
     this.#budget = Object.freeze({ tokenBudget: DEFAULT_MODEL_INPUT_TOKEN_BUDGET, itemCountBudget: 64, toolResultSizeBudget: 16384, rangeBudget: 0, historyTurnBudget: 16, ...options.budget });
     if (!Number.isSafeInteger(this.#budget.historyTurnBudget) || this.#budget.historyTurnBudget < 1 || this.#budget.historyTurnBudget > 64) throw new Error("会话历史预算需在 1 到 64 轮之间");
+    if (this.#contextSelectionPolicy && [this.#budget.tokenBudget, this.#budget.itemCountBudget].some((value) => !Number.isSafeInteger(value) || value < 1)) throw new Error("上下文预算无效");
     this.#controller = new AgentRunController({
+      ...(this.#contextSelectionPolicy ? { contextSelectionPolicy: this.#contextSelectionPolicy } : {}),
+      onContextSelection: (report) => {
+        if (!this.#active || this.#active.abort.signal.aborted || this.#disposed || this.#resetting || report.runId !== this.#snapshot.runId) return;
+        this.#selectionTurnId = report.turnId;
+        this.reportContextSelection(report);
+      },
       provider: options.provider, capabilities: this.#tools, catalog: this.#tools.catalog,
       store: options.store ?? new InMemoryAgentRunStore({ retainedTerminalRuns: 32 }),
       completionVerifier: ({ responseText, invocations }) => ({
@@ -89,6 +108,27 @@ export class AgentSession {
 
   getSnapshot(): AgentSessionSnapshot { return this.#snapshot; }
   hasActiveRun(): boolean { return this.#active !== null; }
+  getContextSelection(): ContextSelectionReportV1 | null { return this.#disposed || !this.#snapshot.enabled ? null : this.#selectionReport; }
+
+  reportContextSelection(report: ContextSelectionReportV1): boolean {
+    if (!this.#contextSelectionPolicy || !isContextSelectionReportV1(report) || this.#disposed || this.#resetting || !this.#active || this.#active.abort.signal.aborted
+      || this.#snapshot.status !== "running" || report.runId !== this.#snapshot.runId
+      || report.turnId !== this.#selectionTurnId
+      || report.stage === "context-selection" && this.#selectionReport?.turnId === report.turnId && this.#selectionReport.stage === "model-input") return false;
+    const selected = new Set(report.selected.map((item) => item.contextItemId));
+    const omittedHistoryTurns = new Set(report.omitted.filter((item) => this.#inputHistoryIds.has(item.contextItemId) && !selected.has(item.contextItemId))
+      .map((item) => item.contextItemId)).size;
+    if (omittedHistoryTurns > this.#inputHistoryCount) return false;
+    const active = this.#active;
+    const frozen = freezeContextSelectionReport(report);
+    this.#selectionReport = frozen;
+    this.#inputContextInvalid = report.status === "invalid-context";
+    this.reportModelInput(report.runId, { omittedHistoryTurns, budgetExceeded: report.status === "budget-exceeded" });
+    if (this.#active === active && !active.abort.signal.aborted && this.#selectionReport === frozen && !this.#disposed && !this.#resetting) {
+      try { this.#onContextSelection?.(frozen); } catch { /* Observation is isolated from control flow. */ }
+    }
+    return true;
+  }
 
   /** Per-decision report replaces the prior report; late/probe runs cannot affect this session. */
   reportModelInput(runId: string, report: { readonly omittedHistoryTurns: number; readonly budgetExceeded: boolean }): boolean {
@@ -114,6 +154,7 @@ export class AgentSession {
     this.#changingEnabled = true;
     try {
       if (!enabled) {
+        this.#selectionReport = null;
         // Revoke new submissions before awaiting cancellation of the current run.
         this.#publish({ enabled: false });
         await this.cancel();
@@ -140,7 +181,11 @@ export class AgentSession {
       && !item.requiresDocument && (item.kind === "query" || item.kind === "analysis"));
     this.#inputHistoryBase = (this.#retainTranscript ? this.#successfulTurnCount : this.#history.length) - historyItems.length;
     this.#inputHistoryCount = historyItems.length;
+    this.#inputHistoryIds = new Set(historyItems.map((item) => item.contextItemId));
     this.#inputBudgetExceeded = false;
+    this.#inputContextInvalid = false;
+    this.#selectionTurnId = null;
+    this.#selectionReport = null;
     const messages: AgentChatMessage[] = [
       ...(this.#retainTranscript ? this.#snapshot.messages : this.#budget.historyTurnBudget > 1 ? this.#snapshot.messages.slice(-(this.#budget.historyTurnBudget * 2 - 2)) : []),
       { id: crypto.randomUUID(), runId, role: "user", content: goal, status: "complete" },
@@ -178,7 +223,7 @@ export class AgentSession {
           this.#history = this.#history.slice(-this.#budget.historyTurnBudget);
         }
         this.#publish({ messages: this.#snapshot.messages.map((item) => item.id === assistantId ? { ...item, content, status: completed ? "complete" : cancelled ? "cancelled" : "failed" } : item),
-          status: completed ? "completed" : cancelled ? "cancelled" : "failed", message: completed ? "回复完成" : cancelled ? "已停止" : this.#inputBudgetExceeded ? "模型必需输入超过当前上下文预算，请缩短问题或减少资料" : "本次请求未完成，请检查配置或重试" });
+          status: completed ? "completed" : cancelled ? "cancelled" : "failed", message: completed ? "回复完成" : cancelled ? "已停止" : this.#inputContextInvalid ? "必需上下文无效或身份冲突，请检查资料来源" : this.#inputBudgetExceeded ? "模型必需输入超过当前上下文预算，请缩短问题或减少资料" : "本次请求未完成，请检查配置或重试" });
         try { await this.#checkpoint?.(this.#snapshot); } catch { /* Host exposes unsaved output; execution result is unchanged. */ }
         this.#active = null;
       }
@@ -197,6 +242,7 @@ export class AgentSession {
   async cancel(): Promise<void> {
     const active = this.#active;
     if (!active) return;
+    this.#selectionReport = null;
     this.#publish({ status: "cancelling", message: "正在停止" });
     active.abort.abort();
     await active.done.catch(() => undefined);
@@ -210,6 +256,7 @@ export class AgentSession {
     try {
       await this.cancel();
       this.#history = [];
+      this.#selectionReport = null;
       this.#successfulTurnCount = 0;
       this.#publish({ sessionId: crypto.randomUUID(), runId: null, messages: [], status: this.#snapshot.enabled ? "idle" : "disabled", message: "已开始新会话", omittedHistoryTurns: 0 });
     } finally { this.#resetting = false; }
@@ -221,6 +268,7 @@ export class AgentSession {
     if (!isSessionId(sessionId)) throw new Error("会话ID无效");
     const messages = parseTranscript(value);
     if (messages.some((message) => message.status === "streaming")) throw new Error("未完成记录需先标记中断");
+    this.#selectionReport = null;
     ++this.#generation;
     this.#history = [];
     for (let i = 0; i < messages.length; i += 2) {
@@ -236,6 +284,7 @@ export class AgentSession {
   async dispose(): Promise<void> {
     if (this.#disposed) return;
     this.#disposed = true;
+    this.#selectionReport = null;
     ++this.#generation;
     await this.cancel();
     this.#history = [];
@@ -254,7 +303,7 @@ export class AgentSession {
     for (const turn of [...this.#history].reverse()) {
       const content = { user: turn.user, assistant: turn.assistant };
       const estimatedTokens = Math.ceil(JSON.stringify(content).length / 4);
-      if (estimatedTokens > remaining) break;
+      if (!this.#contextSelectionPolicy && estimatedTokens > remaining) break;
       remaining -= estimatedTokens;
       retained.unshift({ contextItemId: `conversation:${turn.runId}`, kind: "task-history", content, sourceType: "conversation", sourceId: turn.runId, documentId: null, documentVersion: null, scope: this.#snapshot.sessionId, trustLevel: "user-provided", priority: "high", createdAt: Date.now(), expiresAt: null, estimatedTokens });
     }

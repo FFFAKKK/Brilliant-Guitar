@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createFauxCore } from "@earendil-works/pi-ai";
-import { createAgentSession, type AgentSession } from "../src/session/agent-session.ts";
+import { createAgentSession, type AgentSession, type AgentSessionOptions } from "../src/session/agent-session.ts";
+import { STANDALONE_CONTEXT_POLICY, isContextSelectionReportV1 } from "../src/contracts/context-selection.ts";
 import { createAgentPluginProvider } from "../src/runtime/agent-plugin-contract.ts";
 import type { AgentProviderRequest } from "../src/runtime/provider.ts";
 import type { AgentContextItem } from "../src/runtime/agent-contracts.ts";
@@ -12,7 +13,8 @@ import { createHostPiStreamFn } from "../src/pi/openai-stream.ts";
 import { PI_BASE_INSTRUCTIONS, PI_INSTRUCTIONS_VERSION } from "../src/pi/input-projection.ts";
 
 const model = createFauxCore({ api: "fake-chat", provider: "fake", models: [{ id: "input-fixture", name: "Input fixture" }] }).getModel();
-function fixture(answers: readonly string[], tokenBudget = 8192, transform?: (request: AgentProviderRequest) => AgentProviderRequest) {
+function fixture(answers: readonly string[], tokenBudget = 8192, transform?: (request: AgentProviderRequest) => AgentProviderRequest,
+  options: Partial<Omit<AgentSessionOptions, "provider" | "budget">> = {}) {
   const requests: AgentModelStreamRequestV1[] = [];
   const diagnostics: AgentModelInputDiagnosticV1[] = [];
   let session!: AgentSession;
@@ -31,10 +33,10 @@ function fixture(answers: readonly string[], tokenBudget = 8192, transform?: (re
       diagnostics.push(diagnostic);
       session.reportModelInput(diagnostic.runId, { omittedHistoryTurns: diagnostic.omittedHistory.length,
         budgetExceeded: diagnostic.status === "budget-exceeded" });
-    } });
+    }, onSelection: (report) => { session.reportContextSelection(report); } });
     return createAgentPluginProvider(createPiDecisionPlugin({ id: "brilliant.pi", version: "0.1.0", label: "Pi", model, streamFn })).decide(request, signal);
   } };
-  session = createAgentSession({ provider, budget: { tokenBudget }, retainTranscript: true });
+  session = createAgentSession({ ...options, provider, budget: { tokenBudget }, retainTranscript: true });
   return { session, requests, diagnostics };
 }
 
@@ -62,6 +64,56 @@ test("actual model input preserves history roles, corrections, long tails and on
   assert.ok(Object.isFrozen(f.diagnostics[2]?.sources));
   await f.session.reset(); await f.session.submit("全新问题");
   assert.deepEqual(f.requests.at(-1)?.messages.map((m) => m.role), ["system", "user"]);
+});
+
+test("standalone final budget protects both recent complete pairs and stops before a third transport", async (t) => {
+  const long = "中文".repeat(250);
+  const f = fixture([long, long + "已改为12分钟"], 1400, undefined, { contextSelectionPolicy: STANDALONE_CONTEXT_POLICY });
+  t.after(() => f.session.dispose()); await f.session.setEnabled(true);
+  await f.session.submit("每天20分钟"); await f.session.submit("更正为12分钟"); await f.session.submit("继续");
+  assert.equal(f.requests.length, 2);
+  const report = f.session.getContextSelection(); assert.ok(report && isContextSelectionReportV1(report));
+  assert.equal(report.stage, "model-input"); assert.equal(report.status, "budget-exceeded");
+  assert.equal(report.selected.filter((item) => item.reason === "recent-conversation").length, 2);
+  assert.deepEqual(f.diagnostics.at(-1)?.roles, ["system", "user", "assistant", "user", "assistant", "user"]);
+  assert.equal(f.diagnostics.at(-1)?.omittedHistory.length, 0);
+  assert.equal(f.session.getSnapshot().messages[1]?.content, long);
+  assert.equal(f.session.getSnapshot().messages.length, 6);
+  assert.equal(f.session.getSnapshot().status, "failed");
+});
+
+test("standalone final reprojection drops oldest optional whole pairs, with exact replacement counts and intact transcript", async (t) => {
+  const f = fixture(["继续回答", "再次回答"], 1400, undefined, { contextSelectionPolicy: STANDALONE_CONTEXT_POLICY });
+  t.after(() => f.session.dispose()); await f.session.setEnabled(true);
+  const history = ["无关旧问题一", "无关旧问题二", "每天20分钟", "更正为12分钟"].flatMap((content, i) => {
+    const runId = crypto.randomUUID();
+    return [{ id: crypto.randomUUID(), runId, role: "user" as const, content, status: "complete" as const },
+      { id: crypto.randomUUID(), runId, role: "assistant" as const, content: i < 2 ? "旧回复".repeat(400) : "已记录", status: "complete" as const }];
+  });
+  await f.session.restoreTranscript(crypto.randomUUID(), history);
+  await f.session.submit("继续");
+  assert.equal(f.requests.length, 1);
+  assert.deepEqual(f.requests[0]!.messages.filter((m) => m.role === "user").slice(0, -1).map((m) => m.content), ["每天20分钟", "更正为12分钟"]);
+  assert.equal(f.diagnostics[0]?.retainedHistoryTurns, 2); assert.equal(f.session.getSnapshot().omittedHistoryTurns, 2);
+  assert.ok(f.diagnostics[0]?.omittedHistory.every((item) => item.reason === "model-input-budget"));
+  assert.equal(f.session.getSnapshot().messages.length, 10);
+  await f.session.submit("再继续");
+  assert.equal(f.session.getSnapshot().omittedHistoryTurns, 2);
+  assert.equal(f.session.getSnapshot().messages.length, 12);
+  const report = f.session.getContextSelection(); assert.ok(report && isContextSelectionReportV1(report));
+  assert.equal(report.status, "ready"); assert.ok(report.budget.estimatedTokens <= 1400);
+});
+
+test("optional host data is reprojected out at final budget without losing or duplicating the goal", async (t) => {
+  const f = fixture(["回答"], 1400, undefined, { contextSelectionPolicy: STANDALONE_CONTEXT_POLICY,
+    contextItems: () => [{ contextItemId: "optional-data", kind: "task-history", content: { text: "资料哨兵".repeat(350) },
+      sourceType: "host", sourceId: "optional", documentId: null, documentVersion: null, scope: "none", trustLevel: "untrusted",
+      priority: "normal", createdAt: 1, expiresAt: null, estimatedTokens: 1 }] });
+  t.after(() => f.session.dispose()); await f.session.setEnabled(true); await f.session.submit("当前问题");
+  assert.equal(f.requests.length, 1);
+  const text = JSON.stringify(f.requests[0]!.messages);
+  assert.equal(text.split("当前问题").length - 1, 1); assert.ok(!text.includes("资料哨兵"));
+  assert.ok(f.session.getContextSelection()?.omitted.some((item) => item.contextItemId === "optional-data" && item.reason === "model-input-budget"));
 });
 
 test("role-like text, malformed conversation and business feedback stay source-labelled data", async (t) => {
