@@ -139,7 +139,8 @@ export function createPiDecisionPlugin(options: PiDecisionPluginOptions): AgentP
             terminalEventEmitted = true;
           }
         });
-        await agent.prompt(input.prompt);
+        if (input.continueFromTools) await agent.continue();
+        else await agent.prompt(input.prompt);
         await agent.waitForIdle();
         if (signal?.aborted) throw new DOMException("Agent decision was cancelled", "AbortError");
         if (providerError !== null) throw providerError;

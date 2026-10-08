@@ -7,6 +7,7 @@ import { StandaloneAgentHost } from "../src/server/agent-host.ts";
 import { createStandaloneServer } from "../src/server/http-server.ts";
 import { isStandaloneAgentSnapshot, type StandaloneAgentSnapshot } from "../src/contracts/host.ts";
 import { createModelFixture, textReply, toolReply } from "./model-fixture.ts";
+import { listenForTest } from "./listen-for-test.ts";
 
 const sentinel = "fixture-private-key-only-on-host";
 export function waitForHost(host: StandaloneAgentHost, predicate: (snapshot: StandaloneAgentSnapshot) => boolean): Promise<StandaloneAgentSnapshot> {
@@ -74,7 +75,7 @@ test("HTTP/SSE expose authoritative snapshots, reject concurrent work, and clear
   const fixture = await createModelFixture([{ hang: true }]);
   const host = new StandaloneAgentHost();
   const server = createStandaloneServer({ host });
-  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  await listenForTest(server);
   const address = server.address(); assert.ok(address && typeof address !== "string");
   const baseUrl = `http://127.0.0.1:${address.port}`;
   const api = async (path: string, body?: unknown, method = "POST") => {

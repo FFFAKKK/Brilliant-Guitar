@@ -9,6 +9,7 @@ import { isStandaloneAgentSnapshot } from "../src/contracts/host.ts";
 import { defaultConnectionSettings, parseConnectionSettings, parseSaveConnectionRequest } from "../src/contracts/connection-settings.ts";
 import { createStandaloneServer } from "../src/server/http-server.ts";
 import { createModelFixture, textReply } from "./model-fixture.ts";
+import { listenForTest } from "./listen-for-test.ts";
 
 const scratchRoot = resolve(import.meta.dirname, "../../../.tmp/agent-settings-tests");
 async function scratch(t: TestContext): Promise<string> {
@@ -131,11 +132,11 @@ test("invalid and future disk files remain intact; live-directory lock rejects a
   assert.equal(parseStoredConnectionSettings(JSON.parse(await readFile(path, "utf8"))).profiles.length, 1);
 });
 
-test("profile HTTP commands enforce schemas and busy state, with v3 SSE metadata free of credentials", async (t) => {
+test("profile HTTP commands enforce schemas and busy state, with v4 SSE metadata free of credentials", async (t) => {
   const fixture = await createModelFixture([{ hang: true }]); t.after(fixture.close);
   const host = new StandaloneAgentHost(); t.after(() => host.dispose());
   const server = createStandaloneServer({ host });
-  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  await listenForTest(server);
   const address = server.address(); assert.ok(address && typeof address !== "string");
   t.after(async () => { await host.cancel(); server.closeAllConnections(); await new Promise<void>((resolve) => server.close(() => resolve())); });
   const api = async (path: string, body: unknown) => {

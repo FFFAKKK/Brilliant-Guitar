@@ -221,7 +221,9 @@ test("assistant's production default budget supports full Pi input and authorita
     assert.equal(session.getSnapshot().status, "completed");
     assert.equal(session.getSnapshot().response, "当前乐谱共有12小节。");
     assert.equal(executions, 1); assert.equal(inputs.length, 2);
-    assert.deepEqual(inputs[1]?.messages.map((item) => item.role), ["system", "user"]);
+    assert.deepEqual(inputs[1]?.messages.map((item) => item.role), ["system", "user", "assistant", "tool"]);
+    const feedback = inputs[1]!.messages[3]!;
+    assert.ok(feedback.role === "tool"); assert.equal(feedback.toolCallId, "read");
     assert.match(JSON.stringify(inputs[1]?.messages), /measureCount/);
     assert.match(JSON.stringify(inputs[1]?.messages), /documentVersion/);
   } finally { session.dispose(); }

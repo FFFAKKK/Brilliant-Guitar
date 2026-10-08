@@ -48,7 +48,10 @@ export function budgetModelInput(input: AgentModelStreamRequestV1, decision: Age
       ? PI_INSTRUCTIONS_VERSION : null,
     roles: Object.freeze(messages.map((item) => item.role)), retainedHistoryTurns,
     omittedHistory: Object.freeze(omitted.map((item) => Object.freeze(item))),
-    sources: Object.freeze(decision.context.contextItems.filter((item) => !removed.has(item.contextItemId)).map((item) =>
+    sources: Object.freeze([...new Map([
+      ...decision.context.contextItems.filter((item) => !removed.has(item.contextItemId)),
+      ...(decision.toolFeedback ?? []).flatMap((group) => group.calls.map((entry) => entry.source)),
+    ].map((item) => [item.contextItemId, item])).values()].map((item) =>
       Object.freeze({ contextItemId: item.contextItemId, kind: item.kind, sourceType: item.sourceType,
         sourceId: item.sourceId, scope: item.scope, documentId: item.documentId, documentVersion: item.documentVersion,
         trustLevel: item.trustLevel, priority: item.priority }))),

@@ -1,6 +1,7 @@
 import { streamSimple } from "@earendil-works/pi-ai/api/openai-completions";
 import { normalizeContext } from "@earendil-works/pi-ai/utils/transcript";
-import type { Context, JsonObject, JsonValue, Model, Usage } from "@earendil-works/pi-ai";
+import type { Context, Model, Usage } from "@earendil-works/pi-ai";
+import { projectPiJsonObject as jsonObject } from "@brilliant-guitar/agent-runtime/pi/json-values";
 import { Type, type TSchema } from "typebox";
 import type { AgentModelConfiguration } from "@brilliant-guitar/agent-runtime";
 import type { AgentModelProviderHostPort } from "@brilliant-guitar/agent-runtime/runtime/provider-host";
@@ -9,14 +10,6 @@ import { isAgentModelStreamEnvelopeV1 } from "@brilliant-guitar/agent-runtime/co
 
 const ZERO_USAGE: Usage = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } };
 type EventPayload<T = AgentModelStreamEventV1> = T extends AgentModelStreamEventV1 ? Omit<T, "runId" | "turnId" | "sequence"> : never;
-
-function jsonObject(value: unknown): JsonObject {
-  const valid = (item: unknown): item is JsonValue => item === null || typeof item === "string" || typeof item === "boolean"
-    || (typeof item === "number" && Number.isFinite(item)) || (Array.isArray(item) ? item.every(valid)
-      : typeof item === "object" && item !== null && Object.values(item).every(valid));
-  if (typeof value !== "object" || value === null || Array.isArray(value) || !valid(value)) throw new Error("工具参数必须为 JSON 对象");
-  return value as JsonObject;
-}
 
 export function createCompletionsModel(configuration: AgentModelConfiguration): Model<"openai-completions"> {
   return { id: configuration.modelId, name: configuration.modelId, provider: configuration.providerId, api: "openai-completions", baseUrl: configuration.baseUrl,
@@ -35,8 +28,11 @@ export function createCompletionsModelHost(configuration: AgentModelConfiguratio
       if (!apiKey || request.schemaVersion !== 1 || request.providerId !== configuration.providerId || request.modelId !== configuration.modelId
         || !Number.isSafeInteger(request.limits.timeoutMs) || request.limits.timeoutMs <= 0
         || !Number.isSafeInteger(request.limits.maxOutputTokens) || request.limits.maxOutputTokens <= 0) throw new Error("模型请求身份或配置无效");
-      const aliases = new Map(request.tools.map((tool, index) => [tool.name, `tool_${index + 1}`]));
-      const names = new Map([...aliases].map(([canonical, alias]) => [alias, canonical]));
+      const currentNames = new Set(request.tools.map((tool) => tool.name));
+      const historicalNames = request.messages.flatMap((message) => message.role === "tool" ? [message.toolName]
+        : message.role === "assistant" ? message.content.flatMap((block) => block.type === "tool-call" ? [block.name] : []) : []);
+      const aliases = new Map([...new Set([...currentNames, ...historicalNames])].map((name, index) => [name, `tool_${index + 1}`]));
+      const names = new Map([...aliases].filter(([canonical]) => currentNames.has(canonical)).map(([canonical, alias]) => [alias, canonical]));
       const nameFor = (canonical: string): string => {
         const alias = aliases.get(canonical);
         if (!alias) throw new Error("模型请求包含未声明工具");

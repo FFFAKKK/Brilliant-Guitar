@@ -1,5 +1,6 @@
 import { createServer, type IncomingHttpHeaders, type ServerResponse } from "node:http";
 import { setTimeout as delay } from "node:timers/promises";
+import { listenForTest } from "./listen-for-test.ts";
 
 export interface ModelRequest { readonly url: string; readonly headers: IncomingHttpHeaders; readonly body: Record<string, unknown> }
 export type FixtureReply = { readonly chunks: readonly Record<string, unknown>[]; readonly delayMs?: number; readonly unfinished?: boolean }
@@ -47,7 +48,7 @@ export async function createModelFixture(replies: readonly FixtureReply[] | ((re
     }
     response.end("data: [DONE]\n\n");
   })().catch(() => { response.writeHead(500); response.end(); }); });
-  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  await listenForTest(server);
   const address = server.address();
   if (!address || typeof address === "string") throw new Error("Fixture address is missing");
   return { requests, catalogRequests, get catalogClosed() { return catalogClosed; }, baseUrl: `http://127.0.0.1:${address.port}/v1`, close: async () => {

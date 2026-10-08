@@ -33,4 +33,8 @@ export class AgentToolRegistry implements AgentCapabilityPort {
     const data = await tool.execute(request.input, context);
     return { status: "completed", invocationId: request.invocationId, capabilityId: request.capabilityId, contractVersion: request.contractVersion, data };
   }
+
+  withTools(tools: readonly RegisteredAgentTool[]): AgentToolRegistry {
+    return new AgentToolRegistry([...this.#tools.values(), ...tools]);
+  }
 }

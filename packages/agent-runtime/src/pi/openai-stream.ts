@@ -4,8 +4,6 @@ import type {
   Api,
   AssistantMessage,
   AssistantMessageEventStream,
-  JsonObject,
-  JsonValue,
   Model,
   SimpleStreamOptions,
   TranscriptContext,
@@ -25,6 +23,7 @@ import type { AgentProviderSelection } from "../contracts/agent-provider-setting
 import type { PiAgentStreamFn } from "./types.ts";
 import type { AgentModelInputDiagnosticV1 } from "../contracts/model-input.ts";
 import { budgetModelInput } from "./model-input-budget.ts";
+import { projectPiJsonObject as jsonObject, projectPiJsonValue as jsonValue } from "./json-values.ts";
 
 const ZERO_USAGE: Usage = Object.freeze({
   input: 0,
@@ -46,26 +45,6 @@ function textFromContent(content: unknown): string {
       && typeof (item as { text?: unknown }).text === "string")
     .map((item) => item.text)
     .join("");
-}
-
-function jsonValue(value: unknown): JsonValue {
-  if (value === null || typeof value === "string" || typeof value === "boolean") return value;
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (Array.isArray(value)) return value.map((item) => jsonValue(item));
-  if (typeof value === "object" && value !== null) {
-    const output: Record<string, JsonValue> = {};
-    for (const [key, item] of Object.entries(value)) output[key] = jsonValue(item);
-    return output;
-  }
-  throw new Error("模型流包含不可序列化的 JSON 值");
-}
-
-function jsonObject(value: Record<string, unknown>): JsonObject {
-  const projected = jsonValue(value);
-  if (typeof projected !== "object" || projected === null || Array.isArray(projected)) {
-    throw new Error("模型工具参数必须是 JSON 对象");
-  }
-  return projected as JsonObject;
 }
 
 function systemContent(context: TranscriptContext): string {

@@ -16,6 +16,10 @@ await session.dispose();
 
 `AgentToolRegistry` 接受显式注册的工具。默认无工具；通用聊天 Session 只允许无文档的 query/analysis 工具。涉及乐谱修改、审批和恢复的宿主通过 Controller 的相应端口装配，不能绕过统一执行链。
 
+`registry.withTools(tools)`返回新注册表，保留原表。宿主可向Session注入`contextItems(sessionId)`提供资源目录、`allowedToolIds()`筛选本轮允许工具，以及`onProgress(event)`观察真实活动。这些目录/策略回调在接受Run之前采样，失败不留下活动Run；观察回调异常不影响执行，取消/重置代次隔离旧事件。运行包不负责读取宿主文件。
+
+Controller提供可选run-local `toolFeedback`：每组包含turnId、原始callId、invocationId、真实参数、结果和来源。交给Provider的是独立冻结快照。默认Pi插件恢复完整调用/结果消息，再使用Pi `continue()`决策；结果正文不重复作为普通context发送，最终预算保留完整组。旧恢复记录没有callId关联时继续原有context投影，不修改持久Run或External v1。
+
 Session 提供 `getSnapshot/subscribe/submit/cancel/reset/setEnabled/dispose`。默认保存最近16轮成功对话供模型使用；下一轮按字符估算的上下文预算整轮省略，失败、取消与中断不进入成功历史。旧消费者默认显示最近16轮，内存RunStore保留32个终结记录。
 
 独立宿主可选择`retainTranscript: true`保留完整显示记录（最多4096条），以`checkpoint(snapshot)`在请求前和终结后保存，并用`restoreTranscript(sessionId, messages)`恢复会话及预算内的成功历史。`hasActiveRun()`覆盖终结后的保存阶段。`SessionStorePort`、`AgentSessionLibrary`及`parseSessionLibrary/parseTranscript`定义聊天存储边界，Node文件实现由宿主注入；运行包不自行访问文件或凭据。恢复记录不会启用Agent或重放执行。聊天SessionStore与Controller RunStore职责不同。

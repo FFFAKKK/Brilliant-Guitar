@@ -59,6 +59,7 @@ import type {
   AgentRunEventRecord,
 } from "./run-state.ts";
 import { ToolsetResolver } from "./toolset-resolver.ts";
+import { snapshotToolFeedback, type AgentToolFeedbackCall, type AgentToolFeedbackGroup } from "./tool-feedback.ts";
 import type { AgentWorkflowRuntime } from "./workflow-runtime.ts";
 
 type ToolCallAction = Extract<ValidatedAction, { readonly kind: "tool-call" }>;
@@ -375,6 +376,8 @@ export class AgentRunController {
     const events: AgentRunEventRecord[] = [...(resumeFrom?.events ?? [])];
     const turns: AgentTurnRecord[] = [...(resumeFrom?.turns ?? [])];
     const invocations: AgentInvocationRecord[] = [...(resumeFrom?.invocations ?? [])];
+    // Old persisted records have no original call-ID binding. Keep their existing context projection.
+    const toolFeedback: AgentToolFeedbackGroup[] = [];
     const contextItems: AgentContextItem[] = [
       ...(resumeFrom?.contextItems ?? request.initialContextItems),
     ];
@@ -557,6 +560,7 @@ export class AgentRunController {
           runState: currentState(),
           context,
           toolset: toolset.snapshot,
+          ...(toolFeedback.length ? { toolFeedback: snapshotToolFeedback(toolFeedback) } : {}),
         }, signal, (event) => {
           if (event.type !== "response.text-delta") return;
           if (!messageStarted) {
@@ -844,6 +848,7 @@ export class AgentRunController {
       });
       await applyRunEvent({ type: "turn.tools-accepted" });
 
+      const feedbackCalls: AgentToolFeedbackCall[] = [];
       for (const action of toolActions) {
         if (signal?.aborted) {
           await applyRunEvent({ type: "cancellation.requested" });
@@ -1050,7 +1055,7 @@ export class AgentRunController {
         applyInvocationEvent({ type: "invocation.succeeded" });
         upsertInvocation(invocationRecord());
         const identity = documentIdentity(result.data);
-        contextItems.push({
+        const resultContext: AgentContextItem = {
           contextItemId: `capability-result:${invocationId}`,
           kind: "capability-result",
           content: result.data,
@@ -1064,7 +1069,11 @@ export class AgentRunController {
           createdAt: this.now(),
           expiresAt: null,
           estimatedTokens: estimateTokens(result.data),
-        });
+        };
+        contextItems.push(resultContext);
+        const { content: _content, estimatedTokens: _estimate, ...source } = resultContext;
+        feedbackCalls.push({ call: { callId: action.callId, capabilityId: action.capabilityId,
+          contractVersion: action.contractVersion, input: action.input }, invocationId, result, source });
         if (identity.documentId !== null && identity.documentVersion !== null) {
           workspace = {
             ...workspace,
@@ -1093,6 +1102,7 @@ export class AgentRunController {
         decision,
         validation,
       });
+      toolFeedback.push({ runId: request.runId, turnId, calls: feedbackCalls });
       await applyRunEvent({ type: "invocations.completed" });
       await applyRunEvent({ type: "verification.continue" });
     }

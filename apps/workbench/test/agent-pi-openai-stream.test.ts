@@ -351,9 +351,13 @@ test("OpenAI raw model stream completes the real Controller capability loop", as
   assert.equal(outcome.verification?.satisfied, true);
   assert.equal(capabilityRequests.length, 1);
   assert.equal(requests.length, 2);
-  const secondRequest = requests[1] as { messages: readonly { role: string; content: unknown }[] };
+  const secondRequest = requests[1] as { messages: readonly { role: string; content: unknown; toolCallId?: string }[] };
+  assert.deepEqual(secondRequest.messages.map((message) => message.role), ["system", "user", "assistant", "tool"]);
   const secondUserMessage = secondRequest.messages.find((message) => message.role === "user");
   assert.ok(secondUserMessage);
-  assert.match(String(secondUserMessage.content), /capability-result/);
-  assert.match(String(secondUserMessage.content), /measureCount/);
+  assert.ok(!String(secondUserMessage.content).includes("measureCount"));
+  const feedback = secondRequest.messages.find((message) => message.role === "tool");
+  assert.equal(feedback?.toolCallId, "call-controller-1");
+  assert.match(String(feedback?.content), /capability-result/);
+  assert.match(String(feedback?.content), /measureCount/);
 });

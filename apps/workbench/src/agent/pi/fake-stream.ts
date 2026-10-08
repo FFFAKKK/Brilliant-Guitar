@@ -28,6 +28,10 @@ function measureCountFromToolResult(messages: readonly AgentMessage[]): number {
     const parsed: unknown = JSON.parse(text.text);
     if (typeof parsed === "object" && parsed !== null && "measureCount" in parsed
       && typeof parsed.measureCount === "number") return parsed.measureCount;
+    // Controller replay includes invocation/source metadata around the actual result.
+    if (typeof parsed === "object" && parsed !== null && "data" in parsed
+      && typeof parsed.data === "object" && parsed.data !== null && "measureCount" in parsed.data
+      && typeof parsed.data.measureCount === "number") return parsed.data.measureCount;
   } catch {
     return -1;
   }

@@ -225,3 +225,71 @@ agent.prompt(JSON.stringify({ goal, history }));
 new Agent({ initialState: { model, systemPrompt: PI_BASE_INSTRUCTIONS, messages: input.history, tools } });
 // Final projected messages/tools are checked before host.streamAgentModel.
 ```
+
+## M3.1 Text Resources and Actual Tool Feedback
+
+### 1. Scope / Trigger
+
+Portable Controller/Pi feedback, standalone Node resource host, versioned HTTP/SSE snapshots and resource/activity UI. Pi stays1.0.3; one Controller executes first-party and external decisions. Node snapshotv4 supersedesv3; External v1, raw model-streamv1, chat filev1 and stored Run DTOs retain their shapes.
+
+### 2. Signatures
+
+```ts
+AgentSessionOptions.contextItems?: (sessionId: string) => readonly AgentContextItem[];
+AgentSessionOptions.allowedToolIds?: () => readonly string[];
+AgentSessionOptions.onProgress?: (event: AgentRunProgressEvent) => void;
+registry.withTools(tools: readonly RegisteredAgentTool[]): AgentToolRegistry;
+AgentProviderRequest.toolFeedback?: readonly AgentToolFeedbackGroup[];
+POST /api/resources/add // exact {sessionId,name,text}; request JSON <=256KiB
+POST /api/resources/remove // exact {sessionId,resourceId}; request JSON <=64KiB
+resource.read-text v1 // exact {resourceId,start,maxCharacters}
+```
+
+### 3. Contracts
+
+- Browser File selection is the authorization entry. Check original bytes<=32KiB, decode with fatal UTF-8, validate decoded bytes<=32KiB, TXT/MD basename1–128 with no separators/control characters, reject binary controls and unpaired surrogates. Host repeats validation. At most3 resources; no silent truncation or model-supplied disk paths. Session IDs reuse `isSessionId`, resource IDs are host opaque identities. Keep immutable code-point snapshots in memory only; switch/new-session/dispose releases them. Refresh reuses the same process directory. Run-active mutations reject before changing any resource.
+- Public resources exact `{sessionId,items:[{resourceId,version:1,name,byteLength,characterCount}]}` contain no body. Required authoritative `resource.catalog` is metadata only; no resources means no read tool in the allowed catalog. The handler checks current session, running state and strict input before reading and rechecks activity before returning. Probe receives no directory/tools.
+- `start` is a nonnegative safe integer, `maxCharacters`1–4096; result exact `{resourceId,version:1,name,start,nextStart,totalCharacters,text,eof,contentTrust:"user-provided"}`. Full serialized result UTF-8 <=12KiB including escaping and metadata; binary-search the actual page length. `nextStart` counts code points; `eof` is true only at the real end. Runtime authoritative execution provenance does not promote document text to instructions.
+- New execution records form run-local groups exact `{runId,turnId,calls:[{call,invocationId,result,source}]}` after all calls succeed. Each `call` preserves callId/capabilityId/contractVersion/input; `result` is the actual completed envelope; source is the actual context provenance without body/estimate. Provider gets a detached deeply frozen copy. Groups are not added to persisted Run DTOs or inferred from transcript text.
+- Pi validates run identity, nonempty complete groups, unique call and invocation IDs, matching result identity/version, authoritative capability-result source. Restore one current user JSON followed by assistant tool calls and tool results; use `continue()` when feedback exists and `prompt()` otherwise. Current JSON reflects current run/workspace context and need not be byte-identical to the first request. Remove replayed result bodies from ordinary context, retaining the metadata in diagnostics. Optional chat pairs can be removed; native groups stay whole and required. Required overflow blocks the subsequent transport without repeating execution. Old recovered runs without call identity use old source-labelled context.
+- Node request aliases cover current declarations and historical call/result names. Only current aliases enter the reverse map for new output calls; replay cannot confer permission. `json-values.ts` owns the strict JSON projection shared by Pi and Node. External v1 still explicitly projects its old context fields and never receives unknown internal replay fields.
+- v4 snapshot exact11 fields: schemaVersion,sequence,configuration,credentialPresent,testingConnection,session,connections,storage,conversations,resources,activities. Strict decoder binds resources.sessionId to Session and activities.runId to current Run. Activity snapshot exact `{runId,items}` bounded64; each item exact invocationId/turnId/label/status/startedAt/finishedAt/errorCode, status running|completed|failed|cancelled. Only actual Controller capability events create cards. Terminal Run settles leftover running cards; cancelled/terminal/late events cannot upgrade them. New Run/Session clears cards. Activities and resources are process-local; reconnect performs no execution.
+- Sample host directory/policy callbacks before reserving active Run; failures leave no partial transcript. Progress callback exceptions are observational. UI disables file/submit/session changes during upload; late upload error feedback is scoped to the original session. Model/connection settings remain host-owned.
+
+### 4. Validation & Error Matrix
+
+| Condition | Behavior |
+|---|---|
+| Invalid text/name/encoding/extra fields/limit or missing removal |400 invalid-input with bounded resource-specific message; no mutation/generation |
+| Resource mutation during Run/probe/config change, or stale upload session |409 busy; resources unchanged |
+| Unknown/removed/cross-session resource, bad start/input or inactive execution |Definite capability failure; no successful body/feedback; ordinary tool failure ends Run |
+| Mismatched/missing/duplicate native replay identity |Pi rejects before new model request |
+| Required native groups exceed final budget |Entire group preserved, budget-exceeded diagnostic; no next request or re-execution |
+| Cancel/late tool completion/new session/dispose |Stopped activity stays stopped; no late successful projection/new generation |
+| GET/SSE refresh/reconnect |Current metadata/activity projection only; no model/tool replay |
+| File text contains role/call-like instructions |User-provided result data, never a fabricated call or source |
+
+### 5. Good / Base / Bad Cases
+
+- Good: select a real UTF-8 MD file, see metadata only in the first request, execute read-text once, then send system/user/assistant(tool call)/tool(actual result) to the next decision with the same callId and host invocationId.
+- Base: no added resource yields the original tool-free conversation; explicit probe remains tool-free even with resources present.
+- Bad: read arbitrary model paths, serialize full files on upload, generate activity from answer text, create another executor, split a replay group, or grant a historical tool permission through an alias.
+
+### 6. Tests Required
+
+- Runtime tool-feedback: actual Controller/Pi/raw stream; single/multiple calls and successive groups, true execution count and inputs, ID/source mapping, detached freeze, body/goal deduplication, malformed/mismatched/duplicate groups, final group overflow, observer exception, host callback failure and immutable Registry composition.
+- App text-resources: actual UTF-8 file through decoder/store/tool/HTTP model fixture, first-request metadata only, exact native wire, actual return text/trust/eof, multi-page replay, Chinese/emoji/escaped12KiB pages,32KiB/3 files/encoding/binary/extra-field errors, unknown/removed/foreign scopes, busy409, stale upload, process-only restart, chat filev1, cancel/late result, probe isolation, strictv4/public secret isolation, SSE reconnect without generation. Historical alias test verifies replay without new-call rights.
+- Refresh Workbench's installed runtime copy before regression; all Agent/external/score/approval/recovery tests and typecheck. Score Fake reads both direct tool data and Controller's metadata wrapper; assertions inspect native tools, not duplicate context bodies.
+- Test HTTP fixtures bind high loopback ports with bounded collision retry. Low automatic ports can cause Node fetch `bad port` and misleading empty-output/busy failures; never change production validation to hide this test setup failure.
+- Actual browser File chooser, completed/failed card, stop, invalid UTF-8 feedback, refresh, desktop/390px layout and console errors. Persist screenshot proof. Local fixture mechanism is separate from user-triggered real DeepSeek M31-A5/M30-A5/A10.
+
+### 7. Wrong vs Correct
+
+```ts
+// Wrong: turn a supplied body into an execution result or execute in Pi.
+agent.prompt(JSON.stringify({ fileBody, fabricatedToolResult }));
+// Correct: Controller creates actual immutable feedback; Pi only resumes reasoning.
+const input = projectPiInput(request, model);
+if (input.continueFromTools) await agent.continue();
+else await agent.prompt(input.prompt);
+```

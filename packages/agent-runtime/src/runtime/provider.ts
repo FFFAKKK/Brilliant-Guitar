@@ -9,6 +9,7 @@ import type {
   AgentProviderStreamEventPayload,
   AgentProviderStreamState,
 } from "./provider-stream.ts";
+import type { AgentToolFeedbackGroup } from "./tool-feedback.ts";
 
 export interface AgentProviderRequest {
   readonly runId: string;
@@ -17,6 +18,7 @@ export interface AgentProviderRequest {
   readonly runState: AgentRunState;
   readonly context: ContextBuildResult;
   readonly toolset: ToolsetSnapshot;
+  readonly toolFeedback?: readonly AgentToolFeedbackGroup[];
 }
 
 /** Decision-producing port consumed by AgentRunController. */

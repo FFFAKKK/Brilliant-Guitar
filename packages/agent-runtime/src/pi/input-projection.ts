@@ -2,6 +2,7 @@ import type { Message } from "@earendil-works/pi-ai";
 import type { AgentContextItem } from "../runtime/agent-contracts.ts";
 import type { AgentProviderRequest } from "../runtime/provider.ts";
 import type { PiAgentModel } from "./types.ts";
+import { projectPiJsonObject, projectPiJsonValue } from "./json-values.ts";
 
 export const PI_INSTRUCTIONS_VERSION = "general-task-v1";
 export const PI_BASE_INSTRUCTIONS = `你是通用任务助手。根据当前用户目标、会话中仍适用的要求和提供的资料完成任务。
@@ -49,11 +50,13 @@ export function conversationInputTurns(request: AgentProviderRequest): readonly 
 export function projectPiInput(request: AgentProviderRequest, model: PiAgentModel): {
   readonly history: Message[];
   readonly prompt: string;
+  readonly continueFromTools: boolean;
 } {
   const turns = conversationInputTurns(request);
   const historyIds = new Set(turns.map((turn) => turn.item.contextItemId));
+  const feedbackIds = new Set((request.toolFeedback ?? []).flatMap((group) => group.calls.map((entry) => entry.source.contextItemId)));
   const context = request.context.contextItems.filter((item) => {
-    if (historyIds.has(item.contextItemId)) return false;
+    if (historyIds.has(item.contextItemId) || feedbackIds.has(item.contextItemId)) return false;
     const content = object(item.content);
     // Remove only ContextBuilder's matching synthetic duplicate, not user supplements.
     const duplicatedGoal = item.contextItemId === "run.goal" && item.kind === "user-goal" && item.sourceType === "user"
@@ -71,9 +74,38 @@ export function projectPiInput(request: AgentProviderRequest, model: PiAgentMode
       usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0,
         cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } } },
   ]);
-  return { history, prompt: JSON.stringify({ goal: request.goal,
+  const prompt = JSON.stringify({ goal: request.goal,
     modelConfiguration: { kind: "host-routing-configuration", providerId: model.provider, modelId: model.id,
       modelApi: model.api, identityVerified: false },
     context: context.map(({ estimatedTokens: _estimate, ...item }) => item),
-    versionWarnings: request.context.versionWarnings }) };
+    versionWarnings: request.context.versionWarnings });
+  if (!request.toolFeedback?.length) return { history, prompt, continueFromTools: false };
+  history.push({ role: "user", content: prompt, timestamp: Date.now() });
+  const seen = new Set<string>();
+  const seenInvocations = new Set<string>();
+  for (const group of request.toolFeedback) {
+    if (group.runId !== request.runId || !group.turnId || !group.calls.length) throw new Error("工具反馈组身份无效");
+    const content = group.calls.map((entry) => {
+      const { call, result, source } = entry;
+      if (!call.callId || seen.has(call.callId) || !entry.invocationId || seenInvocations.has(entry.invocationId) || result.status !== "completed"
+        || result.invocationId !== entry.invocationId || result.capabilityId !== call.capabilityId
+        || result.contractVersion !== call.contractVersion || source.contextItemId !== `capability-result:${entry.invocationId}`
+        || source.kind !== "capability-result" || source.sourceType !== "capability-result" || source.sourceId !== call.capabilityId
+        || source.trustLevel !== "authoritative") {
+        throw new Error("工具调用与真实结果不匹配");
+      }
+      seen.add(call.callId);
+      seenInvocations.add(entry.invocationId);
+      return { type: "toolCall" as const, id: call.callId, name: call.capabilityId, arguments: projectPiJsonObject(call.input) };
+    });
+    history.push({ role: "assistant", content, api: model.api, provider: model.provider, model: model.id,
+      stopReason: "toolUse", timestamp: Date.now(), usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0,
+        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } } });
+    for (const entry of group.calls) history.push({ role: "toolResult", toolCallId: entry.call.callId,
+      toolName: entry.call.capabilityId, content: [{ type: "text", text: JSON.stringify(projectPiJsonValue({
+        invocationId: entry.invocationId, capabilityId: entry.call.capabilityId, contractVersion: entry.call.contractVersion,
+        source: entry.source, data: entry.result.data,
+      })) }], isError: false, timestamp: Date.now() });
+  }
+  return { history, prompt, continueFromTools: true };
 }

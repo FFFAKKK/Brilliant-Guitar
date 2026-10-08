@@ -5,6 +5,7 @@ import { StandaloneAgentHost } from "../src/server/agent-host.ts";
 import { createStandaloneServer } from "../src/server/http-server.ts";
 import { isStandaloneAgentSnapshot } from "../src/contracts/host.ts";
 import { createModelFixture, textReply } from "./model-fixture.ts";
+import { listenForTest } from "./listen-for-test.ts";
 
 test("real completions wire receives separated history and diagnostic GET is private, isolated and read-only", async (t) => {
   const secret = "input-diagnostic-credential-sentinel";
@@ -12,7 +13,7 @@ test("real completions wire receives separated history and diagnostic GET is pri
   const fixture = await createModelFixture([textReply("连接成功"), textReply("保留20分钟限制"), textReply(long), textReply("节奏改为12分钟"), textReply("第二次连接成功")]);
   const host = new StandaloneAgentHost();
   const server = createStandaloneServer({ host });
-  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  await listenForTest(server);
   const address = server.address(); assert.ok(address && typeof address !== "string");
   const url = `http://127.0.0.1:${address.port}/api/model-input`;
   t.after(async () => { await host.dispose(); server.closeAllConnections(); await new Promise<void>((resolve) => server.close(() => resolve())); await fixture.close(); });

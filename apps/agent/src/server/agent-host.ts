@@ -1,4 +1,4 @@
-import { createAgentSession, createAgentPluginProvider, DEFAULT_DEEPSEEK_CONFIGURATION, parseAgentModelConfiguration, type AgentSession, type AgentModelConfiguration, type AgentToolRegistry } from "@brilliant-guitar/agent-runtime";
+import { createAgentSession, createAgentPluginProvider, DEFAULT_DEEPSEEK_CONFIGURATION, parseAgentModelConfiguration, AgentToolRegistry, type AgentSession, type AgentModelConfiguration } from "@brilliant-guitar/agent-runtime";
 import { createPiDecisionPlugin } from "@brilliant-guitar/agent-runtime/pi";
 import { createHostPiStreamFn } from "@brilliant-guitar/agent-runtime/pi/openai-stream";
 import { isAgentProviderCredentialSecret } from "@brilliant-guitar/agent-runtime/contracts/agent-provider-credential";
@@ -13,6 +13,10 @@ import { parseStoredConnectionSettings, publicConnectionSettings, type StoredCon
 import { WindowsCredentialProtector, type CredentialProtectorPort } from "./credential-protector.ts";
 import { MAX_SESSIONS, parseSessionLibrary, parseSessionTitle, isSessionId, type AgentSessionLibrary, type AgentSessionRecord, type SessionStorePort } from "@brilliant-guitar/agent-runtime";
 import { SessionStoreError } from "./session-store.ts";
+import type { AgentRunProgressEvent } from "@brilliant-guitar/agent-runtime/runtime/run-progress";
+import { TextResourceStore, createTextResourceTool } from "./text-resources.ts";
+import { parseAddTextResource, parseRemoveTextResource, TEXT_RESOURCE_CAPABILITY_ID } from "../contracts/resources.ts";
+import { MAX_TOOL_ACTIVITIES, type ToolActivitiesSnapshot, type ToolActivity } from "../contracts/tool-activities.ts";
 
 interface HostOptions { readonly tools?: AgentToolRegistry; readonly settingsStore?: ConnectionSettingsStorePort; readonly credentialProtector?: CredentialProtectorPort; readonly sessionStore?: SessionStorePort }
 
@@ -29,6 +33,8 @@ export class StandaloneAgentHost {
   #changing = false;
   #disposed = false;
   #modelInput: AgentModelInputDiagnosticV1 | null = null;
+  readonly #resources = new TextResourceStore();
+  #activities: ToolActivitiesSnapshot = Object.freeze({ runId: null, items: Object.freeze([]) });
   #settings: StoredConnectionSettings = { ...defaultConnectionSettings(), profiles: defaultConnectionSettings().profiles.map(({ credentialRemembered: _remembered, ...profile }) => ({ ...profile, sealedCredential: null })) };
   #storageNotice: string | null = null;
   #pendingChange: Promise<void> | null = null;
@@ -69,13 +75,23 @@ export class StandaloneAgentHost {
         }) });
       return createAgentPluginProvider(plugin).decide(request, signal, observer);
     } };
-    this.session = createAgentSession({ provider: this.#provider, retainTranscript: true,
+    const tools = (options.tools ?? new AgentToolRegistry()).withTools([createTextResourceTool(this.#resources, (sessionId) =>
+      !this.#disposed && this.session.getSnapshot().sessionId === sessionId && this.session.getSnapshot().status === "running")]);
+    this.session = createAgentSession({ provider: this.#provider, retainTranscript: true, tools,
+      contextItems: (sessionId) => this.#resources.context(sessionId),
+      allowedToolIds: () => tools.catalog.filter((tool) => tool.id !== TEXT_RESOURCE_CAPABILITY_ID || this.#resources.getSnapshot().items.length > 0).map((tool) => tool.id),
+      onProgress: (event) => this.#toolProgress(event),
       checkpoint: async () => { this.#clearCheckpointTimer(); await this.#saveLibrary(this.#library); },
-      ...(options.tools ? { tools: options.tools } : {}) });
+    });
+    this.#resources.clear(this.session.getSnapshot().sessionId);
     const first = newConversation(this.session.getSnapshot().sessionId);
     this.#library = { schemaVersion: 1, selectedSessionId: first.sessionId, sessions: [first] };
     this.#unsubscribe = this.session.subscribe(() => {
-      if (this.#modelInput?.runId !== this.session.getSnapshot().runId) this.#modelInput = null;
+      const session = this.session.getSnapshot();
+      if (this.#resources.getSnapshot().sessionId !== session.sessionId) this.#resources.clear(session.sessionId);
+      if (this.#activities.runId !== session.runId) this.#activities = Object.freeze({ runId: session.runId, items: Object.freeze([]) });
+      if (["completed", "failed", "cancelled"].includes(session.status)) this.#finishActivities(session.status === "cancelled" ? "cancelled" : "failed");
+      if (this.#modelInput?.runId !== session.runId) this.#modelInput = null;
       if (this.#captureTranscript() && this.session.hasActiveRun() && !this.#checkpointTimer) {
         this.#checkpointTimer = setTimeout(() => {
           this.#checkpointTimer = null;
@@ -110,12 +126,55 @@ export class StandaloneAgentHost {
   }
 
   getSnapshot(): StandaloneAgentSnapshot {
-    return Object.freeze({ schemaVersion: 3, sequence: this.#sequence, configuration: this.#configuration, credentialPresent: Boolean(this.#apiKey), testingConnection: this.#testing !== null, session: this.session.getSnapshot(),
+    return Object.freeze({ schemaVersion: 4, sequence: this.#sequence, configuration: this.#configuration, credentialPresent: Boolean(this.#apiKey), testingConnection: this.#testing !== null, session: this.session.getSnapshot(),
       connections: publicConnectionSettings(this.#settings), storage: Object.freeze({ configuration: this.#settingsStore?.kind ?? "memory", credentialProtection: this.#settingsStore?.kind === "file" ? this.#credentialProtector.kind : "unavailable", notice: this.#storageNotice }),
-      conversations: Object.freeze({ selectedSessionId: this.#library.selectedSessionId, items: Object.freeze(this.#library.sessions.map(({ messages, ...record }) => Object.freeze({ ...record, messageCount: messages.length }))), storage: this.#sessionStore?.kind ?? "memory", saving: this.#saveCount > 0, notice: this.#sessionNotice }) });
+      conversations: Object.freeze({ selectedSessionId: this.#library.selectedSessionId, items: Object.freeze(this.#library.sessions.map(({ messages, ...record }) => Object.freeze({ ...record, messageCount: messages.length }))), storage: this.#sessionStore?.kind ?? "memory", saving: this.#saveCount > 0, notice: this.#sessionNotice }),
+      resources: this.#resources.getSnapshot(), activities: this.#activities });
   }
 
   getModelInput(): AgentModelInputDiagnosticV1 | null { return this.#modelInput; }
+
+  addResource(value: unknown): void {
+    this.#assertIdle();
+    const request = parseAddTextResource(value);
+    this.#assertResourceSession(request.sessionId);
+    this.#resources.add(request); this.#publish();
+  }
+
+  removeResource(value: unknown): void {
+    this.#assertIdle();
+    const request = parseRemoveTextResource(value);
+    this.#assertResourceSession(request.sessionId);
+    this.#resources.remove(request.sessionId, request.resourceId); this.#publish();
+  }
+
+  #assertResourceSession(sessionId: string): void {
+    if (sessionId !== this.session.getSnapshot().sessionId) throw new AgentHostError("busy", "当前会话已变化，请在新会话重新添加资料");
+  }
+
+  #finishActivities(status: "failed" | "cancelled"): void {
+    this.#activities = Object.freeze({ ...this.#activities, items: Object.freeze(this.#activities.items.map((item) =>
+      item.status === "running" ? Object.freeze({ ...item, status, finishedAt: Math.max(item.startedAt, Date.now()), errorCode: status === "failed" ? "run-failed" : null }) : item)) });
+  }
+
+  #toolProgress(event: AgentRunProgressEvent): void {
+    const session = this.session.getSnapshot();
+    if (this.#disposed || event.runId !== session.runId || !("activityId" in event) || !event.activityId.startsWith("capability:")) return;
+    const invocationId = event.activityId.slice("capability:".length);
+    const items = [...this.#activities.items];
+    const index = items.findIndex((item) => item.invocationId === invocationId);
+    if (event.type === "activity.started") {
+      if (session.status !== "running" || index >= 0 || items.length >= MAX_TOOL_ACTIVITIES) return;
+      items.push(Object.freeze({ invocationId, turnId: event.turnId, label: event.label, status: "running", startedAt: Date.now(), finishedAt: null, errorCode: null }));
+    } else {
+      const previous = items[index];
+      if (!previous || previous.status !== "running" || event.type === "activity.waiting") return;
+      const status: ToolActivity["status"] = session.status === "cancelling" || event.type === "activity.cancelled" ? "cancelled"
+        : event.type === "activity.completed" ? "completed" : "failed";
+      items[index] = Object.freeze({ ...previous, status, finishedAt: Math.max(previous.startedAt, Date.now()), errorCode: event.type === "activity.failed" ? event.code : null });
+    }
+    this.#activities = Object.freeze({ runId: event.runId, items: Object.freeze(items) }); this.#publish();
+  }
 
   subscribe(listener: (snapshot: StandaloneAgentSnapshot) => void): () => void {
     this.#listeners.add(listener);
@@ -289,6 +348,8 @@ export class StandaloneAgentHost {
     if (!this.#opening) await this.#flushTranscript().catch(() => undefined);
     await this.#saveTail;
     await this.session.dispose();
+    this.#resources.clear(this.session.getSnapshot().sessionId);
+    this.#activities = Object.freeze({ runId: this.session.getSnapshot().runId, items: Object.freeze([]) });
     this.#apiKey = "";
     this.#keys.clear();
     await this.#settingsStore?.dispose?.();

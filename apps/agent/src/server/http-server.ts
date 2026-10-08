@@ -7,6 +7,7 @@ import { AgentHostError } from "./agent-host.ts";
 import { ModelCatalogError } from "./model-catalog.ts";
 import { SettingsStoreError } from "./connection-store.ts";
 import { SessionStoreError } from "./session-store.ts";
+import { TextResourceInputError } from "../contracts/resources.ts";
 
 interface Options {
   readonly host: StandaloneAgentHost;
@@ -14,14 +15,14 @@ interface Options {
   readonly middleware?: (request: IncomingMessage, response: ServerResponse, next: () => void) => void;
 }
 
-async function jsonBody(request: IncomingMessage): Promise<Record<string, unknown>> {
+async function jsonBody(request: IncomingMessage, maxBytes = 65536): Promise<Record<string, unknown>> {
   if (request.headers["content-type"]?.split(";")[0] !== "application/json") throw new Error("请求需为 JSON");
   const chunks: Buffer[] = [];
   let bytes = 0;
   for await (const part of request) {
     const chunk = Buffer.isBuffer(part) ? part : Buffer.from(part);
     bytes += chunk.length;
-    if (bytes > 65536) throw new Error("请求超过大小限制");
+    if (bytes > maxBytes) throw new Error("请求超过大小限制");
     chunks.push(chunk);
   }
   const value: unknown = JSON.parse(Buffer.concat(chunks).toString("utf8"));
@@ -38,7 +39,7 @@ export function createStandaloneServer(options: Options): ViteServer {
   const server = createServer((request, response) => { void handle(request, response).catch((error: unknown) => {
     if (!response.headersSent) send(response, error instanceof AgentHostError && error.code === "busy" ? 409
       : error instanceof SettingsStoreError || error instanceof SessionStoreError ? 503 : error instanceof ModelCatalogError ? (error.code === "catalog-timeout" ? 504 : 502) : 400,
-      { code: error instanceof AgentHostError || error instanceof ModelCatalogError || error instanceof SettingsStoreError || error instanceof SessionStoreError ? error.code : "invalid-input", error: error instanceof AgentHostError || error instanceof ModelCatalogError || error instanceof SettingsStoreError || error instanceof SessionStoreError ? error.message : "请求未完成，请检查输入或模型配置" });
+      { code: error instanceof AgentHostError || error instanceof ModelCatalogError || error instanceof SettingsStoreError || error instanceof SessionStoreError || error instanceof TextResourceInputError ? error.code : "invalid-input", error: error instanceof AgentHostError || error instanceof ModelCatalogError || error instanceof SettingsStoreError || error instanceof SessionStoreError || error instanceof TextResourceInputError ? error.message : "请求未完成，请检查输入或模型配置" });
     else response.end();
   }); });
   function send(response: ServerResponse, status: number, data: unknown): void {
@@ -73,8 +74,10 @@ export function createStandaloneServer(options: Options): ViteServer {
         return;
       }
       if (request.method !== "POST" && request.method !== "PUT") { send(response, 405, { error: "请求方法不支持" }); return; }
-      const body = await jsonBody(request);
+      const body = await jsonBody(request, request.method === "POST" && pathname === "/api/resources/add" ? 262144 : 65536);
       switch (`${request.method} ${pathname}`) {
+        case "POST /api/resources/add": options.host.addResource(body); break;
+        case "POST /api/resources/remove": options.host.removeResource(body); break;
         case "PUT /api/model-config": await options.host.configure(body); break;
         case "PUT /api/model-credential": await options.host.saveCredential(field(body, "apiKey")); break;
         case "POST /api/profiles/save": await options.host.saveProfile(body); break;

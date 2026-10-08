@@ -171,3 +171,29 @@ input[type="search"] { margin-bottom: 8px; }
   .settings-dialog { padding: 22px; }
   .activation-bar { font-size: 11px; }
 }
+/* Session resources and Controller-owned execution activity. */
+.resource-panel { margin-bottom: 10px; }
+.resource-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.resource-add { font-size: 12px; padding: 5px 0; }
+.resource-add svg { width: 16px; height: 16px; }
+.resource-limits, .resource-size, .resource-notice { font-size: 11px; color: var(--color-secondary); }
+.resource-file-input { display: none; }
+.resource-list { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; padding: 0; margin: 6px 0; }
+.resource-list li { display: flex; align-items: center; gap: 8px; max-width: 100%; border: 1px solid var(--color-border); border-radius: 7px; padding: 3px 4px 3px 9px; background: var(--color-surface); }
+.resource-name { font-size: 12px; max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.resource-size { flex-shrink: 0; }
+.resource-remove { width: 24px; height: 24px; }
+.resource-remove svg { width: 14px; height: 14px; }
+.resource-notice { margin: 4px 0 0; line-height: 1.5; }
+.tool-activities { display: grid; gap: 7px; margin: 4px 0 12px; }
+.tool-card { border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-surface); font-size: 12px; }
+.tool-card summary { display: flex; align-items: center; gap: 9px; cursor: pointer; list-style: none; padding: 10px 12px; }
+.tool-card summary::-webkit-details-marker { display: none; }
+.tool-label { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.tool-state { color: var(--color-secondary); flex-shrink: 0; }
+.tool-status-mark { width: 6px; height: 6px; border-radius: 50%; background: var(--color-tertiary); flex-shrink: 0; }
+.tool-status-mark.completed { background: var(--color-success); }
+.tool-status-mark.failed { background: var(--color-danger); }
+.tool-status-mark.running { background: var(--color-accent); }
+.tool-card-detail { display: grid; gap: 5px; border-top: 1px solid var(--color-border); padding: 10px 12px; color: var(--color-secondary); overflow-wrap: anywhere; }
+@media (max-width: 480px) { .resource-name { max-width: 145px; } }

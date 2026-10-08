@@ -38,6 +38,9 @@ export interface AgentSessionOptions {
   readonly budget?: Partial<AgentContextBudget>;
   readonly retainTranscript?: boolean;
   readonly checkpoint?: (snapshot: AgentSessionSnapshot) => Promise<void>;
+  readonly contextItems?: (sessionId: string) => readonly AgentContextItem[];
+  readonly allowedToolIds?: () => readonly string[];
+  readonly onProgress?: (event: AgentRunProgressEvent) => void;
 }
 
 interface HistoryTurn { readonly runId: string; readonly user: string; readonly assistant: string }
@@ -49,6 +52,9 @@ export class AgentSession {
   readonly #budget: AgentContextBudget;
   readonly #retainTranscript: boolean;
   readonly #checkpoint: ((snapshot: AgentSessionSnapshot) => Promise<void>) | undefined;
+  readonly #contextItems: AgentSessionOptions["contextItems"];
+  readonly #allowedToolIds: AgentSessionOptions["allowedToolIds"];
+  readonly #onProgress: AgentSessionOptions["onProgress"];
   readonly #listeners = new Set<(event: AgentSessionEvent) => void>();
   #history: HistoryTurn[] = [];
   #successfulTurnCount = 0;
@@ -65,6 +71,9 @@ export class AgentSession {
   constructor(options: AgentSessionOptions) {
     this.#retainTranscript = options.retainTranscript ?? false;
     this.#checkpoint = options.checkpoint;
+    this.#contextItems = options.contextItems;
+    this.#allowedToolIds = options.allowedToolIds;
+    this.#onProgress = options.onProgress;
     this.#tools = options.tools ?? new AgentToolRegistry();
     this.#budget = Object.freeze({ tokenBudget: DEFAULT_MODEL_INPUT_TOKEN_BUDGET, itemCountBudget: 64, toolResultSizeBudget: 16384, rangeBudget: 0, historyTurnBudget: 16, ...options.budget });
     if (!Number.isSafeInteger(this.#budget.historyTurnBudget) || this.#budget.historyTurnBudget < 1 || this.#budget.historyTurnBudget > 64) throw new Error("会话历史预算需在 1 到 64 轮之间");
@@ -123,9 +132,14 @@ export class AgentSession {
     const generation = this.#generation;
     const runId = crypto.randomUUID();
     const assistantId = crypto.randomUUID();
-    const contextItems = this.#historyContext(goal);
-    this.#inputHistoryBase = (this.#retainTranscript ? this.#successfulTurnCount : this.#history.length) - contextItems.length;
-    this.#inputHistoryCount = contextItems.length;
+    const historyItems = this.#historyContext(goal);
+    const contextItems = [...historyItems, ...(this.#contextItems?.(this.#snapshot.sessionId) ?? [])];
+    // Sample host policy before reserving a run: a failed callback must leave the session idle.
+    const allowed = this.#allowedToolIds ? new Set(this.#allowedToolIds()) : null;
+    const catalog = this.#tools.catalog.filter((item) => (!allowed || allowed.has(item.id))
+      && !item.requiresDocument && (item.kind === "query" || item.kind === "analysis"));
+    this.#inputHistoryBase = (this.#retainTranscript ? this.#successfulTurnCount : this.#history.length) - historyItems.length;
+    this.#inputHistoryCount = historyItems.length;
     this.#inputBudgetExceeded = false;
     const messages: AgentChatMessage[] = [
       ...(this.#retainTranscript ? this.#snapshot.messages : this.#budget.historyTurnBudget > 1 ? this.#snapshot.messages.slice(-(this.#budget.historyTurnBudget * 2 - 2)) : []),
@@ -139,7 +153,6 @@ export class AgentSession {
     const done = new Promise<AgentRunOutcome>((yes, no) => { resolve = yes; reject = no; });
     this.#active = { abort, done };
     this.#publish({ status: "running", runId, messages, message: "正在思考", omittedHistoryTurns: this.#inputHistoryBase });
-    const catalog = this.#tools.catalog.filter((item) => !item.requiresDocument && (item.kind === "query" || item.kind === "analysis"));
     void Promise.resolve().then(async () => {
       // Persist the accepted run marker before any model or tool can execute.
       await this.#checkpoint?.(this.#snapshot);
@@ -149,7 +162,10 @@ export class AgentSession {
         policy: { policyVersion: 1, allowedCapabilityIds: catalog.map((item) => item.id), allowedKinds: catalog.length ? ["query", "analysis"] : [], maxToolsPerTurn: 4, maxCostClass: "constant", approvalMode: "disallow" },
         budget: this.#budget, initialContextItems: contextItems, maxTurns: 16,
       }, abort.signal, (event) => {
-        if (generation === this.#generation && !this.#disposed && this.#active?.abort === abort) this.#progress(assistantId, event);
+        if (generation === this.#generation && !this.#disposed && this.#active?.abort === abort && event.runId === runId) {
+          this.#progress(assistantId, event);
+          try { this.#onProgress?.(event); } catch { /* Observation must not affect execution. */ }
+        }
       });
     }).then(async (outcome) => {
       if (generation === this.#generation && !this.#disposed) {

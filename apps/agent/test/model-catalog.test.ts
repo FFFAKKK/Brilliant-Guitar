@@ -7,6 +7,7 @@ import { fetchModelCatalog, ModelCatalogError } from "../src/server/model-catalo
 import { AgentHostError, StandaloneAgentHost } from "../src/server/agent-host.ts";
 import { createStandaloneServer } from "../src/server/http-server.ts";
 import { createModelFixture, type CatalogFixtureReply } from "./model-fixture.ts";
+import { listenForTest } from "./listen-for-test.ts";
 
 const sentinel = "catalog-fixture-private-key";
 const connection = (baseUrl: string): AgentModelConnection => ({ providerId: "openai-compatible", protocol: "chat-completions", baseUrl });
@@ -118,7 +119,7 @@ test("HTTP catalog returns its own DTO, preserves snapshot and validates origin/
   const fixture = await createModelFixture([]); t.after(fixture.close);
   const host = new StandaloneAgentHost(); t.after(() => host.dispose());
   const server = createStandaloneServer({ host });
-  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  await listenForTest(server);
   const address = server.address(); assert.ok(address && typeof address !== "string");
   const url = `http://127.0.0.1:${address.port}/api/model-catalog`;
   t.after(async () => { server.closeAllConnections(); await new Promise<void>((resolve) => server.close(() => resolve())); });
@@ -143,7 +144,7 @@ test("closing the local HTTP client cancels its pending supplier request", async
   const fixture = await createModelFixture([], { catalog: { hang: true } }); t.after(fixture.close);
   const host = new StandaloneAgentHost(); t.after(() => host.dispose());
   const server = createStandaloneServer({ host });
-  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  await listenForTest(server);
   const address = server.address(); assert.ok(address && typeof address !== "string");
   t.after(async () => { server.closeAllConnections(); await new Promise<void>((resolve) => server.close(() => resolve())); });
   const controller = new AbortController();

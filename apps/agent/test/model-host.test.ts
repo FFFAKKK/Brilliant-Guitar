@@ -99,3 +99,20 @@ test("wrong model identity and already-aborted requests send no model traffic", 
   assert.equal(events[0]?.type, "response.started"); assert.equal(events.at(-1)?.type, "response.failed");
   assert.equal(fixture.requests.length, 0);
 });
+
+test("historical tool aliases replay valid feedback but never grant permission for a new call", async (t) => {
+  const fixture = await createModelFixture([textReply("Historical result read"), toolReply("tool_2", "{}")]); t.after(fixture.close);
+  const host = createCompletionsModelHost(configuration(fixture.baseUrl), sentinel);
+  const historical = { ...request(), tools: [{ name: "current.read", description: "Current", parameters: { type: "object" } }], messages: [
+    { role: "user" as const, content: "Read history" },
+    { role: "assistant" as const, content: [{ type: "tool-call" as const, callId: "historical-call", name: "old.read", arguments: {} }] },
+    { role: "tool" as const, toolCallId: "historical-call", toolName: "old.read", content: "Actual old result", isError: false },
+  ] };
+  await host.streamAgentModel!(historical);
+  const wire = fixture.requests[0]!.body.messages as { role: string; tool_calls?: { id: string; function: { name: string } }[]; tool_call_id?: string }[];
+  assert.equal(wire[1]?.tool_calls?.[0]?.function.name, "tool_2");
+  assert.equal(wire[2]?.tool_call_id, "historical-call");
+  assert.ok(!JSON.stringify(fixture.requests[0]?.body.tools).includes("tool_2"));
+  await assert.rejects(host.streamAgentModel!(historical), /模型请求失败/);
+  assert.equal(fixture.requests.length, 2);
+});
