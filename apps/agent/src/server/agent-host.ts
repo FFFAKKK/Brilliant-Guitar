@@ -3,6 +3,7 @@ import { createPiDecisionPlugin } from "@brilliant-guitar/agent-runtime/pi";
 import { createHostPiStreamFn } from "@brilliant-guitar/agent-runtime/pi/openai-stream";
 import { isAgentProviderCredentialSecret } from "@brilliant-guitar/agent-runtime/contracts/agent-provider-credential";
 import type { AgentDecisionProviderPort } from "@brilliant-guitar/agent-runtime/runtime/provider";
+import type { AgentModelInputDiagnosticV1 } from "@brilliant-guitar/agent-runtime/contracts/model-input";
 import type { StandaloneAgentSnapshot } from "../contracts/host.ts";
 import { createCompletionsModel, createCompletionsModelHost } from "./model-host.ts";
 import { matchesModelConnection, parseModelCatalogRequest, type AgentModelCatalog } from "../contracts/model-catalog.ts";
@@ -27,6 +28,7 @@ export class StandaloneAgentHost {
   #testing: AgentSession | null = null;
   #changing = false;
   #disposed = false;
+  #modelInput: AgentModelInputDiagnosticV1 | null = null;
   #settings: StoredConnectionSettings = { ...defaultConnectionSettings(), profiles: defaultConnectionSettings().profiles.map(({ credentialRemembered: _remembered, ...profile }) => ({ ...profile, sealedCredential: null })) };
   #storageNotice: string | null = null;
   #pendingChange: Promise<void> | null = null;
@@ -56,7 +58,15 @@ export class StandaloneAgentHost {
       const host = createCompletionsModelHost(configuration, this.#apiKey);
       const model = createCompletionsModel(configuration);
       const plugin = createPiDecisionPlugin({ id: "brilliant.pi", version: "0.1.0", label: "Pi", model,
-        streamFn: createHostPiStreamFn(host, request, { providerId: configuration.providerId, modelId: configuration.modelId }, model) });
+        streamFn: createHostPiStreamFn(host, request, { providerId: configuration.providerId, modelId: configuration.modelId }, model, {
+          onInput: (diagnostic) => {
+            if (this.#disposed || this.session.getSnapshot().runId !== diagnostic.runId) return;
+            const accepted = this.session.reportModelInput(diagnostic.runId, {
+              omittedHistoryTurns: diagnostic.omittedHistory.length, budgetExceeded: diagnostic.status === "budget-exceeded",
+            });
+            if (accepted && !this.#disposed && this.session.getSnapshot().runId === diagnostic.runId) this.#modelInput = diagnostic;
+          },
+        }) });
       return createAgentPluginProvider(plugin).decide(request, signal, observer);
     } };
     this.session = createAgentSession({ provider: this.#provider, retainTranscript: true,
@@ -65,6 +75,7 @@ export class StandaloneAgentHost {
     const first = newConversation(this.session.getSnapshot().sessionId);
     this.#library = { schemaVersion: 1, selectedSessionId: first.sessionId, sessions: [first] };
     this.#unsubscribe = this.session.subscribe(() => {
+      if (this.#modelInput?.runId !== this.session.getSnapshot().runId) this.#modelInput = null;
       if (this.#captureTranscript() && this.session.hasActiveRun() && !this.#checkpointTimer) {
         this.#checkpointTimer = setTimeout(() => {
           this.#checkpointTimer = null;
@@ -103,6 +114,8 @@ export class StandaloneAgentHost {
       connections: publicConnectionSettings(this.#settings), storage: Object.freeze({ configuration: this.#settingsStore?.kind ?? "memory", credentialProtection: this.#settingsStore?.kind === "file" ? this.#credentialProtector.kind : "unavailable", notice: this.#storageNotice }),
       conversations: Object.freeze({ selectedSessionId: this.#library.selectedSessionId, items: Object.freeze(this.#library.sessions.map(({ messages, ...record }) => Object.freeze({ ...record, messageCount: messages.length }))), storage: this.#sessionStore?.kind ?? "memory", saving: this.#saveCount > 0, notice: this.#sessionNotice }) });
   }
+
+  getModelInput(): AgentModelInputDiagnosticV1 | null { return this.#modelInput; }
 
   subscribe(listener: (snapshot: StandaloneAgentSnapshot) => void): () => void {
     this.#listeners.add(listener);
@@ -267,6 +280,7 @@ export class StandaloneAgentHost {
 
   async dispose(): Promise<void> {
     this.#disposed = true;
+    this.#modelInput = null;
     await this.#pendingChange?.catch(() => undefined);
     this.#abortCatalogs();
     await this.#testing?.dispose();

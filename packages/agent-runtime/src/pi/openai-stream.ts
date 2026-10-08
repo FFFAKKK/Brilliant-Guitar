@@ -23,6 +23,8 @@ import type {
 import { createAgentModelStreamRequestV1, isAgentModelStreamEnvelopeV1 } from "../contracts/agent-model-stream.ts";
 import type { AgentProviderSelection } from "../contracts/agent-provider-settings.ts";
 import type { PiAgentStreamFn } from "./types.ts";
+import type { AgentModelInputDiagnosticV1 } from "../contracts/model-input.ts";
+import { budgetModelInput } from "./model-input-budget.ts";
 
 const ZERO_USAGE: Usage = Object.freeze({
   input: 0,
@@ -274,9 +276,10 @@ function createRequest(request: AgentProviderRequest, selection: AgentProviderSe
 }
 
 export function createHostPiStreamFn(host: AgentModelProviderHostPort, request: AgentProviderRequest,
-  selection: AgentProviderSelection, model: Model<Api> = modelFor(selection)): PiAgentStreamFn {
-  return (_streamModel, context, options?: SimpleStreamOptions) => {
-    if (options?.signal?.aborted) {
+  selection: AgentProviderSelection, model: Model<Api> = modelFor(selection),
+  options: { readonly onInput?: (diagnostic: AgentModelInputDiagnosticV1) => void } = {}): PiAgentStreamFn {
+  return (_streamModel, context, streamOptions?: SimpleStreamOptions) => {
+    if (streamOptions?.signal?.aborted) {
       const stream = createAssistantMessageEventStream();
       const message = errorMessage(model, "aborted", "模型流已取消");
       stream.push({ type: "error", reason: "aborted", error: message }); stream.end(message); return stream;
@@ -286,7 +289,12 @@ export function createHostPiStreamFn(host: AgentModelProviderHostPort, request: 
       const message = errorMessage(model, "error", "当前宿主不支持原始模型流");
       stream.push({ type: "error", reason: "error", error: message }); stream.end(message); return stream;
     }
-    try { return liveStream(model, createRequest(request, selection, context), host, options?.signal); }
+    try {
+      const input = budgetModelInput(createRequest(request, selection, context), request, model.api);
+      try { options.onInput?.(input.diagnostic); } catch { /* Diagnostics observers cannot change execution. */ }
+      if (input.diagnostic.status === "budget-exceeded") throw new Error("模型必需输入超过当前上下文预算，请缩短问题或减少资料");
+      return liveStream(model, input.request, host, streamOptions?.signal);
+    }
     catch (error) {
       const stream = createAssistantMessageEventStream();
       const message = errorMessage(model, "error", error);

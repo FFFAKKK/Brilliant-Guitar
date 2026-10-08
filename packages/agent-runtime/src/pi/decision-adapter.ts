@@ -9,6 +9,7 @@ import {
 } from "../runtime/agent-plugin-contract.ts";
 import type { AgentProviderStreamEventPayload } from "../runtime/provider-stream.ts";
 import type { PiAgentModel, PiAgentStreamFn } from "./types.ts";
+import { PI_BASE_INSTRUCTIONS, projectPiInput } from "./input-projection.ts";
 
 const EMPTY_OBJECT_SCHEMA = Type.Object({});
 
@@ -65,15 +66,6 @@ function createDecisionTools(toolset: AgentPluginRequest["toolset"]): AgentTool[
   }));
 }
 
-function promptFor(request: AgentPluginRequest): string {
-  const context = request.context.contextItems.map((item) => ({
-    kind: item.kind,
-    sourceId: item.sourceId,
-    content: item.content,
-  }));
-  return JSON.stringify({ goal: request.goal, context });
-}
-
 /**
  * Pi-backed Agent Plugin. Pi decides; AgentRunController executes.
  * The adapter deliberately has no AgentCapabilityPort dependency.
@@ -97,9 +89,12 @@ export function createPiDecisionPlugin(options: PiDecisionPluginOptions): AgentP
       const abort = (): void => agent?.abort();
       signal?.addEventListener("abort", abort, { once: true });
       try {
+        const input = projectPiInput(request, options.model);
         agent = new Agent({
           initialState: {
             model: options.model,
+            systemPrompt: PI_BASE_INSTRUCTIONS,
+            messages: input.history,
             tools: createDecisionTools(request.toolset),
           },
           streamFn: options.streamFn,
@@ -144,7 +139,7 @@ export function createPiDecisionPlugin(options: PiDecisionPluginOptions): AgentP
             terminalEventEmitted = true;
           }
         });
-        await agent.prompt(promptFor(request));
+        await agent.prompt(input.prompt);
         await agent.waitForIdle();
         if (signal?.aborted) throw new DOMException("Agent decision was cancelled", "AbortError");
         if (providerError !== null) throw providerError;

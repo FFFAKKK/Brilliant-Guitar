@@ -7,6 +7,7 @@ import {
   isScoreTempoUpdateV1,
   isScoreTitleUpdateV1,
 } from "../contracts/capability.ts";
+import { DEFAULT_MODEL_INPUT_TOKEN_BUDGET } from "@brilliant-guitar/agent-runtime";
 import type { WorkflowDirectory } from "../contracts/workflow.ts";
 import type {
   AgentApprovalDecision,
@@ -203,7 +204,8 @@ const UPDATE_METADATA_POLICY: RunPolicySnapshot = Object.freeze({
 });
 
 const SUMMARY_BUDGET: AgentContextBudget = Object.freeze({
-  tokenBudget: 800,
+  // The Pi transport now budgets complete messages, instructions and tool declarations.
+  tokenBudget: DEFAULT_MODEL_INPUT_TOKEN_BUDGET,
   itemCountBudget: 12,
   toolResultSizeBudget: 4096,
   rangeBudget: 0,
@@ -211,7 +213,7 @@ const SUMMARY_BUDGET: AgentContextBudget = Object.freeze({
 });
 
 const MEASURES_BUDGET: AgentContextBudget = Object.freeze({
-  tokenBudget: 1200,
+  tokenBudget: DEFAULT_MODEL_INPUT_TOKEN_BUDGET,
   itemCountBudget: 12,
   toolResultSizeBudget: 16384,
   rangeBudget: 32,

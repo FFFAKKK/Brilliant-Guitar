@@ -28,7 +28,8 @@ const request: AgentProviderRequest = {
     contextItems: [],
     omittedItems: [],
     versionWarnings: [],
-    budget: { estimatedTokens: 1, itemCount: 0, tokenBudget: 100, itemCountBudget: 8, exceeded: false },
+    // This fixture exercises transport, not rejection; budget includes instructions and tool schemas.
+    budget: { estimatedTokens: 1, itemCount: 0, tokenBudget: 8192, itemCountBudget: 8, exceeded: false },
   },
   toolset: {
     snapshotId: "toolset-1",
@@ -343,7 +344,7 @@ test("OpenAI raw model stream completes the real Controller capability loop", as
     intent: { kind: "read", requestedCapabilityIds: ["score.read-summary"], scope: "document" },
     policy: { policyVersion: 1, allowedCapabilityIds: ["score.read-summary"], allowedKinds: ["query"],
       maxToolsPerTurn: 1, maxCostClass: "constant", approvalMode: "disallow" },
-    budget: { tokenBudget: 400, itemCountBudget: 16, toolResultSizeBudget: 4096, rangeBudget: 32, historyTurnBudget: 4 },
+    budget: { tokenBudget: 8192, itemCountBudget: 16, toolResultSizeBudget: 4096, rangeBudget: 32, historyTurnBudget: 4 },
     initialContextItems: [], maxTurns: 4,
   });
   assert.equal(outcome.response, "当前乐谱共有 12 个小节。");

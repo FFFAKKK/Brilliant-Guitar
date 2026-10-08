@@ -55,6 +55,7 @@ export function createStandaloneServer(options: Options): ViteServer {
     if (pathname.startsWith("/api/")) {
       if (request.headers.origin && request.headers.origin !== `http://${request.headers.host}`) { send(response, 403, { error: "请求来源无效" }); return; }
       if (request.method === "GET" && pathname === "/api/session") { send(response, 200, options.host.getSnapshot()); return; }
+      if (request.method === "GET" && pathname === "/api/model-input") { send(response, 200, options.host.getModelInput()); return; }
       if (request.method === "GET" && pathname === "/api/session/events") {
         response.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-store", connection: "keep-alive" });
         let waitingForDrain = false;

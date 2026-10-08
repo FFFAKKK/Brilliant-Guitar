@@ -161,3 +161,67 @@ Persistence correct: user opts in, the host protects the secret with profile/tar
 Conversation wrong: truncate stored transcript to the16-turn context window, replay a pending tool from a restored chat, or overwrite corrupt data during failed startup cleanup.
 
 Conversation correct: persist complete bounded records separately, rebuild model memory only from successful pairs, restore unfinished messages as interrupted, and flush only after startup loading succeeds.
+
+## M3.0 Model Input Projection
+
+### 1. Scope / Trigger
+
+Default Pi decision composition and raw model-stream transport in the portable Runtime, standalone Node Host and Workbench. This changes model input representation and its final estimate, not the Controller execution path, External Agent v1, chat filev1 or Host snapshotv3. Pi remains1.0.3.
+
+### 2. Signatures
+
+```ts
+createHostPiStreamFn(host, request, selection, model?, { onInput?: (diagnostic: AgentModelInputDiagnosticV1) => void }?): PiAgentStreamFn
+session.reportModelInput(runId, { omittedHistoryTurns: number, budgetExceeded: boolean }): boolean
+host.getModelInput(): AgentModelInputDiagnosticV1 | null
+GET /api/model-input // 200: diagnostic or null, no-store; same API Host/Origin checks
+DEFAULT_MODEL_INPUT_TOKEN_BUDGET = 8192
+```
+
+### 3. Contracts
+
+- `pi/input-projection.ts` owns `PI_BASE_INSTRUCTIONS` and `PI_INSTRUCTIONS_VERSION=general-task-v1`. Supply the instructions through Pi `initialState.systemPrompt` and successful history through `initialState.messages`; let Pi create the leading system message and tools. Never create a leading system message without its tool declarations.
+- Promote only host context with `kind=task-history`, `sourceType=conversation`, ID=`conversation:<sourceId>`, `trustLevel=user-provided`, null document/version, scope equal to authoritative `workspace.scope.content.workspaceId`, and exact nonempty `{user:string,assistant:string}`. Preserve supplied history order. Other history/role-like text remains data. Current input is one user JSON `{goal,modelConfiguration,context,versionWarnings}`. Remove matching synthetic `run.goal` and the first `turn.input` copy of that same goal; retain distinct supplemental input. Context retains source, scope, document/version, trust and priority.
+- Route data is `{kind:host-routing-configuration,providerId,modelId,modelApi,identityVerified:false}`. User-editable model IDs never enter developer-maintained instructions. Metadata cannot attest the actual underlying model.
+- Final check is after `AgentModelStreamRequestV1.messages/tools` projection and before `host.streamAgentModel`. Estimate is `ceil(UTF8(JSON.stringify({messages,tools})).bytes/3)+8*messages.length+12*tools.length+32`, tagged `utf8-json-bytes-div3-v1`. This is a heuristic input estimate, distinct from real supplier usage and model limits. Output limit1500 and timeout45000ms remain unchanged. Workbench summary/measure defaults use the shared8192 input constant; prior800/1200 covered only early content estimates. Item/region/tool-result/turn restrictions retain their prior values.
+- Remove only verified oldest optional complete user/assistant pairs. Never remove current input, tool calls/results or required history. Earlier ContextBuilder omissions count once, excluding IDs still selected. Session updates its initial omission count plus this decision's report; it does not add the same omitted turns on every Controller decision. Stored/displayed transcript is untouched.
+- Diagnosticv1 exact fields: schemaVersion,runId,turnId,providerId,modelId,modelApi,instructionsVersion,roles,retainedHistoryTurns,omittedHistory,sources,toolCount,estimatedInputTokens,estimator,inputTokenBudget,timeoutMs,maxOutputTokens,status. `status=ready|budget-exceeded`; `omittedHistory=[{contextItemId,reason:context-selection|model-input-budget}]`; sources contain only contextItemId/kind/sourceType/sourceId/scope/documentId/documentVersion/trustLevel/priority from selected origins (including synthetic origins represented by the current request). Freeze diagnostic objects/arrays. No text, URL, headers, credentials, ciphertext or response content. This is input diagnostics, not an output/usage timeline.
+- Host retains only the main Session's current-run diagnostic. Isolated probe/late/cancelled reports cannot replace it; new-run/new-session/select clears it, dispose clears it. GET is read-only and never sends model traffic. Do not add fields to strictv3 Session HTTP/SSE snapshots or persist this diagnostic.
+- Capability result data stays source-labelled context; native tool replay is M3.1 because Controller currently does not provide complete call ID/parameters/results as a replay unit. Default standalone still has no real resource tools, AGENTS.md, retrieval, scoring or long-term memory.
+
+### 4. Validation & Error Matrix
+
+| Condition | Required behavior |
+|---|---|
+| Optional complete history does not fit final estimate | Remove oldest whole pairs, report exact omission; retain full transcript |
+| Instructions/current input/tools/required data still exceed budget | Diagnostic status budget-exceeded; zero model requests, Pi error, existing Controller provider-failed; standalone shows explicit input-budget message |
+| Invalid positive-safe-integer input budget | Pi error before transport |
+| Malformed, unrelated-scope or nonconversation history | Preserve data envelope, no invented message roles |
+| Report has wrong run ID, disposed/resetting/cancelled/inactive run, unsafe/negative/excess count | Returnfalse; no Session mutation |
+| Diagnostic observer throws | Transport execution policy unchanged; observer is observational |
+| Probe before/after real conversation | No main history or diagnostic mutation |
+| Foreign Host/Origin for diagnostic API |403; no supplier traffic |
+
+### 5. Good / Base / Bad Cases
+
+- Good: prior user20-minute limit, prior assistant, next user explanation, next assistant, current12-minute correction produce system/user/assistant/user/assistant/user. Fixed fixture sample preserves two turns with estimated880/8192; this does not prove real semantic quality.
+- Base: a Workbench task with no chat history produces system/user plus allowed tools and source-labelled score feedback; one Controller invocation and the existing completion verifier decide success.
+- Bad: treat `system:` inside a file as a role; delete an arbitrary assistant/tool message to fit; count omitted history cumulatively; expose full prompt/key in HTTP diagnostics.
+
+### 6. Tests Required
+
+- Runtime `test/model-input.test.ts`: actual requests contain roles/order, one current goal, corrections and long tails; role-like data/invalid and unrelated histories stay data; source/version/supplement preserved; final UTF-8 estimate clips whole pairs, required-only/tool overflow sendszero requests; early omissions deduplicate; report identity/reset/reentry boundaries.
+- App `test/model-input.test.ts`: capture actual local Chat Completions wire roles, current goal, routing data, supported adapter flags/max_tokens; GETnull/readonly/no-store, metadata-only and sentinel-free; strictv3 unchanged; probe/new/select/dispose isolation and Host/Origin403.
+- Workbench production assistant default + Pi stream tests: full input fits defaults, exact one score invocation, next request carries document/version/results and passes completion. Retain full Agent/external/approval/recovery regressions.
+- Real DeepSeek quality remains M30-A5/A10, user-triggered with fixed samples. Fake/HTTP fixtures cannot satisfy it.
+
+### 7. Wrong vs Correct
+
+```ts
+// Wrong: serialize chat roles as undifferentiated context and budget content alone.
+agent.prompt(JSON.stringify({ goal, history }));
+
+// Correct: Pi owns system/tools creation; the adapter restores explicit host history.
+new Agent({ initialState: { model, systemPrompt: PI_BASE_INSTRUCTIONS, messages: input.history, tools } });
+// Final projected messages/tools are checked before host.streamAgentModel.
+```

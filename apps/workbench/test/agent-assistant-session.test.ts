@@ -14,6 +14,10 @@ import type { AgentProviderPort } from "../src/agent/provider.ts";
 import { AgentRunController, getAgentRunRequiredApproval } from "../src/agent/run-controller.ts";
 import { FirstPartyPreparedMutationCoordinator } from "../src/agent/prepared-mutation.ts";
 import type { WorkflowDirectory } from "../src/contracts/workflow.ts";
+import { createPiDecisionPlugin } from "../src/agent/pi/decision-adapter.ts";
+import { createHostPiStreamFn, createOpenAiPiModel } from "../src/agent/pi/openai-stream.ts";
+import { createAgentPluginProvider } from "../src/agent/agent-plugin-contract.ts";
+import type { AgentModelStreamRequestV1 } from "../src/contracts/agent-model-stream.ts";
 
 const readyRuntimeSnapshot: AgentPluginRuntimeSnapshot = {
   status: "ready",
@@ -184,6 +188,43 @@ test("assistant session composes Provider, controller, capability and durable st
     ownerPluginId: "brilliant.score",
     ownerPluginVersion: "1.0.0",
   });
+});
+
+test("assistant's production default budget supports full Pi input and authoritative score feedback", async () => {
+  const selection = { providerId: "openai", modelId: "fixture-model" };
+  const model = createOpenAiPiModel(selection);
+  const inputs: AgentModelStreamRequestV1[] = [];
+  const provider: AgentProviderPort = { decide: async (request, signal, observer) => {
+    const streamFn = createHostPiStreamFn({
+      async readAgentProviderCredentialStatus(providerId) { return { providerId, present: true, status: "configured", message: "fixture" }; },
+      async streamAgentModel(input, _signal, progress) {
+        inputs.push(input);
+        progress?.({ type: "response.started", runId: input.runId, turnId: input.turnId, sequence: 1 });
+        progress?.({ type: "response.completed", runId: input.runId, turnId: input.turnId, sequence: 2 });
+        return { schemaVersion: 1, providerId: input.providerId, modelId: input.modelId, providerRequestId: `fixture-${inputs.length}`,
+          output: inputs.length === 1 ? [{ type: "tool-call", callId: "read", name: "score.read-summary", arguments: {} }]
+            : [{ type: "text", text: "当前乐谱共有12小节。" }], usage: null };
+      },
+    }, request, selection, model);
+    const plugin = createPiDecisionPlugin({ id: "brilliant.pi", version: "0.1.0", label: "Pi", model, streamFn });
+    return createAgentPluginProvider(plugin).decide(request, signal, observer);
+  } };
+  let executions = 0;
+  const session = new AgentAssistantSession({ runtime: new FakeRuntime(provider), store: new InMemoryAgentRunStore(),
+    capabilities: new WorkbenchAgentCapabilityPort({ async invokeCapability(request) {
+      ++executions;
+      return { status: "completed", invocationId: request.invocationId, capabilityId: request.capabilityId,
+        contractVersion: request.contractVersion, data: { documentId: "score-1", documentVersion: 7, title: "练习曲", measureCount: 12 } };
+    } }) });
+  try {
+    assert.equal(await session.start("读取当前乐谱概要", workspace), true);
+    assert.equal(session.getSnapshot().status, "completed");
+    assert.equal(session.getSnapshot().response, "当前乐谱共有12小节。");
+    assert.equal(executions, 1); assert.equal(inputs.length, 2);
+    assert.deepEqual(inputs[1]?.messages.map((item) => item.role), ["system", "user"]);
+    assert.match(JSON.stringify(inputs[1]?.messages), /measureCount/);
+    assert.match(JSON.stringify(inputs[1]?.messages), /documentVersion/);
+  } finally { session.dispose(); }
 });
 
 test("assistant session routes metadata questions to the metadata capability", async () => {

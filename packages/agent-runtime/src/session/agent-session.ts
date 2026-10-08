@@ -5,6 +5,7 @@ import type { AgentContextBudget, AgentContextItem } from "../runtime/agent-cont
 import type { AgentRunProgressEvent } from "../runtime/run-progress.ts";
 import { AgentToolRegistry } from "./tool-registry.ts";
 import { MAX_SESSION_MESSAGES, isSessionId, parseTranscript } from "./session-store.ts";
+import { DEFAULT_MODEL_INPUT_TOKEN_BUDGET } from "../contracts/model-input.ts";
 
 export interface AgentChatMessage {
   readonly id: string;
@@ -51,6 +52,9 @@ export class AgentSession {
   readonly #listeners = new Set<(event: AgentSessionEvent) => void>();
   #history: HistoryTurn[] = [];
   #successfulTurnCount = 0;
+  #inputHistoryBase = 0;
+  #inputHistoryCount = 0;
+  #inputBudgetExceeded = false;
   #generation = 0;
   #disposed = false;
   #resetting = false;
@@ -62,7 +66,7 @@ export class AgentSession {
     this.#retainTranscript = options.retainTranscript ?? false;
     this.#checkpoint = options.checkpoint;
     this.#tools = options.tools ?? new AgentToolRegistry();
-    this.#budget = Object.freeze({ tokenBudget: 8192, itemCountBudget: 64, toolResultSizeBudget: 16384, rangeBudget: 0, historyTurnBudget: 16, ...options.budget });
+    this.#budget = Object.freeze({ tokenBudget: DEFAULT_MODEL_INPUT_TOKEN_BUDGET, itemCountBudget: 64, toolResultSizeBudget: 16384, rangeBudget: 0, historyTurnBudget: 16, ...options.budget });
     if (!Number.isSafeInteger(this.#budget.historyTurnBudget) || this.#budget.historyTurnBudget < 1 || this.#budget.historyTurnBudget > 64) throw new Error("会话历史预算需在 1 到 64 轮之间");
     this.#controller = new AgentRunController({
       provider: options.provider, capabilities: this.#tools, catalog: this.#tools.catalog,
@@ -76,6 +80,18 @@ export class AgentSession {
 
   getSnapshot(): AgentSessionSnapshot { return this.#snapshot; }
   hasActiveRun(): boolean { return this.#active !== null; }
+
+  /** Per-decision report replaces the prior report; late/probe runs cannot affect this session. */
+  reportModelInput(runId: string, report: { readonly omittedHistoryTurns: number; readonly budgetExceeded: boolean }): boolean {
+    if (this.#disposed || this.#resetting || !this.#active || this.#active.abort.signal.aborted
+      || this.#snapshot.runId !== runId || this.#snapshot.status !== "running"
+      || !Number.isSafeInteger(report.omittedHistoryTurns) || report.omittedHistoryTurns < 0
+      || report.omittedHistoryTurns > this.#inputHistoryCount || typeof report.budgetExceeded !== "boolean") return false;
+    this.#inputBudgetExceeded = report.budgetExceeded;
+    this.#publish({ omittedHistoryTurns: this.#inputHistoryBase + report.omittedHistoryTurns,
+      ...(report.budgetExceeded ? { message: "模型必需输入超过当前上下文预算，请缩短问题或减少资料" } : {}) });
+    return true;
+  }
 
   subscribe(listener: (event: AgentSessionEvent) => void): () => void {
     if (this.#disposed) throw new Error("Agent session is disposed");
@@ -108,6 +124,9 @@ export class AgentSession {
     const runId = crypto.randomUUID();
     const assistantId = crypto.randomUUID();
     const contextItems = this.#historyContext(goal);
+    this.#inputHistoryBase = (this.#retainTranscript ? this.#successfulTurnCount : this.#history.length) - contextItems.length;
+    this.#inputHistoryCount = contextItems.length;
+    this.#inputBudgetExceeded = false;
     const messages: AgentChatMessage[] = [
       ...(this.#retainTranscript ? this.#snapshot.messages : this.#budget.historyTurnBudget > 1 ? this.#snapshot.messages.slice(-(this.#budget.historyTurnBudget * 2 - 2)) : []),
       { id: crypto.randomUUID(), runId, role: "user", content: goal, status: "complete" },
@@ -119,7 +138,7 @@ export class AgentSession {
     let reject!: (error: unknown) => void;
     const done = new Promise<AgentRunOutcome>((yes, no) => { resolve = yes; reject = no; });
     this.#active = { abort, done };
-    this.#publish({ status: "running", runId, messages, message: "正在思考", omittedHistoryTurns: (this.#retainTranscript ? this.#successfulTurnCount : this.#history.length) - contextItems.length });
+    this.#publish({ status: "running", runId, messages, message: "正在思考", omittedHistoryTurns: this.#inputHistoryBase });
     const catalog = this.#tools.catalog.filter((item) => !item.requiresDocument && (item.kind === "query" || item.kind === "analysis"));
     void Promise.resolve().then(async () => {
       // Persist the accepted run marker before any model or tool can execute.
@@ -143,7 +162,7 @@ export class AgentSession {
           this.#history = this.#history.slice(-this.#budget.historyTurnBudget);
         }
         this.#publish({ messages: this.#snapshot.messages.map((item) => item.id === assistantId ? { ...item, content, status: completed ? "complete" : cancelled ? "cancelled" : "failed" } : item),
-          status: completed ? "completed" : cancelled ? "cancelled" : "failed", message: completed ? "回复完成" : cancelled ? "已停止" : "本次请求未完成，请检查配置或重试" });
+          status: completed ? "completed" : cancelled ? "cancelled" : "failed", message: completed ? "回复完成" : cancelled ? "已停止" : this.#inputBudgetExceeded ? "模型必需输入超过当前上下文预算，请缩短问题或减少资料" : "本次请求未完成，请检查配置或重试" });
         try { await this.#checkpoint?.(this.#snapshot); } catch { /* Host exposes unsaved output; execution result is unchanged. */ }
         this.#active = null;
       }
