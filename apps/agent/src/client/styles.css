@@ -105,7 +105,9 @@ h1 { font-size: 18px; font-weight: 600; margin: 0; letter-spacing: -.3px; }
 .assistant .message-author { color: #8bb3f2; }
 .message-content { font-size: 15px; line-height: 1.85; white-space: pre-wrap; overflow-wrap: anywhere; }
 .message-meta { display: block; color: var(--color-tertiary); font-size: 12px; margin-top: 12px; }
-.message-meta.failed { color: var(--color-danger); }
+.reply-notice { margin: 0 0 16px; padding: 12px 14px; border: 1px solid rgb(255 116 123 / 30%); border-left: 3px solid var(--color-danger); border-radius: var(--radius-control); background: rgb(255 116 123 / 5%); font-size: 13px; line-height: 1.7; overflow-wrap: anywhere; }
+.reply-notice strong { display: block; color: var(--color-danger); font-weight: 600; }
+.reply-notice p { margin: 4px 0 0; color: var(--color-secondary); white-space: pre-wrap; }
 .composer-area { flex: none; padding: 12px 24px 20px; }
 .composer-container { max-width: 720px; margin: 0 auto; }
 .composer { background: var(--color-surface); border: 1px solid rgb(255 255 255 / 10%); border-radius: var(--radius-surface); overflow: hidden; }

@@ -1,5 +1,5 @@
 {
   "extends": "./tsconfig.server.json",
-  "compilerOptions": { "noEmit": true, "rootDir": ".", "allowImportingTsExtensions": true },
+  "compilerOptions": { "noEmit": true, "rootDir": ".", "allowImportingTsExtensions": true, "jsx": "react-jsx" },
   "include": ["src/server", "src/contracts", "src/modelcontextprotocol-sdk-shim.d.ts", "test"]
 }

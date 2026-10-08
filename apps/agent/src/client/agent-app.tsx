@@ -3,9 +3,8 @@ import { useAgent } from "./use-agent.ts";
 import { SettingsDialog } from "./settings-dialog.tsx";
 import { Icon } from "./icons.tsx";
 import { ConversationSidebar } from "./conversation-sidebar.tsx";
-import { CopyButton, MessageContent } from "./message-content.tsx";
+import { ChatMessage } from "./chat-message.tsx";
 import { ResourcePanel } from "./resource-panel.tsx";
-import { ToolActivities } from "./tool-activities.tsx";
 
 export function AgentApp() {
   const { snapshot, connected, error, action, clearError } = useAgent();
@@ -50,14 +49,9 @@ export function AgentApp() {
       const area = scrollArea.current;
       if (area) followOutput.current = area.scrollHeight - area.scrollTop - area.clientHeight < 80;
     }}>
-      {session?.messages.length ? <div className="message-list" aria-label="对话记录">{session.messages.map((message) => <article className={`chat-message ${message.role}`} key={message.id}>
-        <span className="message-author">{message.role === "user" ? "你" : "Agent"}</span>
-        {snapshot && message.role === "assistant" && snapshot.activities.runId === message.runId && <ToolActivities activities={snapshot.activities}/>}
-        <MessageContent role={message.role} content={message.content || (message.status === "streaming" ? "正在思考…" : message.status === "cancelled" ? "本次请求已停止。" : message.status === "interrupted" ? "宿主退出时回复尚未完成。" : "没有收到完整回复。")}/>
-        {message.content && message.status !== "streaming" && <CopyButton text={message.content} label="复制消息"/>}
-        {message.status === "cancelled" && <span className="message-meta">已停止</span>}{message.status === "failed" && <span className="message-meta failed">本次请求未完成，请查看工具状态或检查模型设置后重试</span>}
-        {message.status === "interrupted" && <span className="message-meta">回复在宿主退出时中断。你可以重新发送消息。</span>}
-      </article>)}</div> : <div className="empty-state"><span className="empty-symbol"><Icon name="agent"/></span><span className="eyebrow">你的独立 Agent</span><h2>从一句话开始。</h2>
+      {session?.messages.length && snapshot ? <div className="message-list" aria-label="对话记录">{session.messages.map((message) =>
+        <ChatMessage key={message.id} message={message} session={session} activities={snapshot.activities}/>
+      )}</div> : <div className="empty-state"><span className="empty-symbol"><Icon name="agent"/></span><span className="eyebrow">你的独立 Agent</span><h2>从一句话开始。</h2>
         <p>连接你的模型，开始一段对话。</p><button className="subtle-button" disabled={!snapshot} onClick={() => setSettingsOpen(true)}>{snapshot?.credentialPresent ? "查看模型设置" : "配置模型"}<span aria-hidden="true">↗</span></button></div>}
       <div ref={messagesEnd}/>
     </div>

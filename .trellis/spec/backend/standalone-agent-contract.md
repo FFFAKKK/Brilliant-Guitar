@@ -423,3 +423,45 @@ if (recallImproved) enableProductionRanking();
 const gate = recallImproved && reviewGroupImproved && criticalLosses.length === 0;
 const next = gate ? "further-validation-only" : "retain-recency";
 ```
+
+## M3.3a Incomplete Reply Presentation
+
+### 1. Scope / Trigger
+
+Standalone chat UI only. Real paged Chinese reading produced completed tool activities followed by final input budget failure with a short opening in the assistant body. Show that body as partial output beside its failure reason. Runtime, budgets, Host v4, External v1 and chat file v1 remain unchanged.
+
+### 2. Signatures
+
+`ChatMessage({message: AgentChatMessage, session: AgentSessionSnapshot, activities: ToolActivitiesSnapshot})` is the actual article renderer used by AgentApp. No new endpoint, store field or model request.
+
+### 3. Contracts
+
+- Failed assistant messages show an incomplete notice before tools/body. Nonempty content is labeled partial; empty content has an explicit no-body notice and no invented Markdown reply/copy action.
+- Show the existing host-sanitized session.message only when session.status=failed and session.runId equals message.runId. Otherwise say the original reason was not retained. Chat file v1 stores status without per-message reasons; restored, disabled and later-run snapshots cannot supply an old cause.
+- Render reasons as React text, never Markdown/HTML or string-based error classification. Preserve body source for copying, with a partial-reply copy label for failed output.
+- Tool cards match their own runId and actual invocation statuses. A failed reply cannot turn completed tools into failed cards; tools succeeding cannot imply a complete reply. Other chat statuses keep existing meaning. No automatic retry.
+
+### 4. Validation & Error Matrix
+
+| Condition | Display |
+|---|---|
+| Current failed assistant with content | Incomplete/partial notice plus current Run reason, then original body |
+| Current failed assistant without content | Incomplete/no-body notice plus reason; no fabricated reply or copy button |
+| Older, restored, disabled or different Run; empty reason | Incomplete notice; explicitly unavailable original reason |
+| Complete/streaming/cancelled/interrupted or user message | Existing semantics; no failed-assistant notice |
+| Different activity Run | No activity cards for this message |
+| Completed tools followed by budget failure | Completed cards alongside incomplete reply; zero additional transport |
+
+### 5. Good / Base / Bad Cases
+
+- Good: two real local HTTP tool replies succeed; final budget fails before request three; the opening is visibly partial and the budget cause sits beside it.
+- Base: restored failed text remains readable with unavailable reason, while a later connection failure belongs only to its matching Run.
+- Bad: apply session.message to every historical failure, display an empty failure as model-generated prose, or add automatic retries to the rendering component.
+
+### 6. Tests Required
+
+App chat-message.test.ts loads the actual TSX through Vite SSR and renders it with React. Assert current reason before body, text escaping, no-body/copy behavior, historical/restore/disable/new-Run isolation, other statuses and cross-Run/completed-tool semantics. Real Host plus local HTTP fixture must reproduce partial text/two completed pages/final overflow with exactly two requests. Run App tests/typechecks and isolated production build; record desktop/narrow browser limitations explicitly. Do not relabel fixture or SSR as real-provider/visual acceptance.
+
+### 7. Wrong vs Correct
+
+Wrong: every failed message displays the current session.message. Correct: bind the reason to the current failed Run; when unavailable, keep the incomplete status and state that the reason was not retained. Smaller tool pages bound a single result, not accumulated protected feedback; changing that budget policy requires a separate public design.
