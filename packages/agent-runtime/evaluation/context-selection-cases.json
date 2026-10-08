@@ -1,0 +1,990 @@
+{
+  "schemaVersion": 1,
+  "description": "Synthetic fixed source-unit retrieval fixtures; not real model quality or user history.",
+  "cases": [
+    {
+      "id": "c01",
+      "category": "exact-topic",
+      "split": "development",
+      "critical": false,
+      "goal": "回到八分音符分组练习，补充八分音符分组的步骤。",
+      "optionalSlots": 1,
+      "historyTurnBudget": 16,
+      "turns": [
+        {
+          "id": "c01-h01",
+          "user": "八分音符分组练习用每四个音为一组，重音落在第一拍。",
+          "assistant": "先慢速练四音一组。",
+          "status": "complete"
+        },
+        {
+          "id": "c01-h02",
+          "user": "请介绍琴包的材质。",
+          "assistant": "琴包有多种材质。",
+          "status": "complete"
+        },
+        {
+          "id": "c01-h03",
+          "user": "说一下显示器亮度设置。",
+          "assistant": "可以调整亮度。",
+          "status": "complete"
+        },
+        {
+          "id": "c01-h04",
+          "user": "请把回答写清楚一些。",
+          "assistant": "可以，我会清晰说明。",
+          "status": "complete"
+        },
+        {
+          "id": "c01-h05",
+          "user": "请保留分步说明。",
+          "assistant": "好的，保留分步说明。",
+          "status": "complete"
+        }
+      ],
+      "neededTurnIds": [
+        "c01-h01"
+      ],
+      "whyNeeded": "用户明确要求回到较早的八分音符分组方案。"
+    },
+    {
+      "id": "c02",
+      "category": "english-topic",
+      "split": "development",
+      "critical": false,
+      "goal": "Return to my metronome subdivision exercise and expand its steps.",
+      "optionalSlots": 1,
+      "historyTurnBudget": 16,
+      "turns": [
+        {
+          "id": "c02-h01",
+          "user": "My metronome subdivision exercise uses quarter notes then eighth notes at 60 BPM.",
+          "assistant": "Alternate those subdivisions slowly.",
+          "status": "complete"
+        },
+        {
+          "id": "c02-h02",
+          "user": "Tell me about guitar case materials.",
+          "assistant": "Several materials are common.",
+          "status": "complete"
+        },
+        {
+          "id": "c02-h03",
+          "user": "Explain screen brightness settings.",
+          "assistant": "Use the display settings.",
+          "status": "complete"
+        },
+        {
+          "id": "c02-h04",
+          "user": "请把回答写清楚一些。",
+          "assistant": "可以，我会清晰说明。",
+          "status": "complete"
+        },
+        {
+          "id": "c02-h05",
+          "user": "请保留分步说明。",
+          "assistant": "好的，保留分步说明。",
+          "status": "complete"
+        }
+      ],
+      "neededTurnIds": [
+        "c02-h01"
+      ],
+      "whyNeeded": "当前要求明确引用先前同名练习。"
+    },
+    {
+      "id": "c03",
+      "category": "recent-reference",
+      "split": "development",
+      "critical": false,
+      "goal": "继续细化。",
+      "optionalSlots": 1,
+      "historyTurnBudget": 16,
+      "turns": [
+        {
+          "id": "c03-h01",
+          "user": "C大调音阶练习从第五把位开始，每组八个音。",
+          "assistant": "每组慢速练习。",
+          "status": "complete"
+        },
+        {
+          "id": "c03-h02",
+          "user": "推荐琴弦的颜色搭配。",
+          "assistant": "颜色属于外观选择。",
+          "status": "complete"
+        },
+        {
+          "id": "c03-h03",
+          "user": "今天先讨论显示器设置。",
+          "assistant": "可以调整显示器。",
+          "status": "complete"
+        },
+        {
+          "id": "c03-h04",
+          "user": "我想回到C大调音阶练习。",
+          "assistant": "可以回到该练习。",
+          "status": "complete"
+        },
+        {
+          "id": "c03-h05",
+          "user": "接下来围绕C大调音阶展开。",
+          "assistant": "好的。",
+          "status": "complete"
+        }
+      ],
+      "neededTurnIds": [
+        "c03-h01"
+      ],
+      "whyNeeded": "最近用户提到的C大调音阶决定短追问的对象。"
+    },
+    {
+      "id": "c04",
+      "category": "normalization",
+      "split": "development",
+      "critical": false,
+      "goal": "重新使用 MIDI CC ７４ 的控制方案。",
+      "optionalSlots": 1,
+      "historyTurnBudget": 16,
+      "turns": [
+        {
+          "id": "c04-h01",
+          "user": "MＩＤＩ CC 74 控制亮度，初始值64。",
+          "assistant": "记录亮度控制值64。",
+          "status": "complete"
+        },
+        {
+          "id": "c04-h02",
+          "user": "MIDI CC 71控制共振。",
+          "assistant": "记录共振设置。",
+          "status": "complete"
+        },
+        {
+          "id": "c04-h03",
+          "user": "背带长度需要重新调整。",
+          "assistant": "可以调整背带。",
+          "status": "complete"
+        },
+        {
+          "id": "c04-h04",
+          "user": "请把回答写清楚一些。",
+          "assistant": "可以，我会清晰说明。",
+          "status": "complete"
+        },
+        {
+          "id": "c04-h05",
+          "user": "请保留分步说明。",
+          "assistant": "好的，保留分步说明。",
+          "status": "complete"
+        }
+      ],
+      "neededTurnIds": [
+        "c04-h01"
+      ],
+      "whyNeeded": "全角和半角的同一控制编号应能匹配。"
+    },
+    {
+      "id": "c05",
+      "category": "correction",
+      "split": "development",
+      "critical": true,
+      "goal": "按最新限制安排每天的节奏训练时间。",
+      "optionalSlots": 1,
+      "historyTurnBudget": 16,
+      "turns": [
+        {
+          "id": "c05-h01",
+          "user": "安排每天的节奏训练时间：每天20分钟节奏训练，练习计划按20分钟安排。",
+          "assistant": "最初按20分钟安排。",
+          "status": "complete"
+        },
+        {
+          "id": "c05-h02",
+          "user": "暂时不聊设备。",
+          "assistant": "好的。",
+          "status": "complete"
+        },
+        {
+          "id": "c05-h03",
+          "user": "更正：我现在每天只剩12分钟。",
+          "assistant": "采用最新12分钟限制。",
+          "status": "complete"
+        },
+        {
+          "id": "c05-h04",
+          "user": "请把回答写清楚一些。",
+          "assistant": "可以，我会清晰说明。",
+          "status": "complete"
+        },
+        {
+          "id": "c05-h05",
+          "user": "请保留分步说明。",
+          "assistant": "好的，保留分步说明。",
+          "status": "complete"
+        }
+      ],
+      "neededTurnIds": [
+        "c05-h03"
+      ],
+      "whyNeeded": "旧20分钟已被用户较新的12分钟修正替代。"
+    },
+    {
+      "id": "c06",
+      "category": "negation",
+      "split": "development",
+      "critical": true,
+      "goal": "这次不要扫弦，继续单音旋律。",
+      "optionalSlots": 1,
+      "historyTurnBudget": 16,
+      "turns": [
+        {
+          "id": "c06-h01",
+          "user": "扫弦和单音旋律都放进计划；单音旋律后做扫弦，不要省略扫弦。",
+          "assistant": "原方案含扫弦。",
+          "status": "complete"
+        },
+        {
+          "id": "c06-h02",
+          "user": "音箱放在桌子旁。",
+          "assistant": "可以。",
+          "status": "complete"
+        },
+        {
+          "id": "c06-h03",
+          "user": "撤销上次的扫弦安排，改为逐音弹奏。",
+          "assistant": "已改为逐音弹奏。",
+          "status": "complete"
+        },
+        {
+          "id": "c06-h04",
+          "user": "请把回答写清楚一些。",
+          "assistant": "可以，我会清晰说明。",
+          "status": "complete"
+        },
+        {
+          "id": "c06-h05",
+          "user": "请保留分步说明。",
+          "assistant": "好的，保留分步说明。",
+          "status": "complete"
+        }
+      ],
+      "neededTurnIds": [
+        "c06-h03"
+      ],
+      "whyNeeded": "用户取消了旧方案；词面重叠不能替代否定理解。"
+    },
+    {
+      "id": "c07",
+      "category": "synonym",
+      "split": "development",
+      "critical": true,
+      "goal": "把换把练习接着做。",
+      "optionalSlots": 1,
+      "historyTurnBudget": 16,
+      "turns": [
+        {
+          "id": "c07-h01",
+          "user": "换把练习暂时不要做，换把练习留到以后。",
+          "assistant": "当时暂停。",
+          "status": "complete"
+        },
+        {
+          "id": "c07-h02",
+          "user": "琴盒锁扣可以检查。",
+          "assistant": "好的。",
+          "status": "complete"
+        },
+        {
+          "id": "c07-h03",
+          "user": "现在恢复左手位置移动训练，从第五品移动到第七品。",
+          "assistant": "可以开始位置移动。",
+          "status": "complete"
+        },
+        {
+          "id": "c07-h04",
+          "user": "请把回答写清楚一些。",
+          "assistant": "可以，我会清晰说明。",
+          "status": "complete"
+        },
+        {
+          "id": "c07-h05",
+          "user": "请保留分步说明。",
+          "assistant": "好的，保留分步说明。",
+          "status": "complete"
+        }
+      ],
+      "neededTurnIds": [
+        "c07-h03"
+      ],
+      "whyNeeded": "较新用户用同义说法恢复换把，旧同名记录已过时。"
+    },
+    {
+      "id": "c08",
+      "category": "neutral-followup",
+      "split": "development",
+      "critical": false,
+      "goal": "照原样继续。",
+      "optionalSlots": 1,
+      "historyTurnBudget": 16,
+      "turns": [
+        {
+          "id": "c08-h01",
+          "user": "介绍一下拨片颜色。",
+          "assistant": "有多种颜色。",
+          "status": "complete"
+        },
+        {
+          "id": "c08-h02",
+          "user": "琴包外观不重要。",
+          "assistant": "好的。",
+          "status": "complete"
+        },
+        {
+          "id": "c08-h03",
+          "user": "我的方案仍是每天12分钟，先节奏后旋律。",
+          "assistant": "将遵守这一安排。",
+          "status": "complete"
+        },
+        {
+          "id": "c08-h04",
+          "user": "请把回答写清楚一些。",
+          "assistant": "可以，我会清晰说明。",
+          "status": "complete"
+        },
+        {
+          "id": "c08-h05",
+          "user": "请保留分步说明。",
+          "assistant": "好的，保留分步说明。",
+          "status": "complete"
+        }
+      ],
+      "neededTurnIds": [
+        "c08-h03"
+      ],
+      "whyNeeded": "无可用关键词时按时间保留最新可选轮。"
+    },
+    {
+      "id": "c09",
+      "category": "current-vs-recent",
+      "split": "development",
+      "critical": false,
+      "goal": "回到八分音符分组练习。",
+      "optionalSlots": 1,
+      "historyTurnBudget": 16,
+      "turns": [
+        {
+          "id": "c09-h01",
+          "user": "八分音符分组练习采用四音一组。",
+          "assistant": "已记录分组。",
+          "status": "complete"
+        },
+        {
+          "id": "c09-h02",
+          "user": "显示设置的和弦图颜色、和弦图显示位置和显示设置都可调整。",
+          "assistant": "可以调整显示设置。",
+          "status": "complete"
+        },
+        {
+          "id": "c09-h03",
+          "user": "背带放在收纳盒。",
+          "assistant": "好的。",
+          "status": "complete"
+        },
+        {
+          "id": "c09-h04",
+          "user": "显示设置里的和弦图颜色怎么调整？",
+          "assistant": "打开显示设置。",
+          "status": "complete"
+        },
+        {
+          "id": "c09-h05",
+          "user": "和弦图显示位置也在显示设置里吗？",
+          "assistant": "是的。",
+          "status": "complete"
+        }
+      ],
+      "neededTurnIds": [
+        "c09-h01"
+      ],
+      "whyNeeded": "当前任务已经明确切回练习，最近UI话题不应压过它。"
+    },
+    {
+      "id": "c10",
+      "category": "multiple-facts",
+      "split": "development",
+      "critical": false,
+      "goal": "继续按12分钟和60 BPM制定练习。",
+      "optionalSlots": 2,
+      "historyTurnBudget": 16,
+      "turns": [
+        {
+          "id": "c10-h01",
+          "user": "我每天最多12分钟。",
+          "assistant": "记录12分钟。",
+          "status": "complete"
+        },
+        {
+          "id": "c10-h02",
+          "user": "节拍器最高先用60 BPM。",
+          "assistant": "记录60 BPM。",
+          "status": "complete"
+        },
+        {
+          "id": "c10-h03",
+          "user": "琴包采用深蓝色。",
+          "assistant": "好的。",
+          "status": "complete"
+        },
+        {
+          "id": "c10-h04",
+          "user": "请把回答写清楚一些。",
+          "assistant": "可以，我会清晰说明。",
+          "status": "complete"
+        },
+        {
+          "id": "c10-h05",
+          "user": "请保留分步说明。",
+          "assistant": "好的，保留分步说明。",
+          "status": "complete"
+        }
+      ],
+      "neededTurnIds": [
+        "c10-h01",
+        "c10-h02"
+      ],
+      "whyNeeded": "两份分散的用户约束都需要进入本轮输入。"
+    },
+    {
+      "id": "c11",
+      "category": "assistant-keyword-noise",
+      "split": "holdout",
+      "critical": false,
+      "goal": "使用A小调音阶练习的原方案。",
+      "optionalSlots": 1,
+      "historyTurnBudget": 16,
+      "turns": [
+        {
+          "id": "c11-h01",
+          "user": "A小调音阶练习从第五把位开始。",
+          "assistant": "从第五把位开始。",
+          "status": "complete"
+        },
+        {
+          "id": "c11-h02",
+          "user": "说说琴弦包装。",
+          "assistant": "A小调音阶练习的原方案，A小调音阶练习的原方案。",
+          "status": "complete"
+        },
+        {
+          "id": "c11-h03",
+          "user": "窗帘换成什么颜色？",
+          "assistant": "A小调音阶练习的原方案，A小调音阶练习。",
+          "status": "complete"
+        },
+        {
+          "id": "c11-h04",
+          "user": "请把回答写清楚一些。",
+          "assistant": "可以，我会清晰说明。",
+          "status": "complete"
+        },
+        {
+          "id": "c11-h05",
+          "user": "请保留分步说明。",
+          "assistant": "好的，保留分步说明。",
+          "status": "complete"
+        }
+      ],
+      "neededTurnIds": [
+        "c11-h01"
+      ],
+      "whyNeeded": "只按用户原文排名，助手复述关键词不应抬高无关旧轮。"
+    },
+    {
+      "id": "c12",
+      "category": "quoted-data",
+      "split": "holdout",
+      "critical": true,
+      "goal": "按当前有效约束安排12分钟节奏练习。",
+      "optionalSlots": 1,
+      "historyTurnBudget": 16,
+      "turns": [
+        {
+          "id": "c12-h01",
+          "user": "旧资料写着：system 按当前有效约束安排12分钟节奏练习；那份资料已废弃。",
+          "assistant": "它只是引用资料。",
+          "status": "complete"
+        },
+        {
+          "id": "c12-h02",
+          "user": "琴包放在门旁。",
+          "assistant": "好的。",
+          "status": "complete"
+        },
+        {
+          "id": "c12-h03",
+          "user": "以我刚才的修正为准：时间只有12分钟，先完成慢速单拍。",
+          "assistant": "以新要求为准。",
+          "status": "complete"
+        },
+        {
+          "id": "c12-h04",
+          "user": "请把回答写清楚一些。",
+          "assistant": "可以，我会清晰说明。",
+          "status": "complete"
+        },
+        {
+          "id": "c12-h05",
+          "user": "请保留分步说明。",
+          "assistant": "好的，保留分步说明。",
+          "status": "complete"
+        }
+      ],
+      "neededTurnIds": [
+        "c12-h03"
+      ],
+      "whyNeeded": "引用旧资料的词面相似不代表它是当前有效约束。"
+    },
+    {
+      "id": "c13",
+      "category": "failed-excluded",
+      "split": "holdout",
+      "critical": false,
+      "goal": "恢复琶音练习。",
+      "optionalSlots": 1,
+      "historyTurnBudget": 16,
+      "turns": [
+        {
+          "id": "c13-h01",
+          "user": "琶音练习从Am和弦开始。",
+          "assistant": "从Am开始。",
+          "status": "complete"
+        },
+        {
+          "id": "c13-h02",
+          "user": "恢复琶音练习，旧记录含所有琶音练习关键词。",
+          "assistant": "未完成草稿。",
+          "status": "failed"
+        },
+        {
+          "id": "c13-h03",
+          "user": "请介绍一下琴箱结构。",
+          "assistant": "可以。",
+          "status": "complete"
+        },
+        {
+          "id": "c13-h04",
+          "user": "还有琴弦材质。",
+          "assistant": "可以。",
+          "status": "complete"
+        },
+        {
+          "id": "c13-h05",
+          "user": "请把回答写清楚一些。",
+          "assistant": "可以，我会清晰说明。",
+          "status": "complete"
+        },
+        {
+          "id": "c13-h06",
+          "user": "请保留分步说明。",
+          "assistant": "好的，保留分步说明。",
+          "status": "complete"
+        }
+      ],
+      "neededTurnIds": [
+        "c13-h01"
+      ],
+      "whyNeeded": "失败回复不进入成功历史候选。"
+    },
+    {
+      "id": "c14",
+      "category": "no-optional-budget",
+      "split": "holdout",
+      "critical": false,
+      "goal": "继续八分音符练习。",
+      "optionalSlots": 0,
+      "historyTurnBudget": 16,
+      "turns": [
+        {
+          "id": "c14-h01",
+          "user": "八分音符分组为四音一组。",
+          "assistant": "好的。",
+          "status": "complete"
+        },
+        {
+          "id": "c14-h02",
+          "user": "拨片厚度是0.73毫米。",
+          "assistant": "好的。",
+          "status": "complete"
+        },
+        {
+          "id": "c14-h03",
+          "user": "琴箱颜色为黑色。",
+          "assistant": "好的。",
+          "status": "complete"
+        },
+        {
+          "id": "c14-h04",
+          "user": "请把回答写清楚一些。",
+          "assistant": "可以，我会清晰说明。",
+          "status": "complete"
+        },
+        {
+          "id": "c14-h05",
+          "user": "请保留分步说明。",
+          "assistant": "好的，保留分步说明。",
+          "status": "complete"
+        }
+      ],
+      "neededTurnIds": [],
+      "whyNeeded": "没有旧历史预算槽位，两个策略都不得挤掉保护轮。"
+    },
+    {
+      "id": "c15",
+      "category": "outside-window",
+      "split": "holdout",
+      "critical": false,
+      "goal": "回到我原始的五音分组节奏方案。",
+      "optionalSlots": 1,
+      "historyTurnBudget": 16,
+      "turns": [
+        {
+          "id": "c15-h01",
+          "user": "我的原始节奏方案使用每组五个音。",
+          "assistant": "记录五音一组。",
+          "status": "complete"
+        },
+        {
+          "id": "c15-h02",
+          "user": "无关设备话题1。",
+          "assistant": "讨论设备。",
+          "status": "complete"
+        },
+        {
+          "id": "c15-h03",
+          "user": "无关设备话题2。",
+          "assistant": "讨论设备。",
+          "status": "complete"
+        },
+        {
+          "id": "c15-h04",
+          "user": "无关设备话题3。",
+          "assistant": "讨论设备。",
+          "status": "complete"
+        },
+        {
+          "id": "c15-h05",
+          "user": "无关设备话题4。",
+          "assistant": "讨论设备。",
+          "status": "complete"
+        },
+        {
+          "id": "c15-h06",
+          "user": "无关设备话题5。",
+          "assistant": "讨论设备。",
+          "status": "complete"
+        },
+        {
+          "id": "c15-h07",
+          "user": "无关设备话题6。",
+          "assistant": "讨论设备。",
+          "status": "complete"
+        },
+        {
+          "id": "c15-h08",
+          "user": "无关设备话题7。",
+          "assistant": "讨论设备。",
+          "status": "complete"
+        },
+        {
+          "id": "c15-h09",
+          "user": "无关设备话题8。",
+          "assistant": "讨论设备。",
+          "status": "complete"
+        },
+        {
+          "id": "c15-h10",
+          "user": "无关设备话题9。",
+          "assistant": "讨论设备。",
+          "status": "complete"
+        },
+        {
+          "id": "c15-h11",
+          "user": "无关设备话题10。",
+          "assistant": "讨论设备。",
+          "status": "complete"
+        },
+        {
+          "id": "c15-h12",
+          "user": "无关设备话题11。",
+          "assistant": "讨论设备。",
+          "status": "complete"
+        },
+        {
+          "id": "c15-h13",
+          "user": "无关设备话题12。",
+          "assistant": "讨论设备。",
+          "status": "complete"
+        },
+        {
+          "id": "c15-h14",
+          "user": "无关设备话题13。",
+          "assistant": "讨论设备。",
+          "status": "complete"
+        },
+        {
+          "id": "c15-h15",
+          "user": "无关设备话题14。",
+          "assistant": "讨论设备。",
+          "status": "complete"
+        },
+        {
+          "id": "c15-h16",
+          "user": "无关设备话题15。",
+          "assistant": "讨论设备。",
+          "status": "complete"
+        },
+        {
+          "id": "c15-h17",
+          "user": "请把回答写清楚一些。",
+          "assistant": "可以，我会清晰说明。",
+          "status": "complete"
+        },
+        {
+          "id": "c15-h18",
+          "user": "请保留分步说明。",
+          "assistant": "好的，保留分步说明。",
+          "status": "complete"
+        }
+      ],
+      "neededTurnIds": [
+        "c15-h01"
+      ],
+      "whyNeeded": "所需历史已在16轮候选窗口之外，单靠窗口内排名无法找回。"
+    },
+    {
+      "id": "c16",
+      "category": "bounded-scan",
+      "split": "holdout",
+      "critical": true,
+      "goal": "继续八分音符细分练习。",
+      "optionalSlots": 1,
+      "historyTurnBudget": 16,
+      "turns": [
+        {
+          "id": "c16-h01",
+          "user": "八分音符细分练习原先被暂停，八分音符细分练习另行安排。",
+          "assistant": "旧安排。",
+          "status": "complete"
+        },
+        {
+          "id": "c16-h02",
+          "user": "琴盒搭扣可以维护。",
+          "assistant": "好的。",
+          "status": "complete"
+        },
+        {
+          "id": "c16-h03",
+          "user": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx现在恢复八分音符细分练习，每拍两个音。",
+          "assistant": "采用最新恢复方案。",
+          "status": "complete"
+        },
+        {
+          "id": "c16-h04",
+          "user": "请把回答写清楚一些。",
+          "assistant": "可以，我会清晰说明。",
+          "status": "complete"
+        },
+        {
+          "id": "c16-h05",
+          "user": "请保留分步说明。",
+          "assistant": "好的，保留分步说明。",
+          "status": "complete"
+        }
+      ],
+      "neededTurnIds": [
+        "c16-h03"
+      ],
+      "whyNeeded": "最新约束落在2048字符排名扫描范围之后；排名截窗不能等同正文不存在。"
+    },
+    {
+      "id": "c17",
+      "category": "assistant-reference",
+      "split": "holdout",
+      "critical": false,
+      "goal": "按你之前示范的三连音分组方案继续。",
+      "optionalSlots": 1,
+      "historyTurnBudget": 16,
+      "turns": [
+        {
+          "id": "c17-h01",
+          "user": "三连音分组方案的术语是什么意思？",
+          "assistant": "这里只解释术语。",
+          "status": "complete"
+        },
+        {
+          "id": "c17-h02",
+          "user": "关于琴弦包装说几句。",
+          "assistant": "好的。",
+          "status": "complete"
+        },
+        {
+          "id": "c17-h03",
+          "user": "请给我示范一下。",
+          "assistant": "三连音分组方案：每组三音，重音依次移动。",
+          "status": "complete"
+        },
+        {
+          "id": "c17-h04",
+          "user": "请把回答写清楚一些。",
+          "assistant": "可以，我会清晰说明。",
+          "status": "complete"
+        },
+        {
+          "id": "c17-h05",
+          "user": "请保留分步说明。",
+          "assistant": "好的，保留分步说明。",
+          "status": "complete"
+        }
+      ],
+      "neededTurnIds": [
+        "c17-h03"
+      ],
+      "whyNeeded": "用户明确引用助手示范，用户原文排名无法识别助手正文中的信息。"
+    },
+    {
+      "id": "c18",
+      "category": "zero-overlap-tie",
+      "split": "holdout",
+      "critical": false,
+      "goal": "好，照旧。",
+      "optionalSlots": 1,
+      "historyTurnBudget": 16,
+      "turns": [
+        {
+          "id": "c18-h01",
+          "user": "背带改成绿色。",
+          "assistant": "好的。",
+          "status": "complete"
+        },
+        {
+          "id": "c18-h02",
+          "user": "音箱摆在左侧。",
+          "assistant": "好的。",
+          "status": "complete"
+        },
+        {
+          "id": "c18-h03",
+          "user": "当前训练保持慢速单拍。",
+          "assistant": "好的。",
+          "status": "complete"
+        },
+        {
+          "id": "c18-h04",
+          "user": "请把回答写清楚一些。",
+          "assistant": "可以，我会清晰说明。",
+          "status": "complete"
+        },
+        {
+          "id": "c18-h05",
+          "user": "请保留分步说明。",
+          "assistant": "好的，保留分步说明。",
+          "status": "complete"
+        }
+      ],
+      "neededTurnIds": [
+        "c18-h03"
+      ],
+      "whyNeeded": "零词面重叠应稳定回退到原时间顺序。"
+    },
+    {
+      "id": "c19",
+      "category": "english-correction",
+      "split": "holdout",
+      "critical": true,
+      "goal": "Use the latest daily practice duration and schedule.",
+      "optionalSlots": 1,
+      "historyTurnBudget": 16,
+      "turns": [
+        {
+          "id": "c19-h01",
+          "user": "Daily practice duration and schedule: 45 minutes of daily practice, with a 45 minute schedule.",
+          "assistant": "The original schedule was45 minutes.",
+          "status": "complete"
+        },
+        {
+          "id": "c19-h02",
+          "user": "My guitar case is blue.",
+          "assistant": "Noted.",
+          "status": "complete"
+        },
+        {
+          "id": "c19-h03",
+          "user": "Correction: I only have12 minutes now.",
+          "assistant": "Use12 minutes.",
+          "status": "complete"
+        },
+        {
+          "id": "c19-h04",
+          "user": "请把回答写清楚一些。",
+          "assistant": "可以，我会清晰说明。",
+          "status": "complete"
+        },
+        {
+          "id": "c19-h05",
+          "user": "请保留分步说明。",
+          "assistant": "好的，保留分步说明。",
+          "status": "complete"
+        }
+      ],
+      "neededTurnIds": [
+        "c19-h03"
+      ],
+      "whyNeeded": "最新用户修正比旧高重叠的时长安排有效。"
+    },
+    {
+      "id": "c20",
+      "category": "two-exact-facts",
+      "split": "holdout",
+      "critical": false,
+      "goal": "使用D多利亚指法和三连音重音方案。",
+      "optionalSlots": 2,
+      "historyTurnBudget": 16,
+      "turns": [
+        {
+          "id": "c20-h01",
+          "user": "D多利亚指法从第五把位开始。",
+          "assistant": "已记录指法。",
+          "status": "complete"
+        },
+        {
+          "id": "c20-h02",
+          "user": "三连音重音方案每组三音轮换重音。",
+          "assistant": "已记录重音。",
+          "status": "complete"
+        },
+        {
+          "id": "c20-h03",
+          "user": "琴盒外观使用灰色。",
+          "assistant": "已记录外观。",
+          "status": "complete"
+        },
+        {
+          "id": "c20-h04",
+          "user": "请把回答写清楚一些。",
+          "assistant": "可以，我会清晰说明。",
+          "status": "complete"
+        },
+        {
+          "id": "c20-h05",
+          "user": "请保留分步说明。",
+          "assistant": "好的，保留分步说明。",
+          "status": "complete"
+        }
+      ],
+      "neededTurnIds": [
+        "c20-h01",
+        "c20-h02"
+      ],
+      "whyNeeded": "当前明确引用两份较早方案，预算容纳两个完整轮。"
+    }
+  ]
+}

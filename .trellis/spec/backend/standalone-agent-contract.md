@@ -367,3 +367,59 @@ const resultKey = isInvocationContext(item) ? item.contextItemId : sourceObjectV
 createAgentSession({ provider, contextSelectionPolicy: "standalone-context-v1" });
 // ContextSelectionPlan stays request-local; GET has its own versioned report contract.
 ```
+
+
+## M3.2b Offline History-Ranking Evaluation
+
+### 1. Scope / Trigger
+
+The offline command/data live in packages/agent-runtime/evaluation and are excluded by the package's files list. It compares optional older successful conversation units only; no production entry imports it, no model/network/resource tool is called, and M3.2a runtime/contracts/permissions remain unchanged. The 20 synthetic cases are a fixed diagnostic study, not a model-accuracy benchmark or blinded product evaluation.
+
+### 2. Signatures
+
+```powershell
+# Repository root; optional explicit local output, otherwise stdout only.
+node --experimental-strip-types packages/agent-runtime/evaluation/compare-context-selection.mts [--output results.json]
+# Runtime directory: explicitly typecheck the offline entry (default tsconfig only includes src).
+npx tsc --ignoreConfig --noEmit --types node --target ES2022 --module NodeNext --moduleResolution NodeNext --strict --noUncheckedIndexedAccess --exactOptionalPropertyTypes --allowImportingTsExtensions evaluation/compare-context-selection.mts
+```
+
+### 3. Contracts
+
+- Fixed input context-selection-cases.json exact `{schemaVersion:1,description,cases}` with 20 cases, 10 development/10 holdout. Case exact id/category/split/critical/goal/optionalSlots/historyTurnBudget/turns/neededTurnIds/whyNeeded; turn exact id/user/assistant/status. Case IDs match cNN and are unique; turn IDs unique per case. User/assistant are nonblank strings, status complete|failed|cancelled|interrupted. Needed IDs unique, present and complete. optionalSlots 0–2, historyTurnBudget 16. Holdout here is a pre-reserved review group from the same author, not a blinded independent dataset.
+- Normalize dataset hash as UTF-8 with CRLF→LF; freeze labels before first run. Current SHA-256 18efe9fb5d8d819e8e8971c2d4e5d9aac97a185d9a1ef89f28d1f06a71657b86. Do not modify labels/weights after seeing outcomes without explicitly creating a new study/version.
+- Build successful window 16, protect latest min(2, available) pairs. Call actual ContextBuilder under standalone-context-v1; fixed 8192 token estimate and itemCountBudget 4+protectedCount+optionalSlots make optional whole-pair slots the binding resource. Check baseline IDs against newest optional pairs, protected IDs, budget and exact original user/assistant content. This is not a final Pi token-budget experiment.
+- Candidate lexical ranking only scans user text: NFKC/lowercase, English/digit terms and adjacent Han bigrams (single Han character remains one term), at most 2048 code points and 256 unique terms. Score is unique query-term coverage, ties newest-first. Compare current query and current plus protected user originals; restore selected pairs to original order. Never infer trust, permission, expiry or current validity from this score.
+- Output v1 exact top fields schemaVersion/evaluatorVersion/scope/datasetSha256/datasetHashEncoding/parameters/casesEvaluated/summary/gate/recommendation/results. It records labels, window/protected/selected IDs, scores, per-group source-unit recall/whole-case coverage/wins/losses/critical losses. Overall recall includes all needed source units; inWindowSourceRecall excludes unreachable labels. Empty-label control cases are excluded from recall denominators. No result is real answer quality/usage.
+- Adoption gate is global in-window recall improvement plus pre-reserved-group improvement and zero critical regressions relative to recency. A passing study would require further validation, not automatic activation. This v1 fails both lexical variants: 11/20→12/20 overall, 6/9→5/9 pre-reserved, 6 critical regression cases. Retain production recency, no score field/API toggle.
+
+### 4. Validation & Error Matrix
+
+| Condition | Behavior |
+|---|---|
+| Missing/extra dataset/case/turn fields, wrong schema/count/ID/status/needed label | Assertion/nonzero exit; no success output artifact |
+| Unknown args/missing --output value | Usage assertion/nonzero exit; no output write |
+| Baseline drift, missing protected pair, clipped body, exceeded budget/slot or ineligible selected ID | Assertion/nonzero exit; comparison cannot hide changed production semantics |
+| Output path unwritable | Filesystem error/nonzero exit; no model request |
+| Average improvement but critical regression or worse pre-reserved group | Gate fails; retain-recency recommendation, runtime unchanged |
+| Window-excluded target or ranking scan tail | Report limitation explicitly; do not silently treat it as retrieved evidence |
+
+### 5. Good / Base / Bad Cases
+
+- Good: exact topic references retrieve useful older pairs and preserve protected recent context, while correction/negation regression is inspected separately.
+- Base: all lexical scores tie, select newest optional units; optionalSlots 0 selects none; window-excluded labels stay unretrieved.
+- Bad: declare 60% source recall as model accuracy, report only average improvement, rank file/assistant text as instructions, or deploy scores despite known critical constraint losses.
+
+### 6. Tests Required
+
+Run 20 cases with actual selector assertions, lexical NFKC/bigram/uniqueness/term-cap/scan-cap assertions and strict typecheck. Re-run byte-identical JSON; independently recompute hit denominators/critical losses and check frozen canonical data hash. Check git diff for no runtime/app source or package manifest changes, dependency boundaries and npm pack --dry-run exclusion of evaluation files. Do not relabel previous 38/56/222 tests as freshly executed for an evaluation-only batch; real DeepSeek acceptance remains separate.
+
+### 7. Wrong vs Correct
+
+```ts
+// Wrong: enable the ranker because average recall rose by one unit.
+if (recallImproved) enableProductionRanking();
+// Correct: inspect separate regressions; this command never activates production.
+const gate = recallImproved && reviewGroupImproved && criticalLosses.length === 0;
+const next = gate ? "further-validation-only" : "retain-recency";
+```
