@@ -46,11 +46,17 @@ function ConversationList({ conversations, disabled, action, onNavigate }: Props
   </>;
 }
 
-export function ConversationSidebar(props: Props & { open: boolean; onClose: () => void }) {
+export function ConversationSidebar(props: Props & { open: boolean; collapsed: boolean; onToggle: () => void; onClose: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => { if (props.open) dialog.current?.showModal(); else dialog.current?.close(); }, [props.open]);
   return <>
-    <aside className="conversation-sidebar" aria-label="会话管理"><ConversationList {...props}/></aside>
+    <aside className="conversation-sidebar" data-collapsed={props.collapsed} aria-label="会话管理">
+      <div className="sidebar-content" hidden={props.collapsed}><ConversationList {...props}/></div>
+      <div className="sidebar-rail" hidden={!props.collapsed}>
+        <span className="rail-brand"><Icon name="agent"/></span>
+        <button className="icon-button" aria-label="展开会话栏" onClick={props.onToggle}><Icon name="sidebar"/></button>
+      </div>
+    </aside>
     <dialog className="sessions-dialog" ref={dialog} aria-label="会话管理" onClose={props.onClose} onClick={(event) => { if (event.target === event.currentTarget) props.onClose(); }}>
       <button className="icon-button close-sessions" aria-label="关闭会话列表" onClick={props.onClose}><Icon name="close"/></button>
       <ConversationList {...props}/>

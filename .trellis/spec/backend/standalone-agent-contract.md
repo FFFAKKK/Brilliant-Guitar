@@ -465,3 +465,66 @@ App chat-message.test.ts loads the actual TSX through Vite SSR and renders it wi
 ### 7. Wrong vs Correct
 
 Wrong: every failed message displays the current session.message. Correct: bind the reason to the current failed Run; when unavailable, keep the incomplete status and state that the reason was not retained. Smaller tool pages bound a single result, not accumulated protected feedback; changing that budget policy requires a separate public design.
+
+
+## U1 Project-aligned Standalone Workspace
+
+### 1. Scope / Trigger
+Standalone Agent layout only. Map the current frame-visual palette into independent CSS, without importing Workbench or changing Host v4, External v1, chat file v1, budgets or tool execution.
+
+### 2. Signatures
+`WorkspaceInspector({snapshot,open,tab,onTabChange,disabled,action,onBusyChange,onClose})` consumes the existing authoritative snapshot and actions. Local layout state is separate from Session state. `ConversationSidebar` accepts a collapsed presentation.
+
+### 3. Contracts
+- Header44px, sidebar204px/rail44px, reading column max680px, inspector300px. Opening the inspector derives a collapsed sidebar; closing restores the user's local preference. No new persistent layout schema.
+- One mounted ResourcePanel handles the chooser/upload lifecycle. Switching inspector tabs, closing it or crossing700px must not create a second uploader or reset a pending operation. Desktop dialog.show is nonmodal; narrow dialog.showModal uses native focus/inert/Escape behavior. Close/reopen on resize must not interpret the old close event as a user dismissal.
+- The inspector shows authorized resource metadata, not unread full text. Opening it, changing tabs or resizing performs no model/tool request. Existing Controller tools alone read resource bodies. Activity and failure meanings remain distinct and current-Run-bound.
+- Session selection clears drafts and restores input focus only after the mutation guard is removed and the sessions dialog closes. Input remains editable during output; send is blocked while active/uploading/changing session. Native composing Enter is not a submission; Shift+Enter inserts a newline. A successful stop returns focus to input.
+- Preserve model settings/discovery, explicit enable, conversation search/rename/archive/restore, copy, storage retry notices, resource errors, failure/cancellation/interruption semantics. Historical reasons are never filled from the new Run.
+- Theme values come from frame-visual tokens (#1c1d20/#242529/#202125/#2d2f35, ink#f2f0eb, muted#afb1b8, selected#2c67c5, focus#8fb7ff, danger#d98383), Segoe UI Variable Text/Chinese UI fallbacks and3/6px radii. Do not overwrite another window's theme source.
+
+### 4. Validation & Error Matrix
+| Condition | Required behavior |
+| --- | --- |
+| Inspector opened/closed/resized | Local layout only; same resource controller and no generation |
+| Narrow inspector | Native modal; background inert; Escape returns to trigger |
+| Empty/new session | Empty metadata/activity; no old error or draft reused |
+| Tool completed then answer fails | Completed tool plus partial/failed reply; never imply final success |
+| Upload invalid/busy | Existing UTF-8 error and guards remain visible |
+| Session accepted | Focus after React commits enabled input, not while it is disabled |
+
+### 5. Good / Base / Bad Cases
+Good: open resources beside the readable chat and restore sidebar preference on close. Base: disabled startup/empty session, configuration and activation remain explicit. Bad: automatic file reads to populate a preview, fake unavailable controls, copied old Run diagnostics, or a separate execution state machine.
+
+### 6. Tests Required
+Actual TSX SSR for resource metadata, busy guards, empty state and tool/final-result semantics. Browser local HTTP fixture verifies upload/read, completion/failure/stop, refresh/session isolation, conversation management, keyboard/focus, streaming scroll, desktop1280/1024 and390/320 widths. Record native Chinese IME and provider-quality limitations separately. Vite8 SSR fixtures set both hmr:false and ws:false; hmr:false alone still binds a shared WebSocket port.
+
+### 7. Wrong vs Correct
+Wrong: focus input immediately after setChangingSession(false), or remount the uploader for each responsive layout. Correct: focus in the committed-state effect and keep a single resource controller across the inspector presentations.
+
+## Windows Atomic JSON Replacement
+
+### 1. Scope / Trigger
+Concurrent full-suite verification reproduced EPERM at sessions.json rename on Windows. Applies to the shared LockedJsonFile used for session and connection JSON files, not model retries.
+
+### 2. Signatures
+`replaceJsonFile(source,target,{platform?,replace?,pause?}?)` is an internal filesystem helper. Defaults use process.platform, fs.rename and timers/promises. LockedJsonFile.write calls it after fsync/closing the complete temporary file.
+
+### 3. Contracts
+Retry only win32+EPERM, at most four identical rename attempts, waiting20/40/80ms (140ms total scheduled delay). Never delete the old destination, regenerate the temporary content or retry supplier requests. Other errors/platforms fail immediately. Exhaustion propagates the same final error to existing storage diagnostics; caller retains its existing temporary-file cleanup, serialization and lock ownership.
+
+### 4. Validation & Error Matrix
+| Condition | Behavior |
+| --- | --- |
+| Transient Windows EPERM | Same source/target retry; install complete file atomically |
+| Persistent EPERM | Four attempts, same error propagated, existing save-failure notice |
+| Non-Windows EPERM, ENOENT, EACCES | One attempt, no delay |
+
+### 5. Good / Base / Bad Cases
+Good: two transient locks followed by atomic rename. Base: first rename succeeds. Bad: unlink destination first or retry indefinitely.
+
+### 6. Tests Required
+Actual temporary files with two injected rename failures and final fs.rename; old contents remain before replacement and new contents are complete after. Assert bounded persistent retries/error identity and immediate unrelated errors. Run the whole App suite normally with real file session/connection tests; do not hide the Windows failure by only serializing tests.
+
+### 7. Wrong vs Correct
+Wrong: catch all save errors or delete the current sessions.json before writing. Correct: only retry the specific bounded atomic rename, keeping existing failure/rollback contracts.

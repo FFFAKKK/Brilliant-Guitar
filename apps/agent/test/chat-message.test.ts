@@ -12,7 +12,7 @@ import { createModelFixture, textReply, toolReply } from "./model-fixture.ts";
 let vite: ViteDevServer;
 let ChatMessage: typeof import("../src/client/chat-message.tsx").ChatMessage;
 before(async () => {
-  vite = await createServer({ root: fileURLToPath(new URL("../", import.meta.url)), server: { middlewareMode: true, hmr: false }, appType: "custom" });
+  vite = await createServer({ root: fileURLToPath(new URL("../", import.meta.url)), server: { middlewareMode: true, hmr: false, ws: false }, appType: "custom" });
   ({ ChatMessage } = await vite.ssrLoadModule("/src/client/chat-message.tsx"));
 });
 after(async () => { await vite?.close(); });

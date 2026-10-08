@@ -1,5 +1,6 @@
-import { open, readFile, rename, stat, unlink, mkdir, type FileHandle } from "node:fs/promises";
+import { open, readFile, stat, unlink, mkdir, type FileHandle } from "node:fs/promises";
 import { resolve } from "node:path";
+import { replaceJsonFile } from "./replace-json-file.ts";
 
 export class JsonFileLockError extends Error {}
 
@@ -32,7 +33,7 @@ export class LockedJsonFile {
     try {
       handle = await open(temporary, "wx", 0o600);
       await handle.writeFile(text, "utf8"); await handle.sync(); await handle.close(); handle = null;
-      await rename(temporary, this.path);
+      await replaceJsonFile(temporary, this.path);
     } finally { await handle?.close().catch(() => undefined); await unlink(temporary).catch(() => undefined); }
   }
   async dispose(): Promise<void> {
