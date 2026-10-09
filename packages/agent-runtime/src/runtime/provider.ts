@@ -11,6 +11,11 @@ import type {
 } from "./provider-stream.ts";
 import type { AgentToolFeedbackGroup } from "./tool-feedback.ts";
 import type { ContextSelectionPlan } from "../contracts/context-selection.ts";
+import type { AgentToolRejectionFeedbackV1 } from "../contracts/tool-feedback-admission.ts";
+
+export interface AgentProviderCapabilities {
+  readonly rejectionFeedback: "v1" | "none";
+}
 
 export interface AgentProviderRequest {
   readonly runId: string;
@@ -20,11 +25,13 @@ export interface AgentProviderRequest {
   readonly context: ContextBuildResult;
   readonly toolset: ToolsetSnapshot;
   readonly toolFeedback?: readonly AgentToolFeedbackGroup[];
+  readonly toolFeedbackRejections?: readonly AgentToolRejectionFeedbackV1[];
   readonly contextSelection?: ContextSelectionPlan;
 }
 
 /** Decision-producing port consumed by AgentRunController. */
 export interface AgentDecisionProviderPort {
+  readonly capabilities?: AgentProviderCapabilities;
   decide(
     request: AgentProviderRequest,
     signal?: AbortSignal | null,

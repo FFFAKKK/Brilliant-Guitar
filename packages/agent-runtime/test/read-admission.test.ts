@@ -7,9 +7,10 @@ import { createAgentPluginProvider } from "../src/runtime/agent-plugin-contract.
 import { createPiDecisionPlugin } from "../src/pi/decision-adapter.ts";
 import { createHostPiStreamFn } from "../src/pi/openai-stream.ts";
 import { createPiInputPreview, projectPiModelInput } from "../src/pi/input-preview.ts";
+import { projectPiInput } from "../src/pi/input-projection.ts";
 import type { AgentProviderRequest } from "../src/runtime/provider.ts";
 import type { AgentModelStreamRequestV1, AgentModelOutputBlockV1 } from "../src/contracts/agent-model-stream.ts";
-import { isAgentInputPreviewV1, isToolFeedbackAdmissionReportV1, resultJsonBytes, type ToolFeedbackAdmissionReportV1 } from "../src/contracts/tool-feedback-admission.ts";
+import { freezeAgentToolRejectionFeedbackV1, isAgentInputPreviewV1, isAgentToolRejectionFeedbackV1, isToolFeedbackAdmissionReportV1, resultJsonBytes, type ToolFeedbackAdmissionReportV1 } from "../src/contracts/tool-feedback-admission.ts";
 import { ExternalAgentAdapter, createDecisionResponse } from "../src/runtime/external-agent-adapter.ts";
 import { FakeExternalAgentTransport, createFakeExternalHello } from "../src/runtime/external-agent-fake-transport.ts";
 import { previewExternalInput, projectTurnRequest } from "../src/runtime/external-agent-projection.ts";
@@ -102,6 +103,104 @@ test("minimum batch failure creates zero invocations and zero continuation", asy
   t.after(() => f.session.dispose()); await f.session.setEnabled(true); const outcome = await f.session.submit("Read");
   assert.equal(tool.executions.length, 0); assert.equal(outcome.run.invocations.length, 0); assert.equal(f.wire.length, 1);
   assert.equal(f.reports[0]?.status, "blocked"); assert.equal(f.session.getSnapshot().status, "failed");
+});
+
+test("Pi-capable providers receive one structured rejection and can recover with a smaller call", async () => {
+  const tool = readTool("recovery");
+  const registry = new AgentToolRegistry([tool.tool]);
+  const requests: AgentProviderRequest[] = [];
+  const provider = {
+    capabilities: { rejectionFeedback: "v1" as const },
+    async decide(request: AgentProviderRequest) {
+      requests.push(request);
+      if (requests.length === 1) return { kind: "tool-calls", calls: [{ callId: "too-large", capabilityId: "demo.read", contractVersion: 1, input: { maxCharacters: 4096 } }] };
+      if (requests.length === 2) {
+        assert.equal(request.toolFeedbackRejections?.length, 1);
+        return { kind: "tool-calls", calls: [{ callId: "reduced", capabilityId: "demo.read", contractVersion: 1, input: { maxCharacters: 8 } }] };
+      }
+      return { kind: "finish", reason: "completed", text: "已读取" };
+    },
+  };
+  const controller = new AgentRunController({
+    provider,
+    capabilities: registry,
+    catalog: registry.catalog,
+    readAdmission: { schemaVersion: 1, maxResultJsonBytes: 12288 },
+    inputPreview: { preview(request) {
+      const recovery = (request.toolFeedbackRejections?.length ?? 0) > 0;
+      return { schemaVersion: 1, runId: request.runId, turnId: request.turnId,
+        status: recovery ? "ready" : "budget-exceeded", estimator: "utf8-json-bytes-div3-v1",
+        estimatedInputTokens: recovery ? 10 : 1001, inputTokenBudget: 1000,
+        requestBytes: null, requestByteBudget: null };
+    } },
+    completionVerifier: ({ responseText, invocations }) => ({
+      satisfied: responseText === "已读取" && invocations.every((item) => item.state.status === "succeeded"),
+      reason: "fixture", evidence: invocations.map((item) => item.invocationId),
+    }),
+    now: () => 100,
+    nextId: (() => { let index = 0; return (kind: string) => `${kind}-${++index}`; })(),
+  });
+  const outcome = await controller.run({
+    runId: "rejection-run",
+    workspace: { workspaceId: "workspace", documentId: null, documentVersion: null, selection: null },
+    goal: "读取资料",
+    intent: { kind: "read", requestedCapabilityIds: ["demo.read"], scope: "none" },
+    policy: { policyVersion: 1, allowedCapabilityIds: ["demo.read"], allowedKinds: ["query"], maxToolsPerTurn: 1,
+      maxCostClass: "constant", approvalMode: "disallow" },
+    budget: { tokenBudget: 1000, itemCountBudget: 16, toolResultSizeBudget: 4096, rangeBudget: 0, historyTurnBudget: 4 },
+    initialContextItems: [], maxTurns: 6,
+  });
+  assert.equal(outcome.response, "已读取");
+  assert.equal(tool.executions.length, 1);
+  assert.deepEqual(tool.executions[0]!.input, { maxCharacters: 8 });
+  assert.equal(requests.length, 3);
+  const rejection = requests[1]!.toolFeedbackRejections?.[0];
+  assert.equal(rejection?.reason, "input-budget");
+  assert.equal(rejection?.retryable, true);
+  assert.equal(rejection?.calls[0]?.callId, "too-large");
+  assert.equal(outcome.run.invocations.length, 1);
+  const projected = projectPiInput(requests[1]!, model);
+  const rejected = projected.history.filter((item) => item.role === "toolResult");
+  assert.equal(rejected.length, 1);
+  assert.equal(rejected[0]?.role === "toolResult" && rejected[0].isError, true);
+  assert.equal(outcome.run.state.lifecycle, "terminal");
+});
+
+test("rejection recovery is bounded and the DTO is strict and deeply frozen", async () => {
+  const raw = {
+    schemaVersion: 1 as const, runId: "run", turnId: "turn", nextTurnId: "next", status: "blocked" as const,
+    reason: "input-budget" as const, retryable: true, recovery: "reduce-input" as const,
+    calls: [{ callId: "same", capabilityId: "demo.read", contractVersion: 1, input: { nested: ["x"] } }],
+  };
+  const frozen = freezeAgentToolRejectionFeedbackV1(raw);
+  assert.equal(isAgentToolRejectionFeedbackV1(frozen), true);
+  assert.equal(Object.isFrozen(frozen), true);
+  assert.equal(Object.isFrozen(frozen.calls[0]!.input), true);
+  assert.equal(Object.isFrozen((frozen.calls[0]!.input as { nested: readonly string[] }).nested), true);
+  assert.equal(isAgentToolRejectionFeedbackV1({ ...raw, extra: true }), false);
+  assert.equal(isAgentToolRejectionFeedbackV1({ ...raw, retryable: false }), false);
+
+  const tool = readTool("bounded"); const registry = new AgentToolRegistry([tool.tool]); const requests: AgentProviderRequest[] = [];
+  const provider = { capabilities: { rejectionFeedback: "v1" as const }, async decide(request: AgentProviderRequest) {
+    requests.push(request);
+    return { kind: "tool-calls" as const, calls: [{ callId: requests.length === 1 ? "first" : "second", capabilityId: "demo.read", contractVersion: 1, input: { maxCharacters: 4096 } }] };
+  } };
+  const controller = new AgentRunController({ provider, capabilities: registry, catalog: registry.catalog,
+    readAdmission: { schemaVersion: 1, maxResultJsonBytes: 12288 }, inputPreview: { preview(request) {
+      return { schemaVersion: 1, runId: request.runId, turnId: request.turnId, status: "budget-exceeded" as const,
+        estimator: "utf8-json-bytes-div3-v1" as const, estimatedInputTokens: 1001, inputTokenBudget: 1000,
+        requestBytes: null, requestByteBudget: null };
+    } }, completionVerifier: () => ({ satisfied: false, reason: "never", evidence: [] }),
+  });
+  const outcome = await controller.run({ runId: "bounded-run", workspace: { workspaceId: "workspace", documentId: null, documentVersion: null, selection: null },
+    goal: "Read", intent: { kind: "read", requestedCapabilityIds: ["demo.read"], scope: "none" },
+    policy: { policyVersion: 1, allowedCapabilityIds: ["demo.read"], allowedKinds: ["query"], maxToolsPerTurn: 1, maxCostClass: "constant", approvalMode: "disallow" },
+    budget: { tokenBudget: 1000, itemCountBudget: 16, toolResultSizeBudget: 4096, rangeBudget: 0, historyTurnBudget: 4 }, initialContextItems: [], maxTurns: 6 });
+  assert.equal(requests.length, 2);
+  assert.equal(outcome.run.invocations.length, 0);
+  assert.equal(outcome.run.state.lifecycle, "terminal");
+  assert.equal(outcome.run.state.terminalReason, "failed");
+  assert.equal(outcome.run.events.filter((event) => event.event.type === "tool.rejection-feedback").length, 1);
 });
 
 test("invalid whole decision and >4 calls are rejected before any body preview", async (t) => {

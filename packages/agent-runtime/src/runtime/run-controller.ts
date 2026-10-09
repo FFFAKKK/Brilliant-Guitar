@@ -62,7 +62,8 @@ import { ToolsetResolver } from "./toolset-resolver.ts";
 import { snapshotAgentValue, snapshotToolFeedback, type AgentToolFeedbackCall, type AgentToolFeedbackGroup } from "./tool-feedback.ts";
 import { admitReadBatch, matchesAdmittedRead, ReadAdmissionContractError, type ReadAdmissionResult } from "./read-admission.ts";
 import { freezeToolFeedbackAdmissionReport, isReadAdmissionPolicyV1, isToolFeedbackAdmissionReportV1, type ReadAdmissionPolicyV1,
-  type AgentInputPreviewPort, type ToolFeedbackAdmissionReportV1 } from "../contracts/tool-feedback-admission.ts";
+  freezeAgentToolRejectionFeedbackV1, type AgentInputPreviewPort, type AgentToolRejectionFeedbackV1,
+  type ToolFeedbackAdmissionReportV1 } from "../contracts/tool-feedback-admission.ts";
 import { freezeContextSelectionReport, STANDALONE_CONTEXT_POLICY, type ContextSelectionPlan, type ContextSelectionPolicyId, type ContextSelectionReportV1 } from "../contracts/context-selection.ts";
 import type { AgentWorkflowRuntime } from "./workflow-runtime.ts";
 
@@ -409,6 +410,10 @@ export class AgentRunController {
     const invocations: AgentInvocationRecord[] = [...(resumeFrom?.invocations ?? [])];
     // Old persisted records have no original call-ID binding. Keep their existing context projection.
     const toolFeedback: AgentToolFeedbackGroup[] = [];
+    const toolFeedbackRejections: AgentToolRejectionFeedbackV1[] = events
+      .map((entry) => entry.event.type === "tool.rejection-feedback" ? entry.event.feedback : null)
+      .filter((feedback): feedback is AgentToolRejectionFeedbackV1 => feedback !== null);
+    let rejectionRecoveryUsed = toolFeedbackRejections.length > 0;
     const contextItems: AgentContextItem[] = [
       ...(resumeFrom?.contextItems ?? request.initialContextItems),
     ];
@@ -547,6 +552,10 @@ export class AgentRunController {
     ).length;
     const startTurnIndex = Math.max(turns.length, completedTurnCount);
     let pendingInput: AgentProviderRequest | null = null;
+    let pendingRecoveryTurnId: string | null = resumeFrom !== null
+      && events.at(-1)?.event.type === "tool.rejection-feedback"
+      ? (events.at(-1)!.event as Extract<AgentRunEvent, { readonly type: "tool.rejection-feedback" }>).feedback.nextTurnId
+      : null;
     let pendingWorkspace: string | null = null;
     let pendingAdmission: ToolFeedbackAdmissionReportV1 | null = null;
     for (let turnIndex = startTurnIndex; turnIndex < request.maxTurns; turnIndex += 1) {
@@ -555,11 +564,12 @@ export class AgentRunController {
         return outcome(null, null);
       }
 
-      const continuation = pendingInput;
+      const continuation: AgentProviderRequest | null = pendingInput;
       pendingInput = null;
-      const turnId = continuation?.turnId ?? this.nextId("turn");
+      const turnId = continuation?.turnId ?? pendingRecoveryTurnId ?? this.nextId("turn");
+      pendingRecoveryTurnId = null;
       let contextSelection: ContextSelectionPlan | undefined = continuation?.contextSelection;
-      const context = continuation?.context ?? this.contextBuilder.build({
+      const context: ContextBuildResult = continuation?.context ?? this.contextBuilder.build({
         runId: request.runId,
         goal,
         turnInput: turnIndex === 0 ? goal : null,
@@ -601,6 +611,7 @@ export class AgentRunController {
       }
 
       let decision: unknown;
+      let providerRequestForTurn: AgentProviderRequest | null = null;
       let messageStarted = false;
       let streamedText = "";
       const planningActivityId = `planning:${turnId}`;
@@ -621,8 +632,10 @@ export class AgentRunController {
           context,
           toolset: toolset.snapshot,
           ...(toolFeedback.length ? { toolFeedback: snapshotToolFeedback(toolFeedback) } : {}),
+          ...(toolFeedbackRejections.length ? { toolFeedbackRejections: snapshotAgentValue(toolFeedbackRejections) } : {}),
           ...(contextSelection ? { contextSelection } : {}),
         };
+        providerRequestForTurn = providerRequest;
         decision = await waitForEffect(this.provider.decide(this.readAdmission ? snapshotAgentValue(providerRequest) : providerRequest, signal, (event) => {
           if (event.type !== "response.text-delta") return;
           if (!messageStarted) {
@@ -866,13 +879,56 @@ export class AgentRunController {
                   invocationId: read.request.invocationId, result: read.result, source };
               });
               return { runId: request.runId, turnId: nextTurnId, goal, runState: projectedState, context: nextContext, toolset: nextToolset.snapshot,
-                toolFeedback: [...toolFeedback, { runId: request.runId, turnId, calls: newCalls }], ...(selection ? { contextSelection: selection } : {}) };
+                toolFeedback: [...toolFeedback, { runId: request.runId, turnId, calls: newCalls }],
+                ...(toolFeedbackRejections.length ? { toolFeedbackRejections: snapshotAgentValue(toolFeedbackRejections) } : {}),
+                ...(selection ? { contextSelection: selection } : {}) };
             } });
           assertActive();
           if (!isToolFeedbackAdmissionReportV1(admission.report)) throw new ReadAdmissionContractError("invalid-preview");
           reportAdmission(admission.report);
           assertActive();
           if (admission.report.status !== "admitted") {
+            const blockedReason = admission.report.status === "blocked"
+              && (admission.report.reason === "input-budget" || admission.report.reason === "input-limit")
+              ? admission.report.reason : null;
+            const recoverable = blockedReason !== null
+              && this.provider.capabilities?.rejectionFeedback === "v1"
+              && !rejectionRecoveryUsed
+              && providerRequestForTurn !== null;
+            if (recoverable) {
+              rejectionRecoveryUsed = true;
+              const rejection = freezeAgentToolRejectionFeedbackV1({
+                schemaVersion: 1,
+                runId: request.runId,
+                turnId,
+                nextTurnId: admission.report.nextTurnId,
+                status: "blocked",
+                reason: blockedReason,
+                retryable: true,
+                recovery: "reduce-input",
+                calls: toolActions.map((action) => ({
+                  callId: action.callId,
+                  capabilityId: action.capabilityId,
+                  contractVersion: action.contractVersion,
+                  input: snapshotAgentValue(action.input),
+                })),
+              });
+              toolFeedbackRejections.push(rejection);
+              upsertTurn({ turnId, status: "waiting", context, toolset: toolset.snapshot, decision, validation });
+              await applyRunEvent({ type: "tool.rejection-feedback", feedback: rejection });
+              pendingInput = {
+                ...providerRequestForTurn,
+                turnId: admission.report.nextTurnId,
+                runState: currentState(),
+                context: snapshotAgentValue(context),
+                toolset: snapshotAgentValue(toolset.snapshot),
+                ...(toolFeedback.length ? { toolFeedback: snapshotToolFeedback(toolFeedback) } : {}),
+                toolFeedbackRejections: snapshotAgentValue(toolFeedbackRejections),
+              };
+              pendingWorkspace = JSON.stringify(workspace);
+              pendingAdmission = null;
+              continue;
+            }
             upsertTurn({ turnId, status: "failed", context, toolset: toolset.snapshot, decision, validation });
             await applyRunEvent({ type: "run.failed", code: admission.report.status === "blocked" ? "budget-exceeded"
               : admission.report.status === "unsupported" ? "capability-failed" : "internal-error" });

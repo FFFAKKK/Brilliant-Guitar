@@ -157,6 +157,7 @@ export function createPiDecisionPlugin(options: PiDecisionPluginOptions): AgentP
     id: options.id,
     version: options.version,
     label: options.label,
+    rejectionFeedback: "v1",
     decide,
   });
 }

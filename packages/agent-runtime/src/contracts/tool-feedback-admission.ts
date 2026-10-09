@@ -18,6 +18,81 @@ export interface AgentInputPreviewV1 {
   readonly requestByteBudget: number | null;
 }
 export interface AgentInputPreviewPort { preview(request: AgentProviderRequest): AgentInputPreviewV1 }
+
+/**
+ * A host-side rejection which can be shown to a capable decision provider.
+ * This is deliberately separate from AgentToolFeedbackGroup: no capability
+ * invocation was dispatched and therefore there is no result or activity to
+ * replay. Inputs are retained only so a Pi-style provider can correlate the
+ * rejected call with its tool-call message and choose a smaller alternative.
+ */
+export interface AgentToolRejectionFeedbackV1 {
+  readonly schemaVersion: 1;
+  readonly runId: string;
+  readonly turnId: string;
+  readonly nextTurnId: string;
+  readonly status: "blocked" | "unsupported";
+  readonly reason: "input-budget" | "input-limit" | "unsupported-tool" | "unsupported-provider";
+  readonly retryable: boolean;
+  readonly recovery: "reduce-input" | "choose-alternative" | "explain-limit";
+  readonly calls: readonly {
+    readonly callId: string;
+    readonly capabilityId: string;
+    readonly contractVersion: number;
+    readonly input: unknown;
+  }[];
+}
+
+function jsonValue(value: unknown, depth = 0): boolean {
+  if (depth > 16 || value === null) return value === null;
+  if (typeof value === "string") return value.length <= 16384;
+  if (typeof value === "boolean") return true;
+  if (typeof value === "number") return Number.isFinite(value);
+  if (Array.isArray(value)) return value.length <= 1024 && Object.keys(value).length === value.length
+    && value.every((item) => jsonValue(item, depth + 1));
+  if (typeof value !== "object") return false;
+  const prototype = Object.getPrototypeOf(value);
+  if (prototype !== Object.prototype && prototype !== null) return false;
+  const entries = Object.entries(value as Record<string, unknown>);
+  return entries.length <= 1024 && entries.every(([key, item]) => key.length <= 512 && jsonValue(item, depth + 1));
+}
+
+function freezeJsonValue<T>(value: T): T {
+  if (value === null || typeof value !== "object") return value;
+  if (Array.isArray(value)) {
+    for (const item of value) freezeJsonValue(item);
+  } else if (typeof value === "object" && value !== null) {
+    for (const item of Object.values(value as Record<string, unknown>)) freezeJsonValue(item);
+  }
+  return Object.freeze(value);
+}
+
+export function isAgentToolRejectionFeedbackV1(value: unknown): value is AgentToolRejectionFeedbackV1 {
+  if (!record(value, ["schemaVersion", "runId", "turnId", "nextTurnId", "status", "reason", "retryable", "recovery", "calls"])
+    || value.schemaVersion !== 1 || !id(value.runId) || !id(value.turnId) || !id(value.nextTurnId)
+    || !["blocked", "unsupported"].includes(value.status as string)
+    || !["input-budget", "input-limit", "unsupported-tool", "unsupported-provider"].includes(value.reason as string)
+    || typeof value.retryable !== "boolean"
+    || !["reduce-input", "choose-alternative", "explain-limit"].includes(value.recovery as string)
+    || !Array.isArray(value.calls) || value.calls.length === 0 || value.calls.length > 4) return false;
+  if (!value.calls.every((call) => record(call, ["callId", "capabilityId", "contractVersion", "input"])
+    && id(call.callId) && id(call.capabilityId) && positive(call.contractVersion) && jsonValue(call.input))) return false;
+  const calls = value.calls;
+  const retryableReason = value.reason === "input-budget" || value.reason === "input-limit";
+  const recovery = retryableReason ? "reduce-input" : value.reason === "unsupported-tool" ? "choose-alternative" : "explain-limit";
+  return new Set(calls.map((call) => call.callId)).size === calls.length
+    && value.status === (retryableReason ? "blocked" : "unsupported")
+    && value.retryable === retryableReason
+    && value.recovery === recovery;
+}
+
+export function freezeAgentToolRejectionFeedbackV1(feedback: AgentToolRejectionFeedbackV1): AgentToolRejectionFeedbackV1 {
+  if (!isAgentToolRejectionFeedbackV1(feedback)) throw new Error("Invalid Agent Tool Rejection Feedback");
+  return Object.freeze({ ...feedback,
+    calls: Object.freeze(feedback.calls.map((call) => Object.freeze({ ...call, input: freezeJsonValue(call.input) }))),
+  });
+}
+
 export interface ToolFeedbackAdmissionReportV1 {
   readonly schemaVersion: 1;
   readonly policyVersion: "immutable-query-v1";

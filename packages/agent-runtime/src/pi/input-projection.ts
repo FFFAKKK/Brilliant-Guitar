@@ -4,6 +4,7 @@ import type { AgentProviderRequest } from "../runtime/provider.ts";
 import type { PiAgentModel } from "./types.ts";
 import { projectPiJsonObject, projectPiJsonValue } from "./json-values.ts";
 import { conversationContent } from "../runtime/context-identity.ts";
+import { isAgentToolRejectionFeedbackV1 } from "../contracts/tool-feedback-admission.ts";
 
 export const PI_INSTRUCTIONS_VERSION = "general-task-v1";
 export const PI_BASE_INSTRUCTIONS = `你是通用任务助手。根据当前用户目标、会话中仍适用的要求和提供的资料完成任务。
@@ -75,11 +76,13 @@ export function projectPiInput(request: AgentProviderRequest, model: PiAgentMode
       modelApi: model.api, identityVerified: false },
     context: context.map(({ estimatedTokens: _estimate, ...item }) => item),
     versionWarnings: request.context.versionWarnings });
-  if (!request.toolFeedback?.length) return { history, prompt, continueFromTools: false };
+  const rejectionFeedback = request.toolFeedbackRejections ?? [];
+  if (!rejectionFeedback.every(isAgentToolRejectionFeedbackV1)) throw new Error("工具拒绝反馈合同无效");
+  if (!request.toolFeedback?.length && !rejectionFeedback.length) return { history, prompt, continueFromTools: false };
   history.push({ role: "user", content: prompt, timestamp: Date.now() });
   const seen = new Set<string>();
   const seenInvocations = new Set<string>();
-  for (const group of request.toolFeedback) {
+  for (const group of request.toolFeedback ?? []) {
     if (group.runId !== request.runId || !group.turnId || !group.calls.length) throw new Error("工具反馈组身份无效");
     const content = group.calls.map((entry) => {
       const { call, result, source } = entry;
@@ -102,6 +105,27 @@ export function projectPiInput(request: AgentProviderRequest, model: PiAgentMode
         invocationId: entry.invocationId, capabilityId: entry.call.capabilityId, contractVersion: entry.call.contractVersion,
         source: entry.source, data: entry.result.data,
       })) }], isError: false, timestamp: Date.now() });
+  }
+  const seenRejectionCalls = new Set<string>();
+  for (const rejection of rejectionFeedback) {
+    if (rejection.runId !== request.runId || !rejection.turnId || !rejection.nextTurnId || !rejection.calls.length
+      || seenRejectionCalls.size + rejection.calls.length > 16) throw new Error("工具拒绝反馈身份无效");
+    for (const call of rejection.calls) {
+      if (!call.callId || seen.has(call.callId) || seenRejectionCalls.has(call.callId)) throw new Error("工具拒绝反馈调用重复");
+      seenRejectionCalls.add(call.callId);
+      seen.add(call.callId);
+      history.push({ role: "assistant", content: [{ type: "toolCall", id: call.callId,
+        name: call.capabilityId, arguments: projectPiJsonObject(call.input) }], api: model.api,
+        provider: model.provider, model: model.id, stopReason: "toolUse", timestamp: Date.now(), usage: {
+          input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0,
+          cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+        } });
+      history.push({ role: "toolResult", toolCallId: call.callId, toolName: call.capabilityId,
+        content: [{ type: "text", text: JSON.stringify(projectPiJsonValue({
+          schemaVersion: rejection.schemaVersion, status: "rejected", reason: rejection.reason, retryable: rejection.retryable,
+          recovery: rejection.recovery, capabilityId: call.capabilityId,
+        })) }], isError: true, timestamp: Date.now() });
+    }
   }
   return { history, prompt, continueFromTools: true };
 }

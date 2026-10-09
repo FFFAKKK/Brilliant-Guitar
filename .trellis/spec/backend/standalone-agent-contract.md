@@ -636,6 +636,41 @@ Runtime read-admission: whole group/minimum protection, optional history/two rec
 ### 7. Wrong vs Correct
 Wrong: execute one call then discover another cannot fit, or fake a completed rejection. Correct: reserve every minimum before dispatch and stop locally if necessary. Wrong: report0 tokens after structural failure. Correct: null for unknown, reject readiness. Wrong: rebuild a different context after execution. Correct: validate actual results then send the admitted immutable snapshot through the original final guard.
 
+## M3.2c2b Tool Rejection Feedback
+
+### 1. Scope / Trigger
+The first c2b slice makes recoverable c2a budget rejections visible to a capable first-party Pi provider. It does not create a second execution path, alter authorization, expose preview bodies, extend External Agent Protocol v1, or retry contract errors. A single Run may issue at most one recovery decision.
+
+### 2. Signatures
+```ts
+AgentProviderRequest.toolFeedbackRejections?: readonly AgentToolRejectionFeedbackV1[];
+AgentDecisionProviderPort.capabilities?: { readonly rejectionFeedback: "v1" | "none" };
+AgentRunEvent = { readonly type: "tool.rejection-feedback"; readonly feedback: AgentToolRejectionFeedbackV1 };
+```
+
+### 3. Contracts
+`AgentToolRejectionFeedbackV1` is a strict, versioned DTO containing run/turn identity, `blocked|unsupported` status, a stable reason, recovery hint, retryability and the original call identities/JSON inputs. `input` is a detached deep-frozen snapshot; no preview body, result, address, header, credential, raw exception or stack is allowed. `input-budget` and `input-limit` are the only recoverable first-slice reasons and require `status=blocked`, `retryable=true`, `recovery=reduce-input`. Unsupported combinations are reserved for later compatibility and are not auto-recovered in this slice.
+
+The Controller creates the DTO only after c2a rejects the whole batch and before any Invocation is dispatched. Pi projects each rejected call as its original `toolCall` plus an `isError=true` `toolResult`; it is not an `AgentToolFeedbackGroup`, Invocation, context result or completed activity. The next model decision receives a new turn identity and re-enters the same validation, authorization, preview, execution and final-budget path. A second rejection ends locally without another provider call. The rejection event is persisted so a host restart cannot reset the recovery bound.
+
+External Agent Protocol v1 continues to project its exact old `hello`/`turn.request` fields and declares `capabilities.rejectionFeedback="none"` in-process; it receives no unknown wire field and follows the existing local failure behavior. Any future wire support requires a separately negotiated protocol version.
+
+### 4. Validation & Error Matrix
+| Condition | Outcome |
+| --- | --- |
+| Pi v1 + blocked input-budget/input-limit | One frozen rejection, at most one new provider decision |
+| Recovery decision chooses a smaller/alternative call | Full c2a and execution checks run again; successful result alone enters normal feedback |
+| Recovery decision repeats rejection | Local budget/capability failure; no third provider or tool execution |
+| Provider lacks v1, External v1, unsupported tool/provider | Existing local failure; no new wire field |
+| Contract-error, mismatch, cancellation, late result | No model recovery; preserve real completed facts and stop existing path |
+| Invalid DTO, cross-identity, duplicate call or extra field | Reject before projection/execution |
+
+### 5. Tests Required
+Strict DTO and deep-freeze tests; Pi error-result projection; Controller one-time budget recovery with a smaller call; second rejection bound; External v1 wire identity and no rejection field; cancellation/store event/restart isolation; Runtime and Workbench type, boundary, isolated build and packed-install checks. Real provider quality remains separate.
+
+### 6. Wrong vs Correct
+Wrong: turn preview text or an unexecuted call into a successful tool result, mutate the budget, or loop until `maxTurns`. Correct: send only a bounded reason/input snapshot once, let Pi choose a new decision, and re-run all host checks before any replacement call.
+
 ## U2 Atomic Run Diagnostics
 
 ### 1. Scope / Trigger

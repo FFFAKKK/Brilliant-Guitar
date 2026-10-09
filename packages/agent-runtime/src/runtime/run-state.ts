@@ -7,11 +7,13 @@ import type {
   AgentRunRecoveryReason,
   AgentRunState,
 } from "./agent-contracts.ts";
+import type { AgentToolRejectionFeedbackV1 } from "../contracts/tool-feedback-admission.ts";
 
 export type AgentRunEvent =
   | { readonly type: "run.created" }
   | { readonly type: "run.prepared" }
   | { readonly type: "turn.tools-accepted" }
+  | { readonly type: "tool.rejection-feedback"; readonly feedback: AgentToolRejectionFeedbackV1 }
   | {
       readonly type: "invocation.dispatched";
       readonly invocationId: string;
@@ -153,6 +155,11 @@ export function reduceAgentRunState(
   if (event.type === "turn.tools-accepted") {
     return state.lifecycle === "active" && state.phase === "planning"
       ? { accepted: true, state: { lifecycle: "active", phase: "executing" } }
+      : reject(state, event);
+  }
+  if (event.type === "tool.rejection-feedback") {
+    return state.lifecycle === "active" && state.phase === "planning"
+      ? { accepted: true, state }
       : reject(state, event);
   }
   if (event.type === "invocation.dispatched") {

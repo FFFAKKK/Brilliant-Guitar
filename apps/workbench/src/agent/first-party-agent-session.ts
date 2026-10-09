@@ -12,6 +12,7 @@ export const DEFAULT_AGENT_PLUGIN: AgentPluginDescriptor = Object.freeze({
   version: "0.1.0",
   kind: "first-party",
   label: "Brilliant Guitar Pi Agent",
+  rejectionFeedback: "v1",
 });
 
 /** Explicit rollback choice; model or stream failures never trigger a second request. */

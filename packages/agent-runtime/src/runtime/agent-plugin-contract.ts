@@ -12,6 +12,7 @@ export interface AgentPluginDescriptor {
   readonly version: string;
   readonly kind: AgentPluginKind;
   readonly label: string;
+  readonly rejectionFeedback?: "v1" | "none";
 }
 
 export interface AgentPluginRequest extends AgentProviderRequest {
@@ -52,6 +53,10 @@ function freezeDescriptor(descriptor: AgentPluginDescriptor): AgentPluginDescrip
   if (descriptor.kind !== "first-party" && descriptor.kind !== "external") {
     throw new Error("Invalid Agent Plugin kind");
   }
+  if (descriptor.rejectionFeedback !== undefined
+    && descriptor.rejectionFeedback !== "v1" && descriptor.rejectionFeedback !== "none") {
+    throw new Error("Invalid Agent Plugin rejection feedback capability");
+  }
   return Object.freeze({ ...descriptor });
 }
 
@@ -75,6 +80,7 @@ export interface AgentPluginFactoryOptions {
   readonly id: string;
   readonly version: string;
   readonly label: string;
+  readonly rejectionFeedback?: "v1" | "none";
   readonly decide: AgentPluginDecisionFn;
 }
 
@@ -86,6 +92,7 @@ export function createFirstPartyAgentPlugin(
     version: options.version,
     kind: "first-party",
     label: options.label,
+    ...(options.rejectionFeedback === undefined ? {} : { rejectionFeedback: options.rejectionFeedback }),
   }, options.decide);
 }
 
@@ -97,6 +104,7 @@ export function createExternalAgentPlugin(
     version: options.version,
     kind: "external",
     label: options.label,
+    ...(options.rejectionFeedback === undefined ? {} : { rejectionFeedback: options.rejectionFeedback }),
   }, options.decide);
 }
 
@@ -110,6 +118,7 @@ export function createAgentPluginProvider(plugin: AgentPluginPort): AgentPluginP
   const descriptor = freezeDescriptor(plugin.descriptor);
   return Object.freeze({
     plugin: descriptor,
+    capabilities: Object.freeze({ rejectionFeedback: descriptor.rejectionFeedback ?? "none" }),
     decide: (
       request: AgentProviderRequest,
       signal?: AbortSignal | null,
