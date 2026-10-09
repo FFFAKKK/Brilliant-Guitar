@@ -76,11 +76,10 @@ test("completed tool activities remain completed when the reply fails and differ
   assert.ok(!render(failedReply, session, { ...activities, runId: "run-2" }).includes("tool-card"));
 });
 
-test("actual HTTP tool pages overflow the final budget after partial text; UI renders the authoritative failure with zero third request", async (t) => {
+test("actual HTTP pages shrink before execution and UI shows a local rejection without a fake third tool card", async (t) => {
   let resourceId = "";
   const prefix = "先分段读取资料，再整理完整结果。";
   const fixture = await createModelFixture((request, count) => {
-    if (count > 2) return textReply("不应发出的第三次请求");
     const messages = request.body.messages as { role: string; content: string }[];
     const lastTool = messages.filter((item) => item.role === "tool").at(-1);
     const start = lastTool ? (JSON.parse(lastTool.content) as { data: { nextStart: number } }).data.nextStart : 0;
@@ -99,11 +98,13 @@ test("actual HTTP tool pages overflow the final budget after partial text; UI re
   const snapshot = host.getSnapshot();
   const message = snapshot.session.messages.at(-1)!;
   assert.equal(snapshot.session.status, "failed"); assert.equal(message.status, "failed"); assert.equal(message.content, prefix);
-  assert.equal(fixture.requests.length, 2); assert.equal(snapshot.activities.items.length, 2);
+  assert.equal(fixture.requests.length, 3); assert.equal(snapshot.activities.items.length, 2);
   assert.ok(snapshot.activities.items.every((item) => item.status === "completed"));
-  assert.equal(host.getModelInput()?.status, "budget-exceeded");
+  assert.equal(host.getModelInput()?.status, "ready");
+  assert.equal(host.getToolFeedbackAdmission()?.status, "blocked");
+  assert.equal(host.getToolFeedbackAdmission()?.calls[0]?.callId, "page-3");
   const html = render(message, snapshot.session, snapshot.activities);
-  assert.match(html, /回复未完成/); assert.match(html, /部分回复/); assert.match(html, /原因：模型必需输入超过当前上下文预算/);
+  assert.match(html, /回复未完成/); assert.match(html, /部分回复/); assert.match(html, /原因：剩余输入空间不足，本组读取未执行/);
   assert.match(html, /先分段读取资料，再整理完整结果/);
   assert.equal((html.match(/tool-card completed/g) ?? []).length, 2); assert.ok(!html.includes("failure-ui-fixture-secret"));
 });

@@ -23,6 +23,12 @@ function invalid(message: string): never {
   throw new ExternalAgentProtocolError("protocol-invalid", message);
 }
 
+/** Local classification only; the External v1 wire error codes stay unchanged. */
+export class ExternalAgentInputLimitError extends ExternalAgentProtocolError {
+  constructor(message: string) { super("protocol-invalid", message); this.name = "ExternalAgentInputLimitError"; }
+}
+function limitExceeded(message: string): never { throw new ExternalAgentInputLimitError(message); }
+
 export function record(value: unknown): Record<string, unknown> | null {
   return typeof value === "object" && value !== null && !Array.isArray(value)
     ? value as Record<string, unknown> : null;
@@ -59,17 +65,18 @@ export function externalJsonBytes(value: ExternalJsonValueV1): number {
 export function snapshotExternalJson(value: unknown): ExternalJsonValueV1 {
   let nodes = 0;
   function copy(item: unknown, depth: number): ExternalJsonValueV1 {
-    if (++nodes > LIMITS.maxJsonNodes || depth > LIMITS.maxJsonDepth) invalid("External Agent JSON exceeds structural limits");
+    if (++nodes > LIMITS.maxJsonNodes || depth > LIMITS.maxJsonDepth) limitExceeded("External Agent JSON exceeds structural limits");
     if (item === null || typeof item === "boolean") return item;
     if (typeof item === "string") {
-      if (item.length > LIMITS.maxStringLength) invalid("External Agent JSON string is too long");
+      if (item.length > LIMITS.maxStringLength) limitExceeded("External Agent JSON string is too long");
       return item;
     }
     if (typeof item === "number" && Number.isFinite(item)) return item;
     if (typeof item !== "object" || item === null) invalid("External Agent payload must contain only JSON values");
     const proto = Object.getPrototypeOf(item);
     if (Array.isArray(item)) {
-      if (proto !== Array.prototype || item.length > LIMITS.maxArrayLength) invalid("Invalid External Agent JSON array");
+      if (item.length > LIMITS.maxArrayLength) limitExceeded("External Agent JSON array is too long");
+      if (proto !== Array.prototype) invalid("Invalid External Agent JSON array");
       const keys = Reflect.ownKeys(item);
       if (keys.length !== item.length + 1) invalid("External Agent JSON array contains holes or extra fields");
       const result: ExternalJsonValueV1[] = [];
@@ -82,10 +89,11 @@ export function snapshotExternalJson(value: unknown): ExternalJsonValueV1 {
     }
     if (proto !== Object.prototype && proto !== null) invalid("External Agent payload contains a non-JSON object");
     const keys = Reflect.ownKeys(item);
-    if (keys.length > LIMITS.maxJsonNodes) invalid("External Agent object contains too many fields");
+    if (keys.length > LIMITS.maxJsonNodes) limitExceeded("External Agent object contains too many fields");
     const output: Record<string, ExternalJsonValueV1> = {};
     for (const key of keys) {
-      if (typeof key !== "string" || key.length > LIMITS.maxStringLength) invalid("Invalid External Agent object key");
+      if (typeof key === "string" && key.length > LIMITS.maxStringLength) limitExceeded("External Agent object key is too long");
+      if (typeof key !== "string") invalid("Invalid External Agent object key");
       const field = Object.getOwnPropertyDescriptor(item, key);
       if (field === undefined || !field.enumerable || !("value" in field)) invalid("External Agent payload contains an accessor or hidden field");
       Object.defineProperty(output, key, { value: copy(field.value, depth + 1), enumerable: true });
@@ -97,7 +105,7 @@ export function snapshotExternalJson(value: unknown): ExternalJsonValueV1 {
 
 function boundedSnapshot(value: unknown, maxBytes: number): ExternalJsonValueV1 {
   const snapshot = snapshotExternalJson(value);
-  if (externalJsonBytes(snapshot) > maxBytes) invalid("External Agent message is too large");
+  if (externalJsonBytes(snapshot) > maxBytes) limitExceeded("External Agent message is too large");
   return snapshot;
 }
 
@@ -179,6 +187,7 @@ function inputSchema(value: unknown): boolean {
 
 function contextItem(value: unknown): boolean {
   const item = record(value);
+  if (item && externalJsonBytes(item.content as ExternalJsonValueV1) > LIMITS.maxContextItemBytes) limitExceeded("External Agent context item is too large");
   return item !== null
     && onlyKeys(item, ["id", "kind", "sourceType", "sourceId", "content", "documentId", "documentVersion", "scope", "trustLevel"])
     && id(item.id) && text(item.kind, 80) && text(item.sourceType, 160) && id(item.sourceId)
@@ -191,6 +200,7 @@ function contextItem(value: unknown): boolean {
 
 function tool(value: unknown): boolean {
   const item = record(value);
+  if (item && externalJsonBytes(item.inputSchema as ExternalJsonValueV1) > LIMITS.maxSchemaBytes) limitExceeded("External Agent schema is too large");
   return item !== null && onlyKeys(item, ["id", "contractVersion", "name", "description", "inputSchema", "requiresApproval"])
     && id(item.id) && positive(item.contractVersion) && text(item.name, 160) && text(item.description)
     && inputSchema(item.inputSchema) && externalJsonBytes(item.inputSchema as ExternalJsonValueV1) <= LIMITS.maxSchemaBytes
@@ -200,6 +210,10 @@ function tool(value: unknown): boolean {
 export function validateTurnRequest(value: unknown, limits?: ExternalAgentNegotiatedLimitsV1): ExternalAgentTurnRequestV1 {
   const item = envelope(value, "turn.request", limits?.maxRequestBytes ?? LIMITS.maxMessageBytes);
   const context = record(item.context);
+  if (typeof item.goal === "string" && item.goal.length > LIMITS.maxGoalLength
+    || Array.isArray(context?.items) && (context.items.length > (limits?.maxContextItems ?? LIMITS.maxContextItems)
+      || externalJsonBytes(context.items as ExternalJsonValueV1) > LIMITS.maxContextBytes)
+    || Array.isArray(item.tools) && item.tools.length > LIMITS.maxToolCount) limitExceeded("External Agent turn exceeds input limits");
   if (!onlyKeys(item, ["schemaVersion", "messageType", "requestId", "runId", "turnId", "pluginId", "deadlineAt", "goal", "context", "tools", "maxToolCalls"])
     || !id(item.requestId) || !id(item.runId) || !id(item.turnId) || !id(item.pluginId)
     || !deadline(item.deadlineAt) || typeof item.goal !== "string" || !item.goal.trim()

@@ -1,32 +1,26 @@
 import { createAssistantMessageEventStream } from "@earendil-works/pi-ai/utils/event-stream";
-import { getCurrentSystemMessage, getCurrentTools } from "@earendil-works/pi-ai/utils/transcript";
 import type {
   Api,
   AssistantMessage,
   AssistantMessageEventStream,
   Model,
   SimpleStreamOptions,
-  TranscriptContext,
   Usage,
 } from "@earendil-works/pi-ai";
 import type { AgentProviderRequest } from "../runtime/provider.ts";
 import type { AgentModelProviderHostPort } from "../runtime/provider-host.ts";
 import type {
-  AgentModelContentBlockV1,
-  AgentModelMessageV1,
   AgentModelStreamEnvelopeV1,
   AgentModelStreamEventV1,
   AgentModelStreamRequestV1,
 } from "../contracts/agent-model-stream.ts";
-import { createAgentModelStreamRequestV1, isAgentModelStreamEnvelopeV1 } from "../contracts/agent-model-stream.ts";
+import { isAgentModelStreamEnvelopeV1 } from "../contracts/agent-model-stream.ts";
 import type { AgentProviderSelection } from "../contracts/agent-provider-settings.ts";
 import type { PiAgentStreamFn } from "./types.ts";
 import type { AgentModelInputDiagnosticV1 } from "../contracts/model-input.ts";
-import { budgetModelInput } from "./model-input-budget.ts";
-import { projectPiJsonObject as jsonObject, projectPiJsonValue as jsonValue } from "./json-values.ts";
-import { projectPiInput } from "./input-projection.ts";
+import { projectPiModelInput } from "./input-preview.ts";
+import { projectPiJsonObject as jsonObject } from "./json-values.ts";
 import type { ContextSelectionReportV1 } from "../contracts/context-selection.ts";
-import { MODEL_INPUT_OUTPUT_RESERVE } from "../contracts/model-input-policy.ts";
 
 const ZERO_USAGE: Usage = Object.freeze({
   input: 0,
@@ -37,72 +31,6 @@ const ZERO_USAGE: Usage = Object.freeze({
   // Zero means unknown/not reported until the product has a price catalog.
   cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
 });
-
-function textFromContent(content: unknown): string {
-  if (typeof content === "string") return content;
-  if (!Array.isArray(content)) return "";
-  return content
-    .filter((item): item is { type: "text"; text: string } =>
-      typeof item === "object" && item !== null
-      && (item as { type?: unknown }).type === "text"
-      && typeof (item as { text?: unknown }).text === "string")
-    .map((item) => item.text)
-    .join("");
-}
-
-function systemContent(context: TranscriptContext): string {
-  const system = getCurrentSystemMessage(context.messages);
-  if (system === undefined) return "";
-  const sections = Object.entries(system.sections ?? {})
-    .filter(([, value]) => value !== null)
-    .map(([name, value]) => `${name}:\n${value}`);
-  return [textFromContent(system.content), ...sections].filter(Boolean).join("\n\n");
-}
-
-function projectMessages(context: TranscriptContext): readonly AgentModelMessageV1[] {
-  const messages: AgentModelMessageV1[] = [];
-  const system = systemContent(context);
-  if (system.length > 0) messages.push({ role: "system", content: system });
-  for (const message of context.messages) {
-    if (message.role === "system") continue;
-    if (message.role === "user") {
-      const content = textFromContent(message.content);
-      if (content.length > 0) messages.push({ role: "user", content });
-      continue;
-    }
-    if (message.role === "assistant") {
-      const content: AgentModelContentBlockV1[] = [];
-      for (const item of message.content) {
-        if (item.type === "text" && item.text.length > 0) {
-          content.push({ type: "text", text: item.text });
-        } else if (item.type === "toolCall") {
-          content.push({ type: "tool-call", callId: item.id, name: item.name,
-            arguments: jsonObject(item.arguments) });
-        }
-      }
-      if (content.length > 0) messages.push({ role: "assistant", content });
-      continue;
-    }
-    messages.push({ role: "tool", toolCallId: message.toolCallId, toolName: message.toolName,
-      content: textFromContent(message.content), isError: message.isError });
-  }
-  return messages;
-}
-
-function projectTools(
-  context: TranscriptContext,
-  request: AgentProviderRequest,
-): AgentModelStreamRequestV1["tools"] {
-  const allowed = new Map(request.toolset.toolDescriptors.map((tool) => [tool.id, tool]));
-  const transcriptTools = getCurrentTools(context.messages);
-  const source = transcriptTools.length > 0 ? transcriptTools : request.toolset.toolDescriptors.map((tool) => ({
-    name: tool.id, description: tool.description, parameters: tool.inputSchema,
-  }));
-  return source.map((tool) => {
-    if (allowed.get(tool.name) === undefined) throw new Error(`Pi transcript contains an unknown tool: ${tool.name}`);
-    return { name: tool.name, description: tool.description, parameters: jsonValue(tool.parameters) };
-  });
-}
 
 function modelFor(selection: AgentProviderSelection): Model<Api> {
   return {
@@ -251,12 +179,6 @@ function liveStream(
   return stream;
 }
 
-function createRequest(request: AgentProviderRequest, selection: AgentProviderSelection,
-  context: TranscriptContext): AgentModelStreamRequestV1 {
-  return createAgentModelStreamRequestV1(selection.providerId, selection.modelId, request.runId, request.turnId,
-    projectMessages(context), projectTools(context, request), { timeoutMs: 45_000, maxOutputTokens: MODEL_INPUT_OUTPUT_RESERVE });
-}
-
 export function createHostPiStreamFn(host: AgentModelProviderHostPort, request: AgentProviderRequest,
   selection: AgentProviderSelection, model: Model<Api> = modelFor(selection),
   options: { readonly onInput?: (diagnostic: AgentModelInputDiagnosticV1) => void;
@@ -273,11 +195,7 @@ export function createHostPiStreamFn(host: AgentModelProviderHostPort, request: 
       stream.push({ type: "error", reason: "error", error: message }); stream.end(message); return stream;
     }
     try {
-      const input = budgetModelInput(createRequest(request, selection, context), request, model.api, (filtered) => {
-        const projected = projectPiInput(filtered, model);
-        return projectMessages({ ...context, messages: [...context.messages.filter((message) => message.role === "system"), ...projected.history,
-          ...(projected.continueFromTools ? [] : [{ role: "user" as const, content: projected.prompt, timestamp: Date.now() }])] });
-      });
+      const input = projectPiModelInput(request, selection, model, context);
       try { options.onInput?.(input.diagnostic); } catch { /* Diagnostics observers cannot change execution. */ }
       try { if (input.contextSelection) options.onSelection?.(input.contextSelection); } catch { /* Selection reports are observational. */ }
       if (input.diagnostic.status === "budget-exceeded") throw new Error("模型必需输入超过当前上下文预算，请缩短问题或减少资料");

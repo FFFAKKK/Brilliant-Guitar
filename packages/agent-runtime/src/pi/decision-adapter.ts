@@ -1,5 +1,4 @@
 import { Agent, type AgentEvent, type AgentTool } from "@earendil-works/pi-agent-core";
-import { Type, type TSchema } from "typebox";
 import type { AgentDecision, AgentToolCall } from "../runtime/agent-contracts.ts";
 import {
   createFirstPartyAgentPlugin,
@@ -10,8 +9,7 @@ import {
 import type { AgentProviderStreamEventPayload } from "../runtime/provider-stream.ts";
 import type { PiAgentModel, PiAgentStreamFn } from "./types.ts";
 import { PI_BASE_INSTRUCTIONS, projectPiInput } from "./input-projection.ts";
-
-const EMPTY_OBJECT_SCHEMA = Type.Object({});
+import { piToolParameters } from "./tool-parameters.ts";
 
 export interface PiDecisionPluginOptions {
   readonly id: string;
@@ -54,9 +52,7 @@ function createDecisionTools(toolset: AgentPluginRequest["toolset"]): AgentTool[
     name: descriptor.id,
     label: descriptor.name,
     description: descriptor.description,
-    parameters: typeof descriptor.inputSchema === "object" && descriptor.inputSchema !== null
-      ? descriptor.inputSchema as TSchema
-      : EMPTY_OBJECT_SCHEMA,
+    parameters: piToolParameters(descriptor.inputSchema),
     execute: async () => ({
       content: [{ type: "text" as const, text: "Tool execution is owned by AgentRunController." }],
       details: null,

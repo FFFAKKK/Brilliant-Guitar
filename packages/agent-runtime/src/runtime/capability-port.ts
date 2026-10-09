@@ -1,7 +1,10 @@
 import type { CapabilityResult, CapabilityTransportRequest } from "../contracts/capability.ts";
 import type { AgentWorkspaceScope } from "./agent-contracts.ts";
+import type { AgentReadPreview, AgentReadResultLimitV1 } from "../contracts/tool-feedback-admission.ts";
 
 export interface AgentCapabilityPort {
+  previewRead?(request: CapabilityTransportRequest,
+    context: AgentCapabilityInvocationContext & { readonly resultLimit: AgentReadResultLimitV1 }): AgentReadPreview;
   invoke(
     request: CapabilityTransportRequest,
     context?: AgentCapabilityInvocationContext,
@@ -11,6 +14,7 @@ export interface AgentCapabilityPort {
 export interface AgentCapabilityInvocationContext {
   readonly workspace: AgentWorkspaceScope;
   readonly rangeBudget: number;
+  readonly resultLimit?: AgentReadResultLimitV1;
 }
 
 export class AgentCapabilityPortError extends Error {

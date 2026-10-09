@@ -585,3 +585,53 @@ Shared strict parser/ranges/reserve; exact v2 route/public decoder; v1 memory mi
 
 ### 7. Wrong vs Correct
 Wrong: spread an old stored profile into a new DTO then delete unknown fields, or change only Pi context limits. Correct: exact old-schema validation before memory migration, and one Session-frozen budget consumed by Controller plus final Pi estimator. Wrong: claim External v1 wire has a budget because its in-process adapter sees context.budget. Correct: preserve wire v1 selected-context shape and document the metadata boundary.
+
+## M3.2c2a Immutable Query Admission
+
+### 1. Scope / Trigger
+Node opts into whole-batch preview before immutable query execution. Workbench/old consumers do not opt in. Controller still owns validation, approval, state, execution and recovery. No Pi fork, retry, summary, failed-result protocol or UI layout change.
+
+### 2. Signatures
+```ts
+AgentSessionOptions.readAdmission?: ReadAdmissionPolicyV1; // {schemaVersion:1,maxResultJsonBytes:1..65536}
+AgentSessionOptions.inputPreview?: AgentInputPreviewPort; // preview(AgentProviderRequest): AgentInputPreviewV1
+AgentSessionOptions.onToolFeedbackAdmission?: (report:ToolFeedbackAdmissionReportV1)=>void;
+// Same optional dependencies on AgentRunController.
+AgentCapabilityInvocationContext.resultLimit?: AgentReadResultLimitV1;
+AgentCapabilityPort.previewRead?(request, contextWithResultLimit): AgentReadPreview;
+RegisteredAgentTool.previewRead?(input, contextWithResultLimit): {status:"ready",data:unknown}|{status:"insufficient-limit"};
+createPiInputPreview(selection, model): AgentInputPreviewPort;
+ExternalAgentAdapter.inputPreview: AgentInputPreviewPort;
+AgentSession.getToolFeedbackAdmission(): ToolFeedbackAdmissionReportV1|null;
+GET /api/tool-feedback-admission // report|null; Host/Origin and no-store
+```
+
+### 3. Contracts
+`contracts/tool-feedback-admission.ts` owns types, strict guards, freezing and UTF-8 JSON-data bytes. Node cap12288; do not reinterpret legacy toolResultSizeBudget. Controller alone supplies detached frozen resultLimit/call inputs/preview requests. Registry validates version/input and owns result identity; ActionRuntime shares workflow authorization with invoke. Byte1 preflight validates every call before full candidates. Only registered monotone immutable query previews with all sideEffects=none, no prepared execution/required approval qualify. Missing support rejects the group. Opt-in caps maxCalls at4 and supplies standalone-context-v1 if no policy was set.
+
+Reserve IDs/times without dispatch, replay existing reducers on a copy to planning, reuse ContextBuilder/ToolsetResolver and feedback assembly. Maximum candidates fix omitted/optional context; remove optional units in policy order before shrinking pages. Search each minimum legal result, evaluate the entire minimum group, then expand in model order while reserving later minimums. Each binary interval is bounded to16 iterations. Invoke serially once using original input and chosen resultLimit. Previous feedback/recent full pairs remain protected. Candidates never populate actual diagnostics or completed activities. After real success send the admitted frozen continuation; check expiration before each dispatch and continuation. Immutable queries cannot change document identity/version. Mismatch preserves real completed records, fails and never crops/retries/continues. Cancellation retains earlier completed facts, stops remaining work and isolates late results.
+
+Pi input-preview/stream share projectPiModelInput, transcript projection, tool-schema fallback and budgetModelInput. Preview creates no Agent and has no Host Port. External uses strict v1 projection, local structured ExternalAgentInputLimitError (wire code unchanged), negotiated caps and worst requestId256 UTF16 units*6 JSON bytes plus24-character deadline. No ID/clock callbacks, transport or state/sequence advancement. Host estimate is ceil(JSON({goal,context,tools}) UTF8 bytes/3)+32; remote hidden prompt/window remains unknown. estimatedInputTokens is number|null; structural validation failure returns null, ready/budget-exceeded require a measured number. External v1/Host v5/raw stream v1/chat v1/Run storage fields stay unchanged.
+
+Report exact fields: schemaVersion1, policyVersion immutable-query-v1, runId/turnId/nextTurnId, status, reason, inputPreview, calls<=4. Calls contain callId/capabilityId/contractVersion/candidateInvocationId/resultJsonByteLimit/previewResultJsonBytes only. Preview identity matches runId/nextTurnId; IDs unique, safe integers, bytes<=limit; reject extra fields and inconsistent status/reason. No body/input/name/raw error/address/key. Observer receives a separate frozen copy; exceptions/reentry cannot control execution. Current Run latest settlement only: clear on newRun/switch/reset/cancel/disable/dispose, retain on refresh, not restart. Probe never affects main reports.
+
+### 4. Validation & Error Matrix
+| Condition | Outcome |
+| --- | --- |
+| Invalid/unauthorized/version-mismatched decision or >4 calls | Existing rejection, zero preview/execute |
+| Later missing/wrong-session resource | Preflight fails before full candidates, zero execute |
+| Unsupported preview or effect/approval | Whole group unsupported, zero Invocation |
+| Maximum too large, minimum group fits | Smaller real pages with accurate progress and original call inputs |
+| Minimum group exceeds context/input/protocol limit | Local budget-exceeded; zero Invocation/execute/continuation; stable Session reason |
+| Invalid/throwing preview, expired context or changed identity | Local failure/report, no next provider request |
+| Actual result differs | Preserve real completed result/activity, contract-error, zero remaining executions/continuation/retry |
+| Cancel before/between/during query | Stop scheduling, retain earlier completions, clear report, isolate late result |
+
+### 5. Good / Base / Bad Cases
+Good: second Chinese page shrinks, then a third minimum page cannot fit; two actual completions remain, no third Invocation. Base: short/full page runs once, preview equals actual input estimate. Bad: trim completed data, rewrite model maxCharacters, preview through remote transport, publish candidate completion or bypass an unsupported call.
+
+### 6. Tests Required
+Runtime read-admission: whole group/minimum protection, optional history/two recent pairs, direct Controller cap, authorization preflight, strict/null report, missing/invalid/throwing preview, mismatch, cancellation/reentry, expiry, exact Pi projection and External byte/string/depth/count/no-IO. App: shared Unicode/escaped/empty EOF pagination, exact preview/HTTP estimate, private/no-store/Host/Origin/probe/switch/refresh report, failure rendering with only real cards. Regress old default behavior, Workbench Agent approval/recovery, types, isolated build, boundaries and packed install. Desktop/narrow built UI proof and real-provider limits recorded separately.
+
+### 7. Wrong vs Correct
+Wrong: execute one call then discover another cannot fit, or fake a completed rejection. Correct: reserve every minimum before dispatch and stop locally if necessary. Wrong: report0 tokens after structural failure. Correct: null for unknown, reject readiness. Wrong: rebuild a different context after execution. Correct: validate actual results then send the admitted immutable snapshot through the original final guard.

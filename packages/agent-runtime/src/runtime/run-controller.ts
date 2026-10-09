@@ -39,7 +39,7 @@ import type {
   AgentInvocationEventRecord,
   AgentInvocationState,
 } from "./invocation-state.ts";
-import type { AgentDecisionProviderPort } from "./provider.ts";
+import type { AgentDecisionProviderPort, AgentProviderRequest } from "./provider.ts";
 import type { AgentRunStorePort } from "./agent-store.ts";
 import {
   AgentPreparedMutationError,
@@ -59,8 +59,11 @@ import type {
   AgentRunEventRecord,
 } from "./run-state.ts";
 import { ToolsetResolver } from "./toolset-resolver.ts";
-import { snapshotToolFeedback, type AgentToolFeedbackCall, type AgentToolFeedbackGroup } from "./tool-feedback.ts";
-import type { ContextSelectionPlan, ContextSelectionPolicyId, ContextSelectionReportV1 } from "../contracts/context-selection.ts";
+import { snapshotAgentValue, snapshotToolFeedback, type AgentToolFeedbackCall, type AgentToolFeedbackGroup } from "./tool-feedback.ts";
+import { admitReadBatch, matchesAdmittedRead, ReadAdmissionContractError, type ReadAdmissionResult } from "./read-admission.ts";
+import { freezeToolFeedbackAdmissionReport, isReadAdmissionPolicyV1, isToolFeedbackAdmissionReportV1, type ReadAdmissionPolicyV1,
+  type AgentInputPreviewPort, type ToolFeedbackAdmissionReportV1 } from "../contracts/tool-feedback-admission.ts";
+import { freezeContextSelectionReport, STANDALONE_CONTEXT_POLICY, type ContextSelectionPlan, type ContextSelectionPolicyId, type ContextSelectionReportV1 } from "../contracts/context-selection.ts";
 import type { AgentWorkflowRuntime } from "./workflow-runtime.ts";
 
 type ToolCallAction = Extract<ValidatedAction, { readonly kind: "tool-call" }>;
@@ -163,6 +166,9 @@ export class AgentRunResumeError extends Error {
 }
 
 export interface AgentRunControllerDependencies {
+  readonly readAdmission?: ReadAdmissionPolicyV1;
+  readonly inputPreview?: AgentInputPreviewPort;
+  readonly onToolFeedbackAdmission?: (report: ToolFeedbackAdmissionReportV1) => void;
   readonly contextSelectionPolicy?: ContextSelectionPolicyId;
   readonly onContextSelection?: (report: ContextSelectionReportV1) => void;
   readonly validateProvidedInput?: (required: AgentRequiredUserInput, provided: AgentProvidedUserInput, workspace: AgentWorkspaceScope) => boolean;
@@ -207,6 +213,15 @@ function documentPrecondition(workspace: AgentWorkspaceScope): CapabilityTranspo
         documentId: workspace.documentId,
         documentVersion: workspace.documentVersion,
       };
+}
+
+function readResultContext(invocationId: string, capabilityId: string, descriptor: AgentCapabilityDescriptor | undefined,
+  data: unknown, createdAt: number): AgentContextItem {
+  const identity = documentIdentity(data);
+  return { contextItemId: `capability-result:${invocationId}`, kind: "capability-result", content: data,
+    sourceType: "capability-result", sourceId: capabilityId, documentId: identity.documentId, documentVersion: identity.documentVersion,
+    scope: descriptor?.scopeLimit ?? "none", trustLevel: "authoritative", priority: "high", createdAt,
+    expiresAt: null, estimatedTokens: estimateTokens(data) };
 }
 
 function createRequiredApproval(
@@ -305,14 +320,23 @@ export class AgentRunController {
   private readonly contextSelectionPolicy: ContextSelectionPolicyId | undefined;
   private readonly onContextSelection: AgentRunControllerDependencies["onContextSelection"];
   private readonly toolsetResolver = new ToolsetResolver();
+  private readonly readAdmission: ReadAdmissionPolicyV1 | undefined;
+  private readonly inputPreview: AgentInputPreviewPort | undefined;
+  private readonly onToolFeedbackAdmission: AgentRunControllerDependencies["onToolFeedbackAdmission"];
 
   constructor(dependencies: AgentRunControllerDependencies) {
-    this.contextSelectionPolicy = dependencies.contextSelectionPolicy;
+    if (dependencies.readAdmission !== undefined && !isReadAdmissionPolicyV1(dependencies.readAdmission)) throw new Error("Invalid read admission policy");
+    this.readAdmission = dependencies.readAdmission ? Object.freeze({ ...dependencies.readAdmission }) : undefined;
+    this.inputPreview = dependencies.inputPreview;
+    this.onToolFeedbackAdmission = dependencies.onToolFeedbackAdmission;
+    this.contextSelectionPolicy = dependencies.contextSelectionPolicy ?? (this.readAdmission ? STANDALONE_CONTEXT_POLICY : undefined);
     this.onContextSelection = dependencies.onContextSelection;
     this.validateProvidedInput = dependencies.validateProvidedInput;
     this.provider = dependencies.provider;
     this.capabilities = dependencies.capabilities;
-    this.catalog = dependencies.catalog;
+    this.catalog = this.readAdmission ? Object.freeze(dependencies.catalog.map((descriptor) => Object.freeze({ ...descriptor,
+      inputSchema: snapshotAgentValue(descriptor.inputSchema), sideEffects: snapshotAgentValue(descriptor.sideEffects),
+      preconditions: snapshotAgentValue(descriptor.preconditions), allowedPhases: snapshotAgentValue(descriptor.allowedPhases) }))) : dependencies.catalog;
     this.completionVerifier = dependencies.completionVerifier;
     this.preparedMutations = dependencies.preparedMutations
       ?? new UnavailableAgentPreparedMutationPort();
@@ -396,7 +420,8 @@ export class AgentRunController {
     let state: AgentRunState | null = resumeFrom?.state ?? null;
     let persistedSequence = resumeFrom?.events.at(-1)?.sequence ?? 0;
     const goal = resumeFrom?.goal ?? request.goal;
-    const policy = resumeFrom?.policy ?? request.policy;
+    const originalPolicy = this.readAdmission ? snapshotAgentValue(resumeFrom?.policy ?? request.policy) : resumeFrom?.policy ?? request.policy;
+    const policy = this.readAdmission ? { ...originalPolicy, maxToolsPerTurn: Math.min(originalPolicy.maxToolsPerTurn, 4) } : originalPolicy;
     const intent = resumeFrom?.intent ?? request.intent;
     const workflowContext = () => this.actions.context(
       intent,
@@ -521,15 +546,20 @@ export class AgentRunController {
       (event) => event.event.type === "verification.continue",
     ).length;
     const startTurnIndex = Math.max(turns.length, completedTurnCount);
+    let pendingInput: AgentProviderRequest | null = null;
+    let pendingWorkspace: string | null = null;
+    let pendingAdmission: ToolFeedbackAdmissionReportV1 | null = null;
     for (let turnIndex = startTurnIndex; turnIndex < request.maxTurns; turnIndex += 1) {
       if (signal?.aborted) {
         await applyRunEvent({ type: "cancellation.requested" });
         return outcome(null, null);
       }
 
-      const turnId = this.nextId("turn");
-      let contextSelection: ContextSelectionPlan | undefined;
-      const context = this.contextBuilder.build({
+      const continuation = pendingInput;
+      pendingInput = null;
+      const turnId = continuation?.turnId ?? this.nextId("turn");
+      let contextSelection: ContextSelectionPlan | undefined = continuation?.contextSelection;
+      const context = continuation?.context ?? this.contextBuilder.build({
         runId: request.runId,
         goal,
         turnInput: turnIndex === 0 ? goal : null,
@@ -549,6 +579,17 @@ export class AgentRunController {
         rangeBudget: request.budget.rangeBudget,
         catalog: this.catalog,
       });
+      if (continuation && (pendingWorkspace !== JSON.stringify(workspace)
+        || JSON.stringify(continuation.runState) !== JSON.stringify(currentState())
+        || JSON.stringify(continuation.toolset) !== JSON.stringify(toolset.snapshot)
+        || continuation.context.contextItems.some((item) => item.expiresAt !== null && item.expiresAt <= this.now()))) {
+        if (pendingAdmission && !signal?.aborted) {
+          try { this.onToolFeedbackAdmission?.(freezeToolFeedbackAdmissionReport({ ...pendingAdmission, status: "contract-error", reason: "invalid-preview" })); } catch { /* Observation only. */ }
+        }
+        if (signal?.aborted) { await applyRunEvent({ type: "cancellation.requested" }); return outcome(null, null); }
+        await applyRunEvent({ type: "run.failed", code: "internal-error" });
+        return outcome(null, null);
+      }
       if (contextSelection) {
         try { this.onContextSelection?.(contextSelection.report); } catch { /* Selection observations never own execution. */ }
         if (signal?.aborted) { await applyRunEvent({ type: "cancellation.requested" }); return outcome(null, null); }
@@ -572,7 +613,7 @@ export class AgentRunController {
         label: "正在规划下一步",
       });
       try {
-        decision = await waitForEffect(this.provider.decide({
+        const providerRequest: AgentProviderRequest = continuation ?? {
           runId: request.runId,
           turnId,
           goal,
@@ -581,7 +622,8 @@ export class AgentRunController {
           toolset: toolset.snapshot,
           ...(toolFeedback.length ? { toolFeedback: snapshotToolFeedback(toolFeedback) } : {}),
           ...(contextSelection ? { contextSelection } : {}),
-        }, signal, (event) => {
+        };
+        decision = await waitForEffect(this.provider.decide(this.readAdmission ? snapshotAgentValue(providerRequest) : providerRequest, signal, (event) => {
           if (event.type !== "response.text-delta") return;
           if (!messageStarted) {
             messageStarted = true;
@@ -749,15 +791,107 @@ export class AgentRunController {
         continue;
       }
 
-      const toolActions = validation.acceptedActions.filter(
+      const acceptedTools = validation.acceptedActions.filter(
         (action): action is ToolCallAction => action.kind === "tool-call",
       );
+      const toolActions = this.readAdmission ? snapshotAgentValue(acceptedTools) : acceptedTools;
       if (messageStarted) publish({
         type: "message.completed",
         runId: request.runId,
         turnId,
         content: streamedText,
       });
+      let admission: ReadAdmissionResult | null = null;
+      const reservedTimes = new Map<string, number>();
+      const reportAdmission = (report: ToolFeedbackAdmissionReportV1): void => {
+        if (signal?.aborted) return;
+        try { this.onToolFeedbackAdmission?.(freezeToolFeedbackAdmissionReport(report)); } catch { /* Observational only. */ }
+      };
+      if (this.readAdmission) {
+        const nextTurnId = this.nextId("turn");
+        const calls = toolActions.map((action) => {
+          const invocationId = this.nextId("invocation");
+          reservedTimes.set(invocationId, this.now());
+          return { callId: action.callId, request: { invocationId, capabilityId: action.capabilityId, contractVersion: action.contractVersion,
+            workspaceId: workspace.workspaceId, documentPrecondition: documentPrecondition(workspace), input: action.input } };
+        });
+        const assertActive = () => { if (signal?.aborted) throw new AgentRunCancelled(); };
+        try {
+          admission = admitReadBatch({ policy: this.readAdmission, runId: request.runId, turnId, nextTurnId, calls,
+            inputPreview: this.inputPreview,
+            supported: validation.approvalRequirements.length === 0 && toolActions.every((action) => {
+              const descriptor = this.catalog.find((item) => item.id === action.capabilityId);
+              return descriptor?.kind === "query" && descriptor.executionMode !== "prepared-change-set"
+                && Object.values(descriptor.sideEffects).every((effect) => effect === "none");
+            }), assertActive,
+            previewRead: (call, limit) => this.actions.previewRead(call, workspace, request.budget.rangeBudget, workflowContext(), limit),
+            build: (reads, excluded) => {
+              let projectedState = currentState();
+              const replay = (event: AgentRunEvent) => {
+                const next = reduceAgentRunState(projectedState, event);
+                if (!next.accepted) throw new ReadAdmissionContractError("invalid-preview");
+                projectedState = next.state;
+              };
+              replay({ type: "turn.tools-accepted" });
+              const projectedItems = reads.map((read) => {
+                const identity = documentIdentity(read.result.data);
+                if (identity.documentId !== null && (identity.documentId !== workspace.documentId || identity.documentVersion !== workspace.documentVersion)) {
+                  throw new ReadAdmissionContractError("invalid-preview");
+                }
+                replay({ type: "invocation.dispatched", invocationId: read.request.invocationId, capabilityId: read.request.capabilityId });
+                replay({ type: "invocation.outcome-recorded", invocationId: read.request.invocationId, status: "completed" });
+                return readResultContext(read.request.invocationId, read.request.capabilityId,
+                  this.catalog.find((item) => item.id === read.request.capabilityId), read.result.data, reservedTimes.get(read.request.invocationId)!);
+              });
+              replay({ type: "invocations.completed" });
+              replay({ type: "verification.continue" });
+              let selection: ContextSelectionPlan | undefined;
+              const nextContext = this.contextBuilder.build({ runId: request.runId, goal, turnInput: null, runState: projectedState,
+                workspace, items: [...contextItems.filter((item) => !excluded.has(item.contextItemId)), ...projectedItems], budget: request.budget, now: this.now() },
+                { policy: this.contextSelectionPolicy!, turnId: nextTurnId,
+                  executedResultIds: new Set([...invocations.filter((item) => item.state.status === "succeeded").map((item) => `capability-result:${item.invocationId}`),
+                    ...projectedItems.map((item) => item.contextItemId)]), onSelection: (plan) => { selection = plan; } });
+              if (selection) {
+                const reported = new Set(selection.report.omitted.map((item) => item.contextItemId));
+                selection = { ...selection, report: freezeContextSelectionReport({ ...selection.report,
+                  omitted: [...selection.report.omitted, ...contextItems.filter((item) => excluded.has(item.contextItemId) && !reported.has(item.contextItemId))
+                    .map((item) => ({ contextItemId: item.contextItemId, reason: "model-input-budget" as const }))] }) };
+              }
+              const nextToolset = this.toolsetResolver.resolve({ runState: projectedState, policy, intent,
+                hasDocument: workspace.documentId !== null, rangeBudget: request.budget.rangeBudget, catalog: this.catalog });
+              const newCalls = reads.map((read, index): AgentToolFeedbackCall => {
+                const { content: _content, estimatedTokens: _estimate, ...source } = projectedItems[index]!;
+                const action = toolActions[index]!;
+                return { call: { callId: action.callId, capabilityId: action.capabilityId, contractVersion: action.contractVersion, input: action.input },
+                  invocationId: read.request.invocationId, result: read.result, source };
+              });
+              return { runId: request.runId, turnId: nextTurnId, goal, runState: projectedState, context: nextContext, toolset: nextToolset.snapshot,
+                toolFeedback: [...toolFeedback, { runId: request.runId, turnId, calls: newCalls }], ...(selection ? { contextSelection: selection } : {}) };
+            } });
+          assertActive();
+          if (!isToolFeedbackAdmissionReportV1(admission.report)) throw new ReadAdmissionContractError("invalid-preview");
+          reportAdmission(admission.report);
+          assertActive();
+          if (admission.report.status !== "admitted") {
+            upsertTurn({ turnId, status: "failed", context, toolset: toolset.snapshot, decision, validation });
+            await applyRunEvent({ type: "run.failed", code: admission.report.status === "blocked" ? "budget-exceeded"
+              : admission.report.status === "unsupported" ? "capability-failed" : "internal-error" });
+            return outcome(null, null);
+          }
+        } catch (error) {
+          if (signal?.aborted || error instanceof AgentRunCancelled) {
+            await applyRunEvent({ type: "cancellation.requested" }); return outcome(null, null);
+          }
+          reportAdmission({ schemaVersion: 1, policyVersion: "immutable-query-v1", runId: request.runId, turnId, nextTurnId,
+            status: error instanceof ReadAdmissionContractError && error.message === "unsupported-tool" ? "unsupported" : "contract-error",
+            reason: error instanceof ReadAdmissionContractError && error.message === "unsupported-tool" ? "unsupported-tool" : "invalid-preview",
+            inputPreview: null, calls: calls.map((call) => ({ callId: call.callId, capabilityId: call.request.capabilityId,
+              contractVersion: call.request.contractVersion, candidateInvocationId: call.request.invocationId, resultJsonByteLimit: null, previewResultJsonBytes: null })) });
+          if (signal?.aborted) { await applyRunEvent({ type: "cancellation.requested" }); return outcome(null, null); }
+          await applyRunEvent({ type: "run.failed", code: error instanceof AgentCapabilityPortError ? "capability-failed" : "internal-error" });
+          return outcome(null, null);
+        }
+      }
       if (validation.approvalRequirements.length > 0) {
         const pendingInvocations: AgentInvocationRecord[] = [];
         try {
@@ -869,14 +1003,21 @@ export class AgentRunController {
       await applyRunEvent({ type: "turn.tools-accepted" });
 
       const feedbackCalls: AgentToolFeedbackCall[] = [];
-      for (const action of toolActions) {
+      for (const [actionIndex, action] of toolActions.entries()) {
         if (signal?.aborted) {
           await applyRunEvent({ type: "cancellation.requested" });
           await applyRunEvent({ type: "cancellation.confirmed" });
           return outcome(null, null);
         }
+        if (admission?.nextRequest?.context.contextItems.some((item) => item.expiresAt !== null && item.expiresAt <= this.now())) {
+          reportAdmission({ ...admission.report, status: "contract-error", reason: "invalid-preview" });
+          if (signal?.aborted) { await applyRunEvent({ type: "cancellation.requested" }); await applyRunEvent({ type: "cancellation.confirmed" }); }
+          else await applyRunEvent({ type: "run.failed", code: "internal-error" });
+          return outcome(null, null);
+        }
 
-        const invocationId = this.nextId("invocation");
+        const admittedRead = admission?.reads[actionIndex];
+        const invocationId = admittedRead?.request.invocationId ?? this.nextId("invocation");
         const descriptor = this.catalog.find((item) => item.id === action.capabilityId);
         const activityKind: AgentProgressActivityKind = descriptor?.kind === "query"
           ? "reading"
@@ -949,6 +1090,8 @@ export class AgentRunController {
             workspace,
             request.budget.rangeBudget,
             workflowContext(),
+            capabilityRequest.capabilityId,
+            admittedRead?.limit,
           ), signal);
         } catch (error) {
           const cancelled = error instanceof AgentRunCancelled;
@@ -987,6 +1130,7 @@ export class AgentRunController {
           });
           if (cancelled) {
             await applyRunEvent({ type: "cancellation.requested" });
+            if (admittedRead) await applyRunEvent({ type: "cancellation.confirmed" });
           } else if (definiteFailure) {
             await applyRunEvent({ type: "run.failed", code: "capability-failed" });
           } else {
@@ -998,7 +1142,7 @@ export class AgentRunController {
           return outcome(null, null);
         }
 
-        if (result.status === "completed"
+        if (!admittedRead && result.status === "completed"
           && !matchesCapabilityDocumentPrecondition(
             result.data,
             invocationDocumentPrecondition,
@@ -1075,26 +1219,12 @@ export class AgentRunController {
         applyInvocationEvent({ type: "invocation.succeeded" });
         upsertInvocation(invocationRecord());
         const identity = documentIdentity(result.data);
-        const resultContext: AgentContextItem = {
-          contextItemId: `capability-result:${invocationId}`,
-          kind: "capability-result",
-          content: result.data,
-          sourceType: "capability-result",
-          sourceId: action.capabilityId,
-          documentId: identity.documentId,
-          documentVersion: identity.documentVersion,
-          scope: descriptor?.scopeLimit ?? "none",
-          trustLevel: "authoritative",
-          priority: "high",
-          createdAt: this.now(),
-          expiresAt: null,
-          estimatedTokens: estimateTokens(result.data),
-        };
+        const resultContext = readResultContext(invocationId, action.capabilityId, descriptor, result.data, reservedTimes.get(invocationId) ?? this.now());
         contextItems.push(resultContext);
         const { content: _content, estimatedTokens: _estimate, ...source } = resultContext;
         feedbackCalls.push({ call: { callId: action.callId, capabilityId: action.capabilityId,
           contractVersion: action.contractVersion, input: action.input }, invocationId, result, source });
-        if (identity.documentId !== null && identity.documentVersion !== null) {
+        if (!admittedRead && identity.documentId !== null && identity.documentVersion !== null) {
           workspace = {
             ...workspace,
             documentId: identity.documentId,
@@ -1112,6 +1242,16 @@ export class AgentRunController {
           invocationId,
           status: "completed",
         });
+        if (admittedRead) {
+          let matches = false;
+          try { matches = matchesAdmittedRead(admittedRead, result); } catch { /* Real completion remains durable. */ }
+          if (!matches) {
+            reportAdmission({ ...admission!.report, status: "contract-error", reason: "preview-execution-mismatch" });
+            if (signal?.aborted) { await applyRunEvent({ type: "cancellation.requested" }); await applyRunEvent({ type: "cancellation.confirmed" }); }
+            else await applyRunEvent({ type: "run.failed", code: "internal-error" });
+            return outcome(null, null);
+          }
+        }
       }
 
       upsertTurn({
@@ -1125,6 +1265,9 @@ export class AgentRunController {
       toolFeedback.push({ runId: request.runId, turnId, calls: feedbackCalls });
       await applyRunEvent({ type: "invocations.completed" });
       await applyRunEvent({ type: "verification.continue" });
+      pendingInput = admission?.nextRequest ?? null;
+      pendingWorkspace = pendingInput ? JSON.stringify(workspace) : null;
+      pendingAdmission = admission?.report ?? null;
     }
 
     await applyRunEvent({ type: "run.failed", code: "budget-exceeded" });

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test, { type TestContext } from "node:test";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { AgentToolRegistry, type RegisteredAgentTool } from "@brilliant-guitar/agent-runtime";
+import { AgentToolRegistry, resultJsonBytes, type RegisteredAgentTool } from "@brilliant-guitar/agent-runtime";
 import { decodeTextResourceFile, parseAddTextResource, parseRemoveTextResource, isReadTextResourceInput,
   isTextResourcesSnapshot, MAX_TEXT_RESOURCE_BYTES, MAX_TEXT_PAGE_JSON_BYTES } from "../src/contracts/resources.ts";
 import { isStandaloneAgentSnapshot, type StandaloneAgentSnapshot } from "../src/contracts/host.ts";
@@ -138,7 +138,8 @@ test("unknown or removed IDs produce actual failed activities and no success fee
   host.addResource({ sessionId: host.getSnapshot().session.sessionId, name: "a.md", text: "authorized" });
   await host.session.submit("Read");
   assert.equal(fixture.requests.length, 1); assert.equal(host.getSnapshot().session.status, "failed");
-  assert.equal(host.getSnapshot().activities.items[0]?.status, "failed");
+  assert.equal(host.getSnapshot().activities.items.length, 0);
+  assert.equal(host.getToolFeedbackAdmission()?.reason, "invalid-preview");
 });
 
 test("resources stay process-local, never persist to chat filev1, and late uploads cannot cross sessions", async (t) => {
@@ -206,6 +207,10 @@ test("cancelled slow actual tool cannot upgrade activity or generate after late 
   const slow: RegisteredAgentTool = { descriptor: { id: "demo.slow", contractVersion: 1, name: "Slow", description: "Slow read", kind: "query", inputSchema: { type: "object" }, outputSummary: "Result", preconditions: [],
     sideEffects: { document: "none", filesystem: "none", network: "none", settings: "none", playback: "none" }, scopeLimit: "none", requiresDocument: false,
     approvalRequirement: "risk-based", costClass: "constant", allowedPhases: ["planning"], validateInput: () => true },
+    previewRead: (_input, context) => {
+      const data = { text: "late result" };
+      return resultJsonBytes(data) <= context.resultLimit.maxResultJsonBytes ? { status: "ready", data } : { status: "insufficient-limit" };
+    },
     execute: async () => { ++executions; await new Promise<void>((resolvePromise) => { release = resolvePromise; }); return { text: "late result" }; } };
   const fixture = await createModelFixture([toolReply("tool_1", "{}")]); t.after(fixture.close);
   const host = new StandaloneAgentHost({ tools: new AgentToolRegistry([slow]) }); t.after(() => host.dispose()); await configure(host, fixture.baseUrl);

@@ -38,3 +38,9 @@ Runtime的`reset()`保持原来的清空语义；独立Host的“新会话”负
 宿主可以注入`inputTokenBudget: () => number`。Session在每次submit创建记录前同步采样一次，使用同一冻结值进行预检查、历史投影、Controller轮次和Pi最终预算；非法值或抛错不产生半条记录或请求。无hook保持静态budget/旧消费者行为。共享`parseModelInputPolicy`接受精确v1策略：预算1024–65536，声明容量null或1–1048576，非null要求预算+1500不超过声明。默认8192/未知容量，声明不代表供应商验证。
 
 外部进程内插件/适配器入口获得Controller的`context.budget`；External v1线协议仅含已选择的context.items，未增加预算字段。远端显式预算协商需要后续版本化合同。
+
+宿主可选装配`readAdmission: {schemaVersion:1,maxResultJsonBytes:12288}`和`inputPreview`。启用后同一Controller在执行不可变query前检查整组下一请求；调用上限最多4，权限与输入校验仍先行，默认采用受保护上下文策略。工具注册同步`previewRead(input, context)`，和`execute`共同遵守Controller提供的`context.resultLimit`（结果data的UTF-8 JSON字节上限），复用同一分页函数。缺少预览、存在副作用/审批或最小结果不能容纳时整组不执行；已执行数据不裁剪、不重试。默认不装配的消费者保留既有行为。
+
+Pi使用`createPiInputPreview(selection, model)`（`/pi/input-preview`）；实际stream与预览共用纯投影和最终估算。External宿主在激活后装配`adapter.inputPreview`，仅做本机v1投影/协商限制检查，预留requestId最坏转义字节和完整deadline；远端隐藏提示词仍未知。结构限制导致无法完成估算时`estimatedInputTokens`为null。
+
+`getToolFeedbackAdmission()`及可选`onToolFeedbackAdmission`提供当前Run独立冻结报告；共享`isToolFeedbackAdmissionReportV1`验证精确字段与身份。报告只有候选身份/限额/估算/理由，无输入和正文；取消/切换/新Run清空。结果违约保留真实完成记录并终止续接。完整合同见仓库`docs/agent-m3.2c2-feedback-admission-contract-v1.md`。

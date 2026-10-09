@@ -6,7 +6,8 @@ import { EXTERNAL_AGENT_PROTOCOL_LIMITS as LIMITS } from "./external-protocol-v1
 import {
   ExternalAgentProtocolError, decodeExternalMessage, encodeExternalMessage, negotiateExternalLimits,
 } from "./external-protocol-v1-validator.ts";
-import { mapExternalDecision, projectTurnRequest } from "./external-agent-projection.ts";
+import { mapExternalDecision, projectTurnRequest, previewExternalInput } from "./external-agent-projection.ts";
+import type { AgentInputPreviewPort } from "../contracts/tool-feedback-admission.ts";
 
 export { createDecisionResponse } from "./external-agent-projection.ts";
 
@@ -70,6 +71,11 @@ export class ExternalAgentAdapter {
   }
 
   get state(): ExternalAgentAdapterState { return this.#state; }
+
+  readonly inputPreview: AgentInputPreviewPort = Object.freeze({ preview: (request: AgentProviderRequest) => {
+    if (this.#limits === null || this.#state !== "ready") throw unavailable("External Agent preview is unavailable");
+    return previewExternalInput(request, this.#options.pluginId, this.#limits);
+  } });
 
   #current(generation: number): boolean { return generation === this.#generation; }
 

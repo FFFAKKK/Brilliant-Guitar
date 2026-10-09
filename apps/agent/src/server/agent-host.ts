@@ -1,6 +1,7 @@
 import { createAgentSession, createAgentPluginProvider, DEFAULT_DEEPSEEK_CONFIGURATION, parseAgentModelConfiguration, AgentToolRegistry, STANDALONE_CONTEXT_POLICY, type AgentSession, type AgentModelConfiguration, type ContextSelectionReportV1 } from "@brilliant-guitar/agent-runtime";
 import { createPiDecisionPlugin } from "@brilliant-guitar/agent-runtime/pi";
 import { createHostPiStreamFn } from "@brilliant-guitar/agent-runtime/pi/openai-stream";
+import { createPiInputPreview } from "@brilliant-guitar/agent-runtime/pi/input-preview";
 import { isAgentProviderCredentialSecret } from "@brilliant-guitar/agent-runtime/contracts/agent-provider-credential";
 import type { AgentDecisionProviderPort } from "@brilliant-guitar/agent-runtime/runtime/provider";
 import type { AgentModelInputDiagnosticV1 } from "@brilliant-guitar/agent-runtime/contracts/model-input";
@@ -80,6 +81,11 @@ export class StandaloneAgentHost {
     const tools = (options.tools ?? new AgentToolRegistry()).withTools([createTextResourceTool(this.#resources, (sessionId) =>
       !this.#disposed && this.session.getSnapshot().sessionId === sessionId && this.session.getSnapshot().status === "running")]);
     this.session = createAgentSession({ provider: this.#provider, retainTranscript: true, tools,
+      readAdmission: { schemaVersion: 1, maxResultJsonBytes: 12288 },
+      inputPreview: { preview: (request) => {
+        const configuration = this.#configuration;
+        return createPiInputPreview({ providerId: configuration.providerId, modelId: configuration.modelId }, createCompletionsModel(configuration)).preview(request);
+      } },
       inputTokenBudget: () => this.#selected().inputPolicy.inputTokenBudget,
       contextSelectionPolicy: STANDALONE_CONTEXT_POLICY,
       contextItems: (sessionId) => this.#resources.context(sessionId),
@@ -138,6 +144,7 @@ export class StandaloneAgentHost {
 
   getModelInput(): AgentModelInputDiagnosticV1 | null { return this.#modelInput; }
   getContextSelection(): ContextSelectionReportV1 | null { return this.session.getContextSelection(); }
+  getToolFeedbackAdmission() { return this.session.getToolFeedbackAdmission(); }
 
   addResource(value: unknown): void {
     this.#assertIdle();

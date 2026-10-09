@@ -5,7 +5,8 @@ import type {
   ExternalAgentTurnRequestV1, ExternalAgentTurnResponseV1,
 } from "./external-protocol-v1.ts";
 import { EXTERNAL_AGENT_PROTOCOL_LIMITS as LIMITS } from "./external-protocol-v1.ts";
-import { ExternalAgentProtocolError, validateExternalDecision, validateTurnRequest, validateTurnResponse } from "./external-protocol-v1-validator.ts";
+import { ExternalAgentProtocolError, ExternalAgentInputLimitError, validateExternalDecision, validateTurnRequest, validateTurnResponse } from "./external-protocol-v1-validator.ts";
+import type { AgentInputPreviewV1 } from "../contracts/tool-feedback-admission.ts";
 
 function projectContextItem(item: AgentContextItem) {
   return {
@@ -48,6 +49,22 @@ export function projectTurnRequest(request: AgentProviderRequest, pluginId: stri
     tools: request.toolset.toolDescriptors.map(projectTool),
     maxToolCalls: Math.min(request.toolset.maxCalls, limits?.maxToolCalls ?? LIMITS.maxToolCalls),
   }, limits);
+}
+
+/** Pure host projection; reserves the largest legal request identity without generating one. */
+export function previewExternalInput(request: AgentProviderRequest, pluginId: string, limits: ExternalAgentNegotiatedLimitsV1): AgentInputPreviewV1 {
+  let tokens: number | null = null;
+  let bytes: number | null = null;
+  let status: AgentInputPreviewV1["status"] = "invalid-input";
+  try {
+    const wire = projectTurnRequest(request, pluginId, "9999-12-31T23:59:59.999Z", "\ud800".repeat(256), { ...limits, maxRequestBytes: LIMITS.maxMessageBytes });
+    const encode = (value: unknown) => new TextEncoder().encode(JSON.stringify(value)).length;
+    bytes = encode(wire);
+    tokens = Math.ceil(encode({ goal: wire.goal, context: wire.context, tools: wire.tools }) / 3) + 32;
+    status = bytes > limits.maxRequestBytes ? "input-limit-exceeded" : tokens > request.context.budget.tokenBudget ? "budget-exceeded" : "ready";
+  } catch (error) { status = error instanceof ExternalAgentInputLimitError ? "input-limit-exceeded" : "invalid-input"; }
+  return Object.freeze({ schemaVersion: 1, runId: request.runId, turnId: request.turnId, status, estimator: "external-host-projection-v1",
+    estimatedInputTokens: tokens, inputTokenBudget: request.context.budget.tokenBudget, requestBytes: bytes, requestByteBudget: limits.maxRequestBytes });
 }
 
 export function mapExternalDecision(value: ExternalAgentDecisionV1, request: ExternalAgentTurnRequestV1): AgentDecision {

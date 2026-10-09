@@ -9,6 +9,8 @@ import type {
 } from "./prepared-mutation.ts";
 import { AgentWorkflowResolutionError, AgentWorkflowRuntime } from "./workflow-runtime.ts";
 import type { WorkflowRuntimeContext } from "./workflow-runtime.ts";
+import type { AgentReadPreview, AgentReadResultLimitV1 } from "../contracts/tool-feedback-admission.ts";
+import { snapshotAgentValue } from "./tool-feedback.ts";
 
 export class AgentActionRuntimeError extends AgentCapabilityPortError {
   constructor(message: string) {
@@ -66,9 +68,17 @@ export class AgentActionRuntime {
     rangeBudget: number,
     context: WorkflowRuntimeContext | null,
     operationId: string = request.capabilityId,
+    resultLimit?: AgentReadResultLimitV1,
   ): Promise<CapabilityResult<unknown>> {
     this.#authorize(context, operationId);
-    return this.#capabilities.invoke(request, { workspace, rangeBudget });
+    return this.#capabilities.invoke(resultLimit ? snapshotAgentValue(request) : request,
+      resultLimit ? snapshotAgentValue({ workspace, rangeBudget, resultLimit }) : { workspace, rangeBudget });
+  }
+
+  previewRead(request: CapabilityTransportRequest, workspace: AgentWorkspaceScope, rangeBudget: number,
+    context: WorkflowRuntimeContext | null, resultLimit: AgentReadResultLimitV1): AgentReadPreview {
+    this.#authorize(context, request.capabilityId);
+    return this.#capabilities.previewRead?.(request, snapshotAgentValue({ workspace, rangeBudget, resultLimit })) ?? { status: "unsupported" };
   }
 
   #authorize(context: WorkflowRuntimeContext | null, operationId: string): void {

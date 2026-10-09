@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { request as httpRequest } from "node:http";
-import { AgentToolRegistry, isAgentSessionSnapshot } from "@brilliant-guitar/agent-runtime";
+import { AgentToolRegistry, isAgentSessionSnapshot, resultJsonBytes } from "@brilliant-guitar/agent-runtime";
 import type { RegisteredAgentTool } from "@brilliant-guitar/agent-runtime";
 import { StandaloneAgentHost } from "../src/server/agent-host.ts";
 import { createStandaloneServer } from "../src/server/http-server.ts";
@@ -51,7 +51,11 @@ test("injected generic tool executes exactly once; feedback is passed through th
     id: "demo.read-summary", contractVersion: 1, name: "Demo", description: "测试读取", kind: "query", inputSchema: { type: "object", properties: {} }, outputSummary: "测试反馈", preconditions: [],
     sideEffects: { document: "none", filesystem: "none", network: "none", settings: "none", playback: "none" }, scopeLimit: "none", requiresDocument: false, approvalRequirement: "risk-based", costClass: "constant", allowedPhases: ["planning"],
     validateInput: (value) => typeof value === "object" && value !== null && !Array.isArray(value),
-  }, execute: async () => { ++executions; return { value: "host-authoritative-result" }; } };
+  }, previewRead: (_input, context) => {
+    const data = { value: "host-authoritative-result" };
+    return resultJsonBytes(data) <= context.resultLimit.maxResultJsonBytes ? { status: "ready", data } : { status: "insufficient-limit" };
+  },
+  execute: async () => { ++executions; return { value: "host-authoritative-result" }; } };
   const host = await configuredHost(fixture.baseUrl, new AgentToolRegistry([tool])); t.after(() => host.dispose());
   await host.setEnabled(true);
   const result = await host.session.submit("调用工具");

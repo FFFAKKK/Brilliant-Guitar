@@ -132,15 +132,22 @@ for (const character of ["甲", "A"]) for (const inputTokenBudget of [8192, 1638
     const outcome = await host.session.submit("读完全部资料后回答，请继续读取到eof。");
     const overflow = character === "甲" && inputTokenBudget === 8192;
     assert.equal(host.getSnapshot().session.status, overflow ? "failed" : "completed");
-    assert.equal(fixture.requests.length, overflow ? 2 : 3);
+    assert.equal(fixture.requests.length, 3);
     assert.equal(outcome.run.invocations.length, 2); assert.ok(outcome.run.invocations.every((i) => i.state.status === "succeeded"));
     assert.ok(host.getSnapshot().activities.items.every((i) => i.status === "completed"));
     const diagnostic = host.getModelInput(); assert.ok(diagnostic);
-    assert.equal(diagnostic.inputTokenBudget, inputTokenBudget); assert.equal(diagnostic.status, overflow ? "budget-exceeded" : "ready");
+    assert.equal(diagnostic.inputTokenBudget, inputTokenBudget); assert.equal(diagnostic.status, "ready");
     assert.equal(diagnostic.maxOutputTokens, 1500); assert.equal(diagnostic.timeoutMs, 45000);
     const report = host.getContextSelection(); assert.ok(report);
     assert.equal(report.budget.tokenBudget, inputTokenBudget); assert.equal(report.selected.filter((i) => i.reason === "executed-result").length, 2);
-    if (overflow) assert.ok(diagnostic.estimatedInputTokens > inputTokenBudget);
+    if (overflow) {
+      assert.ok(diagnostic.estimatedInputTokens <= inputTokenBudget);
+      assert.equal(host.getToolFeedbackAdmission()?.status, "blocked");
+      assert.match(host.getSnapshot().session.message, /本组读取未执行/);
+      const data = outcome.run.invocations[1]!.result;
+      assert.ok(data?.status === "completed");
+      assert.ok((data.data as { nextStart: number }).nextStart < text.length);
+    }
     else {
       assert.equal(outcome.response, "资料已读完，给出完整回答。");
       const wire = fixture.requests[2]!.body.messages as { role: string; content: string; tool_call_id?: string; tool_calls?: { id: string }[] }[];

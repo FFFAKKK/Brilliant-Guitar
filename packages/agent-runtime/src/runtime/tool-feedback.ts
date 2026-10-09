@@ -16,7 +16,12 @@ export interface AgentToolFeedbackGroup {
 }
 
 export function snapshotToolFeedback(groups: readonly AgentToolFeedbackGroup[]): readonly AgentToolFeedbackGroup[] {
-  const copy = structuredClone(groups);
+  return snapshotAgentValue(groups);
+}
+
+/** Detached immutable in-process data; never use for ports or executable descriptors. */
+export function snapshotAgentValue<T>(value: T): T {
+  const copy = structuredClone(value);
   const seen = new WeakSet<object>();
   const freeze = (value: unknown): void => {
     if (typeof value !== "object" || value === null || seen.has(value)) return;
