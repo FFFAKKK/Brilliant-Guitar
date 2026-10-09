@@ -4,15 +4,18 @@ import { SettingsDialog } from "./settings-dialog.tsx";
 import { Icon } from "./icons.tsx";
 import { ConversationSidebar } from "./conversation-sidebar.tsx";
 import { ChatMessage } from "./chat-message.tsx";
-import { WorkspaceInspector } from "./workspace-inspector.tsx";
+import { WorkspaceInspector, type InspectorTab } from "./workspace-inspector.tsx";
 
 export function AgentApp() {
-  const { snapshot, connected, error, action, clearError } = useAgent();
+  const { snapshot, connected, connectionEpoch, error, action, clearError } = useAgent();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsFocus, setSettingsFocus] = useState<"input-budget" | undefined>();
+  const settingsTrigger = useRef<HTMLElement | null>(null);
+  const inspectorContextButton = useRef<HTMLButtonElement>(null);
   const [sessionsOpen, setSessionsOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [inspectorOpen, setInspectorOpen] = useState(false);
-  const [inspectorTab, setInspectorTab] = useState<"resources" | "activities">("resources");
+  const [inspectorTab, setInspectorTab] = useState<InspectorTab>("resources");
   const inspectorTrigger = useRef<HTMLElement | null>(null);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -38,6 +41,17 @@ export function AgentApp() {
 
   function openInspector(trigger: HTMLElement) { inspectorTrigger.current = trigger; setInspectorOpen(true); }
   function closeInspector() { setInspectorOpen(false); inspectorTrigger.current?.focus(); }
+  function openBudget(trigger: HTMLElement) { settingsTrigger.current = trigger; setSettingsFocus("input-budget"); setSettingsOpen(true); }
+  function closeSettings() {
+    setSettingsOpen(false); setSettingsFocus(undefined);
+    if (settingsTrigger.current) {
+      // Saving can invalidate diagnostics and remove the original budget button.
+      if (settingsTrigger.current.isConnected) settingsTrigger.current.focus();
+      else if (inspectorOpen) inspectorContextButton.current?.focus();
+      else inputRef.current?.focus();
+    }
+    settingsTrigger.current = null;
+  }
   function toggleSidebar() {
     // An explicit request for sessions closes the inspector; closing the inspector alone restores the preference.
     if (inspectorOpen) { setInspectorOpen(false); setSidebarCollapsed(false); }
@@ -69,7 +83,7 @@ export function AgentApp() {
     <main className="agent-main">
     <header className="app-header"><div className="app-identity"><button className="icon-button desktop-sessions-button" aria-label={sidebarCollapsed || inspectorOpen ? "展开会话栏" : "收起会话栏"} aria-expanded={!sidebarCollapsed && !inspectorOpen} disabled={!snapshot} onClick={toggleSidebar}><Icon name="sidebar"/></button><button className="icon-button mobile-sessions-button" aria-label="打开会话列表" aria-haspopup="dialog" disabled={!snapshot} onClick={() => setSessionsOpen(true)}><Icon name="sidebar"/></button><h1 title={selected?.title}>{selected?.title ?? "Agent"}</h1></div>
       <nav aria-label="Agent 操作"><button className="subtle-button" aria-label="新会话" disabled={!connected || sending || changingSession || resourceBusy} onClick={() => void changeConversation("session/reset", {}).then(() => { clearError(); inputRef.current?.focus(); }).catch(() => undefined)}><Icon name="plus"/><span>新会话</span></button>
-        <button className="icon-button inspector-toggle" aria-label={inspectorOpen ? "收起资料与活动" : "打开资料与活动"} aria-expanded={inspectorOpen} aria-controls="workspace-inspector" disabled={!snapshot} onClick={(event) => inspectorOpen ? closeInspector() : openInspector(event.currentTarget)}><Icon name="file"/></button>
+        <button className="icon-button inspector-toggle" aria-label={inspectorOpen ? "收起会话检查区" : "打开会话检查区"} aria-expanded={inspectorOpen} aria-controls="workspace-inspector" disabled={!snapshot} onClick={(event) => inspectorOpen ? closeInspector() : openInspector(event.currentTarget)}><Icon name="file"/></button>
         <button className="icon-button" aria-label="打开 Agent 设置" disabled={!snapshot} onClick={() => setSettingsOpen(true)}><Icon name="settings"/></button></nav></header>
     <div className="conversation" ref={scrollArea} tabIndex={0} role="region" aria-label="聊天内容" onScroll={() => {
       const area = scrollArea.current;
@@ -91,7 +105,7 @@ export function AgentApp() {
         <textarea ref={inputRef} aria-label="发送给 Agent 的消息" placeholder={session?.enabled ? "发送消息，或描述你希望完成的任务…" : "启用 Agent 后开始对话"} value={input} rows={2} maxLength={30000} disabled={!connected || !session?.enabled || changingSession} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => {
           if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void send(); }
         }}/>
-        <div className="composer-actions"><div className="composer-context"><button type="button" className="subtle-button attachment-button" aria-label="查看会话资料" aria-controls="workspace-inspector" aria-expanded={inspectorOpen} disabled={!snapshot} onClick={(event) => { setInspectorTab("resources"); openInspector(event.currentTarget); }}><Icon name="file"/><span>资料{snapshot?.resources.items.length ? ` · ${snapshot.resources.items.length}` : ""}</span></button><button type="button" className="subtle-button model-button" title={snapshot?.configuration.modelId} aria-label="查看模型设置" disabled={!snapshot} onClick={() => setSettingsOpen(true)}>{snapshot?.configuration.modelId ?? "正在连接"}</button></div>{active ? <button className="stop-button" type="button" disabled={session?.status === "cancelling"} onClick={() => void cancel()}><span className="stop-mark"/>{session?.status === "cancelling" ? "正在停止" : "停止"}</button>
+        <div className="composer-actions"><div className="composer-context"><button type="button" className="subtle-button attachment-button" aria-label="查看会话资料" aria-controls="workspace-inspector" aria-expanded={inspectorOpen} disabled={!snapshot} onClick={(event) => { setInspectorTab("resources"); openInspector(event.currentTarget); }}><Icon name="file"/><span>资料{snapshot?.resources.items.length ? ` · ${snapshot.resources.items.length}` : ""}</span></button><button type="button" className="subtle-button context-button" aria-controls="workspace-inspector" aria-expanded={inspectorOpen && inspectorTab === "context"} disabled={!snapshot} onClick={(event) => { setInspectorTab("context"); openInspector(event.currentTarget); }}>上下文</button><button type="button" className="subtle-button model-button" title={snapshot?.configuration.modelId} aria-label="查看模型设置" disabled={!snapshot} onClick={() => setSettingsOpen(true)}>{snapshot?.configuration.modelId ?? "正在连接"}</button></div>{active ? <button className="stop-button" type="button" disabled={session?.status === "cancelling"} onClick={() => void cancel()}><span className="stop-mark"/>{session?.status === "cancelling" ? "正在停止" : "停止"}</button>
           : <button className="primary-button send-button" type="submit" disabled={!ready || !input.trim()} aria-label="发送消息"><Icon name="send"/></button>}</div>
       </form>
       <div className="status-bar" role="status"><span className={`status-dot ${active ? "active" : session?.enabled ? "enabled" : ""}`}/><span>{snapshot?.testingConnection ? "正在测试连接" : session?.message ?? "等待宿主连接"}</span>
@@ -99,7 +113,8 @@ export function AgentApp() {
       <span className="keyboard-hint">Enter 发送 · Shift + Enter 换行</span>
     </div></footer>
     </main>
-    {snapshot && <WorkspaceInspector snapshot={snapshot} open={inspectorOpen} tab={inspectorTab} onTabChange={setInspectorTab} disabled={!connected || Boolean(active) || sending || changingSession} action={action} onBusyChange={setResourceBusy} onClose={closeInspector}/>}
-    {settingsOpen && snapshot && <SettingsDialog snapshot={snapshot} action={action} onClose={() => setSettingsOpen(false)}/>}
+    {snapshot && <WorkspaceInspector snapshot={snapshot} open={inspectorOpen} tab={inspectorTab} onTabChange={setInspectorTab} disabled={!connected || Boolean(active) || sending || changingSession} action={action} onBusyChange={setResourceBusy} onClose={closeInspector}
+      connected={connected} connectionEpoch={connectionEpoch} onOpenBudget={openBudget} contextButtonRef={inspectorContextButton}/>}
+    {settingsOpen && snapshot && <SettingsDialog snapshot={snapshot} action={action} initialFocus={settingsFocus} onClose={closeSettings}/>}
   </div>;
 }

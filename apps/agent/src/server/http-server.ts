@@ -59,6 +59,7 @@ export function createStandaloneServer(options: Options): ViteServer {
       if (request.method === "GET" && pathname === "/api/model-input") { send(response, 200, options.host.getModelInput()); return; }
       if (request.method === "GET" && pathname === "/api/context-selection") { send(response, 200, options.host.getContextSelection()); return; }
       if (request.method === "GET" && pathname === "/api/tool-feedback-admission") { send(response, 200, options.host.getToolFeedbackAdmission()); return; }
+      if (request.method === "GET" && pathname === "/api/run-diagnostics") { send(response, 200, options.host.getRunDiagnostics()); return; }
       if (request.method === "GET" && pathname === "/api/session/events") {
         response.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-store", connection: "keep-alive" });
         let waitingForDrain = false;

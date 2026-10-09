@@ -9,10 +9,13 @@ interface Props {
   readonly snapshot: StandaloneAgentSnapshot;
   readonly action: (path: string, body: unknown, signal?: AbortSignal) => Promise<unknown>;
   readonly onClose: () => void;
+  readonly initialFocus?: "input-budget" | undefined;
 }
 
-export function SettingsDialog({ snapshot, action, onClose }: Props) {
+export function SettingsDialog({ snapshot, action, onClose, initialFocus }: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
+  const budgetDetails = useRef<HTMLDetailsElement>(null);
+  const budgetInput = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState(snapshot.configuration);
   const selected = snapshot.connections.profiles.find((profile) => profile.id === snapshot.connections.selectedProfileId)!;
   const [profileId, setProfileId] = useState<string | null>(selected.id);
@@ -45,6 +48,11 @@ export function SettingsDialog({ snapshot, action, onClose }: Props) {
   useEffect(() => {
     mounted.current = true;
     dialog.current?.showModal();
+    if (initialFocus === "input-budget" && budgetDetails.current) {
+      budgetDetails.current.open = true;
+      if (budgetInput.current && !budgetInput.current.matches(":disabled")) budgetInput.current.focus();
+      else budgetDetails.current.querySelector("summary")?.focus();
+    }
     return () => { mounted.current = false; catalogAbort.current?.abort(); };
   }, []);
 
@@ -154,9 +162,9 @@ export function SettingsDialog({ snapshot, action, onClose }: Props) {
             setCustomModel(!customModel); modelEdited.current = true;
           }}>{customModel ? "从列表选择" : "自定义模型"}</button>}</div>
         {recentModels.length > 0 && <div className="recent-models"><span>最近选择</span>{recentModels.map((id) => <button key={id} type="button" className="text-button" title={id} onClick={() => chooseModel(id)}>{id}</button>)}</div>}
-        <details className="input-policy-settings">
+        <details className="input-policy-settings" ref={budgetDetails}>
           <summary>高级 · 输入预算</summary>
-          <label>输入估算预算<input aria-label="输入估算预算" type="number" min={1024} max={65536} step={1} required value={inputBudget} onChange={(event) => { setInputBudget(event.target.value); setTestResult(""); }}/></label>
+          <label>输入估算预算<input ref={budgetInput} aria-label="输入估算预算" type="number" min={1024} max={65536} step={1} required value={inputBudget} onChange={(event) => { setInputBudget(event.target.value); setTestResult(""); }}/></label>
           <p className="field-help">按输入 JSON 的 UTF-8 字节数估算，默认8192。仅对当前连接与模型生效；更换模型或服务后重置。</p>
           <label>用户声明的上下文容量<input aria-label="用户声明的上下文容量" type="number" min={1} max={1048576} step={1} placeholder="未知（留空）" value={contextWindow} onChange={(event) => { setContextWindow(event.target.value); setTestResult(""); }}/></label>
           <p className="field-help">{contextWindow.trim() ? "容量由你声明，未经供应商验证。输入预算加1500输出预留须在该容量内。" : "供应商上下文容量未知。请确认服务支持后调整预算，估算值不等于精确 token 数。"} 保存配置不会调用模型或重试旧任务。</p>

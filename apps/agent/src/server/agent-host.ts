@@ -19,6 +19,7 @@ import type { AgentRunProgressEvent } from "@brilliant-guitar/agent-runtime/runt
 import { TextResourceStore, createTextResourceTool } from "./text-resources.ts";
 import { parseAddTextResource, parseRemoveTextResource, TEXT_RESOURCE_CAPABILITY_ID } from "../contracts/resources.ts";
 import { MAX_TOOL_ACTIVITIES, type ToolActivitiesSnapshot, type ToolActivity } from "../contracts/tool-activities.ts";
+import { projectRunDiagnostics, type DiagnosticsRunBinding } from "./run-diagnostics.ts";
 
 interface HostOptions { readonly tools?: AgentToolRegistry; readonly settingsStore?: ConnectionSettingsStorePort; readonly credentialProtector?: CredentialProtectorPort; readonly sessionStore?: SessionStorePort }
 
@@ -35,6 +36,10 @@ export class StandaloneAgentHost {
   #changing = false;
   #disposed = false;
   #modelInput: AgentModelInputDiagnosticV1 | null = null;
+  readonly #hostInstanceId = crypto.randomUUID();
+  #configurationEpoch = 0;
+  #diagnosticsBinding: DiagnosticsRunBinding | null = null;
+  #observedDiagnosticsRun: string | null = null;
   readonly #resources = new TextResourceStore();
   #activities: ToolActivitiesSnapshot = Object.freeze({ runId: null, items: Object.freeze([]) });
   #settings: StoredConnectionSettings = { ...defaultConnectionSettings(), profiles: defaultConnectionSettings().profiles.map(({ credentialRemembered: _remembered, ...profile }) => ({ ...profile, sealedCredential: null })) };
@@ -98,6 +103,13 @@ export class StandaloneAgentHost {
     this.#library = { schemaVersion: 1, selectedSessionId: first.sessionId, sessions: [first] };
     this.#unsubscribe = this.session.subscribe(() => {
       const session = this.session.getSnapshot();
+      const diagnosticsRun = session.runId === null ? null : JSON.stringify([session.sessionId, session.runId]);
+      if (!session.enabled || diagnosticsRun === null) this.#diagnosticsBinding = null;
+      else if (diagnosticsRun !== this.#observedDiagnosticsRun && session.runId !== null) {
+        this.#diagnosticsBinding = Object.freeze({ sessionId: session.sessionId, runId: session.runId,
+          selectedProfileId: this.#settings.selectedProfileId, configurationEpoch: this.#configurationEpoch });
+      }
+      this.#observedDiagnosticsRun = diagnosticsRun;
       if (this.#resources.getSnapshot().sessionId !== session.sessionId) this.#resources.clear(session.sessionId);
       if (this.#activities.runId !== session.runId) this.#activities = Object.freeze({ runId: session.runId, items: Object.freeze([]) });
       if (["completed", "failed", "cancelled"].includes(session.status)) this.#finishActivities(session.status === "cancelled" ? "cancelled" : "failed");
@@ -145,6 +157,14 @@ export class StandaloneAgentHost {
   getModelInput(): AgentModelInputDiagnosticV1 | null { return this.#modelInput; }
   getContextSelection(): ContextSelectionReportV1 | null { return this.session.getContextSelection(); }
   getToolFeedbackAdmission() { return this.session.getToolFeedbackAdmission(); }
+  getRunDiagnostics() {
+    const session = this.session.getSnapshot();
+    return projectRunDiagnostics({ hostInstanceId: this.#hostInstanceId, hostSequence: this.#sequence, sessionId: session.sessionId,
+      runId: session.runId, selectedProfileId: this.#settings.selectedProfileId, configurationEpoch: this.#configurationEpoch,
+      enabled: session.enabled && !this.#disposed, binding: this.#diagnosticsBinding, providerId: this.#configuration.providerId,
+      modelId: this.#configuration.modelId, modelInput: this.#modelInput, contextSelection: this.session.getContextSelection(),
+      admission: this.session.getToolFeedbackAdmission(), omittedHistoryTurns: session.omittedHistoryTurns });
+  }
 
   addResource(value: unknown): void {
     this.#assertIdle();
@@ -391,6 +411,9 @@ export class StandaloneAgentHost {
     await this.#settingsStore?.save(next);
     this.#assertAvailable();
     if (disable) await this.session.setEnabled(false);
+    const selected = next.profiles.find((profile) => profile.id === next.selectedProfileId)!;
+    if (next.selectedProfileId !== this.#settings.selectedProfileId || JSON.stringify(selected.configuration) !== JSON.stringify(this.#configuration)
+      || JSON.stringify(selected.inputPolicy) !== JSON.stringify(this.#selected().inputPolicy) || restored.key !== this.#apiKey) ++this.#configurationEpoch;
     this.#settings = next; this.#configuration = this.#selected().configuration; this.#apiKey = restored.key; this.#storageNotice = restored.notice;
     if (restored.key) this.#keys.set(next.selectedProfileId, restored.key); else this.#keys.delete(next.selectedProfileId);
     this.#publish();

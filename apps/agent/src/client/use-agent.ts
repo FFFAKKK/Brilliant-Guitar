@@ -8,6 +8,7 @@ export function useAgent() {
   const [error, setError] = useState("");
   const latestSequence = useRef(-1);
   const connectionEpoch = useRef(0);
+  const [epoch, setEpoch] = useState(0);
   const accept = useCallback((value: unknown) => {
     const next = decodeSnapshot(value);
     if (next.sequence < latestSequence.current) return;
@@ -21,6 +22,7 @@ export function useAgent() {
     const events = new EventSource("/api/session/events");
     events.onopen = () => { if (!disposed) {
       ++connectionEpoch.current;
+      setEpoch(connectionEpoch.current);
       latestSequence.current = -1;
       setConnected(true); setError("");
     } };
@@ -49,5 +51,5 @@ export function useAgent() {
     }
   }, [accept]);
 
-  return { snapshot, connected, error, action, clearError: () => setError("") };
+  return { snapshot, connected, connectionEpoch: epoch, error, action, clearError: () => setError("") };
 }

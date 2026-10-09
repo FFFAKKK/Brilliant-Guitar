@@ -635,3 +635,58 @@ Runtime read-admission: whole group/minimum protection, optional history/two rec
 
 ### 7. Wrong vs Correct
 Wrong: execute one call then discover another cannot fit, or fake a completed rejection. Correct: reserve every minimum before dispatch and stop locally if necessary. Wrong: report0 tokens after structural failure. Correct: null for unknown, reject readiness. Wrong: rebuild a different context after execution. Correct: validate actual results then send the admitted immutable snapshot through the original final guard.
+
+## U2 Atomic Run Diagnostics
+
+### 1. Scope / Trigger
+App-only read projection and inspector page for the current Run. Runtime/Controller/Pi loop remain the execution path. Keep original three diagnostic GETs, Host v5/SSE, connection v2, External/raw-stream/chat v1 and stored Run DTO unchanged. Do not persist diagnostics, collect usage, expose bodies/credentials, or generate from a read/refresh/settings save.
+
+### 2. Signatures
+```ts
+host.getRunDiagnostics(): AgentRunDiagnosticsV1;
+GET /api/run-diagnostics // Host/Origin checks, cache-control:no-store
+isModelInputSummaryV1(value: unknown): value is ModelInputSummaryV1;
+isAgentRunDiagnosticsV1(value: unknown): value is AgentRunDiagnosticsV1;
+decodeRunDiagnostics(value: unknown): AgentRunDiagnosticsV1;
+projectRunDiagnostics(input): AgentRunDiagnosticsV1; // pure synchronous projection
+DiagnosticsCoordinator.update(identity: DiagnosticsIdentity|null): void;
+DiagnosticsCoordinator.refresh()/dispose(): void;
+useRunDiagnostics(snapshot, open, connected, connectionEpoch);
+// SettingsDialog initialFocus?: "input-budget"; InspectorTab adds "context".
+```
+No new env keys or dependencies. Strict DTO and projection are App-owned; reuse Runtime selection/admission guards and freezing, not copied rules.
+
+### 3. Contracts
+Exact13 fields: schemaVersion=1, hostInstanceId, hostSequence, sessionId, runId, selectedProfileId, configurationEpoch, availability, modelInput, contextSelection, admission, omittedHistoryTurns, actualUsage=null. Summary exact11 fields: runId/turnId/providerId/modelId/status/estimator/estimatedInputTokens/inputTokenBudget/retainedHistoryTurns/toolCount/maxOutputTokens. Whitelist the internal diagnostic; never spread it at HTTP. Reject extra fields, unsafe/non-integer counts, invalid IDs, status inconsistent with estimate>budget and cross-Run reports; detached deep-freeze. Each phase may have a different turnId. Exclude text, raw model response, tool inputs/results, resource names, baseUrl/headers/key/ciphertext/fingerprints.
+
+Only available carries reports and a nonnegative omittedHistoryTurns from Session, and requires a Run plus at least one valid report. pending requires Run with null reports/count. disabled/no-current-run/configuration-changed/unavailable have null reports/count; no-current-run requires null Run, configuration-changed requires Run. Priority: disabled, noRun, binding mismatch(unavailable), changed profile/epoch, source validation, available/pending. Invalid source becomes unavailable without failing the real Run. ready means local input check passed, never remote request success. actualUsage stays null; UI renders 未提供, no guessed price/window/zero.
+
+Capture binding in main Session subscription when a new sessionId+runId appears, including direct Session submission. Effective selected-profile/config/inputPolicy/raw credential changes increment an in-memory epoch after successful settings save; names/unused-profile edits do not. Compare keys only inside Host, publish no fingerprint. Disable removes binding; observing the old Run on re-enable must not recreate it. Probe does not overwrite main binding/reports; restored history has no invented diagnostics. Getter does not publish sequence, mutate state, read disk or call provider. Cancellation can preserve valid last modelInput while cleared selection/admission remain null.
+
+Client key: connectionEpoch/sessionId/runId/selectedProfileId/public configuration+inputPolicy+credentialPresent/enabled. Latest Host snapshot sequence also gates acceptance: checking only request-start sequence misses same-target credential changes. Same key/nonrunning sequence changes clear display before refresh. Use independent generation+AbortController; stale success AND failure cannot publish. Retain at most one unresolved request even after abort, queue latest until it settles. Accept only matching identity/host-instance, no regressing sequence/configepoch within the connection epoch; reconnect establishes new host baseline. Mask old identity synchronously before effects. Host sequence is a snapshot marker, not a revision of every diagnostic report.
+
+Only an open context page with a connected host reads. Running reads start at most once per1000ms, continuous stream events coalesce without trailing-debounce starvation; terminal/config/reconnect refresh once, close/dispose cancel timers/requests. Local diagnostic errors never use global execution error. Model input shows frozen budget separately from selection and next-read candidate estimate. Candidate invocation IDs cannot create completion cards. Preview-execution-mismatch wording preserves actual completed facts, not a false 本组未执行.
+
+Budget entry reuses native SettingsDialog: expand existing details and focus input; inherited fieldset disable is checked with matches(":disabled"), then focus summary. Closing restores trigger; if save removes it, focus current inspector context button (especially inside narrow modal), then usable input fallback. Keep draft and explicit user resend, default8192 unchanged. Reuse project tokens and existing desktop/narrow inspector, same mounted resource controller.
+
+### 4. Validation & Error Matrix
+| Condition | Behavior |
+| --- | --- |
+| Extra/private fields, forged usage, invalid integer or cross-Run DTO | Decoder rejects; local stable diagnostic error only |
+| Invalid internal phase source/model identity | unavailable, null reports; actual Run unaffected |
+| New Run/config/key/profile or disabled host | Clear old binding/report as above; no stale metrics |
+| Stop/switch/restored history | Valid final input only or honest missing; no revived selection/admission |
+| Wrong Host/Origin | Existing403; GET has no model/storage side effect |
+| HTTP exception/invalid JSON/DTO | Panel 暂时无法读取运行说明 + 刷新诊断; chat remains usable |
+| Old success/failure or host regression | Ignore stale response or local host mismatch; never overwrite current state |
+| Slow uncancellable request/continuous stream/closed page | One in flight, bounded coalescing/no starvation, no reads after closure |
+| Budget settings saved | Old configuration report invalid, draft kept, no automatic submit/retry |
+
+### 5. Good / Base / Bad Cases
+Good: actual last input8192/8192 ready, two real completed reads, next candidate blocked; display these three distinct facts and open budget settings. Base: new or restored history shows 当前没有运行诊断 with no zeros. Bad: replace the frozen denominator with new16384, add candidate completions, present null usage as0, mix phases from three unbound HTTP reads, or accept pre-key-change success because the public target stayed equal.
+
+### 6. Tests Required
+App strict DTO/whitelist/privacy/freeze/missing-state cases; real HTTP no-store/Host-Origin/read-only/v5 exact keys, main/probe, rename vs policy/key change, disable/re-enable, cancel and restore. Pure coordinator deferred results/fake clock covers each identity dimension, old success AND failure, latest snapshot credential case, reconnect process baseline, invalid DTO, slow abort-resistant single flight, continuous stream1s coalescing, terminal/close/dispose. Render real TSX for frozen-input vs blocked candidate, mismatch facts, missing/error no zeros/re-generation. Actual isolated production UI at1280/1024/390/320 verifies dialogs, budget focus/draft/save fallback, new Run/current budget, stop/history/reconnect, local diagnostic failure with successful chat, GET rate/max concurrency/closed inactivity and unchanged generation count except explicit sends. Run affected App tests/types/build and dependency boundaries; record native IME/provider stability/visual signoff separately. Do not reuse synthetic prototype proof as production acceptance or claim whole-repository checks from scoped results.
+
+### 7. Wrong vs Correct
+Wrong: compare response.hostSequence only with the captured request-start snapshot, or refocus a removed budget button after settings save. Correct: gate against the latest public snapshot and ignore old failures too; return focus to the current context button inside the modal when the original trigger no longer exists. Wrong: generate to refresh diagnostics or feed candidate estimates into actual model-input display. Correct: pure metadata GET and distinct phase sections from one bound projection.

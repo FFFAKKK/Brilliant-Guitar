@@ -1,20 +1,29 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type Ref } from "react";
 import type { StandaloneAgentSnapshot } from "../contracts/host.ts";
 import { Icon } from "./icons.tsx";
 import { ResourcePanel } from "./resource-panel.tsx";
 import { ToolActivities } from "./tool-activities.tsx";
+import { useRunDiagnostics } from "./use-run-diagnostics.ts";
+import { RunDiagnosticsPanel } from "./run-diagnostics-panel.tsx";
 
-export function WorkspaceInspector({ snapshot, open, tab, onTabChange, disabled, action, onBusyChange, onClose }: {
+export type InspectorTab = "resources" | "activities" | "context";
+
+export function WorkspaceInspector({ snapshot, open, tab, onTabChange, disabled, action, onBusyChange, onClose, connected = false, connectionEpoch = 0, onOpenBudget, contextButtonRef }: {
   readonly snapshot: StandaloneAgentSnapshot;
   readonly open: boolean;
-  readonly tab: "resources" | "activities";
-  readonly onTabChange: (tab: "resources" | "activities") => void;
+  readonly tab: InspectorTab;
+  readonly onTabChange: (tab: InspectorTab) => void;
+  readonly connected?: boolean;
+  readonly connectionEpoch?: number;
+  readonly onOpenBudget?: (trigger: HTMLElement) => void;
+  readonly contextButtonRef?: Ref<HTMLButtonElement>;
   readonly disabled: boolean;
   readonly action: (path: string, body: unknown) => Promise<unknown>;
   readonly onBusyChange: (busy: boolean) => void;
   readonly onClose: () => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
+  const diagnostics = useRunDiagnostics(snapshot, open && tab === "context", connected, connectionEpoch);
   useEffect(() => {
     const element = dialog.current;
     if (!element) return;
@@ -28,7 +37,7 @@ export function WorkspaceInspector({ snapshot, open, tab, onTabChange, disabled,
     mobile.addEventListener("change", present);
     return () => mobile.removeEventListener("change", present);
   }, [open]);
-  return <dialog ref={dialog} id="workspace-inspector" className="workspace-inspector" aria-label="资料与活动"
+  return <dialog ref={dialog} id="workspace-inspector" className="workspace-inspector" aria-label="会话检查区"
     onClose={() => { if (!dialog.current?.open) onClose(); }}
     onCancel={(event) => { event.preventDefault(); onClose(); }}
     onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); onClose(); } }}
@@ -37,10 +46,11 @@ export function WorkspaceInspector({ snapshot, open, tab, onTabChange, disabled,
       const bounds = event.currentTarget.getBoundingClientRect();
       if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) onClose();
     }}>
-    <header className="inspector-heading"><h2>资料与活动</h2><button className="icon-button" aria-label="关闭资料与活动" onClick={onClose}><Icon name="close"/></button></header>
+    <header className="inspector-heading"><h2>会话检查区</h2><button className="icon-button" aria-label="关闭检查区" onClick={onClose}><Icon name="close"/></button></header>
     <div className="inspector-tabs" aria-label="检查区内容">
       <button aria-pressed={tab === "resources"} onClick={() => onTabChange("resources")}>会话资料<span>{snapshot.resources.items.length}</span></button>
       <button aria-pressed={tab === "activities"} onClick={() => onTabChange("activities")}>本次活动<span>{snapshot.activities.items.length}</span></button>
+      <button ref={contextButtonRef} aria-pressed={tab === "context"} onClick={() => onTabChange("context")}>上下文</button>
     </div>
     <div className="inspector-content">
       <section hidden={tab !== "resources"}>
@@ -53,6 +63,8 @@ export function WorkspaceInspector({ snapshot, open, tab, onTabChange, disabled,
         <ToolActivities activities={snapshot.activities}/>
         {!snapshot.activities.items.length && <div className="inspector-empty"><Icon name="activity"/><p>暂无工具活动</p><span>Agent 调用工具后，<br/>可以在这里查看执行情况。</span></div>}
       </section>
+      <section hidden={tab !== "context"} aria-label="当前运行上下文"><RunDiagnosticsPanel state={diagnostics} disconnected={diagnostics.disconnected}
+        onRefresh={diagnostics.refresh} onOpenBudget={onOpenBudget} onResources={() => onTabChange("resources")}/></section>
     </div>
   </dialog>;
 }
