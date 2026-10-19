@@ -45,6 +45,8 @@ export function flowScoreMeasures<T extends RhythmicMeasure>(items: readonly T[]
   readonly systemHeight: number;
   readonly bottomReserve: number;
   readonly width: (measure: T, index: number, beginsSystem: boolean) => number;
+  /** Distribute a system's spare width without shrinking its minimum measures. */
+  readonly justifySystems?: boolean;
 }): readonly (readonly PaperMeasureLayout<T>[])[] {
   const pages: PaperMeasureLayout<T>[][] = [];
   let measures: PaperMeasureLayout<T>[] = [];
@@ -68,5 +70,23 @@ export function flowScoreMeasures<T extends RhythmicMeasure>(items: readonly T[]
     x += width;
   }
   if (measures.length) pages.push(measures);
+  if (options.justifySystems) for (const page of pages) {
+    let start = 0;
+    while (start < page.length) {
+      let end = start + 1;
+      while (end < page.length && page[end]!.system === page[start]!.system) end++;
+      const naturalWidth = page.slice(start, end).reduce((sum, measure) => sum + measure.width, 0);
+      const factor = contentWidth / naturalWidth;
+      let systemX = SCORE_PAPER.margin;
+      for (let index = start; index < end; index++) {
+        const current = page[index]!;
+        const justifiedWidth = index === end - 1 ? SCORE_PAPER.width - SCORE_PAPER.margin - systemX
+          : current.width * factor;
+        page[index] = { ...current, x: systemX, width: justifiedWidth };
+        systemX += justifiedWidth;
+      }
+      start = end;
+    }
+  }
   return pages;
 }

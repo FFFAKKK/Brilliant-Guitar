@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>谱面绘制容量验收</title>
+<link rel="icon" href="data:,">
+<style>
+  body { margin: 24px; background: #eef0f3; color: #20242c; font: 14px system-ui; }
+  header { display: flex; align-items: center; gap: 12px; } h1 { font-size: 18px; margin-right: auto; }
+  button { width: 36px; height: 36px; display: grid; place-items: center; background: white; border: 1px solid #ccd1da; border-radius: 8px; cursor: pointer; }
+  button:disabled { opacity: .35; cursor: default; } button svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+  #drawing { margin-top: 18px; max-height: 65vh; overflow: auto; background: white; }
+  #drawing > svg { display: block; width: 720px; height: auto; } pre { line-height: 1.6; }
+</style>
+<header>
+  <h1>谱面绘制容量验收</h1>
+  <button id="run" title="运行：每规模预热3次，采样25次" aria-label="运行"><svg viewBox="0 0 24 24"><path d="m8 5 11 7-11 7Z"/></svg></button>
+  <button id="stop" title="停止" aria-label="停止" disabled><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1"/></svg></button>
+  <button id="download" title="下载本次原始报告" aria-label="下载报告" disabled><svg viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4"/></svg></button>
+</header>
+<p id="status" role="status">就绪 · 4 核／8GB 目标 · 实机资格待验收</p>
+<pre id="summary"></pre>
+<div id="drawing" aria-label="当前测量谱面"></div>
+<!-- CAPACITY_DATA -->
+<script src="vendor/notation-capacity-preview.js"></script>
+</html>

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>工作区布局 · 视觉审阅目录</title>
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/base.css">
+  <style>
+    body { overflow: auto; padding: 32px; }
+    main { max-width: 960px; margin: auto; }
+    h1 { margin: 0 0 12px; font-size: 24px; font-weight: 500; }
+    p { color: var(--frame-muted); line-height: 1.7; }
+    .samples { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; margin-top: 24px; }
+    section { padding: 20px; background: var(--frame-command); border-radius: 4px; }
+    h2 { margin: 0 0 8px; font-size: 14px; font-weight: 500; }
+    section p { font-size: 12px; }
+    a { display: inline-block; padding: 8px 12px; margin: 4px 4px 0 0; color: var(--frame-ink); background: var(--frame-canvas); border-radius: 4px; text-decoration: none; font-size: 12px; }
+    a:hover { background: var(--frame-hover); }
+    @media(max-width:720px) { body { padding: 20px; } .samples { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body data-frame-document><main>
+  <h1>工作区布局组件</h1>
+  <p>侧栏开关、尺寸与整体排布随时可用。进入布局编辑后配置栏内内容，确认或取消只处理内容配置。以下中性内容仅供视觉审阅。</p>
+  <div class="samples">
+    <section><h2>普通与编辑状态</h2><p>工作区调整常用；内容编辑显示未修改或实际差异。尺寸范围和单项恢复随窗口容量变化。</p>
+      <a href="structure-preview.html?scene=S01&variant=default">普通模式</a>
+      <a href="structure-preview.html?scene=S09&variant=entered">编辑未修改</a>
+      <a href="runtime-preview.html">集成入口</a></section>
+    <section><h2>选中与空内容</h2><p>进入编辑不自动选中内容。没有网格区时只展示对应说明。</p>
+      <a href="structure-preview.html?presentation=grid&contentSide=left&sample=unselected">尚未选中</a>
+      <a href="structure-preview.html?presentation=grid&contentSide=left&sample=empty-editing">没有内容</a>
+      <a href="structure-preview.html?presentation=tabs&contentSide=left&sample=unselected">页签没有网格操作</a>
+      <a href="structure-preview.html?presentation=list&contentSide=left&sample=unselected">列表没有网格操作</a></section>
+    <section><h2>内容限制</h2><p>选中目标明确所属区与允许区域；固定、占宽与容量限制有文字。</p>
+      <a href="structure-preview.html?presentation=grid&contentSide=left&sample=fixed">固定内容</a>
+      <a href="structure-preview.html?presentation=grid&contentSide=left&sample=half-only">仅支持半行</a>
+      <a href="structure-preview.html?presentation=grid&contentSide=left&sample=width-limit">半行空间不足</a>
+      <a href="structure-preview.html?presentation=grid&contentSide=right&sample=library">区域不允许</a></section>
+    <section><h2>页面与统一事务</h2><p>页签、列表、网格可独立或分区混用；方案和内容管理都在同一编辑中。</p>
+      <a href="structure-preview.html?presentation=mixed&contentSide=left&sample=editing">左侧分区混用</a>
+      <a href="structure-preview.html?presentation=mixed&contentSide=right&sample=editing">右侧分区混用</a>
+      <a href="structure-preview.html?scene=S09&variant=entered">方案确认与取消</a></section>
+  </div>
+</main></body></html>

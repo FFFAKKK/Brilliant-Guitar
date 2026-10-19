@@ -1,0 +1,3 @@
+/* Reuse the accepted modal skin; feedback remains local to this native command dialog. */
+.v-command-dialog .v-command-dialog-feedback:where([data-frame-ui]) { color: var(--frame-danger); }
+.v-command-dialog:where([data-frame-ui])[aria-busy="true"] .v-command-dialog-feedback:where([data-frame-ui]) { color: var(--frame-muted); }

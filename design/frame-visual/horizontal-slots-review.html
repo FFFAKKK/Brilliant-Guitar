@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN" data-frame-document>
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="icon" href="data:,">
+  <title>上下侧栏槽位 · 框架视觉目录</title>
+  <link rel="stylesheet" href="styles/tokens.css"><link rel="stylesheet" href="styles/base.css">
+  <style>
+    body { overflow:auto; padding:32px; } main { max-width:1040px; margin:auto; } h1 { font-size:24px; font-weight:500; margin:0 0 12px; }
+    p { color:var(--frame-muted); max-width:760px; line-height:1.8; } .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; margin:24px 0; }
+    a { color:var(--frame-ink); text-decoration:none; } .sample { padding:16px; background:var(--frame-command); border-radius:6px; display:block; }
+    .sample:hover { background:var(--frame-surface); } .sample:focus-visible { outline:2px solid var(--frame-focus); outline-offset:2px; }
+    strong { font-size:14px; font-weight:500; } small { display:block; margin-top:8px; color:var(--frame-muted); line-height:1.6; }
+    .band { display:flex; height:24px; align-items:center; background:var(--frame-bar); gap:8px; padding:0 8px; margin:0 0 16px; } .band i { background:var(--frame-surface); width:24px; height:8px; border-radius:2px; } .band span { flex:1; }
+    footer { display:flex; gap:24px; padding:8px 0 24px; flex-wrap:wrap; font-size:12px; } @media(max-width:700px) { body { padding:20px; } }
+  </style>
+</head>
+<body><main>
+  <h1>上下侧栏槽位</h1>
+  <p>第五批 · 框架视觉审阅。顶部三个槽共用区域末端的“更多”；底部各槽独立处理溢出。模式操作保留，下侧内容与固定区分别浏览。A / B / C 只验证承载尺寸，插件内部设计由对应会话负责。</p>
+  <div class="grid">
+    <a class="sample" href="structure-preview.html?slotReview=1&slotSample=normal"><div class="band"><i></i><span></span><i></i><span></span><i></i></div><strong>01 · 少贡献 / 40px</strong><small>三槽各一项，留出未来内容空间。</small></a>
+    <a class="sample" href="structure-preview.html?slotReview=1&slotSample=empty"><div class="band"></div><strong>02 · 空槽</strong><small>连续表面，不填默认假工具或装饰框。</small></a>
+    <a class="sample" href="structure-preview.html?slotReview=1&slotSample=dense"><div class="band"><i></i><i></i><span></span><i></i><i></i><span>···</span></div><strong>03 · 密集贡献 / 更多</strong><small>minWidth和priority；恢复窗口容量回到原槽。</small></a>
+    <a class="sample" href="structure-preview.html?slotReview=1&slotSample=unavailable"><div class="band"><i></i><span></span><i></i></div><strong>04 · 暂不可用</strong><small>保留声明占位，禁用并说明来源未就绪。</small></a>
+    <a class="sample" href="structure-preview.html?slotReview=1&slotSample=long"><div class="band"><i></i><i></i><span></span><i></i></div><strong>05 · 长名称</strong><small>栏内省略，完整名称与槽位信息可查。</small></a>
+    <a class="sample" href="structure-preview.html?slotReview=1&slotSample=top-high"><div class="band"><i></i><span></span><i></i></div><strong>06 · 上栏 88px</strong><small>有内容空间；两侧共同缩短，纸页保持。</small></a>
+    <a class="sample" href="structure-preview.html?slotReview=1&slotSample=top-limit"><div class="band"><i></i><span></span><i></i></div><strong>07 · 上栏容量上限</strong><small>请求160px，按当前窗口原几何规则限制。</small></a>
+    <a class="sample" href="structure-preview.html?slotReview=1&slotSample=editing"><div class="band"><i></i><span></span><i></i><i></i></div><strong>08 · 布局编辑与拥挤</strong><small>从布局组件开启编辑，确认／取消始终可达。</small></a>
+    <a class="sample" href="structure-preview.html?slotReview=1&slotSample=voice-empty"><div class="band"></div><strong>09 · 下侧空容器</strong><small>标题与开关、不同高度、固定与滚动区。</small></a>
+    <a class="sample" href="structure-preview.html?slotReview=1&slotSample=voice-long"><div class="band"><i></i><span></span><i></i></div><strong>10 · 下侧长内容</strong><small>24行中性承载，隐藏滚动条仍可到达末尾。</small></a>
+    <a class="sample" href="structure-preview.html?slotReview=1&slotSample=voice-fixed-high"><div class="band"><i></i><span></span><i></i></div><strong>11 · 固定区过高</strong><small>保留至少48px内容浏览，固定区独立浏览。</small></a>
+    <a class="sample" href="structure-preview.html?slotReview=1&slotSample=voice-unavailable"><div class="band"><i></i><span></span></div><strong>12 · 下侧不可用</strong><small>原因明确，区域尺寸与工作台分区保持。</small></a>
+  </div>
+  <footer><a href="structure-preview.html">默认框架</a><a href="content-hosting-review.html">内容承载目录</a><a href="controls-review.html">框架控件目录</a><a href="horizontal-slots.md">槽位规格</a></footer>
+  <p>工作区开合、尺寸与整体排布随时可用；布局编辑只管理内容配置。普通操作不改变谱页位置和大小。真实工程贡献调度、实例和持久化仍由工程会话接入。</p>
+</main></body></html>

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="data:,">
+  <title>内容承载完整状态 · 视觉框架</title>
+  <link rel="stylesheet" href="styles/tokens.css">
+  <style>
+    * { box-sizing: border-box; scrollbar-width: none; } ::-webkit-scrollbar { width: 0; height: 0; }
+    body { margin: 0; background: var(--frame-canvas); color: var(--frame-ink); font: 13px/1.7 var(--font-ui); }
+    main { max-width: 1040px; padding: 40px 32px; margin: auto; } h1 { font-size: 24px; font-weight: 500; } h2 { font-size: 15px; font-weight: 500; margin: 0 0 8px; }
+    p { color: var(--frame-muted); } .states { display: grid; grid-template-columns: repeat(auto-fit,minmax(250px,1fr)); gap: 24px; margin-top: 32px; }
+    section { min-width: 0; } a { color: var(--frame-focus); display: inline-block; margin: 4px 12px 4px 0; text-decoration: none; padding: 4px 0; } a:hover { text-decoration: underline; } a:focus-visible { outline: 1px solid var(--frame-focus); outline-offset: 4px; }
+  </style>
+</head>
+<body><main>
+  <h1>内容承载与管理</h1>
+  <p>左右各有独立页面，分别采用网格、页签、分区混用与列表。页面切换、输入与浏览随时可用；内容呈现、加入/移出、占宽、图标与跨区域移动统一在右侧工作区布局中编辑。</p>
+  <a href="structure-preview.html?contentReview=1">打开完整交互样稿</a><a href="content-hosting.md">承载规格与工程边界</a>
+  <div class="states">
+    <section><h2>四种呈现与独立页面</h2><p>使用侧栏标题下的前后按钮切页，在布局组件选择当前配置页。修改一页，其他页保持原设置。</p><a href="structure-preview.html?contentReview=1">双侧多页</a><a href="structure-preview.html?contentReview=1&hostingSample=single">单页与导航边界</a></section>
+    <section><h2>空页面与入口恢复</h2><p>空位保持空位，隐藏入口保留内容。通过内容库查看或在编辑中显示入口。</p><a href="structure-preview.html?contentReview=1&hostingSample=empty">空页面</a><a href="structure-preview.html?contentReview=1&hostingSample=hidden">全部入口隐藏</a><a href="structure-preview.html?contentReview=1&hostingSample=no-results">搜索无结果</a></section>
+    <section><h2>长内容与固定区容量</h2><p>滚动条隐藏；键盘、滚轮仍能浏览。固定区与阅读区分别承载，输入和阅读记忆按身份保存。</p><a href="structure-preview.html?contentReview=1&hostingSample=long">长标题、长内容</a><a href="structure-preview.html?contentReview=1&hostingSample=fixed-high">固定区过高</a><a href="structure-preview.html?contentReview=1&hostingSample=half-limit">半行最小宽不足</a></section>
+    <section><h2>来源状态与跨区域流程</h2><p>已加入内容保留位置。右侧布局组件内选择内容、查看区域许可并移动；固定内容给出不能移动的原因。</p><a href="structure-preview.html?contentReview=1&hostingSample=missing">插件缺失</a><a href="structure-preview.html?contentReview=1&hostingSample=unavailable">暂不可用</a><a href="structure-preview.html?contentReview=1">移动、确认与取消</a></section>
+  </div>
+  <p>A–K仅为中性内存样稿，不代表实际插件或业务控件。刷新恢复初始样稿；真实注册、实例生命周期、热恢复和持久化继续由工程会话维护。插件内部图形、控件、色彩与业务排版保持自主。</p>
+  <a href="sidebar-review.html">基础呈现目录</a><a href="structure-preview.html?scene=S01&variant=default">默认结构入口</a><a href="runtime-preview.html">工程集成入口</a>
+</main></body></html>

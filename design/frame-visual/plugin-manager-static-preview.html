@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>插件管理 · 静态预览</title>
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/base.css">
+<link rel="stylesheet" href="styles/runtime-preview.css">
+<style>
+html,body{overflow:auto;background:var(--frame-canvas)}
+.preview-shell{min-height:100vh;display:grid;place-items:center;padding:32px}
+.preview-card{width:min(960px,100%);min-height:560px;background:var(--frame-command);border:1px solid rgb(255 255 255 / 10%);border-radius:12px;box-shadow:var(--shadow-overlay);overflow:hidden}
+.preview-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid rgb(255 255 255 / 8%)}
+.preview-head h1{margin:0;font-size:16px;font-weight:600}.preview-head span{color:var(--frame-muted);font-size:12px}
+.plugin-manager{height:500px!important}
+</style>
+</head>
+<body>
+<main class="preview-shell"><section class="preview-card">
+<header class="preview-head"><h1>插件管理</h1><span>静态视觉预览 · 不启动运行时</span></header>
+<div class="plugin-manager" aria-label="插件管理">
+<div class="plugin-manager-toolbar"><input class="plugin-manager-search" type="search" placeholder="搜索插件" aria-label="搜索插件"><select class="plugin-manager-filter" aria-label="筛选插件状态"><option>全部</option><option>运行中</option><option>失败</option></select></div>
+<div class="plugin-manager-body"><div class="plugin-manager-list" role="list" aria-label="插件列表">
+<button class="plugin-status-row" data-status="active" data-selected="true"><span class="plugin-status-icon"></span><div class="plugin-status-main"><strong class="plugin-status-name">frame.builtin</strong><span class="plugin-status-meta">4 界面 · 0 命令</span></div><span class="plugin-status-state">正常</span></button>
+<button class="plugin-status-row" data-status="active"><span class="plugin-status-icon"></span><div class="plugin-status-main"><strong class="plugin-status-name">frame.layout</strong><span class="plugin-status-meta">1 界面 · 18 命令</span></div><span class="plugin-status-state">正常</span></button>
+<button class="plugin-status-row" data-status="active"><span class="plugin-status-icon"></span><div class="plugin-status-main"><strong class="plugin-status-name">frame.plugins</strong><span class="plugin-status-meta">1 界面 · 0 命令</span></div><span class="plugin-status-state">正常</span></button>
+<button class="plugin-status-row" data-status="active"><span class="plugin-status-icon"></span><div class="plugin-status-main"><strong class="plugin-status-name">notation.core</strong><span class="plugin-status-meta">1 界面 · 0 命令</span></div><span class="plugin-status-state">正常</span></button>
+</div><section class="plugin-manager-detail"><div class="plugin-manager-detail-head"><span class="plugin-status-icon"></span><div><strong>frame.builtin</strong><span class="plugin-manager-detail-state">正常运行</span></div></div><div class="plugin-manager-detail-section"><span>界面贡献</span><p>工作区页面 · page
+左右侧栏 · panel
+布局入口 · page</p></div><div class="plugin-manager-detail-section"><span>命令</span><p>无</p></div><div class="plugin-manager-detail-section"><span>菜单</span><p>无</p></div><div class="plugin-manager-detail-section"><span>快捷键</span><p>无</p></div><p class="plugin-manager-restart-note">插件集合在当前会话中保持冻结；启用、停用或更新将在下次启动时生效。</p></section></div>
+</div></section></main>
+</body></html>

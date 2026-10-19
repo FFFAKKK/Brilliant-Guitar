@@ -1,0 +1,51 @@
+.core-score-view { position: relative; width: 100%; height: auto; aspect-ratio: 700 / 990; min-height: 0; padding: 0; box-sizing: border-box; color: var(--score-ink); background: transparent; }
+.core-score-view .score-view-svg { display: block; width: 100% !important; height: auto !important; overflow: hidden; }
+.core-score-view .score-view-message { margin: 12px; color: var(--score-ink); opacity: .65; font-size: 12px; line-height: 1.6; }
+/* These controls live on white score paper, so they use the score palette,
+   independently of the surrounding dark frame. */
+.core-score-view .score-view-retry { display: inline-flex; align-items: center; justify-content: center; margin-top: 10px; width: 28px; height: 28px; padding: 0; color: var(--score-ink); background: var(--score-paper); border: 1px solid transparent; border-radius: 4px; }
+.core-score-view .score-view-retry:hover { background: rgb(0 0 0 / 7%); }
+.core-score-view .score-view-retry:focus-visible { outline: 2px solid var(--frame-focus); outline-offset: 2px; }
+
+/* Core-owned property controls stay outside the engraving and survive its redraws. */
+.core-score-view .score-event-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 6px 8px; box-sizing: border-box; min-height: 40px; color: var(--score-ink); background: var(--score-paper); border-bottom: 1px solid rgb(0 0 0 / 8%); }
+.core-score-view .score-event-controls button,
+.core-score-view .score-event-controls select { display: inline-flex; align-items: center; justify-content: center; flex: none; min-width: 28px; height: 28px; padding: 0 4px; color: inherit; background: transparent; border: 1px solid transparent; border-radius: 4px; font: 12px/1 system-ui; }
+.core-score-view .score-event-controls select { min-width: 42px; border-color: rgb(0 0 0 / 12%); }
+.core-score-view .score-event-controls button:hover:enabled { background: rgb(0 0 0 / 6%); }
+.core-score-view .score-event-controls button[aria-pressed="true"] { color: #355bba; background: #527de21c; }
+.core-score-view .score-event-controls :disabled { opacity: .35; cursor: default; }
+.core-score-view .score-event-controls :focus-visible { outline: 2px solid var(--frame-focus); outline-offset: 2px; }
+.core-score-view .score-property-duration { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; }
+.core-score-view .score-input-source { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 28px; opacity: .65; }
+.core-score-view .score-pointer-hover { fill: #527de2; opacity: .4; }
+.core-score-view rect.score-pointer-hover { fill: #527de222; stroke: #527de2; stroke-width: .7; }
+.core-score-view .score-property-glyph { display: flex; align-items: center; justify-content: center; flex: none; width: 20px; height: 20px; font: 11px/1 system-ui; }
+.core-score-view .score-property-glyph svg,
+.core-score-view .score-event-controls .icon { display: block; flex: none; }
+.core-score-view .score-event-controls .score-input-state { display: flex; align-items: center; justify-content: center; flex: none; width: 20px; height: 28px; }
+
+.core-score-view .score-measure-controls { display: flex; align-items: center; gap: 4px; padding-left: 6px; border-left: 1px solid rgb(0 0 0 / 12%); }
+.core-score-view .score-measure-controls input { width: 44px; height: 28px; box-sizing: border-box; padding: 0 3px; color: inherit; background: transparent; border: 1px solid rgb(0 0 0 / 12%); border-radius: 4px; font: 12px/1 system-ui; }
+.core-score-view .score-key-signature-controls { display: flex; align-items: center; gap: 4px; padding-left: 6px; border-left: 1px solid rgb(0 0 0 / 12%); }
+.core-score-view .score-key-signature-controls select { min-width: 48px; }
+.core-score-view .score-key-signature-controls[data-key-signature-explicit="true"] select:enabled { border-color: #527de2; }
+.core-score-view .score-staff-clef-controls { display: flex; align-items: center; gap: 4px; padding-left: 6px; border-left: 1px solid rgb(0 0 0 / 12%); }
+.core-score-view .score-staff-clef-controls button { width: 34px; padding: 0 3px; }
+.core-score-view .score-clef-glyph { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; }
+.core-score-view .score-clef-glyph svg { display: block; flex: none; }
+
+/* Document fields expand in normal flow; they never cover the engraved score. */
+.core-score-view .score-metadata-editor { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 8px; margin: 0; padding: 8px; color: var(--score-ink); background: var(--score-paper); border-bottom: 1px solid rgb(0 0 0 / 8%); font: 12px/1.4 system-ui; }
+.core-score-view .score-metadata-editor[hidden] { display: none; }
+.core-score-view .score-metadata-editor label { display: grid; align-content: start; gap: 4px; }
+.core-score-view .score-metadata-editor input,
+.core-score-view .score-metadata-editor textarea { box-sizing: border-box; width: 100%; min-height: 28px; padding: 4px 6px; color: inherit; background: rgb(0 0 0 / 2%); border: 1px solid rgb(0 0 0 / 12%); border-radius: 4px; font: inherit; }
+.core-score-view .score-metadata-editor textarea { resize: vertical; }
+.core-score-view .score-metadata-actions { display: flex; align-items: end; gap: 4px; }
+.core-score-view .score-metadata-actions button { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; color: inherit; background: transparent; border: 1px solid rgb(0 0 0 / 12%); border-radius: 4px; }
+.core-score-view .score-metadata-editor :focus-visible { outline: 2px solid var(--frame-focus); outline-offset: 2px; }
+.core-score-view .score-metadata-editor [aria-invalid="true"] { border-color: #b54848; }
+.core-score-view .score-metadata-editor :disabled { opacity: .35; }
+.core-score-view .score-metadata-feedback { grid-column: 1 / -1; }
+.core-score-view .score-metadata-feedback:empty { display: none; }

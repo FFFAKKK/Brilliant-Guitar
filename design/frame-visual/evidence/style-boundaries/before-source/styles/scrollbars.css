@@ -1,0 +1,3 @@
+/* Preserve wheel, trackpad and keyboard scrolling without browser-style chrome. */
+* { scrollbar-width: none !important; scrollbar-gutter: auto !important; }
+*::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }

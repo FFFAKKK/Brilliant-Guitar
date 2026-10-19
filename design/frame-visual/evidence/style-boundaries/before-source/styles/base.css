@@ -1,0 +1,14 @@
+@import url("./scrollbars.css");
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--frame-canvas); color: var(--frame-ink); font: 13px/1.4 var(--font-ui); overflow: hidden; -webkit-font-smoothing: antialiased; }
+button, input, select { font: inherit; color: inherit; }
+button { background: none; border: 0; padding: 0; cursor: pointer; }
+button:disabled { cursor: default; color: var(--frame-disabled); }
+:focus:not(:focus-visible) { outline: none; }
+:focus-visible { outline: 2px solid var(--frame-focus); outline-offset: 1px; }
+kbd { font: 11px var(--font-ui); color: var(--frame-muted); }
+.icon { display: block; flex: none; }
+[hidden] { display: none !important; }
+.component-fault { margin: 12px; color: var(--frame-muted); }
+* { transition: none !important; animation: none !important; }

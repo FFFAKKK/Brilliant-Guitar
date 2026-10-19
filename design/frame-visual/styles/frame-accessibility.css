@@ -1,0 +1,10 @@
+/* Keyboard-only frame feedback; private plugin skins remain autonomous. */
+[data-frame-reading]:where([data-frame-ui]):focus-visible { outline: 2px solid var(--frame-focus); outline-offset: -2px; }
+.v-map-region:where([data-frame-ui]):not([data-shown="true"]),
+.v-content-note:where([data-frame-ui]),
+.v-editor-reason:where([data-frame-ui]),
+.v-library-help:where([data-frame-ui]),
+.v-review-section-name:where([data-frame-ui]),
+.v-review-gap:where([data-frame-ui]),
+.v-review-page-position:where([data-frame-ui]) span:where([data-frame-ui]),
+.v-editor-current:where([data-frame-ui]) span:where([data-frame-ui]) { color: var(--frame-muted); }

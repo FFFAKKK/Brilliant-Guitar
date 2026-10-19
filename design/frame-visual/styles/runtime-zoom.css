@@ -1,0 +1,11 @@
+.v-zoom[data-zoom] { font-variant-numeric: tabular-nums; }
+.v-zoom-panel { width: 260px; padding: 12px; display: grid; gap: 10px; }
+.v-zoom-readout, .v-zoom-number { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--frame-muted); font-size: 11px; }
+.v-zoom-readout strong { color: var(--frame-ink); font-size: 13px; font-variant-numeric: tabular-nums; }
+.v-zoom-control { display: flex; align-items: center; gap: 6px; color: var(--frame-muted); }
+.v-zoom-control input[type="range"] { width: 100%; min-width: 0; accent-color: var(--frame-focus); }
+.v-zoom-number input { width: 76px; height: 26px; padding: 0 6px; border: 0; border-radius: 4px; background: var(--frame-canvas); color: var(--frame-ink); font: 11px var(--font-ui); font-variant-numeric: tabular-nums; }
+.v-zoom-number input:focus-visible, .v-zoom-control input[type="range"]:focus-visible { outline: 2px solid var(--frame-focus); outline-offset: 1px; }
+.v-zoom-fit-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.v-zoom-fit { min-height: 28px; padding: 0 8px; border-radius: 4px; color: var(--frame-muted); background: var(--frame-canvas); text-align: center; font-size: 11px; }
+.v-zoom-fit:hover, .v-zoom-fit:focus-visible { color: var(--frame-ink); background: var(--frame-hover); }

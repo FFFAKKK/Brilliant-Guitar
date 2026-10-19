@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN" data-frame-document>
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="icon" href="data:,">
+  <title>原位反馈与布局方案 · 框架视觉目录</title>
+  <link rel="stylesheet" href="styles/tokens.css"><link rel="stylesheet" href="styles/base.css">
+  <style>
+    body { overflow: auto; padding: 32px; } main { max-width: 980px; margin: auto; }
+    h1 { font-size: 24px; font-weight: 500; margin: 0 0 12px; } p { color: var(--frame-muted); line-height: 1.8; max-width: 760px; }
+    .samples { display: grid; grid-template-columns: repeat(auto-fit,minmax(240px,1fr)); gap: 16px; margin: 24px 0; }
+    a { color: var(--frame-ink); text-decoration: none; } .sample { padding: 16px; border-radius: 6px; background: var(--frame-command); }
+    .sample:hover { background: var(--frame-surface); } .sample:focus-visible { outline: 2px solid var(--frame-focus); outline-offset: 2px; }
+    strong { font-size: 14px; font-weight: 500; } small { display: block; margin-top: 8px; color: var(--frame-muted); line-height: 1.7; }
+    footer { display: flex; gap: 24px; flex-wrap: wrap; padding-bottom: 24px; font-size: 12px; }
+    @media(max-width:700px) { body { padding: 20px; } }
+  </style>
+</head>
+<body><main>
+  <h1>原位反馈与布局方案</h1>
+  <p>第六批视觉样稿。名称、进度和错误留在布局组件内；重要问题沿用标题状态位置，详情由你主动打开。所有方案操作只修改这次预览的内存。</p>
+  <div class="samples">
+    <a class="sample" href="structure-preview.html?feedbackReview=1"><strong>01 · 方案完整流程</strong><small>进入布局编辑；另存、重命名、选择和删除。字段校验、确认与取消。</small></a>
+    <a class="sample" href="structure-preview.html?feedbackReview=1&amp;feedbackSample=saving"><strong>02 · 处理中</strong><small>原位静态进度；拒绝重复提交，可停止等待，迟到结果不会覆盖取消。</small></a>
+    <a class="sample" href="structure-preview.html?feedbackReview=1&amp;feedbackSample=save-failed"><strong>03 · 明确失败</strong><small>方案与名称仍在原处；可修正名称并再次提交，不弹出通知。</small></a>
+    <a class="sample" href="structure-preview.html?feedbackReview=1&amp;feedbackSample=unknown"><strong>04 · 结果待核对</strong><small>不能自动重试。先核对这一任务；取消布局后核对也不会恢复撤回的配置。</small></a>
+    <a class="sample" href="structure-preview.html?feedbackReview=1&amp;feedbackSample=config-fallback"><strong>05 · 配置回退</strong><small>说明基础布局与原配置保留；不宣称真实迁移或磁盘恢复已实施。</small></a>
+    <a class="sample" href="structure-preview.html?feedbackReview=1&amp;feedbackSample=hidden-source"><strong>06 · 来源不在眼前</strong><small>不自动开侧栏。标题入口查看、关闭详情、主动回到来源；已查看仍未解决。</small></a>
+    <a class="sample" href="structure-preview.html?feedbackReview=1&amp;feedbackSample=provider-missing"><strong>07 · 基础呈现回退</strong><small>缺失呈现提供者时保留可读问题与关闭入口，只演示视觉。</small></a>
+    <a class="sample" href="structure-preview.html?feedbackReview=1&amp;feedbackSample=long"><strong>08 · 长信息与紧凑窗口</strong><small>栏内短状态，详情保留完整名称；窄窗口重要入口可达。</small></a>
+  </div>
+  <footer><a href="structure-preview.html">默认框架</a><a href="runtime-preview.html">集成入口</a><a href="horizontal-slots-review.html">上下槽位目录</a></footer>
+  <p>真实反馈报告、只读消费、身份隔离、提供者替换、业务核对及内核接线由工程会话实现。这里不安装具体业务插件。</p>
+</main></body></html>

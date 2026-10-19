@@ -1,0 +1,51 @@
+import { icon as shellIcon } from "../shell/icons.js";
+import { renderIconSvg } from "../shell/icon-svg.js";
+
+const paths = {
+  measureBefore: '<path d="M8 4v12M17 4v12M8 7h9M8 10h9M8 13h9M2 10h4M4 8v4"/>',
+  measureAfter: '<path d="M3 4v12M12 4v12M3 7h9M3 10h9M3 13h9M14 10h4M16 8v4"/>',
+  measureRemove: '<path d="M3 4v12M17 4v12M3 7h14M3 13h14M7 10h6"/>',
+  meterRun: '<path d="M3 5v10M9 5v10M15 5v10M3 7h12M3 12h12m1-6 3 4-3 4"/>',
+  copy: '<rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M13 7V3H3v10h4"/>',
+  cut: '<circle cx="5" cy="14" r="2.5"/><circle cx="15" cy="14" r="2.5"/><path d="m6 12 8-9M14 12 6 3"/>',
+  paste: '<rect x="4" y="5" width="12" height="12" rx="1.5"/><rect x="7" y="2" width="6" height="5" rx="1"/><path d="M7 11h6M7 14h4"/>',
+  app: '<path d="M7 15V5h7v8"/><ellipse cx="5.5" cy="15" rx="2.5" ry="1.8"/><ellipse cx="12.5" cy="13" rx="2.5" ry="1.8"/>',
+  plus: '<path d="M10 4v12M4 10h12"/>',
+  settings: '<path d="m8 3-.5 2-2 1-2-.5-1 3 1.5 1.5-.2 2-1.3 1.5 2 2.5 2-.7 1.7 1 1 2 3-.4.4-2 1.6-1.3 2 .2 1-3-1.4-1.5-.2-2 1.2-1.7-2-2.1-2 .5-1.5-1.2-.5-2z"/><circle cx="10" cy="10" r="2.5"/>',
+  top: '<rect x="3" y="3" width="14" height="14" rx="1"/><path d="M3 7h14"/>',
+  left: '<rect x="3" y="3" width="14" height="14" rx="1"/><path d="M7 3v14"/>',
+  right: '<rect x="3" y="3" width="14" height="14" rx="1"/><path d="M13 3v14"/>',
+  bottom: '<rect x="3" y="3" width="14" height="14" rx="1"/><path d="M3 13h14"/>',
+  note: '<path d="M11 14V4l5-1v10"/><ellipse cx="8.5" cy="14" rx="2.5" ry="1.8"/><ellipse cx="13.5" cy="13" rx="2.5" ry="1.8"/>',
+  grid: '<path d="M4 4h12v12H4zM4 8h12M4 12h12M8 4v12M12 4v12"/>',
+  page: '<path d="M5 3h7l3 3v11H5zM12 3v4h3M8 10h4M8 13h4"/>',
+  chat: '<path d="M3 4h14v10H8l-4 3v-3H3zM6 8h8M6 11h5"/>',
+  tone: '<path d="M4 8v4M8 4v12M12 6v8M16 8v4"/>',
+  check: '<path d="m4 10 4 4 8-8"/>',
+  drag: '<path d="M7 5h.01M13 5h.01M7 10h.01M13 10h.01M7 15h.01M13 15h.01" stroke-width="3"/>',
+  half: '<rect x="3" y="4" width="14" height="12" rx="1"/><path d="M10 4v12"/>',
+  full: '<rect x="3" y="4" width="14" height="12" rx="1"/>',
+  up: '<path d="m6 12 4-4 4 4"/>',
+  down: '<path d="m6 8 4 4 4-4"/>',
+  play: '<path d="m7 4 9 6-9 6z"/>',
+  pause: '<path d="M7 5v10M13 5v10"/>',
+  stop: '<rect x="5" y="5" width="10" height="10"/>',
+  metronome: '<path d="m7 3-3 14h12L12 3zM10 13l5-8M6 14h8"/>',
+  timerReset: '<path d="M7 3h6M10 3v2M5 7a6 6 0 1 0 10 1M5 7V4M5 7h3"/><path d="M10 8v3l2 1"/>',
+  undo: '<path d="M6 6H3v-3M3 6h9a5 5 0 0 1 0 10"/>',
+  select: '<path d="m5 3 10 8-5 1-2 5z"/>',
+  fit: '<path d="M7 3H3v4M13 3h4v4M3 13v4h4M17 13v4h-4"/><rect x="7" y="7" width="6" height="6"/>',
+  alignLeft: '<path d="M4 3v14M7 6h9M7 10h6M7 14h9"/>',
+  alignRight: '<path d="M16 3v14M4 6h9M7 10h6M4 14h9"/>',
+  combine: '<rect x="3" y="3" width="6" height="6"/><rect x="11" y="11" width="6" height="6"/><path d="M12 3h5v5M3 12v5h5"/>',
+  balance: '<path d="M4 6h12M6 10h8M4 14h12"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="16" cy="6" r="1" fill="currentColor"/><circle cx="6" cy="10" r="1" fill="currentColor"/><circle cx="14" cy="10" r="1" fill="currentColor"/><circle cx="4" cy="14" r="1" fill="currentColor"/><circle cx="16" cy="14" r="1" fill="currentColor"/>',
+  compress: '<path d="M4 7h12M4 13h12M7 4v6M13 10v6M7 10l-3-3M7 10l3-3M13 10l-3 3M13 10l3 3"/>',
+  search: '<circle cx="8.5" cy="8.5" r="5"/><path d="m12 12 5 5"/>',
+  info: '<circle cx="10" cy="10" r="7"/><path d="M10 9v5M10 6h.01"/>',
+  scrollZoom: '<path d="M6 4v12M4 6l2-2 2 2M4 14l2 2 2-2M14 7v6M12 9l2-2 2 2M12 11l2 2 2-2"/>',
+  pencil: '<path d="m4 13 9-9 3 3-9 9-4 1zM11 6l3 3"/>',
+};
+export function icon(name, size = 16) {
+  if (!paths[name]) return shellIcon(name, size);
+  return renderIconSvg(paths[name], size);
+}

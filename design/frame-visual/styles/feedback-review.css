@@ -1,0 +1,28 @@
+/* Explicit neutral review only; no private plugin selectors or shell geometry. */
+.fr-schemes:where([data-frame-ui]) { min-width: 0; }
+.fr-actions:where([data-frame-ui]) { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.fr-actions .v-text-button:where([data-frame-ui]), .fr-report .v-text-button:where([data-frame-ui]), .fr-details .v-text-button:where([data-frame-ui]) { height: auto; min-height: 28px; padding: 4px 8px; font-size: 11px; white-space: normal; overflow-wrap: anywhere; text-align: left; }
+.fr-actions .fr-primary:where([data-frame-ui]) { color: var(--frame-focus); background: rgb(82 143 238 / 12%); }
+.fr-editor:where([data-frame-ui]) { margin-top: 12px; padding: 10px; border-radius: var(--radius-s); background: var(--frame-bar); }
+.fr-editor-label:where([data-frame-ui]) { margin: 0 0 8px; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.fr-name:where([data-frame-ui]) { width: 100%; min-width: 0; height: 30px; padding: 0 8px; color: var(--frame-ink); background: var(--frame-canvas); border: 0; border-radius: var(--radius-s); font: 12px var(--font-ui); }
+.fr-name:where([data-frame-ui])[readonly] { color: var(--frame-muted); }
+.fr-editor [data-error="true"]:where([data-frame-ui]), .fr-report[data-status="error"] .fr-report-label:where([data-frame-ui]) { color: var(--frame-danger); }
+.fr-report:where([data-frame-ui]) { margin-top: 10px; }
+.fr-report-label:where([data-frame-ui]) { margin: 0; font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }
+.fr-report[data-status="unknown"] .fr-report-label:where([data-frame-ui]) { color: var(--frame-focus); }
+.fr-progress:where([data-frame-ui]) { height: 2px; margin-top: 8px; background: var(--frame-hover); }
+.fr-progress:where([data-frame-ui])::before { content: ""; display: block; width: 40%; height: 100%; background: var(--frame-selected); }
+.fr-result:empty:where([data-frame-ui]) { display: none; }
+.v-doc-state.fr-title:where([data-frame-ui]) { display: flex; align-items: center; gap: 6px; min-width: 28px; min-height: 26px; padding: 0 4px; border: 0; }
+.fr-title .v-icon-wrap:where([data-frame-ui]) { flex: none; }
+.fr-title-text:where([data-frame-ui]) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fr-title[data-status="error"]:where([data-frame-ui]) { color: var(--frame-danger); }
+.fr-title[data-status="unknown"]:where([data-frame-ui]) { color: var(--frame-focus); }
+.fr-details:where([data-frame-ui]) { position: fixed; top: 38px; right: 12px; z-index: 80; width: min(300px, calc(100vw - 24px)); max-height: calc(100dvh - 60px); display: flex; flex-direction: column; padding: 12px; border-radius: var(--radius-m); background: var(--frame-surface); color: var(--frame-ink); box-shadow: var(--shadow-overlay); font: 12px var(--font-ui); }
+.fr-details-head:where([data-frame-ui]) { display: flex; align-items: flex-start; gap: 8px; }
+.fr-details-title:where([data-frame-ui]) { flex: 1; min-width: 0; font-weight: 500; line-height: 1.6; overflow-wrap: anywhere; }
+.fr-details-body:where([data-frame-ui]) { min-height: 0; overflow: auto; overflow-wrap: anywhere; line-height: 1.7; }
+.fr-details-body p:where([data-frame-ui]) { margin: 10px 0 0; }
+.fr-details-body .v-text-button:where([data-frame-ui]) { margin-top: 10px; color: var(--frame-focus); }
+@media (max-width: 980px) { .fr-title-text:where([data-frame-ui]) { display: none; } .v-doc-state.fr-title:where([data-frame-ui]) { max-width: 28px; margin-right: 4px; } }

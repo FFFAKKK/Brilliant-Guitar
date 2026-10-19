@@ -29,6 +29,60 @@ export function createTablatureRenderer(load: () => Promise<EngravingEngine>):
     throwIfRenderAborted(signal);
     const { TabStave, TabNote, StaveNote, GhostNote, Voice, Formatter, Beam, Dot, Clef, BarlineType, Stem } = engine;
     const { Glyphs } = engine.default;
+    // GP8's below-staff rhythm lane is for stems/beams, not rests.
+    // Keep the rest baseline on the upper central string. VexFlow's R key
+    // moves a whole rest one line above a half rest, preserving hang/stand.
+    class TablatureStave extends TabStave {
+      override getYForNote(line: number): number {
+        return this.getYForLine(Math.floor((this.getNumLines() - 1) / 2) + 3 - line);
+      }
+    }
+    class TablatureRest extends StaveNote {
+      declare private restHead: InstanceType<typeof engine.NoteHead>;
+      override buildNoteHeads() {
+        // One font for the head and its attached dot. At this size a quarter
+        // rest occupies roughly two Tab spaces, matching the reference sample.
+        this.setFont({ ...this.fontInfo, size: "36px" });
+        const heads = super.buildNoteHeads();
+        this.restHead = heads[0]!;
+        return heads;
+      }
+      override getGlyphWidth(): number {
+        // Bravura's eighth-rest hook extends beyond its advance width.
+        // Reserve that ink during formatting as well as during hit testing,
+        // so the engine places a dot to its right instead of over the hook.
+        return Math.max(this.restHead.getWidth(), this.restHead.getTextMetrics().actualBoundingBoxRight);
+      }
+      override drawNoteHeads(): void {
+        const head = this.restHead, metrics = head.getTextMetrics();
+        // Whole/half rests use the actual supporting string, not a ledger
+        // glyph. Other rests need a narrow knockout so strings cannot cut
+        // through their ink. Use the same metrics as the accepted hit bounds.
+        if (!["1", "2"].includes(this.duration)) {
+          const padding = 1.5;
+          this.checkContext().clearRect(this.getNoteHeadBeginX() - metrics.actualBoundingBoxLeft - padding,
+            head.getY() + head.getYShift() - metrics.actualBoundingBoxAscent - padding,
+            metrics.actualBoundingBoxLeft + metrics.actualBoundingBoxRight + padding * 2,
+            metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent + padding * 2);
+        }
+        super.drawNoteHeads();
+      }
+      inkBounds() {
+        // VexFlow retains old children after formatting resets. Capture the
+        // current head from buildNoteHeads rather than searching those children.
+        const head = this.restHead;
+        const metrics = head.getTextMetrics(), box = this.getBoundingBox(), headBox = head.getBoundingBox();
+        // Element's advance-width box omits the ledger glyph's side bearings.
+        // Keep modifiers in the union, and include the actual rendered ink.
+        // NoteHead has no independent TickContext; its drawn box carries the
+        // absolute X assigned by StaveNote.draw, unlike inherited Note.getX().
+        const x = Math.min(box.getX(), headBox.getX() - metrics.actualBoundingBoxLeft);
+        const y = Math.min(box.getY(), headBox.getY());
+        const right = Math.max(box.getX() + box.getW(), headBox.getX() + metrics.actualBoundingBoxRight);
+        const bottom = Math.max(box.getY() + box.getH(), headBox.getY() + metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent);
+        return { x, y, width: right - x, height: bottom - y };
+      }
+    }
     // VexFlow's TabNote bounding box is inherited from an empty Element, not its digits.
     // Read the actual digit Element used by drawPositions; do not measure a second label.
     class PositionedTabNote extends TabNote {
@@ -36,16 +90,46 @@ export function createTablatureRenderer(load: () => Promise<EngravingEngine>):
         super.updateWidth();
         this.width = 0;
         for (const digit of this.fretElement) {
-          digit.setFont({ ...digit.fontInfo, family: theme.fontFamily });
-          digit.setYShift(digit.getHeight() / 2);
-          this.width = Math.max(this.width, digit.getWidth());
+          // Keep the caller's loaded font; the larger engraving size and ink
+          // centering must not replace the public theme with a system font.
+          digit.setFont({ ...digit.fontInfo, family: theme.fontFamily, size: "16px" });
+          const metrics = digit.getTextMetrics();
+          // Center the ink rather than the advance width or a guessed baseline.
+          digit.setYShift((metrics.actualBoundingBoxAscent - metrics.actualBoundingBoxDescent) / 2);
+          digit.setXShift((metrics.width + metrics.actualBoundingBoxLeft - metrics.actualBoundingBoxRight) / 2);
+          this.width = Math.max(this.width, digit.getWidth() + (["1", "2"].includes(this.duration) ? 6 : 0));
         }
       }
       digitBounds() {
         const digit = this.fretElement[0]!;
-        const box = digit.getBoundingBox();
-        return { x: this.getAbsoluteX() - digit.getWidth() / 2 + box.getX(),
-          y: this.getYs()[0]! + this.renderOptions.yShift + box.getY(), width: box.getW(), height: box.getH() };
+        const metrics = digit.getTextMetrics();
+        const width = metrics.actualBoundingBoxLeft + metrics.actualBoundingBoxRight;
+        const height = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
+        return { x: this.getAbsoluteX() - width / 2,
+          y: this.getYs()[0]! + this.renderOptions.yShift - height / 2, width, height };
+      }
+      override drawPositions(): void {
+        const ctx = this.checkContext(), bounds = this.digitBounds();
+        const padding = ["1", "2"].includes(this.duration) ? 3 : 1.5;
+        // VexFlow's fixed 6px knockout does not cover the measured digit ink.
+        ctx.clearRect(bounds.x - padding, bounds.y - padding,
+          bounds.width + padding * 2, bounds.height + padding * 2);
+        const digit = this.fretElement[0]!;
+        digit.renderText(ctx, this.getAbsoluteX() - digit.getWidth() / 2,
+          this.getYs()[0]! + this.renderOptions.yShift);
+        // GP8 offers enclosures for both whole and half notes. A half note
+        // retains its stem; a whole note has none, so duration stays distinct.
+        if (["1", "2"].includes(this.duration)) {
+          const group = ctx.openGroup("tab-long-duration");
+          if (!group) throw new Error("Tab long-note marker returned no SVG group");
+          const ring = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+          for (const [name, value] of Object.entries({ cx: this.getAbsoluteX(),
+            cy: this.getYs()[0]! + this.renderOptions.yShift,
+            rx: bounds.width / 2 + 2, ry: bounds.height / 2 + 2 })) ring.setAttribute(name, String(value));
+          ring.setAttribute("fill", "none"); ring.setAttribute("stroke", theme.ink);
+          ring.setAttribute("stroke-width", "1");
+          group.appendChild(ring); ctx.closeGroup();
+        }
       }
     }
     const { staging, context, scale, drawing } = createEngravingSurface(engine, layout, theme);
@@ -53,7 +137,7 @@ export function createTablatureRenderer(load: () => Promise<EngravingEngine>):
     for (const paperMeasure of layout.measures) {
       throwIfRenderAborted(signal);
       const item = { ...paperMeasure, x: paperMeasure.x / scale, y: paperMeasure.y / scale, width: paperMeasure.width / scale };
-      const stave = new TabStave(item.x, item.y, item.width, { numLines: layout.stringCount });
+      const stave = new TablatureStave(item.x, item.y, item.width, { numLines: layout.stringCount });
       if (!item.beginsSystem) stave.setBegBarType(BarlineType.NONE);
       if (item.beginsSystem && [4, 6].includes(layout.stringCount)) {
         const clef = new Clef("tab");
@@ -74,12 +158,14 @@ export function createTablatureRenderer(load: () => Promise<EngravingEngine>):
       const notes = item.measure.events.map(event => {
         const note = event.content.kind === "note"
           ? new PositionedTabNote({ positions: [{ str: event.content.position.stringNumber, fret: event.content.position.fret }],
-            duration: `${event.duration.base}${event.duration.dots ? "d" : ""}` }, event.duration.base !== 1)
-          : new StaveNote(eventNoteSpec({ ...event, content: { kind: "rest" } }));
+            duration: `${event.duration.base}${event.duration.dots ? "d" : ""}`,
+            stemDirection: Stem.DOWN }, event.duration.base !== 1)
+          : new TablatureRest(eventNoteSpec({ ...event, content: { kind: "rest" } }));
         if (note instanceof PositionedTabNote) {
           // Stem-only Tab rhythm: whole has no stem, half has a shorter stem than quarter.
           // Otherwise TabNote(true) draws the same stem for whole/half/quarter.
           note.renderOptions.drawDots = true;
+          note.renderOptions.drawStemThroughStave = true;
           if (event.duration.base === 2) {
             note.setStemLength(Stem.HEIGHT / 2);
             note.checkStem().setExtension(note.getStemExtension());
@@ -109,7 +195,7 @@ export function createTablatureRenderer(load: () => Promise<EngravingEngine>):
         ? note.getAbsoluteX() : (note.getNoteHeadBeginX() + note.getNoteHeadEndX()) / 2,
         y: note.getYs()[0] ?? cursorY }));
       anchors.push(...rhythmicAnchors(item.measure, { noteStart, noteEnd, centers, tailX, tailY, cursorY, lineSpacing: spacing, scale }));
-      const top = stringYs[0]! - spacing * 5, bottom = stringYs.at(-1)! + spacing * 2;
+      const top = stringYs[0]! - spacing * 5, bottom = stringYs.at(-1)! + spacing * 6;
       measures.push({ measureId: item.measure.id, x: item.x * scale, y: top * scale,
         width: item.width * scale, height: (bottom - top) * scale,
         staffBottom: stringYs.at(-1)! * scale, lineSpacing: spacing * scale, stringYs: stringYs.map(y => y * scale) });
@@ -121,10 +207,7 @@ export function createTablatureRenderer(load: () => Promise<EngravingEngine>):
       drawing.append(measureHit);
       notes.forEach((note, index) => {
         const event = item.measure.events[index]!;
-        const bounds = note instanceof PositionedTabNote ? note.digitBounds() : (() => {
-          const box = note.getBoundingBox();
-          return { x: box.getX(), y: box.getY(), width: box.getW(), height: box.getH() };
-        })();
+        const bounds = note instanceof PositionedTabNote ? note.digitBounds() : note.inkBounds();
         const padding = spacing * 0.25;
         const geometry = { measureId: item.measure.id, eventId: event.id, content: event.content,
           x: (bounds.x - padding) * scale, y: (bounds.y - padding) * scale,

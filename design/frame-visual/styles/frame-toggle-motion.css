@@ -1,0 +1,12 @@
+/* Static frame decorations. Playback belongs exclusively to the motion host. */
+.visual-shell :is(button, .v-voice-icon):where([data-frame-ui])[data-frame-toggle] { position: relative; color: var(--frame-muted); background: transparent; }
+.visual-shell button:where([data-frame-ui])[data-frame-toggle]:is([aria-pressed],[aria-selected],[aria-expanded],:hover,:active) { color: var(--frame-muted); background: transparent; }
+.visual-shell .v-region-switches button:where([data-frame-ui])[data-frame-toggle][aria-pressed] { background: transparent; }
+.visual-shell button:where([data-frame-ui])[data-frame-toggle]::before { display: none; }
+.visual-shell :is(button, .v-voice-icon):where([data-frame-ui])[data-frame-toggle-rest="open"] > :not(.v-frame-toggle-ink) { visibility: hidden; }
+.v-frame-toggle-ink:where([data-frame-ui]) { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; color: var(--frame-ink); opacity: 0; }
+.v-voice-icon > .v-frame-toggle-ink:where([data-frame-ui]) { color: var(--frame-muted); }
+.v-frame-toggle-surface:where([data-frame-ui]) { position: absolute; inset: 5px 4px; border-radius: 4px; background: var(--frame-selected); }
+.v-frame-toggle-ink:where([data-frame-ui]) > .v-icon-wrap { position: relative; }
+.v-frame-toggle-edge:where([data-frame-ui]) { position: absolute; left: 0; top: calc(50% - 2px); width: 3px; height: 4px; border-radius: 2px; background: var(--frame-component-edge); }
+.v-page-rail .v-frame-toggle-edge:where([data-frame-ui]) { left: auto; right: 0; }

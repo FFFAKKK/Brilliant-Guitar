@@ -1,0 +1,50 @@
+/* Explicit neutral review only. Host-owned nodes; not a plugin skin or API. */
+.ch-surface:where([data-frame-ui]) { position: relative; border-radius: 0; }
+.ch-page-nav:where([data-frame-ui]) { display: flex; align-items: center; gap: 4px; padding: 0 8px 0 12px; min-width: 0; }
+.ch-page-nav .v-icon-button, .ch-tabs-heading .v-icon-button { width: 24px; height: 28px; flex: none; }
+.ch-name:where([data-frame-ui]) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 500; }
+.ch-value:where([data-frame-ui]) { flex: none; font-size: 11px; color: var(--frame-muted); font-variant-numeric: tabular-nums; }
+.ch-content:where([data-frame-ui]) { min-height: 0; min-width: 0; padding: 12px; display: flex; flex-direction: column; gap: 20px; overflow: auto; overflow-anchor: none; }
+.ch-content:focus-visible { outline: 1px solid var(--frame-focus); outline-offset: -3px; }
+.ch-section:where([data-frame-ui]) { min-width: 0; display: flex; flex-direction: column; flex: none; gap: 12px; }
+.ch-section-label:where([data-frame-ui]) { font-size: 11px; color: var(--frame-muted); }
+.ch-grid:where([data-frame-ui]) { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px 8px; align-items: start; }
+.ch-card:where([data-frame-ui]), .ch-list-row:where([data-frame-ui]) { position: relative; min-width: 0; border: 0; background: transparent; }
+.ch-card.full { grid-column: 1/-1; }
+.ch-card-head:where([data-frame-ui]) { display: flex; align-items: center; gap: 4px; min-height: 28px; min-width: 0; }
+.ch-card-head .v-icon-button { width: 24px; height: 28px; flex: none; }
+.ch-card[data-selected="true"]::after, .ch-list-row[data-selected="true"]::after { content: ""; position: absolute; inset: -4px; border: 1.5px solid var(--frame-component-edge); pointer-events: none; border-radius: 4px; }
+.ch-card[data-drop="true"]::before { content: ""; position: absolute; top: -6px; left: 0; right: 0; height: 2px; background: var(--frame-component-edge); }
+.ch-card[data-drop="invalid"]::before { content: "无效落点 · 使用布局组件移动"; position: absolute; top: -20px; left: 0; right: 0; padding: 4px; background: var(--frame-bar); color: var(--frame-muted); font-size: 10px; pointer-events: none; }
+.ch-gap:where([data-frame-ui]) { min-height: 48px; display: grid; place-items: center; color: var(--frame-muted); font-size: 10px; }
+.ch-neutral-body:where([data-frame-ui]) { min-width: 0; padding: 8px 0; }
+.ch-field:where([data-frame-ui]) { display: flex; flex-direction: column; gap: 4px; color: var(--frame-muted); font-size: 11px; min-width: 0; }
+.ch-field :is(input,select):where([data-frame-ui]) { width: 100%; min-width: 0; border: 0; border-radius: 4px; min-height: 28px; padding: 0 8px; background: var(--frame-canvas); color: var(--frame-ink); font: 12px var(--font-ui); }
+.ch-field select:where([data-frame-ui]) { min-height: 32px; padding-right: 24px; text-overflow: ellipsis; }
+.ch-options:where([data-frame-ui]), .ch-mode-controls:where([data-frame-ui]) { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.ch-options button:where([data-frame-ui]) { min-height: 28px; padding: 0 8px; color: var(--frame-muted); font-size: 11px; }
+.ch-options button[aria-pressed="true"], .ch-mode-controls button[aria-pressed="true"] { background: var(--frame-canvas); color: var(--frame-focus); }
+.ch-mode-controls .v-text-button { font-size: 11px; }
+.ch-note:where([data-frame-ui]), .ch-result:where([data-frame-ui]) { color: var(--frame-muted); font-size: 11px; line-height: 1.6; margin: 4px 0; overflow-wrap: anywhere; }
+.ch-result:where([data-frame-ui]) { color: var(--frame-focus); }
+.ch-reason:where([data-frame-ui]) { font-size: 12px; margin: 4px 0; }
+.ch-empty:where([data-frame-ui]) { padding: 12px 0; }
+.ch-empty strong:where([data-frame-ui]) { font-size: 12px; font-weight: 500; }
+.ch-long p:where([data-frame-ui]) { margin: 0; padding: 12px 0; font-size: 12px; color: var(--frame-muted); }
+.ch-list-row summary:where([data-frame-ui]) { display: flex; align-items: center; gap: 8px; min-height: 32px; cursor: pointer; list-style: none; }
+.ch-list-row summary::-webkit-details-marker { display: none; }
+.ch-list-row:not([open]) summary > .v-icon-wrap { rotate: -90deg; }
+.ch-tabs-heading:where([data-frame-ui]) { display: flex; align-items: center; gap: 4px; position: sticky; top: 0; z-index: 2; min-height: 28px; background: var(--frame-command); }
+.ch-tabs-heading > span { flex: 1; }
+.ch-tabs-fixed:where([data-frame-ui]) { position: relative; padding: 0 12px; }
+.ch-tabs-sheets:where([data-frame-ui]) { position: relative; isolation: isolate; padding-bottom: 8px; }
+.ch-tabs-sheets .ch-card { background: var(--frame-command); z-index: 1; }
+.ch-tabs-sheets:not([data-remaining="0"])::before { content: ""; position: absolute; inset: 8px 4px 2px; z-index: -1; background: #202125; border-radius: 4px; }
+.ch-fixed:where([data-frame-ui]) { min-height: 0; min-width: 0; padding: 8px 12px; overflow: auto; background: var(--frame-bar); }
+.ch-fixed-head:where([data-frame-ui]) { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11px; color: var(--frame-muted); }
+.ch-fixed-head .v-text-button { font-size: 11px; }
+.ch-selected-detail:where([data-frame-ui]) > p:first-child { font-size: 12px; margin: 8px 0; }
+.ch-library-target:where([data-frame-ui]) { margin: 8px 4px; font-size: 11px; color: var(--frame-muted); }
+.ch-content, .ch-fixed { scrollbar-width: none; }
+:is(.ch-content,.ch-fixed)::-webkit-scrollbar { width: 0; height: 0; }
+.content-hosting-review .v-page-rail .v-rail-list { flex: 1; }

@@ -1,0 +1,24 @@
+/* Only the current shell's transient menu surface. Existing frame geometry is untouched. */
+.v-menu-popup:where([data-frame-ui]) {
+  position: fixed; z-index: 50; width: max-content; min-width: min(220px, calc(100vw - 16px));
+  max-width: calc(100vw - 16px); max-height: calc(100vh - 16px); overflow: auto;
+  padding: 6px; border-radius: 5px; background: var(--frame-command); color: var(--frame-ink);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 24%); font: 12px var(--font-ui); scrollbar-width: none;
+}
+.v-menu-popup:where([data-frame-ui])::-webkit-scrollbar { width: 0; height: 0; }
+.v-menu-popup .v-menu-list:where([data-frame-ui]) { display: flex; flex-direction: column; }
+.v-menu-popup .v-menu-item:where([data-frame-ui]) {
+  display: grid; grid-template-columns: 16px minmax(0,1fr) auto; align-items: center; gap: 8px;
+  min-height: 30px; padding: 0 8px; border-radius: 4px; text-align: left;
+}
+.v-menu-popup .v-menu-label:where([data-frame-ui]) { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.v-menu-popup .v-menu-key:where([data-frame-ui]) { font: inherit; color: var(--frame-muted); white-space: nowrap; }
+.v-menu-popup .v-menu-check:where([data-frame-ui]) { width: 16px; }
+.v-menu-popup .v-menu-item:where([data-frame-ui])[aria-checked="true"] .v-menu-check::before { content: "✓"; }
+.v-menu-popup .v-menu-rule:where([data-frame-ui]) { height: 1px; margin: 5px 8px; background: var(--frame-hover); }
+.v-menu-popup .v-menu-feedback:where([data-frame-ui]) { margin: 6px 8px 2px; max-width: 260px; color: var(--frame-danger); }
+
+/* Pending reuses the check slot without changing row geometry or adding a loop. */
+.v-menu-popup .v-menu-check:where([data-frame-ui]) { display: grid; place-items: center; }
+.v-menu-popup .v-menu-item:where([data-frame-ui])[aria-busy="true"] .v-menu-check:where([data-frame-ui])::before { content: none; }
+.v-menu-popup .v-menu-pending:where([data-frame-ui]) { width: 16px; height: 16px; display: grid; place-items: center; color: var(--frame-muted); }

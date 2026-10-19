@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>五线谱迁移记谱回归</title>
+  <link rel="icon" href="data:,">
+  <style>
+    body { margin: 24px; background: #eee; color: #17191c; font: 14px system-ui; }
+    h1 { font-size: 20px; } h2 { font-size: 14px; margin: 0 0 10px; }
+    article { padding: 20px; margin: 16px 0; background: white; width: 740px; }
+    .drawing { overflow: auto; max-height: 300px; }
+    svg { display: block; width: 700px; height: auto; }
+    [data-test-state="failed"] { color: #b42318; }
+    pre { white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>五线谱迁移记谱回归</h1>
+  <p>与旧工作台共用 shared/notation。下方检查绘制坐标、真实字形、连梁及分页，不接入编辑。</p>
+  <pre id="results" role="status">正在绘制并核查…</pre>
+  <main id="cases"></main>
+  <script type="module" src="src/notation-regression.js"></script>
+</body>
+</html>

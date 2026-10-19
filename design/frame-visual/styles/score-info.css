@@ -1,0 +1,3 @@
+.score-info-panel { padding: 12px; font: 12px/1.6 var(--font-ui); color: var(--frame-ink); }
+.score-info-panel p, .score-info-panel ol { margin: 8px 0 0; color: var(--frame-muted); }
+.score-info-panel ol { padding-left: 24px; }

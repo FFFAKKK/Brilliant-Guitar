@@ -13,3 +13,11 @@ test/core-kernel/rust-migration/rkp-2-scale-evidence-worker.test.ts text eol=lf
 test/core-kernel/rust-migration/rkp-2-scale-evidence-process.ps1 text eol=lf
 # Preserve the raw JSON hashes recorded by the history-reuse diagnostic manifest.
 docs/evidence/history-reuse-*-2026-09-14.json text eol=lf
+
+# Generated backup assets fingerprint these source inputs as raw UTF-8 bytes.
+# Keep their checkout bytes stable on Windows and in exported candidates.
+shared/notation/** text eol=lf
+shared/ui-animation/** text eol=lf
+apps/workbench/src/** text=auto eol=lf
+design/frame-visual/** text=auto eol=lf
+package-lock.json text eol=lf

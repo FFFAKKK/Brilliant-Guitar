@@ -1,0 +1,27 @@
+{
+  "source": "shared/notation",
+  "vexflow": "5.0.0",
+  "files": {
+    "clef-pitch-range.ts": "c04e2ef8b90568fbfed526af9ee84f69184e8c69ae17b7bcc9a2aeb57233fd14",
+    "clef-preview.ts": "d987c0d7b6dcc27bd55281bff43d9b75cc5c3fb53722518713869febe9a1ceee",
+    "compose-notation-pages.ts": "023674f5e6dcef8122218ab1b8a4113a571aa765f93a18b50b1427e08f0445ee",
+    "engraving-metrics.ts": "b9ddb52d11a22a76cfa711d2dcdbec8eeec4f8a03ab74b2d369d9268948569ae",
+    "key-signature.ts": "df26b4c18d60a4e5a7ab0afd87d232fea16406a90d1bfc25f6b31fac287d8e33",
+    "measure-edit.ts": "45952d25fe71aba8d5f6b75ed9b676ed99cb6d95fdefdf466441d575c3fa2a05",
+    "notation-model.ts": "1530a7afce6a91aa077334ddda663756ceec432c5bcca0f15dc4bf893a1fd196",
+    "notation-renderer.ts": "3eff403a4e48aaf9fea8af359bc86a50580687206a3156b35d5008e45611a40f",
+    "note-properties.ts": "9912f6856c6444fbc41d9f22d0575c3c6251cf26e924c7a7c28afdfbc168ce3b",
+    "overfull-events.ts": "ffa1ccd4e7cbffaf66c0633536fc7e960dbb42050d4de0f821518c4d019846ca",
+    "paper-flow.ts": "ac93f68c2c9c156cd9d12a8ac739a3b2a540489f4d746b013486f119d6e71298",
+    "rhythmic-anchors.ts": "0d3c372ab7edc8f1c5aa9fe7463b84caa18a600c9045643c54777bb6e3f42072",
+    "rule-warning-description.ts": "8d5c769418f6ed1fad5a7ad035c967580d5f109969cf5936627e7452547b23da",
+    "score-page-layout.ts": "f5687ee8fdfc65ddf99f0f76278b5fb1ba8ccb32b2df61dcb111677362bf0976",
+    "staff-layout.ts": "f68de588141fb67435438be707f9f31629a0ab6c5f3856c7ba86a7b2b1f860a0",
+    "tablature-layout.ts": "1e727497d59b7e93d85730c0ca7603d18dce19ec57e93af45df9c883d6f966c9",
+    "tablature-model.ts": "e233e264c48d8a61e284b4dd7f5a117e2521fff47bdd86dd7b99de2b02df9383",
+    "tablature-renderer.ts": "25595be9bc5ee8a00be50f7fa0089d25bb64f37019da45e8671dcdc140fdf48d",
+    "vexflow-note-spec.ts": "cf8e2b368298e913b5f7fbb659e49503064226ffe0da84633b9c7005e6ee225e",
+    "vexflow-renderer.ts": "b312a8999349417f0b038e150f2049bfce3252255fcf40179b4bda721a055f15",
+    "vexflow-surface.ts": "d26c217e387e9a14f8ef329bd758948e8a4c8abee5873ffebc3c82054658b805"
+  }
+}

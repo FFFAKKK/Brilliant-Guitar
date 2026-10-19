@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <link rel="icon" href="data:,">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Brilliant Guitar · 工作区预览</title>
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/structure-preview.css">
+  <link rel="stylesheet" href="styles/score-view.css">
+  <link rel="stylesheet" href="styles/runtime-preview.css">
+  <link rel="stylesheet" href="styles/runtime-zoom.css">
+  <link rel="stylesheet" href="styles/framework-controls.css">
+  <link rel="stylesheet" href="styles/workspace-layout.css?v=20261007b">
+  <link rel="stylesheet" href="styles/command-menu.css">
+  <link rel="stylesheet" href="styles/command-dialog.css">
+  <link rel="stylesheet" href="styles/frame-accessibility.css">
+  <style>
+    /* Startup must remain visible even when an entry dependency cannot load. */
+    #preview-startup { position: fixed; inset: 0; display: grid; place-content: center; justify-items: center; gap: 12px; padding: 24px; background: #1c1d20; color: #f2f0eb; font: 14px "Segoe UI", sans-serif; text-align: center; }
+    #preview-startup-detail { max-width: min(760px, 90vw); white-space: pre-wrap; overflow-wrap: anywhere; color: #afb1b8; font-size: 12px; }
+    #preview-startup-retry { min-height: 32px; padding: 0 14px; border: 0; border-radius: 5px; background: #2d67bb; color: #fff; font: inherit; cursor: pointer; }
+    #preview-startup-retry:focus-visible { outline: 2px solid #79acff; outline-offset: 3px; }
+    #preview-startup [hidden] { display: none; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <main id="preview-startup" role="status" aria-live="polite" data-state="loading">
+      <strong id="preview-startup-title">正在加载工作区</strong>
+      <code id="preview-startup-detail" hidden></code>
+      <button id="preview-startup-retry" type="button" hidden>重新加载</button>
+    </main>
+  </div>
+  <script>
+    // This loader has no module dependencies: a failed static import occurs
+    // before runtime-preview.js can reach its own startup try/catch.
+    (() => {
+      const root = document.getElementById("app");
+      const status = document.getElementById("preview-startup");
+      const title = document.getElementById("preview-startup-title");
+      const detail = document.getElementById("preview-startup-detail");
+      const retry = document.getElementById("preview-startup-retry");
+      let ready = false;
+      retry.addEventListener("click", () => location.reload());
+      const failed = error => {
+        status.dataset.state = "failed";
+        status.setAttribute("role", "alert");
+        title.textContent = "工作区启动失败";
+        detail.textContent = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+        detail.hidden = retry.hidden = false;
+        root.replaceChildren(status);
+        globalThis.__backupUiStartupError = error;
+        console.error("备份 UI 入口加载失败", error);
+      };
+      window.addEventListener("pageshow", () => {
+        // A preserved BFCache document keeps its runtime. Only reload an
+        // already-started document whose runtime was disposed on departure.
+        if (ready && root.childElementCount === 0) location.reload();
+      });
+      import("./src/runtime-preview.js?v=20261007-startup-recovery").then(() => {
+        if (globalThis.__backupUiStartupError) return failed(globalThis.__backupUiStartupError);
+        ready = true;
+        status.remove();
+      }, failed);
+    })();
+  </script>
+</body>
+</html>

@@ -13,6 +13,8 @@
     "ui:build": "npm --prefix apps/workbench run build",
     "ui:typecheck": "npm --prefix apps/workbench run typecheck",
     "desktop:dev": "npm --prefix apps/desktop run dev",
+    "desktop:backup:dev": "npm --prefix apps/desktop run backup:dev",
+    "desktop:backup:build": "npm --prefix apps/desktop run backup:build",
     "desktop:build": "npm --prefix apps/desktop run build",
     "desktop:package": "npm --prefix apps/desktop run package",
     "desktop:check": "npm --prefix apps/desktop run check",

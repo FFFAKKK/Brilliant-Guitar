@@ -1,0 +1,15 @@
+@import url("./scrollbars.css");
+/* The static review document opts in explicitly; runtime plugin subtrees do not. */
+:where(html, body, #app, #overlay-root, [data-frame-ui], [data-frame-document], [data-frame-document] *) { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--frame-canvas); color: var(--frame-ink); font: 13px/1.4 var(--font-ui); overflow: hidden; -webkit-font-smoothing: antialiased; }
+button:where([data-frame-ui]), input:where([data-frame-ui]), select:where([data-frame-ui]) { font: inherit; color: inherit; }
+button:where([data-frame-ui]) { background: none; border: 0; padding: 0; cursor: pointer; }
+button:where([data-frame-ui]):disabled { cursor: default; color: var(--frame-disabled); }
+:where([data-frame-ui]):focus:not(:focus-visible) { outline: none; }
+:where([data-frame-ui]):focus-visible { outline: 2px solid var(--frame-focus); outline-offset: 1px; }
+kbd:where([data-frame-ui]) { font: 11px var(--font-ui); color: var(--frame-muted); }
+.icon:where([data-frame-ui]) { display: block; flex: none; }
+[hidden]:where([data-frame-ui]) { display: none !important; }
+.component-fault:where([data-frame-ui]) { margin: 12px; color: var(--frame-muted); }
+:where([data-frame-ui]) { transition: none !important; animation: none !important; }

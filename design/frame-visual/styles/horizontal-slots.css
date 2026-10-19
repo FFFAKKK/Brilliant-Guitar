@@ -1,0 +1,26 @@
+/* Opt-in neutral specimens only; no plugin skin or runtime contribution API. */
+.horizontal-slots-review .v-top { display: block; padding: 0 12px; }
+.horizontal-slots-review .hs-top-track { display: grid; height: 100%; align-items: center; gap: 8px; min-width: 0; }
+.horizontal-slots-review .hs-slot { gap: 8px; min-width: 0; }
+.horizontal-slots-review .v-top .hs-slot { padding: 0; }
+.horizontal-slots-review .hs-contribution { flex: none; min-width: 0; height: 28px; font-size: 12px; padding: 0 8px; border-radius: 4px; }
+.horizontal-slots-review .hs-contribution > span { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.horizontal-slots-review .hs-more.v-icon-button { flex: none; width: 32px; height: 32px; }
+.horizontal-slots-review .v-merge .hs-more { margin-left: auto; }
+.horizontal-slots-review .hs-mode-name { flex: none; width: 80px; font-size: 12px; }
+.horizontal-slots-review .hs-mode-detail { flex: none; width: 112px; font-size: 11px; color: var(--frame-muted); }
+.horizontal-slots-review .hs-mode-actions { flex: none; width: 112px; justify-content: flex-end; }
+.horizontal-slots-review .hs-mode-actions .v-text-button { width: 52px; padding: 0; }
+.horizontal-slots-review .hs-voice { display: grid; grid-template-rows: minmax(48px,1fr) min(var(--hs-fixed-height,32px), max(24px, calc(100% - 52px))); overflow: hidden; gap: 4px; padding: 0 12px; }
+.horizontal-slots-review .hs-voice[data-state="fixed-high"] { --hs-fixed-height: 192px; }
+.horizontal-slots-review .hs-voice-scroll, .horizontal-slots-review .hs-voice-fixed { min-width: 0; min-height: 0; overflow: auto; padding: 8px 4px; }
+.horizontal-slots-review .hs-voice-fixed { background: var(--frame-bar); padding: 4px; }
+.horizontal-slots-review .hs-voice-row { display: flex; justify-content: space-between; gap: 8px; min-height: 32px; align-items: center; font-size: 12px; }
+.horizontal-slots-review .hs-note, .horizontal-slots-review .hs-empty { color: var(--frame-muted); font-size: 11px; }
+.horizontal-slots-review .hs-voice p { margin: 0 0 8px; }
+.horizontal-slots-review .hs-voice-fixed p { min-height: 24px; }
+.v-overlay .hs-menu-item { display: flex; flex-direction: column; width: 100%; height: auto; min-height: 44px; padding: 8px; gap: 4px; align-items: flex-start; text-align: left; white-space: normal; }
+.v-overlay .hs-menu-item span { overflow-wrap: anywhere; }
+.v-overlay .hs-menu-item small, .v-overlay .hs-more-note { color: var(--frame-muted); font-size: 11px; }
+.v-overlay .hs-more-note { padding: 8px; margin: 0; line-height: 1.6; }
+.v-overlay[data-horizontal-slots] { max-height: calc(100vh - 58px); }

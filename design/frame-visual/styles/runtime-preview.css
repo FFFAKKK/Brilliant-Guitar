@@ -1,0 +1,62 @@
+/* Persistent component cells participate in the unchanged page grid. */
+.runtime-page-cell { display: contents; }
+.runtime-page-cell[hidden] { display: none; }
+.v-region-slot-items { display: flex; align-items: center; gap: 8px; min-width: 0; height: 100%; overflow: hidden; }
+.v-region-slot-items[hidden] { display: none; }
+.runtime-slot-cell { flex: 0 0 auto; }
+
+/* Transparent host carriers preserve list flow and plugin-owned artwork. */
+.v-frame-order-row { min-width: 0; flex-shrink: 0; }
+
+/* Optional plugin management page. It stays inside the right page surface and
+   never changes the frame grid or the central score viewport. */
+.plugin-manager { min-width: 0; min-height: 0; height: 100%; display: grid; grid-template-rows: auto minmax(0,1fr); gap: 12px; padding: 12px; overflow: hidden; background: var(--frame-command); color: var(--frame-ink); color-scheme: dark; }
+.plugin-manager-toolbar { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 6px; }
+.plugin-manager-search, .plugin-manager-filter { min-width: 0; height: 30px; border: 0; border-radius: var(--radius-s); background: var(--frame-canvas); color: var(--frame-ink); font: 12px var(--font-ui); }
+.plugin-manager-search { padding: 0 9px; }
+.plugin-manager-filter { padding: 0 8px; }
+.plugin-manager-search:focus-visible, .plugin-manager-filter:focus-visible { outline: 2px solid var(--frame-focus); outline-offset: 1px; }
+.plugin-manager-body { min-height: 0; display: grid; grid-template-columns: minmax(124px,.8fr) minmax(0,1.2fr); gap: 12px; }
+.plugin-manager-list, .plugin-manager-detail { min-height: 0; overflow: auto; }
+.plugin-manager-list { display: flex; flex-direction: column; gap: 4px; }
+.plugin-status-row { width: 100%; min-height: 46px; display: grid; grid-template-columns: 8px minmax(0,1fr) auto; align-items: center; gap: 8px; padding: 6px 8px; border: 0; border-radius: var(--radius-s); background: transparent; color: var(--frame-ink); text-align: left; font: inherit; }
+.plugin-status-row:hover, .plugin-status-row:focus-visible, .plugin-status-row[data-selected="true"] { background: var(--frame-hover); }
+.plugin-status-row:focus-visible { outline: 2px solid var(--frame-focus); outline-offset: -1px; }
+.plugin-status-icon { width: 7px; height: 7px; border-radius: 50%; background: var(--frame-component-edge); flex: none; }
+.plugin-status-row[data-status="failed"] .plugin-status-icon { background: var(--frame-danger); }
+.plugin-status-row[data-status="registered"] .plugin-status-icon { background: var(--frame-disabled); }
+.plugin-status-main { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.plugin-status-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 500; }
+.plugin-status-meta, .plugin-manager-detail-state { color: var(--frame-muted); font-size: 10px; line-height: 1.4; }
+.plugin-status-state { color: var(--frame-muted); font-size: 10px; white-space: nowrap; }
+.plugin-manager-detail { padding: 4px 0 12px 12px; border-left: 1px solid rgb(255 255 255 / 8%); }
+.plugin-manager-detail-head { display: flex; align-items: flex-start; gap: 8px; padding: 4px 0 14px; }
+.plugin-manager-detail-head .plugin-status-icon { margin-top: 5px; }
+.plugin-manager-detail-head strong { display: block; overflow-wrap: anywhere; font-size: 13px; font-weight: 600; }
+.plugin-manager-detail-state { display: block; margin-top: 3px; }
+.plugin-manager-detail-section { padding: 9px 0; border-top: 1px solid rgb(255 255 255 / 7%); }
+.plugin-manager-detail-section > span { color: var(--frame-muted); font-size: 10px; }
+.plugin-manager-detail-section > p { margin: 4px 0 0; white-space: pre-line; overflow-wrap: anywhere; font-size: 11px; line-height: 1.55; }
+.plugin-manager-restart-note { margin: 12px 0 0; padding: 8px; border-radius: var(--radius-s); background: var(--frame-hover); color: var(--frame-muted); font-size: 10px; line-height: 1.55; }
+.plugin-status-error { margin: 10px 0 0; color: var(--frame-danger); font-size: 11px; line-height: 1.55; overflow-wrap: anywhere; }
+.plugin-status-empty { margin: 0; padding: 16px 4px; color: var(--frame-muted); font-size: 11px; line-height: 1.6; }
+@media (max-width: 420px) {
+  .plugin-manager-body { grid-template-columns: 1fr; grid-template-rows: minmax(120px,.7fr) minmax(0,1.3fr); }
+  .plugin-manager-detail { padding: 12px 0 0; border-top: 1px solid rgb(255 255 255 / 8%); border-left: 0; }
+}
+
+/* Region artwork shares the full-surface contract of the accepted right page.
+   Motion still belongs to the original scoped animation service. */
+.visual-shell[data-runtime="workspace"] .v-frame-region-surface:where([data-frame-ui]) { width: 100%; height: 100%; min-width: 0; min-height: 0; }
+/* Region carriers and full-size backing plates stay transparent. Controls
+   retain their local state artwork on the continuous workbench canvas. */
+.visual-shell[data-runtime="workspace"] :is(.v-left, .v-right, .v-top, .v-footer):where([data-frame-ui]) { background: transparent; }
+.visual-shell[data-runtime="workspace"] :is(.v-panel-surface, .v-page-ghost, .v-page-bottom, .v-composer-header):where([data-frame-ui]) { background: transparent; }
+.visual-shell[data-runtime="workspace"] .v-top[data-frame-region-clip="top"]:where([data-frame-ui]) { padding: 0; background: transparent; }
+.visual-shell[data-runtime="workspace"] .v-frame-region-surface[data-frame-region-motion="top"]:where([data-frame-ui]) { padding: 0 12px; background: transparent; }
+.visual-shell[data-runtime="workspace"] .v-frame-region-surface[data-frame-region-motion="voice"]:where([data-frame-ui]) { background: transparent; }
+/* The folding artwork cannot be prepainted by an opaque carrier. The permanent
+   bottom strip follows the frame's reveal boundary using the original node. */
+.visual-shell[data-runtime="workspace"] .v-voice-content[data-frame-region-clip="voice"]:where([data-frame-ui]) { background: transparent; }
+.visual-shell[data-runtime="workspace"] .v-footer[data-frame-region-chrome="voice"]:where([data-frame-ui]) { background: transparent; }
+.visual-shell[data-runtime="workspace"] .v-footer[data-frame-region-chrome="voice"] > .v-voice-header:where([data-frame-ui]) { background: transparent; z-index: 5; }

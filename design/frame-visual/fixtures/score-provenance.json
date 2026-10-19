@@ -1,0 +1,7 @@
+{
+  "source": "C:\\Users\\ATOM\\.codex\\visualizations\\2026\\09\\24\\01a0d1b7-c4b5-7ba3-9043-da4b84a0faa5\\backups\\approved-frame-20260925-201545\\frame-score-context.html",
+  "sourceSHA256": "ba8509996dee6bc123ab0c3642cb52260e3c7d850598a5c7a1915379b15a64f8",
+  "assetSHA256": "5aa09d129edb2f0e94d9817feed89336557fbe5bd80360cd406b03ef601d5104",
+  "kind": "static SVG extraction; no build scripts executed",
+  "transformations": ["remove the empty outer style attribute", "embed the two unchanged font-face declarations from the same approved HTML"]
+}

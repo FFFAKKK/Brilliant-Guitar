@@ -1,0 +1,1060 @@
+{
+  "at": "2026-10-08T07:15:22.099Z",
+  "status": "baseline-only",
+  "qualificationG6": "pending",
+  "thresholds": null,
+  "scope": "Warm Node filesystem + existing ScoreSessionService Native import/read + actual backup document projection + pagination; no Rust file dialog/IO, IPC, SVG, WebView or cold startup",
+  "warmups": 3,
+  "iterations": 25,
+  "percentileMethod": "nearest-rank",
+  "nativeAddon": {
+    "path": "target/integrated-v2/brilliant_kernel_node.node",
+    "sha256": "bdf952e9f231ed0866713fa566fb74268a39cf702fca990434967d3ec8809baa",
+    "sha256After": "bdf952e9f231ed0866713fa566fb74268a39cf702fca990434967d3ec8809baa"
+  },
+  "environment": {
+    "platform": "win32",
+    "release": "10.0.26200",
+    "node": "v24.15.0",
+    "cpuModel": "13th Gen Intel(R) Core(TM) i9-13900HX",
+    "logicalCpus": 32,
+    "totalMemoryBytes": 42628276224
+  },
+  "cases": [
+    {
+      "name": "empty",
+      "measures": 1,
+      "events": 0,
+      "filename": "empty.bgp.json",
+      "bytes": 661,
+      "sha256": "72a94e6375675f357b27d58f6e164b3579d6264e77777275cd64c3be5132c4c5",
+      "pages": 1,
+      "projectionFile": "empty.projection.json",
+      "projectionSha256": "1c1f73dec74e4701cc57b7063c2386a8474614df40ce70382b447de35ad75365",
+      "stats": {
+        "fileReadMs": {
+          "count": 25,
+          "median": 0.46479999999996835,
+          "p95": 0.5477000000000771,
+          "max": 0.8403000000000702,
+          "mean": 0.4845640000000185
+        },
+        "parseMs": {
+          "count": 25,
+          "median": 0.028999999999996362,
+          "p95": 0.04460000000005948,
+          "max": 0.08999999999991815,
+          "mean": 0.031792000000009465
+        },
+        "hostImportReadMs": {
+          "count": 25,
+          "median": 0.8868999999999687,
+          "p95": 1.31899999999996,
+          "max": 1.3208000000000766,
+          "mean": 0.9569079999999894
+        },
+        "backupProjectionMs": {
+          "count": 25,
+          "median": 0.053599999999960346,
+          "p95": 0.09730000000001837,
+          "max": 0.10720000000003438,
+          "mean": 0.06252399999998488
+        },
+        "pageLayoutMs": {
+          "count": 25,
+          "median": 0.01160000000004402,
+          "p95": 0.043000000000006366,
+          "max": 0.04319999999995616,
+          "mean": 0.0169800000000032
+        },
+        "totalToLayoutMs": {
+          "count": 25,
+          "median": 1.4878999999998541,
+          "p95": 1.971900000000005,
+          "max": 2.3104000000000724,
+          "mean": 1.5527680000000055
+        }
+      },
+      "samples": [
+        {
+          "fileReadMs": 0.5312000000000126,
+          "parseMs": 0.04460000000005948,
+          "hostImportReadMs": 1.0797999999999774,
+          "backupProjectionMs": 0.07359999999994216,
+          "pageLayoutMs": 0.025200000000040745,
+          "totalToLayoutMs": 1.7544000000000324
+        },
+        {
+          "fileReadMs": 0.48310000000003583,
+          "parseMs": 0.03150000000005093,
+          "hostImportReadMs": 1.0663999999999305,
+          "backupProjectionMs": 0.09730000000001837,
+          "pageLayoutMs": 0.0262000000000171,
+          "totalToLayoutMs": 1.7045000000000528
+        },
+        {
+          "fileReadMs": 0.46479999999996835,
+          "parseMs": 0.037900000000036016,
+          "hostImportReadMs": 1.31899999999996,
+          "backupProjectionMs": 0.10720000000003438,
+          "pageLayoutMs": 0.043000000000006366,
+          "totalToLayoutMs": 1.971900000000005
+        },
+        {
+          "fileReadMs": 0.5219000000000733,
+          "parseMs": 0.044199999999932515,
+          "hostImportReadMs": 1.252299999999991,
+          "backupProjectionMs": 0.0704000000000633,
+          "pageLayoutMs": 0.04319999999995616,
+          "totalToLayoutMs": 1.9320000000000164
+        },
+        {
+          "fileReadMs": 0.8403000000000702,
+          "parseMs": 0.031099999999923966,
+          "hostImportReadMs": 1.3208000000000766,
+          "backupProjectionMs": 0.09410000000002583,
+          "pageLayoutMs": 0.024099999999975807,
+          "totalToLayoutMs": 2.3104000000000724
+        },
+        {
+          "fileReadMs": 0.4615999999999758,
+          "parseMs": 0.03040000000009968,
+          "hostImportReadMs": 0.8868999999999687,
+          "backupProjectionMs": 0.07510000000002037,
+          "pageLayoutMs": 0.01639999999997599,
+          "totalToLayoutMs": 1.4704000000000406
+        },
+        {
+          "fileReadMs": 0.4822000000000344,
+          "parseMs": 0.029199999999946158,
+          "hostImportReadMs": 0.9411000000000058,
+          "backupProjectionMs": 0.07620000000008531,
+          "pageLayoutMs": 0.01670000000001437,
+          "totalToLayoutMs": 1.545400000000086
+        },
+        {
+          "fileReadMs": 0.5222999999999729,
+          "parseMs": 0.030200000000036198,
+          "hostImportReadMs": 0.8705999999999676,
+          "backupProjectionMs": 0.08569999999997435,
+          "pageLayoutMs": 0.013900000000035106,
+          "totalToLayoutMs": 1.5226999999999862
+        },
+        {
+          "fileReadMs": 0.5414000000000669,
+          "parseMs": 0.028299999999944703,
+          "hostImportReadMs": 1.0769999999999982,
+          "backupProjectionMs": 0.06780000000003383,
+          "pageLayoutMs": 0.012600000000020373,
+          "totalToLayoutMs": 1.727100000000064
+        },
+        {
+          "fileReadMs": 0.48109999999996944,
+          "parseMs": 0.024200000000064392,
+          "hostImportReadMs": 0.791599999999903,
+          "backupProjectionMs": 0.0563000000000784,
+          "pageLayoutMs": 0.010800000000017462,
+          "totalToLayoutMs": 1.3640000000000327
+        },
+        {
+          "fileReadMs": 0.433400000000006,
+          "parseMs": 0.01939999999990505,
+          "hostImportReadMs": 0.7824000000000524,
+          "backupProjectionMs": 0.04759999999998854,
+          "pageLayoutMs": 0.01059999999995398,
+          "totalToLayoutMs": 1.293399999999906
+        },
+        {
+          "fileReadMs": 0.418700000000058,
+          "parseMs": 0.02539999999999054,
+          "hostImportReadMs": 1.2852000000000317,
+          "backupProjectionMs": 0.06809999999995853,
+          "pageLayoutMs": 0.03449999999997999,
+          "totalToLayoutMs": 1.8319000000000187
+        },
+        {
+          "fileReadMs": 0.5225000000000364,
+          "parseMs": 0.08999999999991815,
+          "hostImportReadMs": 0.8850000000002183,
+          "backupProjectionMs": 0.04969999999980246,
+          "pageLayoutMs": 0.01110000000016953,
+          "totalToLayoutMs": 1.5583000000001448
+        },
+        {
+          "fileReadMs": 0.4237000000000535,
+          "parseMs": 0.02719999999999345,
+          "hostImportReadMs": 0.8605999999999767,
+          "backupProjectionMs": 0.08019999999987704,
+          "pageLayoutMs": 0.01160000000004402,
+          "totalToLayoutMs": 1.4032999999999447
+        },
+        {
+          "fileReadMs": 0.43669999999997344,
+          "parseMs": 0.03000000000020009,
+          "hostImportReadMs": 0.9230999999999767,
+          "backupProjectionMs": 0.04959999999982756,
+          "pageLayoutMs": 0.01160000000004402,
+          "totalToLayoutMs": 1.4510000000000218
+        },
+        {
+          "fileReadMs": 0.5477000000000771,
+          "parseMs": 0.03170000000000073,
+          "hostImportReadMs": 0.8707999999999174,
+          "backupProjectionMs": 0.04330000000004475,
+          "pageLayoutMs": 0.011499999999841748,
+          "totalToLayoutMs": 1.5049999999998818
+        },
+        {
+          "fileReadMs": 0.4371000000001004,
+          "parseMs": 0.027000000000043656,
+          "hostImportReadMs": 0.8286999999997988,
+          "backupProjectionMs": 0.04380000000014661,
+          "pageLayoutMs": 0.01139999999986685,
+          "totalToLayoutMs": 1.3479999999999563
+        },
+        {
+          "fileReadMs": 0.419399999999996,
+          "parseMs": 0.02549999999996544,
+          "hostImportReadMs": 0.9021999999999935,
+          "backupProjectionMs": 0.053599999999960346,
+          "pageLayoutMs": 0.013200000000097134,
+          "totalToLayoutMs": 1.4139000000000124
+        },
+        {
+          "fileReadMs": 0.4095999999999549,
+          "parseMs": 0.028999999999996362,
+          "hostImportReadMs": 0.9902999999999338,
+          "backupProjectionMs": 0.047100000000000364,
+          "pageLayoutMs": 0.011899999999968713,
+          "totalToLayoutMs": 1.4878999999998541
+        },
+        {
+          "fileReadMs": 0.5124000000000706,
+          "parseMs": 0.027499999999918145,
+          "hostImportReadMs": 0.9037000000000717,
+          "backupProjectionMs": 0.044499999999970896,
+          "pageLayoutMs": 0.011199999999917054,
+          "totalToLayoutMs": 1.4992999999999483
+        },
+        {
+          "fileReadMs": 0.4257999999999811,
+          "parseMs": 0.025300000000015643,
+          "hostImportReadMs": 0.7984000000001288,
+          "backupProjectionMs": 0.04619999999999891,
+          "pageLayoutMs": 0.010999999999967258,
+          "totalToLayoutMs": 1.3067000000000917
+        },
+        {
+          "fileReadMs": 0.3966000000000349,
+          "parseMs": 0.026699999999891588,
+          "hostImportReadMs": 0.8829000000000633,
+          "backupProjectionMs": 0.05219999999985703,
+          "pageLayoutMs": 0.011200000000144428,
+          "totalToLayoutMs": 1.3695999999999913
+        },
+        {
+          "fileReadMs": 0.44029999999997926,
+          "parseMs": 0.022100000000136788,
+          "hostImportReadMs": 0.8016000000000076,
+          "backupProjectionMs": 0.044999999999845386,
+          "pageLayoutMs": 0.010500000000092768,
+          "totalToLayoutMs": 1.3195000000000618
+        },
+        {
+          "fileReadMs": 0.5187000000000808,
+          "parseMs": 0.03170000000000073,
+          "hostImportReadMs": 0.8171999999999571,
+          "backupProjectionMs": 0.04379999999991924,
+          "pageLayoutMs": 0.01040000000011787,
+          "totalToLayoutMs": 1.4218000000000757
+        },
+        {
+          "fileReadMs": 0.4415999999998803,
+          "parseMs": 0.024700000000166256,
+          "hostImportReadMs": 0.7850999999998294,
+          "backupProjectionMs": 0.044700000000148066,
+          "pageLayoutMs": 0.01069999999981519,
+          "totalToLayoutMs": 1.3067999999998392
+        }
+      ]
+    },
+    {
+      "name": "staff-16",
+      "measures": 16,
+      "events": 64,
+      "filename": "staff-16.bgp.json",
+      "bytes": 14195,
+      "sha256": "7209a0c01203d14e578fdb97a4e6041ece1df14cfda44623a16bfba1d12a37ef",
+      "pages": 1,
+      "projectionFile": "staff-16.projection.json",
+      "projectionSha256": "c96b7ca731a71d99bb3f43d805186506da6a69abc0aa1f3771952cd726ec6306",
+      "stats": {
+        "fileReadMs": {
+          "count": 25,
+          "median": 0.6449999999999818,
+          "p95": 0.9826000000000477,
+          "max": 0.9882000000000062,
+          "mean": 0.6717759999999998
+        },
+        "parseMs": {
+          "count": 25,
+          "median": 0.11230000000000473,
+          "p95": 0.17280000000005202,
+          "max": 0.23919999999998254,
+          "mean": 0.1228519999999935
+        },
+        "hostImportReadMs": {
+          "count": 25,
+          "median": 6.96569999999997,
+          "p95": 7.7900999999999385,
+          "max": 7.9780000000000655,
+          "mean": 6.991052
+        },
+        "backupProjectionMs": {
+          "count": 25,
+          "median": 0.5475999999998749,
+          "p95": 0.8755999999998494,
+          "max": 1.0492999999999029,
+          "mean": 0.584208000000026
+        },
+        "pageLayoutMs": {
+          "count": 25,
+          "median": 0.04060000000004038,
+          "p95": 0.09149999999999636,
+          "max": 0.09310000000004948,
+          "mean": 0.05150399999998626
+        },
+        "totalToLayoutMs": {
+          "count": 25,
+          "median": 8.361400000000003,
+          "p95": 9.541200000000117,
+          "max": 9.779399999999896,
+          "mean": 8.421392000000004
+        }
+      },
+      "samples": [
+        {
+          "fileReadMs": 0.5817999999999302,
+          "parseMs": 0.10779999999999745,
+          "hostImportReadMs": 7.9780000000000655,
+          "backupProjectionMs": 1.0492999999999029,
+          "pageLayoutMs": 0.0625,
+          "totalToLayoutMs": 9.779399999999896
+        },
+        {
+          "fileReadMs": 0.5307000000000244,
+          "parseMs": 0.1065000000000964,
+          "hostImportReadMs": 7.496599999999944,
+          "backupProjectionMs": 0.8755999999998494,
+          "pageLayoutMs": 0.05770000000006803,
+          "totalToLayoutMs": 9.067099999999982
+        },
+        {
+          "fileReadMs": 0.5996000000000095,
+          "parseMs": 0.11030000000005202,
+          "hostImportReadMs": 7.357299999999896,
+          "backupProjectionMs": 0.6017000000001644,
+          "pageLayoutMs": 0.09149999999999636,
+          "totalToLayoutMs": 8.760400000000118
+        },
+        {
+          "fileReadMs": 0.6449999999999818,
+          "parseMs": 0.11190000000010514,
+          "hostImportReadMs": 6.669300000000021,
+          "backupProjectionMs": 0.5841000000000349,
+          "pageLayoutMs": 0.07699999999999818,
+          "totalToLayoutMs": 8.087300000000141
+        },
+        {
+          "fileReadMs": 0.9826000000000477,
+          "parseMs": 0.11230000000000473,
+          "hostImportReadMs": 6.472299999999905,
+          "backupProjectionMs": 0.5088000000000648,
+          "pageLayoutMs": 0.09310000000004948,
+          "totalToLayoutMs": 8.169100000000071
+        },
+        {
+          "fileReadMs": 0.48890000000005784,
+          "parseMs": 0.10249999999996362,
+          "hostImportReadMs": 7.389400000000023,
+          "backupProjectionMs": 0.6468999999999596,
+          "pageLayoutMs": 0.08619999999996253,
+          "totalToLayoutMs": 8.713899999999967
+        },
+        {
+          "fileReadMs": 0.8170000000000073,
+          "parseMs": 0.11809999999991305,
+          "hostImportReadMs": 6.492199999999912,
+          "backupProjectionMs": 0.6045000000001437,
+          "pageLayoutMs": 0.05269999999995889,
+          "totalToLayoutMs": 8.084499999999935
+        },
+        {
+          "fileReadMs": 0.6690000000000964,
+          "parseMs": 0.11770000000001346,
+          "hostImportReadMs": 6.96569999999997,
+          "backupProjectionMs": 0.501700000000028,
+          "pageLayoutMs": 0.08259999999995671,
+          "totalToLayoutMs": 8.336700000000064
+        },
+        {
+          "fileReadMs": 0.48319999999989705,
+          "parseMs": 0.1146000000001095,
+          "hostImportReadMs": 7.657999999999902,
+          "backupProjectionMs": 0.4831000000001495,
+          "pageLayoutMs": 0.0362999999999829,
+          "totalToLayoutMs": 8.77520000000004
+        },
+        {
+          "fileReadMs": 0.5889999999999418,
+          "parseMs": 0.1614999999999327,
+          "hostImportReadMs": 6.98050000000012,
+          "backupProjectionMs": 0.5755999999998949,
+          "pageLayoutMs": 0.03809999999998581,
+          "totalToLayoutMs": 8.344699999999875
+        },
+        {
+          "fileReadMs": 0.7675999999999021,
+          "parseMs": 0.14400000000000546,
+          "hostImportReadMs": 6.913500000000113,
+          "backupProjectionMs": 0.5475999999998749,
+          "pageLayoutMs": 0.04060000000004038,
+          "totalToLayoutMs": 8.413299999999936
+        },
+        {
+          "fileReadMs": 0.7028999999999996,
+          "parseMs": 0.1111999999998261,
+          "hostImportReadMs": 7.123300000000199,
+          "backupProjectionMs": 0.5807999999999538,
+          "pageLayoutMs": 0.04129999999986467,
+          "totalToLayoutMs": 8.559499999999844
+        },
+        {
+          "fileReadMs": 0.6100000000001273,
+          "parseMs": 0.1090999999998985,
+          "hostImportReadMs": 6.719900000000052,
+          "backupProjectionMs": 0.5912000000000717,
+          "pageLayoutMs": 0.03919999999993706,
+          "totalToLayoutMs": 8.069400000000087
+        },
+        {
+          "fileReadMs": 0.9646999999999935,
+          "parseMs": 0.1226000000001477,
+          "hostImportReadMs": 7.7900999999999385,
+          "backupProjectionMs": 0.6069999999999709,
+          "pageLayoutMs": 0.056800000000066575,
+          "totalToLayoutMs": 9.541200000000117
+        },
+        {
+          "fileReadMs": 0.6078999999999724,
+          "parseMs": 0.11759999999981119,
+          "hostImportReadMs": 6.363700000000108,
+          "backupProjectionMs": 0.5160000000000764,
+          "pageLayoutMs": 0.040299999999888314,
+          "totalToLayoutMs": 7.645499999999856
+        },
+        {
+          "fileReadMs": 0.5972000000001572,
+          "parseMs": 0.11089999999990141,
+          "hostImportReadMs": 7.342499999999973,
+          "backupProjectionMs": 0.5494000000001051,
+          "pageLayoutMs": 0.039599999999836655,
+          "totalToLayoutMs": 8.639599999999973
+        },
+        {
+          "fileReadMs": 0.7613999999998668,
+          "parseMs": 0.11820000000011532,
+          "hostImportReadMs": 6.566100000000006,
+          "backupProjectionMs": 0.5010999999999513,
+          "pageLayoutMs": 0.037900000000036016,
+          "totalToLayoutMs": 7.984699999999975
+        },
+        {
+          "fileReadMs": 0.9882000000000062,
+          "parseMs": 0.17280000000005202,
+          "hostImportReadMs": 6.798499999999876,
+          "backupProjectionMs": 0.5115000000000691,
+          "pageLayoutMs": 0.039099999999962165,
+          "totalToLayoutMs": 8.510099999999966
+        },
+        {
+          "fileReadMs": 0.5114000000000942,
+          "parseMs": 0.10570000000006985,
+          "hostImportReadMs": 7.146799999999985,
+          "backupProjectionMs": 0.7228999999999814,
+          "pageLayoutMs": 0.04060000000004038,
+          "totalToLayoutMs": 8.52740000000017
+        },
+        {
+          "fileReadMs": 0.647499999999809,
+          "parseMs": 0.12000000000011823,
+          "hostImportReadMs": 6.988399999999956,
+          "backupProjectionMs": 0.4895000000001346,
+          "pageLayoutMs": 0.03809999999998581,
+          "totalToLayoutMs": 8.283500000000004
+        },
+        {
+          "fileReadMs": 0.5839000000000851,
+          "parseMs": 0.10329999999999018,
+          "hostImportReadMs": 7.192900000000009,
+          "backupProjectionMs": 0.5127999999999702,
+          "pageLayoutMs": 0.04310000000009495,
+          "totalToLayoutMs": 8.43600000000015
+        },
+        {
+          "fileReadMs": 0.710399999999936,
+          "parseMs": 0.12069999999994252,
+          "hostImportReadMs": 6.551600000000008,
+          "backupProjectionMs": 0.5361000000000331,
+          "pageLayoutMs": 0.03809999999998581,
+          "totalToLayoutMs": 7.956899999999905
+        },
+        {
+          "fileReadMs": 0.6830999999999676,
+          "parseMs": 0.23919999999998254,
+          "hostImportReadMs": 6.894999999999982,
+          "backupProjectionMs": 0.5061000000000604,
+          "pageLayoutMs": 0.038000000000010914,
+          "totalToLayoutMs": 8.361400000000003
+        },
+        {
+          "fileReadMs": 0.6029000000000906,
+          "parseMs": 0.10669999999981883,
+          "hostImportReadMs": 6.308800000000019,
+          "backupProjectionMs": 0.49660000000017135,
+          "pageLayoutMs": 0.0385999999998603,
+          "totalToLayoutMs": 7.55359999999996
+        },
+        {
+          "fileReadMs": 0.6684999999999945,
+          "parseMs": 0.10609999999996944,
+          "hostImportReadMs": 6.6159000000000106,
+          "backupProjectionMs": 0.5053000000000338,
+          "pageLayoutMs": 0.038600000000087675,
+          "totalToLayoutMs": 7.934400000000096
+        }
+      ]
+    },
+    {
+      "name": "staff-128",
+      "measures": 128,
+      "events": 512,
+      "filename": "staff-128.bgp.json",
+      "bytes": 111479,
+      "sha256": "c470022508e7e50aabe4577432cf9cc977c2171c71e1e691a4d25284b8e66eba",
+      "pages": 4,
+      "projectionFile": "staff-128.projection.json",
+      "projectionSha256": "f2dc5744000fe6919f8f4deed31c49181818c5f78630047e3676c0dcde008683",
+      "stats": {
+        "fileReadMs": {
+          "count": 25,
+          "median": 0.8623000000002321,
+          "p95": 2.165899999999965,
+          "max": 2.8541000000000167,
+          "mean": 0.9935440000000472
+        },
+        "parseMs": {
+          "count": 25,
+          "median": 0.6445000000003347,
+          "p95": 0.8128000000001521,
+          "max": 0.9104999999999563,
+          "mean": 0.6716920000000209
+        },
+        "hostImportReadMs": {
+          "count": 25,
+          "median": 46.515300000000025,
+          "p95": 61.143899999999576,
+          "max": 68.3780999999999,
+          "mean": 48.78545199999994
+        },
+        "backupProjectionMs": {
+          "count": 25,
+          "median": 3.604500000000371,
+          "p95": 4.076499999999669,
+          "max": 5.280699999999797,
+          "mean": 3.678248000000049
+        },
+        "pageLayoutMs": {
+          "count": 25,
+          "median": 0.14049999999997453,
+          "p95": 0.21810000000004948,
+          "max": 0.24490000000014334,
+          "mean": 0.1463120000000072
+        },
+        "totalToLayoutMs": {
+          "count": 25,
+          "median": 52.072200000000066,
+          "p95": 66.3434000000002,
+          "max": 74.41739999999982,
+          "mean": 54.27524800000006
+        }
+      },
+      "samples": [
+        {
+          "fileReadMs": 0.9649999999999181,
+          "parseMs": 0.6689000000001215,
+          "hostImportReadMs": 50.89379999999983,
+          "backupProjectionMs": 3.9371000000001004,
+          "pageLayoutMs": 0.21810000000004948,
+          "totalToLayoutMs": 56.68290000000002
+        },
+        {
+          "fileReadMs": 0.7898999999999887,
+          "parseMs": 0.6485999999999876,
+          "hostImportReadMs": 51.40769999999998,
+          "backupProjectionMs": 3.6032000000000153,
+          "pageLayoutMs": 0.20810000000005857,
+          "totalToLayoutMs": 56.65750000000003
+        },
+        {
+          "fileReadMs": 1.0960000000000036,
+          "parseMs": 0.6428000000000793,
+          "hostImportReadMs": 43.6884,
+          "backupProjectionMs": 3.9745000000000346,
+          "pageLayoutMs": 0.201799999999821,
+          "totalToLayoutMs": 49.60349999999994
+        },
+        {
+          "fileReadMs": 0.6256000000000768,
+          "parseMs": 0.6305999999999585,
+          "hostImportReadMs": 50.54179999999997,
+          "backupProjectionMs": 4.008600000000115,
+          "pageLayoutMs": 0.20640000000003056,
+          "totalToLayoutMs": 56.01300000000015
+        },
+        {
+          "fileReadMs": 0.6084999999998217,
+          "parseMs": 0.6464000000000851,
+          "hostImportReadMs": 48.61949999999979,
+          "backupProjectionMs": 3.651100000000042,
+          "pageLayoutMs": 0.24490000000014334,
+          "totalToLayoutMs": 53.77039999999988
+        },
+        {
+          "fileReadMs": 0.7510000000002037,
+          "parseMs": 0.9104999999999563,
+          "hostImportReadMs": 58.07999999999993,
+          "backupProjectionMs": 3.65520000000015,
+          "pageLayoutMs": 0.16039999999975407,
+          "totalToLayoutMs": 63.55709999999999
+        },
+        {
+          "fileReadMs": 0.8888000000001739,
+          "parseMs": 0.6399999999998727,
+          "hostImportReadMs": 46.515300000000025,
+          "backupProjectionMs": 3.703599999999824,
+          "pageLayoutMs": 0.13450000000011642,
+          "totalToLayoutMs": 51.88220000000001
+        },
+        {
+          "fileReadMs": 1.5326999999997497,
+          "parseMs": 0.8128000000001521,
+          "hostImportReadMs": 68.3780999999999,
+          "backupProjectionMs": 3.552400000000034,
+          "pageLayoutMs": 0.141399999999976,
+          "totalToLayoutMs": 74.41739999999982
+        },
+        {
+          "fileReadMs": 2.8541000000000167,
+          "parseMs": 0.6972000000000662,
+          "hostImportReadMs": 48.46389999999974,
+          "backupProjectionMs": 3.71770000000015,
+          "pageLayoutMs": 0.1792000000000371,
+          "totalToLayoutMs": 55.91210000000001
+        },
+        {
+          "fileReadMs": 0.8589000000001761,
+          "parseMs": 0.721299999999701,
+          "hostImportReadMs": 50.465000000000146,
+          "backupProjectionMs": 3.7127999999997883,
+          "pageLayoutMs": 0.14170000000012806,
+          "totalToLayoutMs": 55.89969999999994
+        },
+        {
+          "fileReadMs": 0.8625999999999294,
+          "parseMs": 0.6312000000002627,
+          "hostImportReadMs": 45.04609999999957,
+          "backupProjectionMs": 3.8166000000001077,
+          "pageLayoutMs": 0.14049999999997453,
+          "totalToLayoutMs": 50.496999999999844
+        },
+        {
+          "fileReadMs": 0.9981999999999971,
+          "parseMs": 0.6198000000003958,
+          "hostImportReadMs": 61.143899999999576,
+          "backupProjectionMs": 3.446700000000419,
+          "pageLayoutMs": 0.13479999999981374,
+          "totalToLayoutMs": 66.3434000000002
+        },
+        {
+          "fileReadMs": 0.6352000000001681,
+          "parseMs": 0.6640999999999622,
+          "hostImportReadMs": 46.57549999999992,
+          "backupProjectionMs": 3.612600000000384,
+          "pageLayoutMs": 0.14399999999977808,
+          "totalToLayoutMs": 51.63140000000021
+        },
+        {
+          "fileReadMs": 0.7908000000002176,
+          "parseMs": 0.6368999999999687,
+          "hostImportReadMs": 44.54930000000013,
+          "backupProjectionMs": 4.076499999999669,
+          "pageLayoutMs": 0.13340000000016516,
+          "totalToLayoutMs": 50.18690000000015
+        },
+        {
+          "fileReadMs": 0.9232999999999265,
+          "parseMs": 0.6356999999998152,
+          "hostImportReadMs": 44.82619999999997,
+          "backupProjectionMs": 3.604500000000371,
+          "pageLayoutMs": 0.16589999999996508,
+          "totalToLayoutMs": 50.15560000000005
+        },
+        {
+          "fileReadMs": 0.8263999999999214,
+          "parseMs": 0.6294000000002598,
+          "hostImportReadMs": 46.06179999999995,
+          "backupProjectionMs": 3.4810999999999694,
+          "pageLayoutMs": 0.10870000000022628,
+          "totalToLayoutMs": 51.107400000000325
+        },
+        {
+          "fileReadMs": 0.8623000000002321,
+          "parseMs": 0.6381999999998698,
+          "hostImportReadMs": 53.0308,
+          "backupProjectionMs": 3.393500000000131,
+          "pageLayoutMs": 0.10550000000012005,
+          "totalToLayoutMs": 58.03030000000035
+        },
+        {
+          "fileReadMs": 0.7536000000000058,
+          "parseMs": 0.6147999999998319,
+          "hostImportReadMs": 47.858600000000024,
+          "backupProjectionMs": 3.3880000000003747,
+          "pageLayoutMs": 0.1034999999997126,
+          "totalToLayoutMs": 52.71849999999995
+        },
+        {
+          "fileReadMs": 0.8655000000003383,
+          "parseMs": 0.7012999999997191,
+          "hostImportReadMs": 42.501700000000255,
+          "backupProjectionMs": 3.4735999999998057,
+          "pageLayoutMs": 0.1044000000001688,
+          "totalToLayoutMs": 47.64650000000029
+        },
+        {
+          "fileReadMs": 2.165899999999965,
+          "parseMs": 0.6445000000003347,
+          "hostImportReadMs": 45.86209999999983,
+          "backupProjectionMs": 3.2953999999999724,
+          "pageLayoutMs": 0.10429999999996653,
+          "totalToLayoutMs": 52.072200000000066
+        },
+        {
+          "fileReadMs": 0.9778000000001157,
+          "parseMs": 0.6545000000000982,
+          "hostImportReadMs": 43.39529999999968,
+          "backupProjectionMs": 3.388600000000224,
+          "pageLayoutMs": 0.10370000000011714,
+          "totalToLayoutMs": 48.519900000000234
+        },
+        {
+          "fileReadMs": 0.6057999999998174,
+          "parseMs": 0.6264000000001033,
+          "hostImportReadMs": 46.41870000000017,
+          "backupProjectionMs": 3.5556000000001404,
+          "pageLayoutMs": 0.11019999999962238,
+          "totalToLayoutMs": 51.316699999999855
+        },
+        {
+          "fileReadMs": 1.0755000000003747,
+          "parseMs": 0.6759999999999309,
+          "hostImportReadMs": 45.91519999999991,
+          "backupProjectionMs": 5.280699999999797,
+          "pageLayoutMs": 0.11239999999997963,
+          "totalToLayoutMs": 53.059799999999996
+        },
+        {
+          "fileReadMs": 0.8451000000000022,
+          "parseMs": 0.6338000000000648,
+          "hostImportReadMs": 43.957000000000335,
+          "backupProjectionMs": 3.2828999999996995,
+          "pageLayoutMs": 0.10490000000027067,
+          "totalToLayoutMs": 48.82370000000037
+        },
+        {
+          "fileReadMs": 0.6801000000000386,
+          "parseMs": 0.7665999999999258,
+          "hostImportReadMs": 45.440599999999904,
+          "backupProjectionMs": 3.343699999999899,
+          "pageLayoutMs": 0.14510000000018408,
+          "totalToLayoutMs": 50.37609999999995
+        }
+      ]
+    },
+    {
+      "name": "staff-512",
+      "measures": 512,
+      "events": 2048,
+      "filename": "staff-512.bgp.json",
+      "bytes": 447863,
+      "sha256": "7e6ea044788dc325a80079e9e0e5fcd9641d5511a938a0632b04219c115d2c82",
+      "pages": 13,
+      "projectionFile": "staff-512.projection.json",
+      "projectionSha256": "8c990cb1797a797f686fd3e7da188a40d090758ae5c3ecc6f4f96d8cd4255a99",
+      "stats": {
+        "fileReadMs": {
+          "count": 25,
+          "median": 1.1738000000004831,
+          "p95": 12.756899999998495,
+          "max": 20.24459999999999,
+          "mean": 2.5542040000001
+        },
+        "parseMs": {
+          "count": 25,
+          "median": 3.254899999999907,
+          "p95": 4.885699999998906,
+          "max": 5.101300000000265,
+          "mean": 3.2971360000000276
+        },
+        "hostImportReadMs": {
+          "count": 25,
+          "median": 234.2487999999994,
+          "p95": 273.96280000000115,
+          "max": 351.08270000000084,
+          "mean": 235.47359999999992
+        },
+        "backupProjectionMs": {
+          "count": 25,
+          "median": 17.115200000000186,
+          "p95": 21.938399999999092,
+          "max": 25.48610000000008,
+          "mean": 17.56279999999999
+        },
+        "pageLayoutMs": {
+          "count": 25,
+          "median": 0.46260000000074797,
+          "p95": 0.8936999999987165,
+          "max": 0.9652000000005501,
+          "mean": 0.525244000000057
+        },
+        "totalToLayoutMs": {
+          "count": 25,
+          "median": 256.9490000000005,
+          "p95": 298.4390000000003,
+          "max": 380.46360000000095,
+          "mean": 259.4129840000001
+        }
+      },
+      "samples": [
+        {
+          "fileReadMs": 0.7545000000000073,
+          "parseMs": 2.749699999999393,
+          "hostImportReadMs": 193.48040000000037,
+          "backupProjectionMs": 14.06840000000011,
+          "pageLayoutMs": 0.5626000000002023,
+          "totalToLayoutMs": 211.6156000000001
+        },
+        {
+          "fileReadMs": 0.8274000000001251,
+          "parseMs": 2.6624000000001615,
+          "hostImportReadMs": 205.09950000000026,
+          "backupProjectionMs": 20.680699999999888,
+          "pageLayoutMs": 0.38180000000011205,
+          "totalToLayoutMs": 229.65180000000055
+        },
+        {
+          "fileReadMs": 0.9516999999996187,
+          "parseMs": 3.254899999999907,
+          "hostImportReadMs": 223.75610000000052,
+          "backupProjectionMs": 16.726700000000164,
+          "pageLayoutMs": 0.46230000000014115,
+          "totalToLayoutMs": 245.15170000000035
+        },
+        {
+          "fileReadMs": 0.8307000000004336,
+          "parseMs": 2.727700000000368,
+          "hostImportReadMs": 219.84400000000005,
+          "backupProjectionMs": 15.577799999999115,
+          "pageLayoutMs": 0.4556000000002314,
+          "totalToLayoutMs": 239.4358000000002
+        },
+        {
+          "fileReadMs": 3.5435999999999694,
+          "parseMs": 3.403599999999642,
+          "hostImportReadMs": 221.66610000000037,
+          "backupProjectionMs": 18.296900000000278,
+          "pageLayoutMs": 0.5717999999997119,
+          "totalToLayoutMs": 247.48199999999997
+        },
+        {
+          "fileReadMs": 1.9422999999997046,
+          "parseMs": 3.585300000000643,
+          "hostImportReadMs": 239.95640000000003,
+          "backupProjectionMs": 14.075799999999617,
+          "pageLayoutMs": 0.3710000000000946,
+          "totalToLayoutMs": 259.9308000000001
+        },
+        {
+          "fileReadMs": 1.9111000000002605,
+          "parseMs": 2.9952000000002954,
+          "hostImportReadMs": 246.89309999999932,
+          "backupProjectionMs": 20.282600000000457,
+          "pageLayoutMs": 0.35130000000026484,
+          "totalToLayoutMs": 272.4333000000006
+        },
+        {
+          "fileReadMs": 1.757699999999204,
+          "parseMs": 3.718900000000758,
+          "hostImportReadMs": 236.08389999999963,
+          "backupProjectionMs": 25.48610000000008,
+          "pageLayoutMs": 0.42079999999987194,
+          "totalToLayoutMs": 267.46739999999954
+        },
+        {
+          "fileReadMs": 0.8957000000000335,
+          "parseMs": 3.5002000000004045,
+          "hostImportReadMs": 234.2487999999994,
+          "backupProjectionMs": 17.30040000000008,
+          "pageLayoutMs": 0.40490000000045256,
+          "totalToLayoutMs": 256.35000000000036
+        },
+        {
+          "fileReadMs": 0.8186000000005151,
+          "parseMs": 3.4695999999994456,
+          "hostImportReadMs": 232.6877000000004,
+          "backupProjectionMs": 16.289699999999357,
+          "pageLayoutMs": 0.41450000000077125,
+          "totalToLayoutMs": 253.6801000000005
+        },
+        {
+          "fileReadMs": 0.7205000000003565,
+          "parseMs": 3.0740999999998166,
+          "hostImportReadMs": 252.96730000000025,
+          "backupProjectionMs": 18.015199999999822,
+          "pageLayoutMs": 0.46489999999994325,
+          "totalToLayoutMs": 275.2420000000002
+        },
+        {
+          "fileReadMs": 0.8228000000008251,
+          "parseMs": 3.432699999999386,
+          "hostImportReadMs": 237.70490000000063,
+          "backupProjectionMs": 17.523299999998926,
+          "pageLayoutMs": 0.4335000000010041,
+          "totalToLayoutMs": 259.9172000000008
+        },
+        {
+          "fileReadMs": 1.476699999999255,
+          "parseMs": 2.6898000000001048,
+          "hostImportReadMs": 238.52570000000014,
+          "backupProjectionMs": 17.67200000000048,
+          "pageLayoutMs": 0.49179999999978463,
+          "totalToLayoutMs": 260.85599999999977
+        },
+        {
+          "fileReadMs": 1.659800000001269,
+          "parseMs": 4.885699999998906,
+          "hostImportReadMs": 273.96280000000115,
+          "backupProjectionMs": 17.115200000000186,
+          "pageLayoutMs": 0.8154999999987922,
+          "totalToLayoutMs": 298.4390000000003
+        },
+        {
+          "fileReadMs": 20.24459999999999,
+          "parseMs": 3.079200000000128,
+          "hostImportReadMs": 222.35319999999956,
+          "backupProjectionMs": 16.886399999999412,
+          "pageLayoutMs": 0.4860000000007858,
+          "totalToLayoutMs": 263.0493999999999
+        },
+        {
+          "fileReadMs": 0.6615999999994528,
+          "parseMs": 3.0732000000007247,
+          "hostImportReadMs": 253.2590999999993,
+          "backupProjectionMs": 18.91989999999896,
+          "pageLayoutMs": 0.46260000000074797,
+          "totalToLayoutMs": 276.3763999999992
+        },
+        {
+          "fileReadMs": 2.1916000000001077,
+          "parseMs": 3.48279999999977,
+          "hostImportReadMs": 225.09839999999895,
+          "backupProjectionMs": 17.93000000000029,
+          "pageLayoutMs": 0.4588999999996304,
+          "totalToLayoutMs": 249.16169999999875
+        },
+        {
+          "fileReadMs": 0.824400000001333,
+          "parseMs": 3.4192000000002736,
+          "hostImportReadMs": 217.65299999999843,
+          "backupProjectionMs": 16.341700000000856,
+          "pageLayoutMs": 0.4750999999996566,
+          "totalToLayoutMs": 238.71340000000055
+        },
+        {
+          "fileReadMs": 0.7021000000004278,
+          "parseMs": 3.3117999999994936,
+          "hostImportReadMs": 235.84330000000045,
+          "backupProjectionMs": 16.534100000000763,
+          "pageLayoutMs": 0.5576999999993859,
+          "totalToLayoutMs": 256.9490000000005
+        },
+        {
+          "fileReadMs": 0.8695999999999913,
+          "parseMs": 3.188799999999901,
+          "hostImportReadMs": 217.95610000000124,
+          "backupProjectionMs": 15.057299999998577,
+          "pageLayoutMs": 0.7602999999999156,
+          "totalToLayoutMs": 237.83209999999963
+        },
+        {
+          "fileReadMs": 2.8858999999993102,
+          "parseMs": 2.862600000000384,
+          "hostImportReadMs": 205.02949999999873,
+          "backupProjectionMs": 14.745500000000902,
+          "pageLayoutMs": 0.3863000000001193,
+          "totalToLayoutMs": 225.90979999999945
+        },
+        {
+          "fileReadMs": 1.2555000000011205,
+          "parseMs": 3.591899999999441,
+          "hostImportReadMs": 245.64509999999973,
+          "backupProjectionMs": 14.841599999999744,
+          "pageLayoutMs": 0.7173000000002503,
+          "totalToLayoutMs": 266.0514000000003
+        },
+        {
+          "fileReadMs": 12.756899999998495,
+          "parseMs": 2.58140000000094,
+          "hostImportReadMs": 212.15599999999904,
+          "backupProjectionMs": 17.06130000000121,
+          "pageLayoutMs": 0.36570000000028813,
+          "totalToLayoutMs": 244.92129999999997
+        },
+        {
+          "fileReadMs": 1.1738000000004831,
+          "parseMs": 2.5864000000001397,
+          "hostImportReadMs": 243.8868999999995,
+          "backupProjectionMs": 19.70300000000134,
+          "pageLayoutMs": 0.8936999999987165,
+          "totalToLayoutMs": 268.2438000000002
+        },
+        {
+          "fileReadMs": 1.3760000000002037,
+          "parseMs": 5.101300000000265,
+          "hostImportReadMs": 351.08270000000084,
+          "backupProjectionMs": 21.938399999999092,
+          "pageLayoutMs": 0.9652000000005501,
+          "totalToLayoutMs": 380.46360000000095
+        }
+      ]
+    }
+  ],
+  "invalidReplacement": {
+    "rejected": true,
+    "acceptedSessionPreserved": true,
+    "sha256": "95dc5d951d4aa1e90b9bef5a2e532687cfeb58e9c07fb92f2f95afedc49328df"
+  },
+  "changedFiles": [],
+  "changedInputs": []
+}

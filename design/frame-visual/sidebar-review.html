@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>侧栏呈现 · 视觉审阅目录</title>
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/base.css">
+  <style>
+    body { overflow: auto; padding: 40px; }
+    main { max-width: 960px; margin: 0 auto; }
+    h1 { font-size: 24px; font-weight: 500; margin: 0 0 12px; }
+    p { color: var(--frame-muted); line-height: 1.7; }
+    .samples { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 24px; margin-top: 32px; }
+    section { background: var(--frame-command); padding: 20px; border-radius: 6px; }
+    h2 { font-size: 16px; font-weight: 500; margin: 0 0 8px; }
+    section p { font-size: 12px; min-height: 44px; }
+    a { display: inline-block; color: var(--frame-ink); text-decoration: none; background: var(--frame-canvas); padding: 8px 12px; border-radius: 4px; font-size: 12px; margin: 4px 4px 4px 0; }
+    a:hover { background: var(--frame-surface); }
+    .states { margin-top: 32px; }
+    @media(max-width:720px) { body { padding: 24px; } .samples { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body data-frame-document><main>
+  <h1>侧栏呈现与内容管理</h1>
+  <p>同一组中性视觉示例，检查三种独立呈现及页面内组合。由承载页面决定使用方式。具体外部组件由其他会话设计，操作仅保留在当前页面内存中。</p>
+  <div class="samples">
+    <section><h2>页签</h2><p>一次查看一项内容，切换保留输入和阅读位置。</p>
+      <a href="structure-preview.html?presentation=tabs&contentSide=left">左侧样稿</a><a href="structure-preview.html?presentation=tabs&contentSide=right">右侧样稿</a></section>
+    <section><h2>列表</h2><p>纵向分组，可展开收起；名称和通用控件对齐。</p>
+      <a href="structure-preview.html?presentation=list&contentSide=left">左侧样稿</a><a href="structure-preview.html?presentation=list&contentSide=right">右侧样稿</a></section>
+    <section><h2>网格</h2><p>同时排列多个内容，整行或半行；编辑时选中项显示蓝边。</p>
+      <a href="structure-preview.html?presentation=grid&contentSide=left">左侧样稿</a><a href="structure-preview.html?presentation=grid&contentSide=right">右侧样稿</a></section>
+    <section><h2>分区组合</h2><p>同一页面分别采用页签、网格与列表，每项内容只属于一个区。</p>
+      <a href="structure-preview.html?presentation=mixed&contentSide=left">左侧样稿</a><a href="structure-preview.html?presentation=mixed&contentSide=right">右侧样稿</a></section>
+  </div>
+  <div class="states"><h2>状态与完整流程</h2>
+    <a href="structure-preview.html?presentation=grid&sample=empty">空内容 → 添加</a>
+    <a href="structure-preview.html?presentation=grid&sample=library">内容库</a>
+    <a href="structure-preview.html?presentation=grid&sample=editing">统一布局编辑状态</a>
+    <a href="structure-preview.html?presentation=list&sample=unavailable">暂不可用</a>
+    <a href="structure-preview.html?presentation=tabs&sample=long">长内容与输入保留</a>
+    <a href="runtime-preview.html">默认运行时</a>
+    <a href="content-hosting-review.html">多页面、跨区域与缺失内容完整审阅</a>
+  </div>
+  <p>日常模式可切页、输入、搜索、收放侧栏、调整区域尺寸与整体排布。只有在右侧“工作区布局”组件开启“编辑布局”后，才能改内容呈现、占宽、排列、加入内容或调整图标。内容配置统一确认；取消或 Esc 撤回内容配置，保留工作区调整与普通输入。</p>
+</main></body></html>

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>插件 · 启动配置预览</title>
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/structure-preview.css">
+  <link rel="stylesheet" href="styles/score-view.css">
+  <link rel="stylesheet" href="styles/runtime-preview.css">
+  <link rel="stylesheet" href="styles/runtime-zoom.css">
+  <link rel="stylesheet" href="styles/framework-controls.css">
+  <link rel="stylesheet" href="styles/workspace-layout.css">
+  <link rel="stylesheet" href="styles/command-menu.css">
+  <link rel="stylesheet" href="styles/command-dialog.css">
+  <link rel="stylesheet" href="styles/frame-accessibility.css">
+  <link rel="stylesheet" href="styles/score-info.css">
+  <link rel="stylesheet" href="styles/plugin-startup-preview.css">
+</head>
+<body>
+  <main id="startup-root" data-frame-ui class="startup-preview" aria-label="备份框架插件启动配置">
+    <section class="startup-window" aria-labelledby="startup-title">
+      <header class="startup-header">
+        <h1 id="startup-title">插件</h1>
+        <span class="startup-preview-badge" title="备份框架实际可装配插件。本地预览使用浏览器存储；桌面入口使用宿主存储。">预览</span>
+        <label class="startup-search"><span data-preview-icon="search"></span><input id="startup-search" type="search" placeholder="搜索插件" aria-label="搜索插件"></label>
+        <select id="startup-filter" class="startup-filter" aria-label="筛选下次启动状态">
+          <option value="all">全部</option>
+          <option value="enabled">启用</option>
+          <option value="disabled">停用</option>
+        </select>
+      </header>
+      <div class="startup-content">
+        <section id="startup-list" class="startup-list" aria-label="插件列表"></section>
+        <aside id="startup-detail" class="startup-detail" aria-label="所选插件详情"></aside>
+      </div>
+      <footer class="startup-footer">
+        <span id="startup-feedback" class="startup-feedback" role="status" aria-live="polite">启停在下次启动生效</span>
+        <button id="startup-discard" type="button" class="startup-action" hidden><span data-preview-icon="undo"></span>撤销</button>
+        <button id="startup-apply" type="button" class="startup-action startup-action-primary" hidden><span data-preview-icon="check"></span>保存</button>
+        <button id="startup-retry" type="button" class="startup-action" title="重新读取配置；成功后撤销当前草稿" aria-label="重新读取配置" hidden><span data-preview-icon="undo"></span></button>
+        <button id="startup-open" type="button" class="startup-action" title="用已保存配置启动备份工作区" aria-label="启动备份工作区" hidden><span data-preview-icon="play"></span></button>
+      </footer>
+    </section>
+  </main>
+  <div id="app" data-frame-ui hidden></div>
+  <noscript>请启用 JavaScript 查看交互预览；此文件不需要本地服务器。</noscript>
+  <script src="vendor/plugin-startup-preview.js"></script>
+</body>
+</html>

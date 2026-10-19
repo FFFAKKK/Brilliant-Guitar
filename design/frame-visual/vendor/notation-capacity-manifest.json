@@ -1,0 +1,309 @@
+{
+  "format": 1,
+  "buildId": "aa37f0c9d444908c7ebc58dbdfd8909a405b0047733d13b875b942626299cd61",
+  "policyId": "readonly-staff-drawing-20261008-v1",
+  "sources": [
+    {
+      "path": "design/frame-visual/evidence/document-capacity-20261008/run-02/empty.bgp.json",
+      "bytes": 661,
+      "sha256": "72a94e6375675f357b27d58f6e164b3579d6264e77777275cd64c3be5132c4c5"
+    },
+    {
+      "path": "design/frame-visual/evidence/document-capacity-20261008/run-02/empty.projection.json",
+      "bytes": 261,
+      "sha256": "1c1f73dec74e4701cc57b7063c2386a8474614df40ce70382b447de35ad75365"
+    },
+    {
+      "path": "design/frame-visual/evidence/document-capacity-20261008/run-02/report.json",
+      "bytes": 38115,
+      "sha256": "59fa99d98717f92cb1a0fbec2012e0b8d4c0ee7b40089926652e8d8780f9d6c4"
+    },
+    {
+      "path": "design/frame-visual/evidence/document-capacity-20261008/run-02/staff-128.bgp.json",
+      "bytes": 111479,
+      "sha256": "c470022508e7e50aabe4577432cf9cc977c2171c71e1e691a4d25284b8e66eba"
+    },
+    {
+      "path": "design/frame-visual/evidence/document-capacity-20261008/run-02/staff-128.projection.json",
+      "bytes": 76798,
+      "sha256": "f2dc5744000fe6919f8f4deed31c49181818c5f78630047e3676c0dcde008683"
+    },
+    {
+      "path": "design/frame-visual/evidence/document-capacity-20261008/run-02/staff-16.bgp.json",
+      "bytes": 14195,
+      "sha256": "7209a0c01203d14e578fdb97a4e6041ece1df14cfda44623a16bfba1d12a37ef"
+    },
+    {
+      "path": "design/frame-visual/evidence/document-capacity-20261008/run-02/staff-16.projection.json",
+      "bytes": 9648,
+      "sha256": "c96b7ca731a71d99bb3f43d805186506da6a69abc0aa1f3771952cd726ec6306"
+    },
+    {
+      "path": "design/frame-visual/evidence/document-capacity-20261008/run-02/staff-512.bgp.json",
+      "bytes": 447863,
+      "sha256": "7e6ea044788dc325a80079e9e0e5fcd9641d5511a938a0632b04219c115d2c82"
+    },
+    {
+      "path": "design/frame-visual/evidence/document-capacity-20261008/run-02/staff-512.projection.json",
+      "bytes": 308734,
+      "sha256": "8c990cb1797a797f686fd3e7da188a40d090758ae5c3ecc6f4f96d8cd4255a99"
+    },
+    {
+      "path": "design/frame-visual/notation-capacity-policy-v0.1.json",
+      "bytes": 823,
+      "sha256": "e66b41e8511a98abe974e2f219e639321f2b7fc247547dfbff86f3ab29378a16"
+    },
+    {
+      "path": "design/frame-visual/scripts/build-notation-capacity.mjs",
+      "bytes": 1348,
+      "sha256": "b199381f21132a14a9f76028075a5c8eca9942b1208043095b3d5ba15adf6da7"
+    },
+    {
+      "path": "design/frame-visual/scripts/classic-notation-asset.mjs",
+      "bytes": 743,
+      "sha256": "dce42b25b9d90f9b5e98cc44961e93aab0f7ee5e90d814397233300863b0342b"
+    },
+    {
+      "path": "design/frame-visual/scripts/notation-capacity-assets.mjs",
+      "bytes": 5356,
+      "sha256": "e9411485c80d6e40b1b030e7b7735be0796a2af6022406e4fcf984fc8fe2a623"
+    },
+    {
+      "path": "design/frame-visual/src/score/notation-model.js",
+      "bytes": 762,
+      "sha256": "5fad9a1eb3ef023d4012e9a07475d8bbce79b08af80fecddbe4e4c8f2dfbe46e"
+    },
+    {
+      "path": "design/frame-visual/src/score/vexflow-runtime.js",
+      "bytes": 1276,
+      "sha256": "22362888d8cf1e1c0499c00c856080424987d338a2ed2b78028c07b722e41fc0"
+    },
+    {
+      "path": "design/frame-visual/src/score/vexflow-staff-renderer.js",
+      "bytes": 904,
+      "sha256": "587863df9e0dcc8f68760b219bb02cad10c80cc5121c174f897cb6476a63fd84"
+    },
+    {
+      "path": "design/frame-visual/src/vendor/shared-notation/clef-pitch-range.js",
+      "bytes": 473,
+      "sha256": "5db8cb691faca7853c5a1e6efc02a8585a744581f506af463a689874097129dd"
+    },
+    {
+      "path": "design/frame-visual/src/vendor/shared-notation/compose-notation-pages.js",
+      "bytes": 2317,
+      "sha256": "3a530a5f410d90e771e86cab89a9a120d8fff1de069deff54bbc9b64d83c3d65"
+    },
+    {
+      "path": "design/frame-visual/src/vendor/shared-notation/engraving-metrics.js",
+      "bytes": 512,
+      "sha256": "f00337be03e8f6d25141d480374a69cc9e019b45dd066c7c1cfcd874a85ac0aa"
+    },
+    {
+      "path": "design/frame-visual/src/vendor/shared-notation/key-signature.js",
+      "bytes": 2351,
+      "sha256": "70a27bcfeb1005236fd801ecf8a5797b364906e873252e3d220689a23563f9a2"
+    },
+    {
+      "path": "design/frame-visual/src/vendor/shared-notation/notation-model.js",
+      "bytes": 3739,
+      "sha256": "1bb5b9858bc729d3d4719d2f5fe436942192fbbe21785a8a8f584df39fb89da8"
+    },
+    {
+      "path": "design/frame-visual/src/vendor/shared-notation/note-properties.js",
+      "bytes": 2284,
+      "sha256": "39511cc2b9004cc664656b5e65a051a37671247bb22bdc14353f86d59957e5ca"
+    },
+    {
+      "path": "design/frame-visual/src/vendor/shared-notation/overfull-events.js",
+      "bytes": 691,
+      "sha256": "0e53a322f525e8e22225109f375dd3e8a503d1b2e4ac1f459dd88fe58efebff7"
+    },
+    {
+      "path": "design/frame-visual/src/vendor/shared-notation/paper-flow.js",
+      "bytes": 3431,
+      "sha256": "0baa8e7a7b6304bd8f6cfe440371059024253ad03e3de6732422b5d6fb639ac8"
+    },
+    {
+      "path": "design/frame-visual/src/vendor/shared-notation/rhythmic-anchors.js",
+      "bytes": 2270,
+      "sha256": "0a99b47ae12dd7dab0f8a7107a08c044aa3c74b2117dcc3e856f69de373965b9"
+    },
+    {
+      "path": "design/frame-visual/src/vendor/shared-notation/rule-warning-description.js",
+      "bytes": 929,
+      "sha256": "9f61989d8678913caf014fdc946d1c0a5fc53c12f26020c34ab67f77f16b8a9c"
+    },
+    {
+      "path": "design/frame-visual/src/vendor/shared-notation/score-page-layout.js",
+      "bytes": 2954,
+      "sha256": "77f6d23c7570876d64c0f4a704f37e199d0ac5253082a2dd757ae390b4417bf6"
+    },
+    {
+      "path": "design/frame-visual/src/vendor/shared-notation/source-manifest.json",
+      "bytes": 2061,
+      "sha256": "1a7b0a8ab6fdf7343d308056d9e3e76e92541f502e263fcae460fd9bec867c4b"
+    },
+    {
+      "path": "design/frame-visual/src/vendor/shared-notation/vexflow-note-spec.js",
+      "bytes": 591,
+      "sha256": "561d93982bb5c79ceb928030fc0d5b96dc447455141cc979f2298645bf43cfd3"
+    },
+    {
+      "path": "design/frame-visual/src/vendor/shared-notation/vexflow-renderer.js",
+      "bytes": 10148,
+      "sha256": "6319c9b116987df33bc50a5b997fd8fcdf36f9191c93804e37a3b75fcaac130a"
+    },
+    {
+      "path": "design/frame-visual/src/vendor/shared-notation/vexflow-surface.js",
+      "bytes": 1906,
+      "sha256": "1d102cfab34945a2a6ce4fc50a66d6f4fad42644a28693e46172873dd2efb23a"
+    },
+    {
+      "path": "design/frame-visual/src/vendor/vexflow-bravura.js",
+      "bytes": 728171,
+      "sha256": "2d4451bf31c877cf289cf173452b77a6b08e362e3cdf75a1136e485eed3c0f89"
+    },
+    {
+      "path": "design/frame-visual/tools/capacity-statistics.js",
+      "bytes": 581,
+      "sha256": "554ed95b7ce725124c355380f2f9036a9ecb7d11793300f1f9a1f630e34cab97"
+    },
+    {
+      "path": "design/frame-visual/tools/notation-capacity-page.html",
+      "bytes": 1695,
+      "sha256": "9ac8de2222582baf4fc9f1cc690a6003be4e6975866064a3e2737b2349872f73"
+    },
+    {
+      "path": "design/frame-visual/tools/notation-capacity-page.js",
+      "bytes": 5370,
+      "sha256": "a6e8025d1de8e9b5a3766ab138e97819a55be4f9c242d70e516e22cdbbb4ebfc"
+    },
+    {
+      "path": "design/frame-visual/tools/notation-capacity.js",
+      "bytes": 7463,
+      "sha256": "46b794efc8d2cf81723fa19f832816dc10357523bbbc3198991a631a15d84dad"
+    },
+    {
+      "path": "package-lock.json",
+      "bytes": 1441,
+      "sha256": "f64cf0a181da5a5aaa3a0e7bdf91732622ef3d8a2fb581ea3463770c35236685"
+    },
+    {
+      "path": "shared/notation/clef-pitch-range.ts",
+      "bytes": 488,
+      "sha256": "c04e2ef8b90568fbfed526af9ee84f69184e8c69ae17b7bcc9a2aeb57233fd14"
+    },
+    {
+      "path": "shared/notation/clef-preview.ts",
+      "bytes": 1452,
+      "sha256": "d987c0d7b6dcc27bd55281bff43d9b75cc5c3fb53722518713869febe9a1ceee"
+    },
+    {
+      "path": "shared/notation/compose-notation-pages.ts",
+      "bytes": 2834,
+      "sha256": "023674f5e6dcef8122218ab1b8a4113a571aa765f93a18b50b1427e08f0445ee"
+    },
+    {
+      "path": "shared/notation/engraving-metrics.ts",
+      "bytes": 463,
+      "sha256": "b9ddb52d11a22a76cfa711d2dcdbec8eeec4f8a03ab74b2d369d9268948569ae"
+    },
+    {
+      "path": "shared/notation/key-signature.ts",
+      "bytes": 2782,
+      "sha256": "df26b4c18d60a4e5a7ab0afd87d232fea16406a90d1bfc25f6b31fac287d8e33"
+    },
+    {
+      "path": "shared/notation/measure-edit.ts",
+      "bytes": 878,
+      "sha256": "45952d25fe71aba8d5f6b75ed9b676ed99cb6d95fdefdf466441d575c3fa2a05"
+    },
+    {
+      "path": "shared/notation/notation-model.ts",
+      "bytes": 5172,
+      "sha256": "1530a7afce6a91aa077334ddda663756ceec432c5bcca0f15dc4bf893a1fd196"
+    },
+    {
+      "path": "shared/notation/notation-renderer.ts",
+      "bytes": 2032,
+      "sha256": "3eff403a4e48aaf9fea8af359bc86a50580687206a3156b35d5008e45611a40f"
+    },
+    {
+      "path": "shared/notation/note-properties.ts",
+      "bytes": 3508,
+      "sha256": "9912f6856c6444fbc41d9f22d0575c3c6251cf26e924c7a7c28afdfbc168ce3b"
+    },
+    {
+      "path": "shared/notation/overfull-events.ts",
+      "bytes": 843,
+      "sha256": "ffa1ccd4e7cbffaf66c0633536fc7e960dbb42050d4de0f821518c4d019846ca"
+    },
+    {
+      "path": "shared/notation/paper-flow.ts",
+      "bytes": 4097,
+      "sha256": "ac93f68c2c9c156cd9d12a8ac739a3b2a540489f4d746b013486f119d6e71298"
+    },
+    {
+      "path": "shared/notation/rhythmic-anchors.ts",
+      "bytes": 2932,
+      "sha256": "0d3c372ab7edc8f1c5aa9fe7463b84caa18a600c9045643c54777bb6e3f42072"
+    },
+    {
+      "path": "shared/notation/rule-warning-description.ts",
+      "bytes": 1020,
+      "sha256": "8d5c769418f6ed1fad5a7ad035c967580d5f109969cf5936627e7452547b23da"
+    },
+    {
+      "path": "shared/notation/score-page-layout.ts",
+      "bytes": 3069,
+      "sha256": "f5687ee8fdfc65ddf99f0f76278b5fb1ba8ccb32b2df61dcb111677362bf0976"
+    },
+    {
+      "path": "shared/notation/staff-layout.ts",
+      "bytes": 3260,
+      "sha256": "f68de588141fb67435438be707f9f31629a0ab6c5f3856c7ba86a7b2b1f860a0"
+    },
+    {
+      "path": "shared/notation/tablature-layout.ts",
+      "bytes": 1866,
+      "sha256": "1e727497d59b7e93d85730c0ca7603d18dce19ec57e93af45df9c883d6f966c9"
+    },
+    {
+      "path": "shared/notation/tablature-model.ts",
+      "bytes": 4648,
+      "sha256": "e233e264c48d8a61e284b4dd7f5a117e2521fff47bdd86dd7b99de2b02df9383"
+    },
+    {
+      "path": "shared/notation/tablature-renderer.ts",
+      "bytes": 15408,
+      "sha256": "25595be9bc5ee8a00be50f7fa0089d25bb64f37019da45e8671dcdc140fdf48d"
+    },
+    {
+      "path": "shared/notation/vexflow-note-spec.ts",
+      "bytes": 705,
+      "sha256": "cf8e2b368298e913b5f7fbb659e49503064226ffe0da84633b9c7005e6ee225e"
+    },
+    {
+      "path": "shared/notation/vexflow-renderer.ts",
+      "bytes": 8767,
+      "sha256": "b312a8999349417f0b038e150f2049bfce3252255fcf40179b4bda721a055f15"
+    },
+    {
+      "path": "shared/notation/vexflow-surface.ts",
+      "bytes": 2024,
+      "sha256": "d26c217e387e9a14f8ef329bd758948e8a4c8abee5873ffebc3c82054658b805"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "notation-capacity-preview.html",
+      "bytes": 407926,
+      "sha256": "62ceebd99ebb2379002af4e31329511e7ca7b9f4fdde518d5d5432f21f9562f4"
+    },
+    {
+      "path": "vendor/notation-capacity-preview.js",
+      "bytes": 44645,
+      "sha256": "f76606fead58ac1c6cc533516be3f06368f7fcccca765428f3c47fe1516f0d21"
+    }
+  ]
+}

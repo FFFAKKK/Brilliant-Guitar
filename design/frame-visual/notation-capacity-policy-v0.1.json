@@ -1,0 +1,21 @@
+{
+  "id": "readonly-staff-drawing-20261008-v1",
+  "scope": "Engineering limits for foreground browser drawing; not complete G6 qualification",
+  "minimumTarget": {
+    "os": "Windows",
+    "cpuPhysicalCores": 4,
+    "ramGiB": 8,
+    "referenceDeviceId": null,
+    "status": "planning-target-user-selected"
+  },
+  "warmups": 3,
+  "iterations": 25,
+  "engineFontInitializationMaxMs": 5000,
+  "maxLongTaskMs": 100,
+  "cases": [
+    { "name": "empty", "measures": 1, "events": 0, "pages": 1, "renderToAdoptP95Ms": 100 },
+    { "name": "staff-16", "measures": 16, "events": 64, "pages": 1, "renderToAdoptP95Ms": 200 },
+    { "name": "staff-128", "measures": 128, "events": 512, "pages": 4, "renderToAdoptP95Ms": 1000 },
+    { "name": "staff-512", "measures": 512, "events": 2048, "pages": 13, "renderToAdoptP95Ms": 4000 }
+  ]
+}

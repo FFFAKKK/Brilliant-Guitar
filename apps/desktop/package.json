@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "node scripts/run-tauri.mjs dev",
+    "backup:dev": "node scripts/run-tauri.mjs dev --config src-tauri/tauri.backup.conf.json --no-dev-server --no-watch -- --target-dir target/backup-ui --locked --offline",
+    "backup:build": "node scripts/run-tauri.mjs build --config src-tauri/tauri.backup.conf.json --no-bundle -- --target-dir target/backup-ui --locked --offline",
+    "backup:build:debug": "node scripts/run-tauri.mjs build --config src-tauri/tauri.backup.conf.json --no-bundle --debug -- --target-dir target/backup-ui --locked --offline",
     "build": "node scripts/run-tauri.mjs build --no-bundle",
     "build:no-bundle": "npm run build",
     "package": "node scripts/run-tauri.mjs build",

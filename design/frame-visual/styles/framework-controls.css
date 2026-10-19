@@ -1,0 +1,47 @@
+/* Framework-owned state skin. Private content never opts in implicitly. */
+:is(.v-icon-button,.v-text-button,.v-rail-button,.v-layout-control,.v-menu-item,.fc-row):where([data-frame-ui]) {
+  min-width: 0;
+}
+:is(.v-icon-button,.v-text-button,.v-rail-button,.v-layout-control,.v-menu-item,.fc-row):where([data-frame-ui]):not(:disabled):hover {
+  background-color: var(--frame-hover);
+}
+:is(.v-icon-button,.v-text-button,.v-rail-button,.v-layout-control,.v-menu-item,.fc-row):where([data-frame-ui]):not(:disabled):active {
+  background-color: rgb(0 0 0 / 16%);
+}
+.visual-shell .v-text-button.primary:where([data-frame-ui]):not(:disabled):hover,
+.v-text-button.primary:where([data-frame-ui]):not(:disabled):hover { background-color: var(--frame-selected); filter: brightness(1.1); }
+.visual-shell .v-text-button.primary:where([data-frame-ui]):not(:disabled):active,
+.v-text-button.primary:where([data-frame-ui]):not(:disabled):active { background-color: var(--frame-selected); filter: brightness(.9); }
+:is(.v-icon-button,.v-text-button,.v-rail-button,.v-layout-control,.v-menu-item):where([data-frame-ui]):disabled {
+  color: var(--frame-disabled); filter: none;
+}
+.v-text-button.primary:where([data-frame-ui]):disabled { background: var(--frame-hover); color: var(--frame-disabled); }
+:is(input,select):where([data-frame-ui]):disabled { color: var(--frame-disabled); cursor: default; opacity: 1; -webkit-text-fill-color: var(--frame-disabled); }
+input:where([data-frame-ui])[readonly] { color: var(--frame-muted); cursor: text; }
+input:where([data-frame-ui])[aria-invalid="true"] { color: var(--frame-danger); }
+input:where([data-frame-ui])[type="number"] { appearance: textfield; -moz-appearance: textfield; }
+input:where([data-frame-ui])[type="number"]::-webkit-inner-spin-button,
+input:where([data-frame-ui])[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.v-size-input:where([data-frame-ui]):has(input:where([data-frame-ui]):focus-visible) { outline: 2px solid var(--frame-focus); outline-offset: 1px; }
+.v-size-input:where([data-frame-ui]) input:where([data-frame-ui]):focus-visible { outline: none; }
+.v-search:where([data-frame-ui]):has(input:where([data-frame-ui])[aria-invalid="true"]) { color: var(--frame-danger); }
+.v-layout-target:where([data-frame-ui]) {
+  appearance: none; padding-right: 26px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='m3 4 3 3 3-3' fill='none' stroke='%23afb1b8' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 8px center;
+}
+/* Specimens use the same frame-owned classes and real native states. */
+.fc-button:where([data-frame-ui]) { max-width: 100%; border-radius: 4px; font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
+.fc-button:where([data-frame-ui])[aria-pressed="true"],
+.fc-tab:where([data-frame-ui])[aria-selected="true"] { color: var(--frame-focus); background: rgb(82 143 238 / 12%); }
+.fc-field:where([data-frame-ui]) { display: block; width: 100%; min-width: 0; height: 28px; padding: 0 8px; border: 0; border-radius: 4px; background: var(--frame-canvas); color: var(--frame-ink); font: 12px var(--font-ui); }
+.fc-field:where([data-frame-ui])::placeholder { color: var(--frame-disabled); }
+.fc-label:where([data-frame-ui]) { display: grid; gap: 6px; min-width: 0; font-size: 12px; color: var(--frame-muted); }
+.fc-help:where([data-frame-ui]) { margin: 4px 0 0; font-size: 11px; line-height: 1.6; color: var(--frame-muted); overflow-wrap: anywhere; }
+.fc-help:where([data-frame-ui])[data-tone="error"] { color: var(--frame-danger); }
+.fc-group:where([data-frame-ui]) { display: flex; align-items: center; gap: 4px; min-width: 0; flex-wrap: wrap; }
+.fc-row:where([data-frame-ui]) { width: 100%; min-height: 32px; padding: 4px 8px; display: flex; align-items: center; gap: 8px; border-radius: 4px; text-align: left; }
+.fc-row:where([data-frame-ui])[aria-pressed="true"] { background: rgb(82 143 238 / 12%); color: var(--frame-focus); }
+.fc-row-name:where([data-frame-ui]) { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.fc-count:where([data-frame-ui]) { flex: none; color: var(--frame-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.fc-hint:where([data-frame-ui]) { background: var(--frame-surface); padding: 6px 8px; border-radius: 4px; font-size: 11px; width: fit-content; max-width: 100%; overflow-wrap: anywhere; }

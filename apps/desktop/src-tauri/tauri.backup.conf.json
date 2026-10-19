@@ -1,0 +1,30 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Brilliant Guitar Backup",
+  "identifier": "com.brilliantguitar.backup",
+  "build": {
+    "beforeDevCommand": {
+      "script": "node scripts/build-backup-ui.mjs",
+      "cwd": "..",
+      "wait": true
+    },
+    "devUrl": null,
+    "beforeBuildCommand": {
+      "script": "node scripts/build-backup-ui.mjs",
+      "cwd": "..",
+      "wait": true
+    },
+    "frontendDist": "../../../design/frame-visual/dist/desktop"
+  },
+  "app": {
+    "windows": [{ "label": "main", "title": "Brilliant Guitar", "width": 1040, "height": 700,
+      "minWidth": 760, "minHeight": 520, "center": true, "resizable": true, "decorations": true, "backgroundColor": "#151617" }],
+    "security": {
+      "capabilities": ["default", { "identifier": "backup-startup-window", "windows": ["main"],
+        "permissions": ["core:window:allow-set-size", "core:window:allow-set-min-size", "core:window:allow-maximize", "core:window:allow-unmaximize"] }]
+    }
+  },
+  "bundle": {
+    "active": false
+  }
+}

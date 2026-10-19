@@ -1,0 +1,28 @@
+/* Closed-region handles stay inside permanent chrome, outside the score stage. */
+.visual-shell button:where([data-frame-ui]).v-edge-handle {
+  position: absolute; z-index: 6; display: grid; place-items: center; padding: 0;
+  border: 0; background: transparent; color: var(--frame-muted); touch-action: none;
+}
+.visual-shell button:where([data-frame-ui]).v-edge-handle:not(:disabled):hover,
+.visual-shell button:where([data-frame-ui]).v-edge-handle:not(:disabled):active { background: transparent; }
+.v-edge-handle:where([data-frame-ui])[data-edge="left"] { width: 6px; height: 64px; right: 0; top: calc(50% - 32px); cursor: ew-resize; }
+.v-edge-handle:where([data-frame-ui])[data-edge="right"] { width: 6px; height: 64px; left: 0; top: calc(50% - 32px); cursor: ew-resize; }
+/* One shell-relative, menu-safe anchor for both horizontal edges. */
+.visual-shell button:where([data-frame-ui]).v-edge-handle[data-edge="top"] {
+  position: absolute; left: var(--frame-horizontal-handle-left, calc(50% - 32px));
+  width: var(--frame-horizontal-handle-width, 64px); height: 12px;
+  bottom: 0; overflow: clip; cursor: ns-resize;
+}
+.v-edge-handle:where([data-frame-ui])[data-edge="voice"] { width: var(--frame-horizontal-handle-width, 64px); height: 12px; left: var(--frame-horizontal-handle-left, calc(50% - 32px)); top: 0; overflow: clip; cursor: ns-resize; }
+.v-edge-ink:where([data-frame-ui]) { display: block; width: 3px; height: 28px; border-radius: 2px; background: var(--frame-grip); opacity: 0; pointer-events: none; }
+.v-edge-handle:where([data-frame-ui])[data-edge="top"] .v-edge-ink:where([data-frame-ui]), .v-edge-handle:where([data-frame-ui])[data-edge="voice"] .v-edge-ink:where([data-frame-ui]) { width: 28px; height: 3px; }
+.v-edge-handle:where([data-frame-ui]):focus-visible { outline: none; }
+.v-edge-handle:where([data-frame-ui]):focus-visible .v-edge-ink:where([data-frame-ui]), .v-edge-handle:where([data-frame-ui])[data-resizing="true"] .v-edge-ink:where([data-frame-ui]) { background: var(--frame-focus); }
+
+/* Reserve matching inner lanes; keep the 40px rails and 32px icon targets. */
+.visual-shell[data-runtime="workspace"] .v-icon-rail:where([data-frame-ui]) > :is(.v-rail-actions,.v-rail-list,.v-rail-footer):where([data-frame-ui]) { padding-left: 2px; padding-right: 6px; }
+.visual-shell[data-runtime="workspace"] .v-page-rail:where([data-frame-ui]) > .v-rail-list:where([data-frame-ui]) { padding-left: 6px; padding-right: 2px; }
+.visual-shell[data-runtime="workspace"] .v-top:where([data-frame-ui]) > .v-grip::after,
+.visual-shell[data-runtime="workspace"] .v-voice-header:where([data-frame-ui]) > .v-grip::after {
+  left: calc(var(--frame-horizontal-handle-x, 50%) - 10px); top: 3px;
+}

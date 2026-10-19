@@ -1,0 +1,59 @@
+/* Shared docks. Top/bottom take part in height allocation; left/right float over the stage. */
+.dock { position: relative; min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--surface-2); }
+.dock[data-state="empty"], .dock[data-state="closed"] { visibility: hidden; }
+.dock-top, .dock-bottom { overflow: hidden; }
+.dock-top { border-bottom: 1px solid var(--line); }
+.dock-bottom { border-top: 1px solid var(--line); }
+
+.dock-left, .dock-right {
+  position: absolute; top: 0; bottom: 0; z-index: 4;
+  width: var(--dock-size);
+  border-radius: 0;
+  box-shadow: none; border: 1px solid var(--line);
+  transition: none;
+}
+.dock-left { left: 0; }
+.dock-right { right: 0; }
+.dock-left[data-state="closed"], .dock-left[data-state="empty"] { transform: translateX(calc(-100% - var(--gap) * 2)); opacity: 0; visibility: visible; pointer-events: none; }
+.dock-right[data-state="closed"], .dock-right[data-state="empty"] { transform: translateX(calc(100% + var(--gap) * 2)); opacity: 0; visibility: visible; pointer-events: none; }
+.dock.is-resizing { transition: none; user-select: none; }
+
+/* header: tab strip only when a dock holds more than one component */
+.dock-header { flex: none; display: flex; align-items: center; gap: 4px; min-height: 36px; padding: 4px 4px 0 8px; }
+.dock-top .dock-header { display: none; }
+.dock[data-stacked="flat"] .dock-tabs { visibility: hidden; }
+.dock-tabs { flex: 1; min-width: 0; display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+.dock-tab { position: relative; height: 28px; padding: 0 10px; border-radius: var(--radius-s); color: var(--text-3); white-space: nowrap; transition: none; }
+.dock-tab:hover { color: var(--text-1); }
+.dock-tab[aria-selected="true"] { color: var(--text-1); background: var(--block); }
+.dock-actions { display: flex; }
+.dock-action { width: 28px; height: 28px; display: grid; place-items: center; border-radius: var(--radius-s); color: var(--text-3); transition: none; }
+.dock-action:hover { color: var(--text-1); background: var(--block); }
+
+.dock-body { flex: 1; min-height: 0; position: relative; display: flex; gap: var(--gap); padding: var(--gap); }
+.dock-top .dock-body { align-items: stretch; padding: 6px var(--gap); }
+.dock-left .dock-body, .dock-right .dock-body, .dock-bottom .dock-body { flex-direction: column; overflow: auto; }
+.dock-body > .component-cell { flex: 1; min-width: 0; min-height: 0; }
+.dock-top .dock-body > .component-cell { flex: 0 1 auto; min-width: 120px; }
+.dock-top .dock-body > .component-cell:last-child { margin-left: auto; }
+
+/* rail: window too small for the full dock; components collapse to icon entries */
+.dock-rail { display: none; }
+.dock[data-state="rail"] { width: var(--rail-w); }
+.dock[data-state="rail"] .dock-header, .dock[data-state="rail"] .dock-body, .dock[data-state="rail"] .dock-grip { display: none; }
+.dock[data-state="rail"] .dock-rail { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0; }
+.dock-bottom[data-state="rail"] { width: auto; }
+.dock-bottom[data-state="rail"] .dock-rail { flex-direction: row; justify-content: center; padding: 0 6px; height: 100%; }
+.rail-button { width: 32px; height: 32px; display: grid; place-items: center; border-radius: var(--radius-s); color: var(--text-2); transition: none; }
+.rail-button:hover, .rail-button[aria-pressed="true"] { background: var(--block); color: var(--text-1); }
+.rail-initial { font-weight: 600; font-size: 12px; }
+
+/* resize grips sit on the inner edge */
+.dock-grip { position: absolute; z-index: 2; touch-action: none; }
+.dock-left .dock-grip { top: 12px; bottom: 12px; right: -4px; width: 8px; cursor: ew-resize; }
+.dock-right .dock-grip { top: 12px; bottom: 12px; left: -4px; width: 8px; cursor: ew-resize; }
+.dock-bottom .dock-grip { left: 0; right: 0; top: -4px; height: 8px; cursor: ns-resize; }
+.dock-grip::after { content: ""; position: absolute; inset: 0; margin: auto; border-radius: 2px; background: var(--line-strong); opacity: 1; transition: none; }
+.dock-left .dock-grip::after, .dock-right .dock-grip::after { width: 3px; height: 32px; }
+.dock-bottom .dock-grip::after { height: 3px; width: 32px; }
+.dock-grip:hover::after, .dock-grip:focus-visible::after, .dock.is-resizing .dock-grip::after { opacity: 1; }

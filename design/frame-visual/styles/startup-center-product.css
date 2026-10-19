@@ -1,0 +1,14 @@
+@import "./startup-center-preview.css";
+/* Application shell: preserve the approved welcome geometry and original workspace. */
+body.startup-product { padding: 16px; }
+body.startup-product.startup-workspace-active { display: block; padding: 0; min-height: 0; height: 100vh; overflow: hidden; }
+body.startup-product.startup-workspace-active #app { width: 100%; height: 100%; }
+.launch-center .launch-icon-button { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; flex: none; color: var(--frame-muted); border-radius: var(--radius-s); }
+.launch-center .launch-icon-button:hover { background: var(--frame-hover); color: var(--frame-ink); }
+.launch-center .launch-icon-button:disabled { color: var(--frame-disabled); cursor: default; }
+.launch-home-footer #launch-status { margin-right: auto; }
+.launch-home-footer #launch-status[data-error="true"] { color: var(--frame-danger); }
+.launch-file-placeholder { width: 100%; height: 100%; display: grid; place-items: center; color: var(--frame-disabled); background: var(--frame-surface); }
+.launch-file-placeholder .launch-icon { width: 40px; height: 40px; }
+.v-app-mark[data-error="true"] { color: var(--frame-danger); }
+.launch-center #launch-appearance-status[data-error="true"] { color: var(--frame-danger); }

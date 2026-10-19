@@ -1,0 +1,26 @@
+[
+  {
+    "name": "empty",
+    "projectionFile": "empty.projection.json",
+    "pages": 1,
+    "sha256": "2f0e778a2e9e2ba9fe46508f7270615e78ddbb1339b5424f07c136aa51b6d003"
+  },
+  {
+    "name": "staff-16",
+    "projectionFile": "staff-16.projection.json",
+    "pages": 1,
+    "sha256": "3b39ad3c7b9c86e16407542c97e8889de73604ad2a6e4a8217ac833688a09747"
+  },
+  {
+    "name": "staff-128",
+    "projectionFile": "staff-128.projection.json",
+    "pages": 4,
+    "sha256": "2ff864cbf87276f61f2b5141c94636f68c5f582ca47da06298d2e86c3133cac7"
+  },
+  {
+    "name": "staff-512",
+    "projectionFile": "staff-512.projection.json",
+    "pages": 13,
+    "sha256": "ff05313e66df1ab679a2f7c7ce63a485893fcbf0ad6f6d8ccbedd9efc5b541c6"
+  }
+]
