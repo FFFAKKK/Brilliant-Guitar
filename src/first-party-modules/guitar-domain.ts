@@ -2,9 +2,9 @@ import type { JsonObject } from "../core-kernel/domain/extensions";
 import type { ScoreDocument } from "../core-kernel/domain/score-document";
 import { readExactDataRecord } from "../core-kernel/registry/strict-codec";
 import {
-  defineFrettedInstrumentDomainV1,
-  type FrettedInstrumentReadV1,
-  type FrettedInstrumentStateV1,
+  defineFrettedInstrumentDomainV2,
+  type FrettedInstrumentReadV2,
+  type FrettedInstrumentStateV2,
   type FrettedPositionV1,
   type FrettedStringTuningV1,
   type FrettedTechniqueAdapterV1,
@@ -54,7 +54,7 @@ export type GuitarTechniqueV1 =
     };
 
 export type GuitarDomainStateV1 =
-  & Omit<FrettedInstrumentStateV1<GuitarTechniqueV1>, "stringCount">
+  & Omit<FrettedInstrumentStateV2<GuitarTechniqueV1>, "stringCount">
   & { readonly stringCount: 6 };
 
 export interface GuitarTechniqueDefinitionV1 {
@@ -180,11 +180,11 @@ export const GUITAR_TUNING_PRESETS_V1: readonly GuitarTuningPresetV1[] = Object.
 ]);
 
 /** Data-only concrete profile. Family behavior is supplied by the shared fretted-domain factory. */
-export const GUITAR_INSTRUMENT_PROFILE_V1 = Object.freeze({
+export const GUITAR_INSTRUMENT_PROFILE_V2 = Object.freeze({
   id: GUITAR_DOMAIN_NAMESPACE,
   family: "fretted-string" as const,
   stringCount: 6 as const,
-  fretCount: 24,
+  fretCount: null,
   capoFret: 0,
   tuning: STANDARD_GUITAR_TUNING_V1,
   writtenPitchOffsetSemitones: 12,
@@ -308,16 +308,16 @@ const guitarTechniques: FrettedTechniqueAdapterV1<GuitarTechniqueV1> = Object.fr
   },
 });
 
-const guitarDomain = defineFrettedInstrumentDomainV1({
-  id: GUITAR_INSTRUMENT_PROFILE_V1.id,
+const guitarDomain = defineFrettedInstrumentDomainV2({
+  id: GUITAR_INSTRUMENT_PROFILE_V2.id,
   displayName: "Guitar",
-  schemaVersion: 1,
-  stringCount: GUITAR_INSTRUMENT_PROFILE_V1.stringCount,
-  fretCount: GUITAR_INSTRUMENT_PROFILE_V1.fretCount,
-  capoFret: GUITAR_INSTRUMENT_PROFILE_V1.capoFret,
-  tuning: GUITAR_INSTRUMENT_PROFILE_V1.tuning,
-  writtenPitchOffsetSemitones: GUITAR_INSTRUMENT_PROFILE_V1.writtenPitchOffsetSemitones,
-  supportsChords: GUITAR_INSTRUMENT_PROFILE_V1.supportsChords,
+  schemaVersion: 2,
+  stringCount: GUITAR_INSTRUMENT_PROFILE_V2.stringCount,
+  fretCount: GUITAR_INSTRUMENT_PROFILE_V2.fretCount,
+  capoFret: GUITAR_INSTRUMENT_PROFILE_V2.capoFret,
+  tuning: GUITAR_INSTRUMENT_PROFILE_V2.tuning,
+  writtenPitchOffsetSemitones: GUITAR_INSTRUMENT_PROFILE_V2.writtenPitchOffsetSemitones,
+  supportsChords: GUITAR_INSTRUMENT_PROFILE_V2.supportsChords,
   matchesInstrument: (instrument) => instrument.writtenToSounding.diatonicSteps === -7
     && instrument.writtenToSounding.chromaticSemitones === -12,
   techniques: guitarTechniques,
@@ -330,7 +330,7 @@ export function readPartGuitarDomainV1(
   document: Pick<ScoreDocument, "extensions">,
   partId: string,
 ): GuitarDomainReadV1 {
-  return guitarDomain.readPart(document, partId) as FrettedInstrumentReadV1<GuitarTechniqueV1> as GuitarDomainReadV1;
+  return guitarDomain.readPart(document, partId) as FrettedInstrumentReadV2<GuitarTechniqueV1> as GuitarDomainReadV1;
 }
 
 export function compileGuitarDomainModuleCatalogV1() {

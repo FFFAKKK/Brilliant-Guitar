@@ -113,3 +113,54 @@ test("the fretted family factory builds a four-string module without Guitar bran
     },
   );
 });
+
+test("the legacy schema 1 family keeps its physical fret admission contract", () => {
+  const catalog = bassDomain.compileCatalog();
+  assert.ok(catalog.ok);
+  const created = CommandBus.createIntegrated(bassScore(), catalog.catalog);
+  assert.ok(created.ok);
+  assert.equal(created.value.submit({ commandVersion: 1, commandId: bassDomain.commandIds.initialize,
+    target: { kind: "part", partId: "part-1" }, payload: {} }).status, "committed");
+  const before = created.value.read();
+  assert.equal(created.value.submit({ commandVersion: 1, commandId: bassDomain.commandIds.setPosition,
+    target: { kind: "part", partId: "part-1" },
+    payload: { noteId: "note-1", position: { stringNumber: 4, fret: 22 } } }).status, "rejected");
+  assert.deepEqual(created.value.read(), before);
+});
+
+test("a schema 1 fretted provider preserves newer physical facts losslessly in read-only mode", () => {
+  const catalog = bassDomain.compileCatalog();
+  assert.ok(catalog.ok);
+  const created = CommandBus.createIntegrated(bassScore(), catalog.catalog);
+  assert.ok(created.ok);
+  assert.equal(created.value.submit({
+    commandVersion: 1,
+    commandId: bassDomain.commandIds.initialize,
+    target: { kind: "part", partId: "part-1" },
+    payload: {},
+  }).status, "committed");
+  const initialized = created.value.read();
+  assert.ok(initialized.ok);
+  const source: ScoreDocument = {
+    ...initialized.value.snapshot.document,
+    extensions: initialized.value.snapshot.document.extensions.map(block => ({
+      ...block,
+      schemaVersion: 2,
+      payload: { ...block.payload, fretCount: null },
+    })),
+  };
+  const reopened = CommandBus.createIntegrated(source, catalog.catalog);
+  assert.ok(reopened.ok);
+  const before = reopened.value.read();
+  assert.ok(before.ok);
+  assert.equal(before.value.writeAvailability.status, "read-only");
+  assert.deepEqual(before.value.snapshot.document, source);
+  assert.equal(bassDomain.readPart(source, "part-1").status, "invalid");
+  assert.equal(reopened.value.submit({
+    commandVersion: 1,
+    commandId: bassDomain.commandIds.setPosition,
+    target: { kind: "part", partId: "part-1" },
+    payload: { noteId: "note-1", position: { stringNumber: 4, fret: 0 } },
+  }).status, "rejected");
+  assert.deepEqual(reopened.value.read(), before);
+});

@@ -111,6 +111,42 @@ export interface DefinedFrettedInstrumentDomainV1<TTechnique extends FrettedTech
   compileCatalog(): OfficialModuleCatalogCompilationResultV1;
 }
 
+/** Schema 2 separates physical construction from the notation's numeric language. */
+export interface FrettedInstrumentStateV2<TTechnique extends FrettedTechniqueIdentityV1>
+  extends Omit<FrettedInstrumentStateV1<TTechnique>, "fretCount"> {
+  readonly fretCount: number | null;
+}
+export interface FrettedInstrumentProfileV2<TTechnique extends FrettedTechniqueIdentityV1>
+  extends Omit<FrettedInstrumentProfileV1<TTechnique>, "schemaVersion" | "fretCount"> {
+  readonly schemaVersion: 2;
+  readonly fretCount: number | null;
+}
+export type FrettedInstrumentReadV2<TTechnique extends FrettedTechniqueIdentityV1> =
+  | { readonly status: "absent" }
+  | { readonly status: "valid"; readonly state: FrettedInstrumentStateV2<TTechnique> }
+  | { readonly status: "invalid" };
+export interface DefinedFrettedInstrumentDomainV2<TTechnique extends FrettedTechniqueIdentityV1>
+  extends Omit<DefinedFrettedInstrumentDomainV1<TTechnique>, "readPart"> {
+  readPart(document: Pick<ScoreDocument, "extensions">, partId: string): FrettedInstrumentReadV2<TTechnique>;
+}
+
+export function defineFrettedInstrumentDomainV1<TTechnique extends FrettedTechniqueIdentityV1>(
+  profile: FrettedInstrumentProfileV1<TTechnique>,
+): DefinedFrettedInstrumentDomainV1<TTechnique> {
+  const domain = createFrettedInstrumentDomain(profile);
+  return Object.freeze({ ...domain, readPart(document: Pick<ScoreDocument, "extensions">, partId: string) {
+    const read = domain.readPart(document, partId);
+    if (read.status !== "valid") return read;
+    if (read.state.fretCount === null) return { status: "invalid" as const };
+    return { status: "valid" as const, state: { ...read.state, fretCount: read.state.fretCount } };
+  } });
+}
+export function defineFrettedInstrumentDomainV2<TTechnique extends FrettedTechniqueIdentityV1>(
+  profile: FrettedInstrumentProfileV2<TTechnique>,
+): DefinedFrettedInstrumentDomainV2<TTechnique> {
+  return createFrettedInstrumentDomain(profile);
+}
+
 type InitializeEditV1 = { readonly kind: "initialize"; readonly partId: string };
 type SetTuningEditV1 = {
   readonly kind: "set-tuning";
@@ -175,14 +211,18 @@ function decodePitch(value: unknown): WrittenPitch | undefined {
 }
 
 function validateProfile<TTechnique extends FrettedTechniqueIdentityV1>(
-  profile: FrettedInstrumentProfileV1<TTechnique>,
+  profile: FrettedInstrumentProfileV1<TTechnique> | FrettedInstrumentProfileV2<TTechnique>,
 ): void {
-  if (!DOTTED_ID.test(profile.id) || !profile.displayName.trim()) {
+  if (!DOTTED_ID.test(profile.id) || !profile.displayName.trim()
+    || (profile.schemaVersion !== 1 && profile.schemaVersion !== 2)) {
     throw new Error(`Invalid fretted instrument profile identity: ${profile.id}`);
   }
   if (!Number.isSafeInteger(profile.stringCount) || profile.stringCount < 1 || profile.stringCount > 32
-    || !Number.isSafeInteger(profile.fretCount) || profile.fretCount < 1 || profile.fretCount > 36
-    || !Number.isSafeInteger(profile.capoFret) || profile.capoFret < 0 || profile.capoFret > profile.fretCount
+    || (profile.schemaVersion === 1
+      ? !Number.isSafeInteger(profile.fretCount) || profile.fretCount < 1 || profile.fretCount > 36
+      : profile.fretCount !== null && (!Number.isSafeInteger(profile.fretCount) || profile.fretCount < 1))
+    || !Number.isSafeInteger(profile.capoFret) || profile.capoFret < 0
+    || (profile.schemaVersion === 1 && profile.capoFret > profile.fretCount)
     || !Number.isSafeInteger(profile.writtenPitchOffsetSemitones)
     || profile.writtenPitchOffsetSemitones < -96 || profile.writtenPitchOffsetSemitones > 96
     || profile.tuning.length !== profile.stringCount) {
@@ -200,9 +240,9 @@ function validateProfile<TTechnique extends FrettedTechniqueIdentityV1>(
  * Creates the complete official-domain module for one fretted instrument.
  * Concrete instruments provide only a profile and strict technique adapter.
  */
-export function defineFrettedInstrumentDomainV1<TTechnique extends FrettedTechniqueIdentityV1>(
-  profile: FrettedInstrumentProfileV1<TTechnique>,
-): DefinedFrettedInstrumentDomainV1<TTechnique> {
+function createFrettedInstrumentDomain<TTechnique extends FrettedTechniqueIdentityV1>(
+  profile: FrettedInstrumentProfileV1<TTechnique> | FrettedInstrumentProfileV2<TTechnique>,
+): DefinedFrettedInstrumentDomainV2<TTechnique> {
   validateProfile(profile);
   const namespace = profile.id;
   const source = {
@@ -217,6 +257,7 @@ export function defineFrettedInstrumentDomainV1<TTechnique extends FrettedTechni
     removeTechnique: `${namespace}.remove-technique`,
   });
   const applyMutationEffect = `${namespace}.apply-mutation`;
+  const supportedVersions = profile.schemaVersion === 1 ? [1] : [1, 2];
 
   function issue(reason: string): ModuleKernelIssue {
     const result = createModuleKernelIssueV1({
@@ -241,26 +282,30 @@ export function defineFrettedInstrumentDomainV1<TTechnique extends FrettedTechni
     return tuning;
   }
 
-  function decodePosition(value: unknown, fretCount: number): FrettedPositionV1 | undefined {
+  function decodePosition(value: unknown, maxFret: number): FrettedPositionV1 | undefined {
     const row = readExactDataRecord(value, ["noteId", "stringNumber", "fret"]);
     return isEntityId(row?.noteId)
       && typeof row.stringNumber === "number" && Number.isSafeInteger(row.stringNumber)
       && row.stringNumber >= 1 && row.stringNumber <= profile.stringCount
       && typeof row.fret === "number" && Number.isSafeInteger(row.fret)
-      && row.fret >= 0 && row.fret <= fretCount
+      && row.fret >= 0 && row.fret <= maxFret
       ? { noteId: row.noteId, stringNumber: row.stringNumber, fret: row.fret }
       : undefined;
   }
 
-  function decodeState(value: unknown): FrettedInstrumentStateV1<TTechnique> | undefined {
+  function decodeState(value: unknown, schemaVersion: number): FrettedInstrumentStateV2<TTechnique> | undefined {
     const row = readExactDataRecord(value, [
       "stringCount", "fretCount", "capoFret", "tuning", "placements", "techniques",
     ]);
-    if (row?.stringCount !== profile.stringCount
-      || typeof row.fretCount !== "number" || !Number.isSafeInteger(row.fretCount)
-      || row.fretCount < 1 || row.fretCount > 36
-      || typeof row.capoFret !== "number" || !Number.isSafeInteger(row.capoFret)
-      || row.capoFret < 0 || row.capoFret > row.fretCount) return undefined;
+    if (row?.stringCount !== profile.stringCount || !supportedVersions.includes(schemaVersion)) return undefined;
+    const fretCount = row.fretCount;
+    if (schemaVersion === 1
+      ? typeof fretCount !== "number" || !Number.isSafeInteger(fretCount) || fretCount < 1 || fretCount > 36
+      : fretCount !== null && (typeof fretCount !== "number" || !Number.isSafeInteger(fretCount) || fretCount < 1)) return undefined;
+    if (typeof row.capoFret !== "number" || !Number.isSafeInteger(row.capoFret) || row.capoFret < 0
+      || (schemaVersion === 1 && (typeof fretCount !== "number" || row.capoFret > fretCount))) return undefined;
+    const maxFret = schemaVersion === 1 && typeof fretCount === "number"
+      ? fretCount - row.capoFret : Number.MAX_SAFE_INTEGER - row.capoFret;
     const tuning = decodeTuning(row.tuning);
     if (tuning === undefined || !Array.isArray(row.placements) || !Array.isArray(row.techniques)) return undefined;
 
@@ -268,7 +313,7 @@ export function defineFrettedInstrumentDomainV1<TTechnique extends FrettedTechni
     const noteIds = new Set<string>();
     let previousNoteId: string | undefined;
     for (const value of row.placements) {
-      const placement = decodePosition(value, row.fretCount);
+      const placement = decodePosition(value, maxFret);
       if (placement === undefined || noteIds.has(placement.noteId)
         || (previousNoteId !== undefined && previousNoteId >= placement.noteId)) return undefined;
       placements.push(placement);
@@ -289,7 +334,7 @@ export function defineFrettedInstrumentDomainV1<TTechnique extends FrettedTechni
     }
     return {
       stringCount: profile.stringCount,
-      fretCount: row.fretCount,
+      fretCount: typeof fretCount === "number" ? fretCount : null,
       capoFret: row.capoFret,
       tuning,
       placements,
@@ -297,7 +342,7 @@ export function defineFrettedInstrumentDomainV1<TTechnique extends FrettedTechni
     };
   }
 
-  function initialState(): FrettedInstrumentStateV1<TTechnique> {
+  function initialState(): FrettedInstrumentStateV2<TTechnique> {
     return {
       stringCount: profile.stringCount,
       fretCount: profile.fretCount,
@@ -311,7 +356,7 @@ export function defineFrettedInstrumentDomainV1<TTechnique extends FrettedTechni
     };
   }
 
-  function encodeState(state: FrettedInstrumentStateV1<TTechnique>): JsonObject {
+  function encodeState(state: FrettedInstrumentStateV2<TTechnique>): JsonObject {
     const tuning: JsonObject[] = state.tuning.map((entry) => ({
       stringNumber: entry.stringNumber,
       soundingPitch: { ...entry.soundingPitch },
@@ -336,9 +381,9 @@ export function defineFrettedInstrumentDomainV1<TTechnique extends FrettedTechni
   function readState(
     view: DomainContributionReadViewV1,
     partId: string,
-  ): FrettedInstrumentStateV1<TTechnique> | undefined {
+  ): FrettedInstrumentStateV2<TTechnique> | undefined {
     const block = blockForPart(view.compatibleExtensions, partId);
-    return block?.schemaVersion === profile.schemaVersion ? decodeState(block.payload) : undefined;
+    return block && supportedVersions.includes(block.schemaVersion) ? decodeState(block.payload, block.schemaVersion) : undefined;
   }
 
   function locateNotes(view: DomainContributionReadViewV1, partId: string): ReadonlyMap<string, FrettedLocatedNoteV1> {
@@ -366,16 +411,20 @@ export function defineFrettedInstrumentDomainV1<TTechnique extends FrettedTechni
   }
 
   function writtenPitchForPosition(
-    state: FrettedInstrumentStateV1<TTechnique>,
+    state: FrettedInstrumentStateV2<TTechnique>,
     position: Omit<FrettedPositionV1, "noteId">,
   ): WrittenPitch | undefined {
     const tuning = state.tuning[position.stringNumber - 1];
-    if (tuning === undefined || position.fret < 0
-      || position.fret + state.capoFret > state.fretCount) return undefined;
+    if (tuning === undefined || !Number.isSafeInteger(position.fret) || position.fret < 0
+      || position.fret > Number.MAX_SAFE_INTEGER - state.capoFret
+      || (profile.schemaVersion === 1 && state.fretCount !== null
+        && position.fret + state.capoFret > state.fretCount)) return undefined;
     const natural = NATURAL_SEMITONES[tuning.soundingPitch.step];
-    const soundingChromatic = tuning.soundingPitch.octave * 12 + natural
-      + tuning.soundingPitch.alter + state.capoFret + position.fret;
-    const writtenChromatic = soundingChromatic + profile.writtenPitchOffsetSemitones;
+    let writtenChromatic = tuning.soundingPitch.octave * 12 + natural + tuning.soundingPitch.alter;
+    for (const offset of [state.capoFret, position.fret, profile.writtenPitchOffsetSemitones]) {
+      writtenChromatic += offset;
+      if (!Number.isSafeInteger(writtenChromatic)) return undefined;
+    }
     const pitchClass = ((writtenChromatic % 12) + 12) % 12;
     const spelling = SHARP_SPELLING[pitchClass];
     const octave = Math.floor(writtenChromatic / 12);
@@ -418,7 +467,7 @@ export function defineFrettedInstrumentDomainV1<TTechnique extends FrettedTechni
   function validateState(
     view: DomainContributionReadViewV1,
     partId: string,
-    state: FrettedInstrumentStateV1<TTechnique>,
+    state: FrettedInstrumentStateV2<TTechnique>,
   ): readonly ModuleKernelIssue[] {
     if (!matchesPart(view, partId)) return [issue("unsupported-instrument")];
     const notes = locateNotes(view, partId);
@@ -445,9 +494,9 @@ export function defineFrettedInstrumentDomainV1<TTechnique extends FrettedTechni
   }
 
   function updatePosition(
-    state: FrettedInstrumentStateV1<TTechnique>,
+    state: FrettedInstrumentStateV2<TTechnique>,
     edit: SetPositionEditV1,
-  ): FrettedInstrumentStateV1<TTechnique> {
+  ): FrettedInstrumentStateV2<TTechnique> {
     const placements = state.placements.filter((entry) => entry.noteId !== edit.noteId);
     if (edit.position !== null) placements.push({ noteId: edit.noteId, ...edit.position });
     placements.sort((left, right) => compareText(left.noteId, right.noteId));
@@ -455,9 +504,9 @@ export function defineFrettedInstrumentDomainV1<TTechnique extends FrettedTechni
   }
 
   function updateTuning(
-    state: FrettedInstrumentStateV1<TTechnique>,
+    state: FrettedInstrumentStateV2<TTechnique>,
     tuning: readonly FrettedStringTuningV1[],
-  ): FrettedInstrumentStateV1<TTechnique> {
+  ): FrettedInstrumentStateV2<TTechnique> {
     return {
       ...state,
       tuning: tuning.map((entry) => ({
@@ -468,9 +517,9 @@ export function defineFrettedInstrumentDomainV1<TTechnique extends FrettedTechni
   }
 
   function updateTechnique(
-    state: FrettedInstrumentStateV1<TTechnique>,
+    state: FrettedInstrumentStateV2<TTechnique>,
     edit: SetTechniqueEditV1<TTechnique>,
-  ): FrettedInstrumentStateV1<TTechnique> {
+  ): FrettedInstrumentStateV2<TTechnique> {
     const techniques = state.techniques.filter((entry) => entry.id !== edit.technique.id);
     techniques.push(edit.technique);
     techniques.sort((left, right) => compareText(left.id, right.id));
@@ -478,9 +527,9 @@ export function defineFrettedInstrumentDomainV1<TTechnique extends FrettedTechni
   }
 
   function removeTechnique(
-    state: FrettedInstrumentStateV1<TTechnique>,
+    state: FrettedInstrumentStateV2<TTechnique>,
     techniqueId: string,
-  ): FrettedInstrumentStateV1<TTechnique> {
+  ): FrettedInstrumentStateV2<TTechnique> {
     return { ...state, techniques: state.techniques.filter((entry) => entry.id !== techniqueId) };
   }
 
@@ -639,7 +688,7 @@ export function defineFrettedInstrumentDomainV1<TTechnique extends FrettedTechni
       source,
       namespace,
       ownerKinds: ["part"],
-      supportedSchemaVersions: [profile.schemaVersion],
+      supportedSchemaVersions: supportedVersions,
     },
     decode: (input) => {
       const mutation = decodeMutation(input);
@@ -653,10 +702,10 @@ export function defineFrettedInstrumentDomainV1<TTechnique extends FrettedTechni
         if (input.currentBlock !== undefined) return { status: "rejected", issues: [issue("already-initialized")] };
         return { status: "replace", schemaVersion: profile.schemaVersion, payload: encodeState(initialState()) };
       }
-      if (input.currentBlock?.schemaVersion !== profile.schemaVersion) {
+      if (input.currentBlock === undefined || !supportedVersions.includes(input.currentBlock.schemaVersion)) {
         return { status: "rejected", issues: [issue("not-initialized")] };
       }
-      const state = decodeState(input.currentBlock.payload);
+      const state = decodeState(input.currentBlock.payload, input.currentBlock.schemaVersion);
       if (state === undefined) return { status: "rejected", issues: [issue("invalid-block")] };
       const next = input.payload.kind === "set-tuning"
         ? updateTuning(state, input.payload.tuning)
@@ -765,7 +814,9 @@ export function defineFrettedInstrumentDomainV1<TTechnique extends FrettedTechni
       if (state === undefined) return { status: "rejected", issues: [issue("not-initialized")] };
       const located = locateNotes(view, edit.partId).get(edit.noteId);
       if (located === undefined) return { status: "rejected", issues: [issue("missing-note")] };
-      if (edit.position !== null && edit.position.fret + state.capoFret > state.fretCount) {
+      if (edit.position !== null && (edit.position.fret > Number.MAX_SAFE_INTEGER - state.capoFret
+        || (profile.schemaVersion === 1 && state.fretCount !== null
+          && edit.position.fret + state.capoFret > state.fretCount))) {
         return { status: "rejected", issues: [issue("invalid-position")] };
       }
       if (edit.position === null
@@ -778,7 +829,7 @@ export function defineFrettedInstrumentDomainV1<TTechnique extends FrettedTechni
         : { stringNumber: current.stringNumber, fret: current.fret };
       const writtenPitch = edit.position === null ? undefined : writtenPitchForPosition(state, edit.position);
       if (edit.position !== null && writtenPitch === undefined) {
-        return { status: "rejected", issues: [issue("invalid-position")] };
+        return { status: "rejected", issues: [issue(profile.schemaVersion === 1 ? "invalid-position" : "pitch-out-of-range")] };
       }
       if (samePosition(currentPosition, edit.position)
         && (writtenPitch === undefined || samePitch(located.note.writtenPitch, writtenPitch))) return { status: "no-op" };
@@ -863,7 +914,7 @@ export function defineFrettedInstrumentDomainV1<TTechnique extends FrettedTechni
       requirementVersion: 1,
       namespace,
       ...source,
-      supportedSchemaVersions: [profile.schemaVersion],
+      supportedSchemaVersions: supportedVersions,
       requiredForWrite: true,
     }],
     commands: [initializeCommand, setTuningCommand, setPositionCommand, setTechniqueCommand, removeTechniqueCommand],
@@ -872,7 +923,7 @@ export function defineFrettedInstrumentDomainV1<TTechnique extends FrettedTechni
       const partIds = new Set(view.coreDocument.parts.map((part) => part.id));
       for (const block of view.compatibleExtensions) {
         if (block.owner.kind !== "part" || !partIds.has(block.owner.partId)) return [issue("wrong-owner")];
-        const state = decodeState(block.payload);
+        const state = decodeState(block.payload, block.schemaVersion);
         if (state === undefined) return [issue("invalid-block")];
         const invalid = validateState(view, block.owner.partId, state);
         if (invalid.length > 0) return invalid;
@@ -927,11 +978,11 @@ export function defineFrettedInstrumentDomainV1<TTechnique extends FrettedTechni
     commandIds,
     registrationEntries,
     startupManifest,
-    readPart: (document: Pick<ScoreDocument, "extensions">, partId: string): FrettedInstrumentReadV1<TTechnique> => {
+    readPart: (document: Pick<ScoreDocument, "extensions">, partId: string): FrettedInstrumentReadV2<TTechnique> => {
       const block = blockForPart(document.extensions, partId);
       if (block === undefined) return { status: "absent" };
-      if (block.schemaVersion !== profile.schemaVersion) return { status: "invalid" };
-      const state = decodeState(block.payload);
+      if (!supportedVersions.includes(block.schemaVersion)) return { status: "invalid" };
+      const state = decodeState(block.payload, block.schemaVersion);
       return state === undefined ? { status: "invalid" } : { status: "valid", state };
     },
     compileCatalog: () => compileOfficialModuleCatalogV1(startupManifest, registrationEntries),

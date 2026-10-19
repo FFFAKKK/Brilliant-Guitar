@@ -7,10 +7,12 @@ import {
   parseScoreDocumentJson,
   replayKernelCommands,
   type IntegratedCommandBus,
+  type JsonObject,
   type ScoreDocument,
 } from "../../src/core-kernel/index";
 import {
   DROP_D_GUITAR_TUNING_V1,
+  GUITAR_DOMAIN_NAMESPACE,
   GUITAR_TECHNIQUE_DEFINITIONS_V1,
   GUITAR_TUNING_PRESETS_V1,
   INITIALIZE_GUITAR_COMMAND,
@@ -122,8 +124,8 @@ function catalog() {
   return compiled.catalog;
 }
 
-function bus(): IntegratedCommandBus {
-  const created = CommandBus.createIntegrated(guitarScore(), catalog());
+function bus(initialDocument = guitarScore()): IntegratedCommandBus {
+  const created = CommandBus.createIntegrated(initialDocument, catalog());
   assert.equal(created.ok, true);
   if (!created.ok) assert.fail("expected a Guitar Domain integrated bus");
   return created.value;
@@ -174,11 +176,43 @@ function removeTechnique(techniqueId: string) {
   } as const;
 }
 
-function document(current: IntegratedCommandBus): ScoreDocument {
+function readState(current: IntegratedCommandBus) {
   const read = current.read();
   assert.equal(read.ok, true);
   if (!read.ok) assert.fail("expected readable Guitar Domain state");
-  return read.value.snapshot.document;
+  return read.value;
+}
+
+function document(current: IntegratedCommandBus): ScoreDocument {
+  return readState(current).snapshot.document;
+}
+
+function initializedGuitarDocument(): ScoreDocument {
+  const current = bus();
+  assert.equal(current.submit(initialize()).status, "committed");
+  return document(current);
+}
+
+function replaceGuitarBlock(
+  source: ScoreDocument,
+  schemaVersion: number,
+  payload: JsonObject,
+): ScoreDocument {
+  assert.equal(source.extensions.filter(block => block.namespace === GUITAR_DOMAIN_NAMESPACE).length, 1);
+  return {
+    ...source,
+    extensions: source.extensions.map(block => block.namespace === GUITAR_DOMAIN_NAMESPACE
+      ? { ...block, schemaVersion, payload }
+      : block),
+  };
+}
+
+function legacyGuitarDocument(): ScoreDocument {
+  const current = bus(initializedGuitarDocument());
+  assert.equal(current.submit(setPosition("note-1", { stringNumber: 6, fret: 0 })).status, "committed");
+  const source = document(current);
+  const block = source.extensions.find(entry => entry.namespace === GUITAR_DOMAIN_NAMESPACE)!;
+  return replaceGuitarBlock(source, 1, { ...block.payload, fretCount: 24 });
 }
 
 function state(current: IntegratedCommandBus) {
@@ -363,7 +397,7 @@ test("invalid positions and technique relationships are rejected without mutatio
   assert.equal(current.submit(initialize()).status, "committed");
   const before = current.read();
   assert.equal(current.submit(setPosition("missing-note", { stringNumber: 1, fret: 0 })).status, "rejected");
-  assert.equal(current.submit(setPosition("note-1", { stringNumber: 1, fret: 25 })).status, "rejected");
+  assert.equal(current.submit(setPosition("note-1", { stringNumber: 1, fret: 44 })).status, "rejected");
   assert.deepEqual(current.read(), before);
 
   assert.equal(current.submit(setPosition("note-1", { stringNumber: 1, fret: 0 })).status, "committed");
@@ -443,4 +477,121 @@ test("Guitar Domain commands replay to the same extension and Core pitches", () 
       }] },
     },
   );
+});
+
+test("new Guitar data uses schema 2 without inventing a physical last fret", () => {
+  const source = initializedGuitarDocument();
+  const block = source.extensions.find(entry => entry.namespace === GUITAR_DOMAIN_NAMESPACE)!;
+  assert.equal(block.schemaVersion, 2);
+  assert.equal(block.payload.fretCount, null);
+});
+
+test("legacy reads, no-ops and codec reopening preserve the exact schema 1 document", () => {
+  const source = legacyGuitarDocument();
+  const current = bus(source);
+  const before = readState(current);
+  assert.equal(before.writeAvailability.status, "writable");
+  for (const command of [
+    initialize(),
+    setTuning(STANDARD_GUITAR_TUNING_V1),
+    setPosition("note-1", { stringNumber: 6, fret: 0 }),
+  ]) {
+    assert.equal(current.submit(command).status, "no-op");
+    assert.deepEqual(readState(current), before);
+  }
+  const encoded = encodeScoreDocumentJson(document(current));
+  assert.ok(encoded.ok);
+  const decoded = parseScoreDocumentJson(encoded.value);
+  assert.ok(decoded.ok);
+  assert.deepEqual(document(bus(decoded.value)), source);
+});
+
+test("the first real legacy edit migrates atomically and undo restores schema 1 exactly", () => {
+  const source = legacyGuitarDocument();
+  const current = bus(source);
+  const result = current.submit(setPosition("note-1", { stringNumber: 6, fret: 67 }));
+  assert.equal(result.status, "committed");
+  assert.equal(result.undoDepth, 1);
+  const changed = document(current);
+  const previousBlock = source.extensions.find(entry => entry.namespace === GUITAR_DOMAIN_NAMESPACE)!;
+  const changedBlock = changed.extensions.find(entry => entry.namespace === GUITAR_DOMAIN_NAMESPACE)!;
+  assert.equal(changedBlock.schemaVersion, 2);
+  assert.equal(changedBlock.payload.fretCount, 24);
+  assert.deepEqual(changedBlock.payload.tuning, previousBlock.payload.tuning);
+  assert.deepEqual(changedBlock.payload.techniques, previousBlock.payload.techniques);
+  assert.deepEqual(notePitch(current, "note-1"), { step: "B", alter: 0, octave: 8 });
+  assert.equal(current.undo().status, "committed");
+  assert.deepEqual(document(current), source);
+  assert.equal(current.redo().status, "committed");
+  assert.deepEqual(document(current), changed);
+  const encoded = encodeScoreDocumentJson(changed);
+  assert.ok(encoded.ok);
+  const decoded = parseScoreDocumentJson(encoded.value);
+  assert.ok(decoded.ok);
+  assert.deepEqual(document(bus(decoded.value)), changed);
+});
+
+test("Core pitch limits accept first-string 43 and sixth-string 67, rejecting beyond with zero delta", () => {
+  for (const [stringNumber, lastFret, nextFret] of [[1, 43, 44], [6, 67, 68]] as const) {
+    const current = bus(initializedGuitarDocument());
+    assert.equal(current.submit(setPosition("note-1", { stringNumber, fret: lastFret })).status, "committed");
+    assert.deepEqual(notePitch(current, "note-1"), { step: "B", alter: 0, octave: 8 });
+    const before = readState(current);
+    for (const fret of [nextFret, 100, Number.MAX_SAFE_INTEGER]) {
+      const result = current.submit(setPosition("note-1", { stringNumber, fret }));
+      assert.equal(result.status, "rejected");
+      if (result.status !== "rejected") assert.fail("expected out-of-range pitch rejection");
+      assert.equal(result.failure.code, "command.contribution-semantic-invalid");
+      if (result.failure.code !== "command.contribution-semantic-invalid") assert.fail("expected domain issue");
+      assert.ok(result.failure.issues.some(issue => issue.code === `${GUITAR_DOMAIN_NAMESPACE}.pitch-out-of-range`));
+      assert.deepEqual(readState(current), before);
+    }
+  }
+});
+
+test("schema 2 physical fret facts do not cap notation or capo, while unsafe values reject atomically", () => {
+  const source = initializedGuitarDocument();
+  const block = source.extensions.find(entry => entry.namespace === GUITAR_DOMAIN_NAMESPACE)!;
+  const current = bus(replaceGuitarBlock(source, 2, { ...block.payload, fretCount: 1, capoFret: 25 }));
+  assert.equal(current.submit(setPosition("note-1", { stringNumber: 6, fret: 42 })).status, "committed");
+  assert.equal(state(current).fretCount, 1);
+  assert.deepEqual(notePitch(current, "note-1"), { step: "B", alter: 0, octave: 8 });
+  const before = readState(current);
+  for (const fret of [-1, 1.5, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER + 1]) {
+    assert.equal(current.submit(setPosition("note-1", { stringNumber: 6, fret })).status, "rejected");
+    assert.deepEqual(readState(current), before);
+  }
+});
+
+test("invalid legacy physical data is rejected rather than repaired during migration", () => {
+  const source = legacyGuitarDocument();
+  const block = source.extensions.find(entry => entry.namespace === GUITAR_DOMAIN_NAMESPACE)!;
+  const patches: readonly JsonObject[] = [
+    { fretCount: null },
+    { fretCount: 37 },
+    { fretCount: 24, capoFret: 25 },
+    { placements: [{ noteId: "note-1", stringNumber: 6, fret: 25 }] },
+  ];
+  for (const patch of patches) {
+    const result = CommandBus.createIntegrated(
+      replaceGuitarBlock(source, 1, { ...block.payload, ...patch }),
+      catalog(),
+    );
+    assert.equal(result.ok, false);
+    if (result.ok) assert.fail("expected invalid legacy domain rejection");
+    assert.equal(result.failure.code, "command.contribution-semantic-invalid");
+  }
+});
+
+test("future Guitar schema remains lossless and read-only without invoking a migration", () => {
+  const source = replaceGuitarBlock(initializedGuitarDocument(), 3, {
+    preserve: [3, 2, 1],
+    unfamiliar: null,
+  });
+  const current = bus(source);
+  const before = readState(current);
+  assert.equal(before.writeAvailability.status, "read-only");
+  assert.deepEqual(before.snapshot.document, source);
+  assert.equal(current.submit(setPosition("note-1", { stringNumber: 6, fret: 1 })).status, "rejected");
+  assert.deepEqual(readState(current), before);
 });
