@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { loadEngravingEngine } from "../notation/engraving-engine";
+import { musicGlyphLayout } from "../notation/music-glyph-layout.ts";
 
 interface Props { readonly symbol: string; readonly fallback: string; readonly fit?: "box" | "ink" }
 
@@ -15,11 +16,7 @@ export function MusicGlyph({ symbol, fallback, fit = "box" }: Props) {
       if (!context) throw new Error("Font measurement unavailable");
       context.font = "32px Bravura";
       const metrics = context.measureText(symbol);
-      const left = metrics.actualBoundingBoxLeft, right = metrics.actualBoundingBoxRight;
-      const ascent = metrics.actualBoundingBoxAscent, descent = metrics.actualBoundingBoxDescent;
-      if (active) setDrawing(fit === "ink"
-        ? { symbol, fit, x: left + 1, y: ascent + 1, width: Math.max(1, left + right) + 2, height: Math.max(1, ascent + descent) + 2 }
-        : { symbol, fit, x: (48 - left - right) / 2 + left, y: (48 - ascent - descent) / 2 + ascent, width: 48, height: 48 });
+      if (active) setDrawing({ symbol, fit, ...musicGlyphLayout(metrics, fit) });
     }).catch(() => { if (active) setFailed(true); });
     return () => { active = false; };
   }, [symbol, fit]);

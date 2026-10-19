@@ -238,6 +238,21 @@ fn replace_file(source: &Path, target: &Path) -> std::io::Result<()> {
         MOVEFILE_REPLACE_EXISTING, MOVEFILE_WRITE_THROUGH, MoveFileExW,
     };
 
+    // std filesystem APIs support Windows verbatim paths, while a raw Win32 call
+    // also needs them in processes whose manifest is not longPathAware.
+    // Resolve the existing parent, not the target leaf: replacing a symlink must
+    // replace the link itself rather than follow it and overwrite its referent.
+    let source = fs::canonicalize(source)?;
+    let target_parent = target.parent().ok_or_else(|| {
+        std::io::Error::new(std::io::ErrorKind::InvalidInput, "invalid replacement path")
+    })?;
+    let target_name = target.file_name().ok_or_else(|| {
+        std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "invalid replacement filename",
+        )
+    })?;
+    let target = fs::canonicalize(target_parent)?.join(target_name);
     let source: Vec<u16> = source.as_os_str().encode_wide().chain(Some(0)).collect();
     let target: Vec<u16> = target.as_os_str().encode_wide().chain(Some(0)).collect();
     // SAFETY: both buffers are NUL-terminated and remain alive for the duration of the call.
@@ -294,6 +309,41 @@ fn recovery_error(message: &str) -> HostError {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_atomic_write_supports_long_unicode_paths_for_new_and_existing_files() {
+        use std::os::windows::ffi::OsStrExt;
+
+        let root = std::env::temp_dir().join(format!("brilliant-long-{}", Uuid::new_v4()));
+        let directory = root.join("长路径乐谱".repeat(30));
+        fs::create_dir_all(&directory).expect("create long unicode directory");
+        let target = directory.join("作品.bgp.json");
+        eprintln!(
+            "LONG_PATH_PROBE: target UTF-16 length={}",
+            target.as_os_str().encode_wide().count()
+        );
+        let source = directory.join("raw-source.tmp");
+        fs::write(&source, b"raw").expect("create raw long path source");
+        let result = replace_file(&source, &target);
+        if let Err(error) = &result {
+            eprintln!(
+                "LONG_PATH_PROBE: native replacement error={:?}",
+                error.raw_os_error()
+            );
+        }
+        result.expect("raw native replacement on long path");
+        fs::remove_file(&target).expect("reset before first atomic write");
+        atomic_write_raw(&target, b"first").expect("create atomically on long path");
+        atomic_write_raw(&target, b"second").expect("replace atomically on long path");
+        assert_eq!(fs::read(&target).expect("read replaced bytes"), b"second");
+        assert_eq!(
+            fs::read_dir(&directory).unwrap().count(),
+            1,
+            "no temporary files"
+        );
+        fs::remove_dir_all(root).expect("remove isolated long path directory");
+    }
 
     #[test]
     fn atomic_write_replaces_existing_file_without_leaving_temp_files() {

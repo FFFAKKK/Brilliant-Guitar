@@ -1,0 +1,8 @@
+{
+  "name": "@brilliant-guitar/shared-notation",
+  "private": true,
+  "type": "module",
+  "peerDependencies": {
+    "vexflow": "5.0.0"
+  }
+}

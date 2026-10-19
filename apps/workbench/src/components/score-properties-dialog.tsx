@@ -4,6 +4,7 @@ import type { FormEvent, RefObject } from "react";
 import { KEY_SIGNATURE_FIFTHS } from "../contracts/note-input.ts";
 import type { DocumentMetadataInput, KeySignatureFifths, MeterInput, StaffClef } from "../contracts/note-input.ts";
 import { parseMeterInput, ScoreMeterFields } from "./score-meter-fields.tsx";
+import { documentMetadataKey as metadataKey, validateDocumentMetadataFields as validate } from "../contracts/document-metadata.ts";
 
 interface ScorePropertiesDialogProps {
   readonly open: boolean;
@@ -30,33 +31,9 @@ interface FieldErrors {
   readonly meter?: string;
 }
 
-const normalized = (value: DocumentMetadataInput): DocumentMetadataInput => ({
-  title: value.title.trim() || "未命名乐谱",
-  authors: value.authors.map((author) => author.trim()).filter(Boolean),
-  tempoBpm: value.tempoBpm,
-});
-
-const metadataKey = (value: DocumentMetadataInput) => JSON.stringify(normalized(value));
 const meterKey = (value: MeterInput) => `${value.numerator}/${value.denominator}`;
 const keySignatureLabel = (fifths: number) => fifths === 0 ? "无升降号"
   : fifths > 0 ? `${fifths} 个升号` : `${Math.abs(fifths)} 个降号`;
-
-function validate(title: string, authorText: string, tempoText: string): {
-  readonly value?: DocumentMetadataInput;
-  readonly errors: FieldErrors;
-} {
-  const cleanTitle = title.trim() || "未命名乐谱";
-  const authors = authorText.split(/\r?\n/).map((author) => author.trim()).filter(Boolean);
-  const tempoBpm = Number(tempoText);
-  const errors: FieldErrors = {
-    ...(cleanTitle.length > 120 ? { title: "标题不能超过 120 个字符" } : {}),
-    ...(authors.length > 16 ? { authors: "作者最多填写 16 位" }
-      : authors.some((author) => author.length > 120) ? { authors: "每位作者不能超过 120 个字符" } : {}),
-    ...(!tempoText.trim() || !Number.isFinite(tempoBpm) || tempoBpm <= 0
-      ? { tempo: "请输入大于 0 的速度" } : {}),
-  };
-  return Object.keys(errors).length ? { errors } : { errors, value: { title: cleanTitle, authors, tempoBpm } };
-}
 
 export function ScorePropertiesDialog({ open, onOpenChange, metadata, initialMeasureId, initialMeter, initialKeySignature,
   initialStaffId, initialClef,

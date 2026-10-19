@@ -37,6 +37,7 @@ export class PluginActivationPersistence {
   readonly #storage: PluginActivationStoragePort;
   #desired = new Set<string>();
   #writeQueue: Promise<void> = Promise.resolve();
+  #disposed = false;
 
   constructor(target: PluginActivationTarget, storage: PluginActivationStoragePort) {
     this.#target = target;
@@ -44,7 +45,9 @@ export class PluginActivationPersistence {
   }
 
   async restore(): Promise<PluginActivationDocumentV1> {
+    this.#assertAlive();
     const document = normalizePluginActivationDocument(await this.#storage.read());
+    this.#assertAlive();
     this.#desired = new Set(document.enabledPluginIds);
     this.#target.restoreActivation(document.enabledPluginIds);
     await this.#enqueue(document);
@@ -52,6 +55,7 @@ export class PluginActivationPersistence {
   }
 
   async setEnabled(pluginId: string, enabled: boolean): Promise<PluginActivationDocumentV1> {
+    this.#assertAlive();
     if (!pluginIdPattern.test(pluginId)) throw new Error(`Invalid plugin ID: ${pluginId}`);
     if (enabled) this.#desired.add(pluginId);
     else this.#desired.delete(pluginId);
@@ -62,6 +66,7 @@ export class PluginActivationPersistence {
   }
 
   snapshot(): PluginActivationDocumentV1 {
+    this.#assertAlive();
     return Object.freeze({
       schemaVersion: 1,
       enabledPluginIds: Object.freeze([...this.#desired]),
@@ -69,8 +74,11 @@ export class PluginActivationPersistence {
   }
 
   #enqueue(document: PluginActivationDocumentV1): Promise<void> {
-    const task = this.#writeQueue.catch(() => undefined).then(() => this.#storage.write(document));
+    const task = this.#writeQueue.catch(() => undefined).then(() => { this.#assertAlive(); return this.#storage.write(document); });
     this.#writeQueue = task;
     return task;
   }
+
+  dispose(): void { this.#disposed = true; }
+  #assertAlive(): void { if (this.#disposed) throw new Error("Plugin activation persistence is disposed"); }
 }

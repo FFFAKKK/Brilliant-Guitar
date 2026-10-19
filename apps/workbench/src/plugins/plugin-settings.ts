@@ -1,4 +1,5 @@
 import type { PluginSettingsContribution } from "./plugin-sdk.ts";
+import { notifyObservers } from "../ui/notify-observers.ts";
 
 export interface PluginSettingsEnvelope {
   readonly schemaVersion: number;
@@ -23,8 +24,42 @@ function record(value: unknown): Record<string, unknown> | null {
     ? value as Record<string, unknown> : null;
 }
 
+/** Settings cross a JSON persistence boundary. Own the validated data instead of the author's references. */
+function captureSettingsValue(value: unknown, ancestors = new Set<object>()): unknown {
+  if (value === null || typeof value === "string" || typeof value === "boolean") return value;
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value !== "object" || value === null || ancestors.has(value)
+    || (!Array.isArray(value) && ![Object.prototype, null].includes(Object.getPrototypeOf(value)))) {
+    throw new TypeError("Plugin settings must contain persistent JSON data");
+  }
+  ancestors.add(value);
+  try {
+    const descriptors = Object.getOwnPropertyDescriptors(value);
+    if (Reflect.ownKeys(value).some(key => typeof key !== "string")
+      || Object.entries(descriptors).some(([key, descriptor]) => (key !== "length" || !Array.isArray(value))
+        && (!descriptor.enumerable || !("value" in descriptor)))) throw new TypeError("Invalid settings fields");
+    if (Array.isArray(value)) {
+      if (Object.keys(descriptors).length !== value.length + 1
+        || Array.from({ length: value.length }, (_, index) => descriptors[String(index)]).some(item => !item)) {
+        throw new TypeError("Invalid settings array");
+      }
+      return Object.freeze(Array.from({ length: value.length }, (_, index) => captureSettingsValue(descriptors[String(index)]!.value, ancestors)));
+    }
+    return Object.freeze(Object.fromEntries(Object.entries(descriptors).map(([key, descriptor]) =>
+      [key, captureSettingsValue(descriptor.value, ancestors)])));
+  } finally { ancestors.delete(value); }
+}
+
 function parseSettings(definition: RegisteredPluginSettings, value: unknown): unknown | null {
-  try { return definition.parse(value); }
+  try {
+    const parsed = definition.parse(value);
+    if (parsed && (typeof parsed === "object" || typeof parsed === "function")
+      && "then" in parsed && typeof parsed.then === "function") {
+      void Promise.resolve(parsed).catch(() => {});
+      return null;
+    }
+    return captureSettingsValue(parsed);
+  }
   catch { return null; }
 }
 
@@ -127,7 +162,9 @@ export class PluginSettingsRegistry {
     return Object.freeze(document);
   }
 
+  dispose(): void { this.#definitions.clear(); this.#values.clear(); this.#listeners.clear(); }
+
   #publish(): void {
-    for (const listener of this.#listeners) listener();
+    notifyObservers(this.#listeners);
   }
 }

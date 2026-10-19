@@ -1,7 +1,7 @@
 import type { WorkbenchCommand } from "../commands/workbench-command.ts";
 import type { NotationInteractionContribution } from "../input/notation-interaction-registry.ts";
 import type { InternalUiPluginModule } from "../ui/plugin-manager.ts";
-import { WORKBENCH_PLUGIN_API_VERSION } from "../ui/plugin-manifest.ts";
+import { mountUiManifest } from "./plugin-mount-ui.ts";
 import type { UiComponentDefinition } from "../ui/plugin-contract.ts";
 import type { AnyUiProjection, UiProjectionReader } from "../ui/projection-registry.ts";
 import type { UiResolvedComponentExtension, UiViewHostContext } from "../ui/view-contribution.ts";
@@ -41,12 +41,13 @@ function viewHost(host: UiViewHostContext, pluginId: string, services?: PluginSd
 /** Internal boundary that translates the stable authoring SDK into the current UI host contract. */
 export function adaptUiPluginPackage(plugin: UiPluginPackage, services?: PluginSdkRuntimeServices): InternalUiPluginModule {
   return captureInternalUiPluginModule({
+    ...(plugin.ui === undefined ? {} : { ui: plugin.ui }),
     manifest: {
       id: plugin.id,
       name: plugin.name,
       version: plugin.version,
       tier: plugin.tier,
-      apiVersion: WORKBENCH_PLUGIN_API_VERSION,
+      apiVersion: plugin.apiVersion,
       runtime: "internal-module",
       activation: plugin.activation,
       requires: {
@@ -64,6 +65,7 @@ export function adaptUiPluginPackage(plugin: UiPluginPackage, services?: PluginS
         applicationCapabilities: plugin.applicationCapabilities.map((capability) => capability.id),
         workflows: plugin.workflows.map((workflow) => workflow.id),
         kernelModules: plugin.kernelModules,
+        ...(plugin.ui === undefined ? {} : { ui: mountUiManifest(plugin.ui) }),
       },
     },
     projections: plugin.projections as readonly AnyUiProjection[],

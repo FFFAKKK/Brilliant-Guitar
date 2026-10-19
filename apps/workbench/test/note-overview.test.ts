@@ -7,10 +7,20 @@ import type { StaffEvent } from "../src/contracts/notation.ts";
 import { getMeasureShare, resolveNoteOverview, selectedNoteAction, stepNoteDuration, toggleNoteDot } from "../src/editor/note-overview.ts";
 import type { InputPreview } from "../src/editor/note-overview.ts";
 import { advancePitchEntry } from "../src/editor/pitch-entry.ts";
+import { musicGlyphLayout } from "../src/notation/music-glyph-layout.ts";
 import { accidentalForEvent, alterForAccidental, inheritedAlterAtPoint } from "../src/editor/accidental-state.ts";
 import type { StaffMeasure, StaffView } from "../src/contracts/notation.ts";
 
 const input: InputPreview = { duration: { base: 4, dots: 0 }, alter: 1, accidental: "sharp", rest: false, draft: null, pitch: null };
+
+test("shared glyph layout centers actual ink even with asymmetric bearings and descent", () => {
+  const metrics = { actualBoundingBoxLeft: 3, actualBoundingBoxRight: 11, actualBoundingBoxAscent: 27, actualBoundingBoxDescent: 1 };
+  assert.deepEqual(musicGlyphLayout(metrics), { x: 20, y: 37, width: 48, height: 48 });
+  assert.equal(20 - metrics.actualBoundingBoxLeft, 48 - (20 + metrics.actualBoundingBoxRight));
+  assert.equal(37 - metrics.actualBoundingBoxAscent, 48 - (37 + metrics.actualBoundingBoxDescent));
+  assert.deepEqual(musicGlyphLayout(metrics, "ink"), { x: 4, y: 28, width: 16, height: 30 });
+  assert.throws(() => musicGlyphLayout({ ...metrics, actualBoundingBoxAscent: NaN }), /measurement/);
+});
 
 test("accidental display distinguishes blank, sharp, flat and required natural states", () => {
   const note = (id: string, alter: -1 | 0 | 1): StaffEvent => ({ id, duration: { base: 8, dots: 0 },

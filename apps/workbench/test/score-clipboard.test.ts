@@ -32,3 +32,31 @@ test("valid browser content replaces memory while invalid content falls back", a
   text = "unrelated text";
   assert.deepEqual(await clipboard.read(), fragment);
 });
+
+test("clipboard projects musical properties without source IDs or geometry, including 32nd rests", async () => {
+  const event = { id: "source-id", x: 100, duration: { base: 32 as const, dots: 0 as const }, content: { kind: "rest" as const }, private: "omit" };
+  const value = createScoreClipboardFragment([event]);
+  assert.deepEqual(value.events, [{ duration: { base: 32, dots: 0 }, content: { kind: "rest" } }]);
+  event.duration.base = 32; assert.notEqual(value.events[0]!.duration, event.duration);
+  let text = ""; const clipboard = new ScoreClipboard({ readText: async () => text, writeText: async v => { text = v; } });
+  await clipboard.write({ ...fragment, events: [event] }); assert.equal(clipboard.scope, "system");
+  assert.equal(text.includes("source-id"), false); assert.deepEqual(await clipboard.read(), value);
+  clipboard.dispose(); await assert.rejects(clipboard.write(value), /disposed/);
+});
+
+test("clipboard disposal isolates late reads, and denied operations report session fallback", async () => {
+  let resolve!: (text: string) => void;
+  const clipboard = new ScoreClipboard({ readText: () => new Promise(yes => { resolve = yes; }), writeText: async () => { throw new Error("denied"); } });
+  await clipboard.write(fragment); assert.equal(clipboard.scope, "session");
+  const read = clipboard.read(); clipboard.dispose(); resolve(encodeScoreClipboardFragment(fragment));
+  assert.equal(await read, null); await assert.rejects(clipboard.read(), /disposed/);
+});
+
+test("an older async clipboard read cannot replace a newer copied fragment", async () => {
+  let resolve!: (text: string) => void;
+  const clipboard = new ScoreClipboard({ readText: () => new Promise(yes => { resolve = yes; }), writeText: async () => { throw new Error("denied"); } });
+  const older = clipboard.read(), next = createScoreClipboardFragment([fragment.events[1]!]);
+  await clipboard.write(next); resolve(encodeScoreClipboardFragment(fragment));
+  assert.equal(await older, null); assert.equal(clipboard.scope, "session");
+  const memory = clipboard.read(); resolve("unrelated"); assert.deepEqual(await memory, next); clipboard.dispose();
+});

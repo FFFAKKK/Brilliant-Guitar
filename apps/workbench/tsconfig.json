@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "jsx": "react-jsx",
@@ -16,7 +20,20 @@
     "skipLibCheck": false,
     "noEmit": true,
     "allowImportingTsExtensions": true,
-    "types": ["vite/client"]
+    "types": [
+      "vite/client"
+    ],
+    "paths": {
+      "vexflow": [
+        "./node_modules/vexflow/build/types/entry/vexflow.d.ts"
+      ],
+      "vexflow/bravura": [
+        "./node_modules/vexflow/build/types/entry/vexflow-bravura.d.ts"
+      ]
+    }
   },
-  "include": ["src", "vite.config.ts"]
+  "include": [
+    "src",
+    "vite.config.ts"
+  ]
 }

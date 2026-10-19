@@ -1,0 +1,58 @@
+{
+  "apiVersion": 2,
+  "catalog": {
+    "contributions": [
+      {
+        "moduleId": "brilliant.notation.key-signature",
+        "contributionId": "brilliant.notation.key-signature.v1",
+        "requirements": [
+          {
+            "requirementVersion": 1,
+            "namespace": "brilliant.notation.key-signature",
+            "moduleId": "brilliant.notation.key-signature",
+            "contributionId": "brilliant.notation.key-signature.v1",
+            "supportedSchemaVersions": [
+              1
+            ],
+            "requiredForWrite": true
+          }
+        ]
+      }
+    ]
+  },
+  "commands": [
+    {
+      "descriptorVersion": 1,
+      "commandId": "brilliant.notation.key-signature.set",
+      "commandVersion": 1,
+      "source": {
+        "moduleId": "brilliant.notation.key-signature",
+        "contributionId": "brilliant.notation.key-signature.v1"
+      },
+      "targetKind": "part",
+      "requiredCapabilities": [
+        "command:execute",
+        "score:read"
+      ],
+      "titleKey": "brilliant.notation.key-signature.set.title"
+    }
+  ],
+  "effects": [
+    {
+      "descriptorVersion": 1,
+      "effectKind": "brilliant.notation.key-signature.replace",
+      "source": {
+        "moduleId": "brilliant.notation.key-signature",
+        "contributionId": "brilliant.notation.key-signature.v1"
+      },
+      "namespace": "brilliant.notation.key-signature",
+      "ownerKinds": [
+        "part"
+      ],
+      "supportedSchemaVersions": [
+        1
+      ]
+    }
+  ],
+  "inventory": null
+}

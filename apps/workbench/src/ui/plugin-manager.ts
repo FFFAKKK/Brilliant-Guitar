@@ -15,6 +15,7 @@ import type { PluginInstrumentContribution, PluginPlaybackOutputContribution } f
 import type { ApplicationCapabilityContribution } from "../contracts/application-capability.ts";
 import type { WorkflowContribution } from "../contracts/workflow.ts";
 import { captureInternalUiPluginModule } from "./plugin-module-capture.ts";
+import type { PluginMountUiFacet } from "../plugins/plugin-mount-ui.ts";
 
 export interface UiCommandContribution {
   readonly id: string;
@@ -22,6 +23,7 @@ export interface UiCommandContribution {
 }
 
 export interface InternalUiPluginModule {
+  readonly ui?: PluginMountUiFacet;
   readonly manifest: UiPluginManifest;
   readonly projections: readonly AnyUiProjection[];
   readonly commands: readonly UiCommandContribution[];
@@ -77,6 +79,7 @@ export class UiPluginHost {
   }
 
   install(plugin: InternalUiPluginModule): void {
+    if (plugin.manifest.apiVersion !== "3.0") throw new Error("This UI host supports plugin API 3.0; select a mount contribution host for 4.0");
     if (!isUiPluginManifest(plugin.manifest)) throw this.#failure(plugin, "UI-PLG-001", "manifest",
       "界面插件清单无效", "Invalid UI plugin manifest");
     plugin = captureInternalUiPluginModule(plugin);
@@ -205,6 +208,15 @@ export class UiPluginHost {
   }
 
   list(): readonly UiPluginManifest[] { return [...this.#plugins.values()].map((plugin) => plugin.manifest); }
+
+  /** Whole-session release. The platform prevents this host from being reused after disposal. */
+  dispose(): void {
+    this.interactions.clear();
+    for (const definition of this.components.list()) this.components.unregister(definition.id);
+    this.#plugins.clear();
+    this.#componentOwners.clear(); this.#commandOwners.clear(); this.#interactionOwners.clear();
+    this.#notationOwners.clear(); this.#extensionOwners.clear(); this.#extensionPointOwners.clear();
+  }
 
   ownerOf(componentId: string): UiPluginManifest | undefined {
     const owner = this.#componentOwners.get(componentId);

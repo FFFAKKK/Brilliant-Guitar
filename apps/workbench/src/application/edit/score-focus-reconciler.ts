@@ -44,7 +44,7 @@ function applyDirective(view: Extract<ScoreSessionRead["notation"], { readonly k
 }
 
 /** Resolve one explicit post-operation focus result from the old and new projections. */
-export function reconcileScoreFocus(before: ScoreSessionRead, after: ScoreSessionRead, action: ScoreEditAction,
+export function reconcileScoreFocus(before: Pick<ScoreSessionRead, "notation">, after: Pick<ScoreSessionRead, "notation">, action: ScoreEditAction,
   currentPoint: ScoreEditPoint | null, selectedEventId: string | null): ScoreFocusResolution {
   if (after.notation.kind !== "staff") return { directive: { kind: "clear" }, target: { kind: "unavailable" } };
   const view = after.notation, pitch = preferredPitch(currentPoint);
@@ -99,4 +99,3 @@ export function reconcileScoreFocus(before: ScoreSessionRead, after: ScoreSessio
   if (target.kind !== "unavailable") normalized = target.point;
   return { directive, target: target.kind === "caret" ? { kind: "caret", point: normalized } : target };
 }
-

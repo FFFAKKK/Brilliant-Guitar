@@ -4,40 +4,52 @@ use std::path::{Path, PathBuf};
 use brilliant_core_types::StableId;
 use brilliant_kernel_contracts::{
     KernelRuleWarningReadFailureV1, KernelSelectorResultV1, KernelSelectorValueV1,
-    KernelSessionCreateRequestV1, KernelSessionReadResultV1, KernelStage4CommandResultV1,
-    KernelStage4FailureV1, KernelStage4MarkPersistedResultV1, KernelStage4OperationResultV1,
+    KernelSessionCreateRequestV1, KernelSessionReadResultV1, KernelStage4FailureV1,
     MeasurePointKindV1, MeasurePointV1, ScoreRangeSelectionV1, ScoreRangeV1, SelectorRequestV1,
 };
-use brilliant_kernel_session::KernelSession;
 use brilliant_score_foundation::{
     CoreRuleWarningV1, FractionV1, LosslessEncode, NoteValueV1, PitchStepV1, RhythmicContentV1,
     ScoreDocumentV1, decode_lossless_json, decode_lossless_score_document_value,
 };
+use notation_session::NotationSession;
 use serde_json::{Value, json};
 use uuid::Uuid;
 
 use crate::{
     dto::{
-        CreateScoreRequest, EventDuration, ExactFraction, InputContent, InputSequenceAnchor, Meter,
-        NativeFileResult, NewScoreInput, NotationView, PitchStep, PlaybackSourceContent,
-        PlaybackSourceEvent, PlaybackSourceMeasure, PlaybackSourceProjection,
-        PlaybackTransposition, ScoreEditAction, ScoreEditRequest, ScoreMeasureIndexV1,
-        ScoreMeasureRangeMeasureV1, ScoreMeasureRangeV1, ScoreMetadataTransactionChangeSetV1,
-        ScoreMetadataV1, ScoreSessionRead, ScoreStructureV1, ScoreSummaryV1, ScoreTempoChangeSetV1,
-        StaffEvent, StaffMeasure, StaffRuleWarning, WorkbenchIssueSource, WorkbenchIssueTarget,
+        CreateScoreRequest, DocumentReplacementPrecondition, EventDuration, ExactFraction,
+        GuardedCreateScoreRequest, InputContent, InputSequenceAnchor, Meter, NativeFileResult,
+        NewScoreInput, NotationView, PitchStep, PlaybackSourceContent, PlaybackSourceEvent,
+        PlaybackSourceMeasure, PlaybackSourceProjection, PlaybackTransposition, ScoreEditAction,
+        ScoreEditRequest, ScoreMeasureIndexV1, ScoreMeasureRangeMeasureV1, ScoreMeasureRangeV1,
+        ScoreMetadataTransactionChangeSetV1, ScoreMetadataV1, ScoreSessionRead, ScoreStructureV1,
+        ScoreSummaryV1, ScoreTempoChangeSetV1, StaffEvent, StaffMeasure, StaffRuleWarning,
+        WorkbenchIssueSource, WorkbenchIssueTarget,
     },
     error::HostError,
     score_change_set,
 };
 
 const MAX_WORKSPACES: usize = 32;
+mod key_signature;
+mod domain_value;
+mod guitar_domain;
+mod official_domains;
+mod tablature_projection;
+mod fretted_position;
+mod document_metadata;
+mod measure_structure;
+mod notation_session;
+mod range_clipboard;
+mod staff_clef;
 const MAX_RETAINED_REQUESTS: usize = 64;
 
 struct SessionEntry {
-    session: KernelSession,
+    session: NotationSession,
     measure_index: ScoreMeasureIndexV1,
     create_request_id: String,
     create_input_key: String,
+    create_precondition: Option<DocumentReplacementPrecondition>,
     edits: HashMap<String, (String, u64)>,
     edit_order: VecDeque<String>,
     file_path: Option<PathBuf>,
@@ -367,17 +379,52 @@ impl ScoreSessionService {
     }
 
     pub fn create(&mut self, request: CreateScoreRequest) -> Result<ScoreSessionRead, HostError> {
+        self.create_checked(request, None)
+    }
+
+    pub fn create_guarded(
+        &mut self,
+        request: GuardedCreateScoreRequest,
+    ) -> Result<ScoreSessionRead, HostError> {
+        let expected_document_id = match &request.expected {
+            DocumentReplacementPrecondition::Empty {} => None,
+            DocumentReplacementPrecondition::Document { document_id, .. } => {
+                Some(document_id.clone())
+            }
+        };
+        self.create_checked(
+            CreateScoreRequest {
+                workspace_id: request.workspace_id,
+                input: request.input,
+                request_id: request.request_id,
+                expected_document_id,
+            },
+            Some(request.expected),
+        )
+    }
+
+    fn create_checked(
+        &mut self,
+        request: CreateScoreRequest,
+        expected: Option<DocumentReplacementPrecondition>,
+    ) -> Result<ScoreSessionRead, HostError> {
         validate_workspace_id(&request.workspace_id)?;
         validate_request_id(&request.request_id)?;
         validate_new_score(&request.input)?;
+        if let Some(expected) = &expected {
+            validate_replacement_precondition(expected)?;
+        }
         let input_key = serde_json::to_string(&request.input).map_err(|_| HostError::internal())?;
         if let Some(current) = self.sessions.get(&request.workspace_id)
             && current.create_request_id == request.request_id
         {
-            if current.create_input_key != input_key {
+            if current.create_input_key != input_key || current.create_precondition != expected {
                 return Err(HostError::new("创建参数已改变，请重新打开新建窗口", 409));
             }
             return session_read(&current.session);
+        }
+        if let Some(expected) = &expected {
+            self.check_replacement(&request.workspace_id, expected)?;
         }
         let actual_document = self
             .sessions
@@ -407,6 +454,7 @@ impl ScoreSessionService {
                 measure_index: projection.measure_index,
                 create_request_id: request.request_id,
                 create_input_key: input_key,
+                create_precondition: expected,
                 edits: HashMap::new(),
                 edit_order: VecDeque::new(),
                 file_path: None,
@@ -469,7 +517,12 @@ impl ScoreSessionService {
                 None,
             ));
         }
-        if matches!(current.notation, NotationView::Unsupported { .. }) {
+        if matches!(current.notation, NotationView::Unsupported { .. })
+            && !matches!(request.action, ScoreEditAction::SetMeasureMeter { .. })
+            && !matches!(request.action, ScoreEditAction::SetFrettedPosition { .. })
+            && !(matches!(request.action, ScoreEditAction::Undo | ScoreEditAction::Redo)
+                && matches!(current.tablature, crate::dto::TablatureProjection::Tablature { .. }))
+        {
             return Err(HostError::new("当前乐谱格式尚不支持编辑", 422));
         }
         execute_edit(&mut entry.session, &current, &request.action)?;
@@ -515,19 +568,20 @@ impl ScoreSessionService {
             .map_err(|_| HostError::new("文件不是有效的项目 JSON", 422))?;
         let document = decode_lossless_score_document_value(value)
             .map_err(|_| HostError::new("文件不是可识别的项目乐谱", 422))?;
-        let accepted = KernelSession::create(KernelSessionCreateRequestV1 {
+        let accepted = NotationSession::create(KernelSessionCreateRequestV1 {
             api_version: 1,
             document,
         })
         .map_err(|_| HostError::new("无法打开该乐谱文件", 422))?;
-        let projection = session_projection(&accepted.session)?;
+        let projection = session_projection(&accepted)?;
         self.sessions.insert(
             workspace_id,
             SessionEntry {
-                session: accepted.session,
+                session: accepted,
                 measure_index: projection.measure_index,
                 create_request_id: Uuid::new_v4().to_string(),
                 create_input_key: "import".into(),
+                create_precondition: None,
                 edits: HashMap::new(),
                 edit_order: VecDeque::new(),
                 file_path: None,
@@ -577,6 +631,7 @@ impl ScoreSessionService {
             session: session_read(&entry.session)?,
             name: file_display_name(&path),
             saved_version,
+            warnings: vec![],
         })
     }
 
@@ -598,31 +653,83 @@ impl ScoreSessionService {
             session,
             name: file_display_name(&path),
             saved_version,
+            warnings: vec![],
         })
+    }
+
+    /// The caller holds the service mutex through this check and the original import.
+    pub fn check_replacement(
+        &self,
+        workspace_id: &str,
+        expected: &DocumentReplacementPrecondition,
+    ) -> Result<(), HostError> {
+        validate_workspace_id(workspace_id)?;
+        validate_replacement_precondition(expected)?;
+        let current = self.read(workspace_id)?;
+        let matches = match (expected, current) {
+            (DocumentReplacementPrecondition::Empty {}, None) => true,
+            (
+                DocumentReplacementPrecondition::Document {
+                    document_id,
+                    document_version,
+                },
+                Some(current),
+            ) => {
+                *document_id == current.document_id && *document_version == current.document_version
+            }
+            _ => false,
+        };
+        if matches {
+            Ok(())
+        } else {
+            Err(HostError::issue(
+                "document.stale",
+                "当前作品已改变，请重新读取后重试",
+                409,
+                WorkbenchIssueSource::Host,
+                WorkbenchIssueTarget::Workbench,
+                Some(true),
+            ))
+        }
+    }
+
+    pub fn import_file_guarded(
+        &mut self,
+        workspace_id: String,
+        document_json: &str,
+        path: PathBuf,
+        expected: &DocumentReplacementPrecondition,
+    ) -> Result<NativeFileResult, HostError> {
+        self.check_replacement(&workspace_id, expected)?;
+        self.import_file(workspace_id, document_json, path)
     }
 }
 
-fn mark_persisted(session: &mut KernelSession, document_version: u64) -> Result<(), HostError> {
+fn validate_replacement_precondition(
+    expected: &DocumentReplacementPrecondition,
+) -> Result<(), HostError> {
+    if let DocumentReplacementPrecondition::Document {
+        document_id,
+        document_version,
+    } = expected
+        && (!valid_change_set_document_id(document_id) || *document_version > 9_007_199_254_740_991)
+    {
+        return Err(HostError::new("作品替换预条件无效", 400));
+    }
+    Ok(())
+}
+
+fn mark_persisted(session: &mut NotationSession, document_version: u64) -> Result<(), HostError> {
     let document_id = document_id(session)?;
-    let bytes = serde_json::to_vec(&json!({
-        "apiVersion": 1,
-        "operation": {
-            "kind": "mark-persisted",
-            "checkpoint": {
-                "documentId": document_id,
-                "documentVersion": document_version,
-            }
-        }
-    }))
-    .map_err(|_| HostError::internal())?;
-    match session.operate_stage4_bytes(&bytes) {
-        KernelStage4OperationResultV1::MarkPersisted(
-            KernelStage4MarkPersistedResultV1::Updated { .. }
-            | KernelStage4MarkPersistedResultV1::NoOp { .. },
-        ) => Ok(()),
-        KernelStage4OperationResultV1::MarkPersisted(
-            KernelStage4MarkPersistedResultV1::Rejected { .. },
-        ) => Err(HostError::issue(
+    let reply = session.operate(json!({"operation":"markPersisted","checkpoint": {
+        "documentId":document_id,"documentVersion":document_version
+    }}))?;
+    match (
+        reply["ok"].as_bool(),
+        reply["checkpoint"]["status"].as_str(),
+    ) {
+        (Some(true), Some("updated" | "no-op")) => Ok(()),
+        (_, Some("rejected")) => Err(HostError::issue(
             "file.checkpoint-rejected",
             "文件已写入，但内核无法确认保存检查点，请再次保存",
             409,
@@ -636,7 +743,7 @@ fn mark_persisted(session: &mut KernelSession, document_version: u64) -> Result<
     }
 }
 
-fn file_display_name(path: &Path) -> String {
+pub(crate) fn file_display_name(path: &Path) -> String {
     path.file_name()
         .and_then(|value| value.to_str())
         .unwrap_or("未命名乐谱")
@@ -689,6 +796,43 @@ fn validate_edit(request: &ScoreEditRequest) -> Result<(), HostError> {
         return Err(HostError::new("输入参数不正确", 400));
     }
     match &request.action {
+        ScoreEditAction::SetFrettedPosition { part_id, event_id, position }
+            if part_id.is_empty() || event_id.is_empty()
+                || !(1..=32).contains(&position.string_number) || !(0..=9_007_199_254_740_991).contains(&position.fret) => {
+            Err(HostError::new("弦品参数无效", 400))
+        }
+        ScoreEditAction::SetDocumentMetadata { metadata } => document_metadata::validate(metadata),
+        ScoreEditAction::SetStaffClef { staff_id, .. } if staff_id.is_empty() => {
+            Err(HostError::new("目标谱表无效", 400))
+        }
+        ScoreEditAction::SetKeySignature { part_id, measure_id, change }
+            if part_id.is_empty() || measure_id.is_empty()
+                || matches!(change, crate::dto::KeySignatureChange::Set{fifths} if !(-7..=7).contains(fifths)) => {
+            Err(HostError::new("调号参数无效",400))
+        }
+        ScoreEditAction::InsertMeasure { measure_id, .. }
+        | ScoreEditAction::RemoveMeasure { measure_id }
+        | ScoreEditAction::SetMeasureMeter { measure_id, .. } if measure_id.is_empty() => {
+            Err(HostError::new("目标小节无效", 400))
+        }
+        ScoreEditAction::SetMeasureMeter { meter, .. }
+            if !(1..=32).contains(&meter.numerator)
+                || ![1, 2, 4, 8, 16, 32, 64].contains(&meter.denominator) => {
+            Err(HostError::new("拍号无效", 400))
+        }
+        ScoreEditAction::DeleteRange { range } if [&range.measure_id, &range.voice_id,
+            &range.start_event_id, &range.end_event_id].iter().any(|id| id.is_empty()) => {
+            Err(HostError::new("范围参数无效", 400))
+        }
+        ScoreEditAction::PasteFragment { measure_id, voice_id, anchor, fragment, .. }
+            if measure_id.is_empty() || voice_id.is_empty()
+                || matches!(anchor, InputSequenceAnchor::AfterEvent { event_id } if event_id.is_empty())
+                || fragment.format != "brilliant-guitar.score-events" || fragment.version != 1
+                || fragment.events.is_empty() || fragment.events.len() > 100
+                || fragment.events.iter().any(|event| !validate_duration(event.duration, matches!(event.content, InputContent::Rest))
+                    || matches!(event.content, InputContent::Note { pitch } if !(2..=6).contains(&pitch.octave) || !(-1..=1).contains(&pitch.alter))) => {
+            Err(HostError::new("音乐片段无效", 400))
+        }
         ScoreEditAction::SetTitle { title } if text_length(title.trim()) > 120 => {
             Err(HostError::new("标题最多 120 个字符", 400))
         }
@@ -748,7 +892,7 @@ fn text_length(value: &str) -> usize {
     value.encode_utf16().count()
 }
 
-fn create_score_session(input: &NewScoreInput) -> Result<KernelSession, HostError> {
+fn create_score_session(input: &NewScoreInput) -> Result<NotationSession, HostError> {
     let document_id = Uuid::new_v4().to_string();
     let document = json!({
         "schemaVersion": "brilliant-score-1",
@@ -768,9 +912,8 @@ fn create_score_session(input: &NewScoreInput) -> Result<KernelSession, HostErro
             .map_err(|_| HostError::internal())?,
     )
     .map_err(|_| HostError::new("无法创建该格式的乐谱", 422))?;
-    let mut session = KernelSession::create(request)
-        .map_err(|_| HostError::new("无法建立乐谱编辑会话", 503))?
-        .session;
+    let mut session = NotationSession::create(request)
+        .map_err(|_| HostError::new("无法建立乐谱编辑会话", 503))?;
     let commands: Vec<_> = (2..=input.measure_count)
         .map(|index| {
             json!({
@@ -797,16 +940,15 @@ fn create_score_session(input: &NewScoreInput) -> Result<KernelSession, HostErro
         )?;
     }
     let document = read_state(&session)?.snapshot.document;
-    KernelSession::create(KernelSessionCreateRequestV1 {
+    NotationSession::create(KernelSessionCreateRequestV1 {
         api_version: 1,
         document,
     })
-    .map(|accepted| accepted.session)
     .map_err(|_| HostError::new("无法建立乐谱编辑会话", 503))
 }
 
 fn read_state(
-    session: &KernelSession,
+    session: &NotationSession,
 ) -> Result<Box<brilliant_kernel_contracts::KernelReadStateV1>, HostError> {
     match session.read_state() {
         KernelSessionReadResultV1::Ok(state) => Ok(state),
@@ -819,7 +961,7 @@ struct SessionProjection {
     measure_index: ScoreMeasureIndexV1,
 }
 
-fn session_projection(session: &KernelSession) -> Result<SessionProjection, HostError> {
+fn session_projection(session: &NotationSession) -> Result<SessionProjection, HostError> {
     let state = read_state(session)?;
     let document = &state.snapshot.document;
     let document_id = id_text(&document.id)?;
@@ -855,7 +997,13 @@ fn session_projection(session: &KernelSession) -> Result<SessionProjection, Host
             undo_depth: state.history.undo_depth,
             redo_depth: state.history.redo_depth,
             notation: project_notation(document, &warnings),
+            tablature: tablature_projection::project(document, &warnings),
             playback_source: project_playback_source(document, document_version),
+            metadata: crate::dto::DocumentMetadataInput {
+                title: text(&document.metadata.title)?,
+                authors: document.metadata.authors.iter().map(text).collect::<Result<Vec<_>, _>>()?,
+                tempo_bpm: document.metadata.tempo.bpm.get(),
+            },
         },
         measure_index: ScoreMeasureIndexV1 {
             document_id,
@@ -865,11 +1013,11 @@ fn session_projection(session: &KernelSession) -> Result<SessionProjection, Host
     })
 }
 
-fn session_read(session: &KernelSession) -> Result<ScoreSessionRead, HostError> {
+fn session_read(session: &NotationSession) -> Result<ScoreSessionRead, HostError> {
     session_projection(session).map(|projection| projection.read)
 }
 
-fn document_id(session: &KernelSession) -> Result<String, HostError> {
+fn document_id(session: &NotationSession) -> Result<String, HostError> {
     id_text(&read_state(session)?.snapshot.document.id)
 }
 
@@ -981,7 +1129,7 @@ fn project_playback_source(
             "第一版播放暂只支持单声部乐谱",
         );
     }
-    if !document.extensions.is_empty()
+    if !official_domains::can_project_plain(document)
         || document
             .measure_definitions
             .iter()
@@ -1123,29 +1271,46 @@ fn project_playback_source(
 
 fn project_notation(document: &ScoreDocumentV1, warnings: &[CoreRuleWarningV1]) -> NotationView {
     let Some(part) = document.parts.first() else {
-        return unsupported("当前视图暂只支持单谱表的高音五线谱，文档已保留。");
+        return unsupported("当前视图暂只支持单谱表五线谱，文档已保留。");
     };
     let Some(staff) = part.staves.first() else {
-        return unsupported("当前视图暂只支持单谱表的高音五线谱，文档已保留。");
+        return unsupported("当前视图暂只支持单谱表五线谱，文档已保留。");
     };
     if document.parts.len() != 1
         || part.staves.len() != 1
         || staff.line_count.get() != 5
-        || !matches!(
-            staff.default_clef.sign,
-            brilliant_score_foundation::ClefSignV1::G
-        )
-        || staff.default_clef.line.get() != 2
     {
-        return unsupported("当前视图暂只支持单谱表的高音五线谱，文档已保留。");
+        return unsupported("当前视图暂只支持单谱表五线谱，文档已保留。");
     }
-    if !document.extensions.is_empty()
+    let Some(clef) = staff_clef::project(&staff.default_clef) else {
+        return unsupported("当前视图暂只支持高音、低音、中音或次中音谱号，文档已保留。");
+    };
+    if !official_domains::can_project_plain(document)
         || document
             .measure_definitions
             .iter()
             .any(|measure| measure.pickup_duration.is_some())
     {
         return unsupported("当前视图尚不能完整显示这份乐谱的内容，文档已保留。");
+    }
+    let Ok(changes) = key_signature::timeline(document, part.id.as_js_string()) else {
+        return unsupported("调号数据不兼容，文档已保留。");
+    };
+    let mut key_signature_changes = Vec::with_capacity(changes.len());
+    for (measure_index, definition) in document.measure_definitions.iter().enumerate() {
+        if let Some(change) = changes
+            .iter()
+            .find(|c| &c.measure_id == definition.id.as_js_string())
+        {
+            let Ok(measure_id) = change.measure_id.to_utf8() else {
+                return unsupported("调号标识无法显示，文档已保留。");
+            };
+            key_signature_changes.push(crate::dto::KeySignatureChangeView {
+                measure_id,
+                measure_index,
+                fifths: change.fifths,
+            });
+        }
     }
     let mut measures = Vec::with_capacity(document.measure_definitions.len());
     for definition in &document.measure_definitions {
@@ -1238,8 +1403,9 @@ fn project_notation(document: &ScoreDocumentV1, warnings: &[CoreRuleWarningV1]) 
     NotationView::Staff {
         part_id,
         staff_id,
-        clef: "treble",
+        clef,
         tempo_bpm: document.metadata.tempo.bpm.get(),
+        key_signature_changes,
         measures,
     }
 }
@@ -1272,13 +1438,38 @@ fn rest_durations(mut units: u16) -> Result<Vec<EventDuration>, HostError> {
 }
 
 fn execute_edit(
-    session: &mut KernelSession,
+    session: &mut NotationSession,
     current: &ScoreSessionRead,
     action: &ScoreEditAction,
 ) -> Result<(), HostError> {
     match action {
+        ScoreEditAction::SetFrettedPosition { part_id, event_id, position } =>
+            fretted_position::set(session, part_id, event_id, position),
+        ScoreEditAction::SetDocumentMetadata { metadata } => document_metadata::set(session, current, metadata),
+        ScoreEditAction::SetStaffClef { staff_id, clef } => staff_clef::set(session, staff_id, *clef),
         ScoreEditAction::Undo => execute_operation(session, json!({ "kind": "undo" })),
         ScoreEditAction::Redo => execute_operation(session, json!({ "kind": "redo" })),
+        ScoreEditAction::InsertMeasure {
+            measure_id,
+            position,
+        } => measure_structure::insert(session, current, measure_id, *position),
+        ScoreEditAction::RemoveMeasure { measure_id } => {
+            measure_structure::remove(session, current, measure_id)
+        }
+        ScoreEditAction::SetMeasureMeter {
+            measure_id,
+            meter,
+            scope,
+        } => measure_structure::set_meter(session, current, measure_id, *meter, *scope),
+        ScoreEditAction::SetKeySignature {
+            part_id,
+            measure_id,
+            change,
+        } => submit_command(
+            session,
+            json!({"commandVersion":1,"commandId":key_signature::COMMAND,
+                "target":{"kind":"part","partId":part_id},"payload":{"measureId":measure_id,"change":change}}),
+        ),
         ScoreEditAction::SetTitle { title } => {
             let document = read_state(session)?.snapshot.document;
             let metadata = json!({
@@ -1334,6 +1525,24 @@ fn execute_edit(
             event_id,
             time_policy,
         } => delete_event(session, current, event_id, *time_policy),
+        ScoreEditAction::DeleteRange { range } => {
+            range_clipboard::delete_range(session, current, range)
+        }
+        ScoreEditAction::PasteFragment {
+            measure_id,
+            voice_id,
+            anchor,
+            offset_units,
+            fragment,
+        } => range_clipboard::paste_fragment(
+            session,
+            current,
+            measure_id,
+            voice_id,
+            anchor,
+            *offset_units,
+            fragment,
+        ),
         ScoreEditAction::SetEventProperties {
             event_id,
             properties,
@@ -1356,39 +1565,40 @@ fn execute_edit(
     }
 }
 
-fn execute_operation(session: &mut KernelSession, operation: Value) -> Result<(), HostError> {
-    let bytes = serde_json::to_vec(&json!({ "apiVersion": 1, "operation": operation }))
-        .map_err(|_| HostError::internal())?;
-    match session.operate_stage4_bytes(&bytes) {
-        KernelStage4OperationResultV1::Command(result) => command_result(result),
-        _ => Err(HostError::internal()),
+fn execute_operation(session: &mut NotationSession, operation: Value) -> Result<(), HostError> {
+    let request = match operation["kind"].as_str() {
+        Some("submit") => json!({"operation":"submit","command":operation["command"]}),
+        Some("undo") => json!({"operation":"undo"}),
+        Some("redo") => json!({"operation":"redo"}),
+        _ => return Err(HostError::internal()),
+    };
+    let reply = session.operate(request)?;
+    if reply["ok"] == true
+        && matches!(
+            reply["result"]["status"].as_str(),
+            Some("committed" | "no-op")
+        )
+    {
+        return Ok(());
     }
+    let failure = reply
+        .get("failure")
+        .or_else(|| reply.get("result").and_then(|r| r.get("failure")));
+    let code = failure
+        .and_then(failure_code)
+        .ok_or_else(HostError::internal)?;
+    Err(HostError::issue(
+        format!("core.{code}"),
+        "内核拒绝了这次修改，乐谱保持原状",
+        422,
+        WorkbenchIssueSource::Core,
+        WorkbenchIssueTarget::Workbench,
+        None,
+    ))
 }
 
-fn submit_command(session: &mut KernelSession, command: Value) -> Result<(), HostError> {
+fn submit_command(session: &mut NotationSession, command: Value) -> Result<(), HostError> {
     execute_operation(session, json!({ "kind": "submit", "command": command }))
-}
-
-fn command_result(result: KernelStage4CommandResultV1) -> Result<(), HostError> {
-    match result {
-        KernelStage4CommandResultV1::Committed { .. }
-        | KernelStage4CommandResultV1::NoOp { .. } => Ok(()),
-        KernelStage4CommandResultV1::Rejected { failure, .. } => {
-            let failure_value = serde_json::to_value(&failure).ok();
-            let code = failure_value
-                .as_ref()
-                .and_then(failure_code)
-                .unwrap_or("command-rejected");
-            Err(HostError::issue(
-                format!("core.{code}"),
-                "内核拒绝了这次修改，乐谱保持原状",
-                422,
-                WorkbenchIssueSource::Core,
-                WorkbenchIssueTarget::Workbench,
-                None,
-            ))
-        }
-    }
 }
 
 fn failure_code(value: &Value) -> Option<&str> {
@@ -1401,11 +1611,24 @@ fn failure_code(value: &Value) -> Option<&str> {
 
 fn action_target(current: &ScoreSessionRead, action: &ScoreEditAction) -> WorkbenchIssueTarget {
     match action {
-        ScoreEditAction::Append { measure_id, .. } => WorkbenchIssueTarget::Measure {
+        ScoreEditAction::SetStaffClef { .. } => WorkbenchIssueTarget::Component {
+            component_id: "score-properties".into(),
+        },
+        ScoreEditAction::Append { measure_id, .. }
+        | ScoreEditAction::InsertMeasure { measure_id, .. }
+        | ScoreEditAction::RemoveMeasure { measure_id }
+        | ScoreEditAction::SetMeasureMeter { measure_id, .. }
+        | ScoreEditAction::SetKeySignature { measure_id, .. }
+        | ScoreEditAction::PasteFragment { measure_id, .. } => WorkbenchIssueTarget::Measure {
             measure_id: measure_id.clone(),
             event_id: None,
         },
+        ScoreEditAction::DeleteRange { range } => WorkbenchIssueTarget::Measure {
+            measure_id: range.measure_id.clone(),
+            event_id: None,
+        },
         ScoreEditAction::DeleteEvent { event_id, .. }
+        | ScoreEditAction::SetFrettedPosition { event_id, .. }
         | ScoreEditAction::SetEventProperties { event_id, .. } => {
             if let NotationView::Staff { measures, .. } = &current.notation
                 && let Some(measure) = measures
@@ -1449,7 +1672,7 @@ fn find_event<'a>(
 }
 
 fn delete_event(
-    session: &mut KernelSession,
+    session: &mut NotationSession,
     current: &ScoreSessionRead,
     event_id: &str,
     time_policy: crate::dto::DeleteTimePolicy,
@@ -1500,7 +1723,7 @@ fn delete_event(
 }
 
 fn set_event_properties(
-    session: &mut KernelSession,
+    session: &mut NotationSession,
     current: &ScoreSessionRead,
     event_id: &str,
     properties: &crate::dto::EventProperties,
@@ -1608,7 +1831,7 @@ fn editor_event_error(
 }
 
 fn append_event(
-    session: &mut KernelSession,
+    session: &mut NotationSession,
     current: &ScoreSessionRead,
     measure_id: &str,
     anchor: &InputSequenceAnchor,
@@ -1711,19 +1934,12 @@ fn append_event(
         }));
         insertion_anchor = json!({ "kind": "after-event", "eventId": id });
     }
-    let event_id = Uuid::new_v4().to_string();
-    let insert = match content {
-        InputContent::Rest => json!({
-            "commandVersion": 1, "commandId": "core.voice.insert-rest-event",
-            "target": { "kind": "voice", "voiceId": id_text(&voice.id)? },
-            "payload": { "anchor": insertion_anchor, "event": { "id": event_id, "duration": event_duration, "content": { "kind": "rest" } } }
-        }),
-        InputContent::Note { pitch } => json!({
-            "commandVersion": 1, "commandId": "core.voice.insert-notes-event",
-            "target": { "kind": "voice", "voiceId": id_text(&voice.id)? },
-            "payload": { "anchor": insertion_anchor, "event": { "id": event_id, "duration": event_duration, "content": { "kind": "notes", "notes": [{ "id": Uuid::new_v4().to_string(), "writtenPitch": pitch }] } } }
-        }),
-    };
+    let insert = range_clipboard::insert_command(
+        &id_text(&voice.id)?,
+        &insertion_anchor,
+        event_duration,
+        content,
+    );
     commands.push(insert);
     if document
         .measure_definitions

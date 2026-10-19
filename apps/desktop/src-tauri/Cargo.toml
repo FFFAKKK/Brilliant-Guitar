@@ -25,6 +25,7 @@ brilliant-core-types = { path = "../../../crates/brilliant-core-types" }
 brilliant-score-foundation = { path = "../../../crates/brilliant-score-foundation" }
 brilliant-kernel-contracts = { path = "../../../crates/brilliant-kernel-contracts" }
 brilliant-kernel-session = { path = "../../../crates/brilliant-kernel-session" }
+brilliant-extension-protocol = { path = "../../../crates/brilliant-extension-protocol" }
 tauri-plugin-dialog = "2.7.0"
 zeroize = "=1.8.1"
 

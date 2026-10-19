@@ -149,6 +149,48 @@ mod tests {
     }
 
     #[test]
+    fn backup_startup_plan_survives_store_recreation_with_other_namespaces() {
+        let (root, store) = test_store();
+        let other = serde_json::json!({ "schemaVersion": 4, "value": { "future": [1, "keep"] } });
+        let mut document = serde_json::json!({
+            "other.plugin": other,
+            "brilliant.ui.backup-startup": {
+                "schemaVersion": 1,
+                "value": {
+                    "format": 1, "revision": 1,
+                    "plugins": { "frame.score-info": {
+                        "enabled": true, "settings": { "mode": "measures", "measureLimit": 2 }
+                    } }
+                }
+            }
+        });
+        store
+            .write(document.clone())
+            .expect("persist backup startup plan");
+        drop(store);
+        let restored = JsonDocumentStore::new(root.join("document.json"));
+        assert_eq!(
+            restored.read().expect("restore from disk"),
+            Some(document.clone())
+        );
+        document["brilliant.ui.backup-startup"]["value"]["revision"] = serde_json::json!(2);
+        document["brilliant.ui.backup-startup"]["value"]["plugins"]["frame.score-info"]
+            ["enabled"] = serde_json::json!(false);
+        restored
+            .write(document.clone())
+            .expect("persist next startup plan");
+        drop(restored);
+        let reopened = JsonDocumentStore::new(root.join("document.json"));
+        let actual = reopened
+            .read()
+            .expect("reopen updated disk configuration")
+            .expect("document exists");
+        assert_eq!(actual, document);
+        assert_eq!(actual["other.plugin"], other);
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
     fn scalar_documents_are_rejected_without_overwriting_existing_data() {
         let (root, store) = test_store();
         let original = serde_json::json!({ "schemaVersion": 1 });

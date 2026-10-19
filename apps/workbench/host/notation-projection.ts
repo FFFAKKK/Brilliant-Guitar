@@ -1,6 +1,7 @@
 import type { ScoreDocument } from "../.kernel/src/core-kernel/index.js";
 import type { KernelRuleWarningV1 } from "../.kernel/src/core-kernel/native/integrated-command-bus.js";
-import { KEY_SIGNATURE_NAMESPACE, readPartKeySignatureTimelineV1 } from "../.kernel/src/first-party-modules/key-signature.js";
+import { readPartKeySignatureTimelineV1 } from "../.kernel/src/first-party-modules/key-signature.js";
+import { supportsPlainGuitarNotation } from "./guitar-notation.ts";
 import { isEventProperties } from "../src/contracts/note-input.ts";
 import type { StaffClef } from "../src/contracts/note-input.ts";
 import type { StaffEvent } from "../src/contracts/notation.ts";
@@ -25,7 +26,7 @@ export function projectNotation(document: ScoreDocument, warnings: readonly Kern
   }
   const clef = projectClef(staff.defaultClef);
   if (!clef) return unsupported("当前视图暂不支持这个谱号，文档已保留。");
-  if (document.extensions.some(block => block.namespace !== KEY_SIGNATURE_NAMESPACE)
+  if (!supportsPlainGuitarNotation(document)
     || document.measureDefinitions.some((measure) => measure.pickupDuration !== undefined)) {
     return unsupported("当前视图尚不能完整显示这份乐谱的内容，文档已保留。");
   }

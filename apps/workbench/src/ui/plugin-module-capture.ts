@@ -2,6 +2,7 @@ import type { InternalUiPluginModule } from "./plugin-manager.ts";
 import type { UiComponentDefinition } from "./plugin-contract.ts";
 import { isUiComponentDefinition } from "./plugin-contract.ts";
 import { captureUiPluginManifest } from "./plugin-manifest.ts";
+import { capturePluginMountUi, mountUiManifest } from "../plugins/plugin-mount-ui.ts";
 
 function captureComponentDefinition(definition: UiComponentDefinition): UiComponentDefinition {
   if (!isUiComponentDefinition(definition)) throw new Error("Invalid UI component definition");
@@ -30,8 +31,14 @@ function captureComponentDefinition(definition: UiComponentDefinition): UiCompon
 export function captureInternalUiPluginModule(plugin: InternalUiPluginModule): InternalUiPluginModule {
   const manifest = captureUiPluginManifest(plugin.manifest);
   if (!manifest) throw new Error("Invalid UI plugin manifest");
+  const ui = plugin.ui === undefined ? undefined : capturePluginMountUi(plugin.ui, manifest.id);
+  if (ui !== undefined && manifest.apiVersion !== "4.0") throw new Error("Mount UI facet requires plugin API 4.0");
+  if (JSON.stringify(ui === undefined ? undefined : mountUiManifest(ui)) !== JSON.stringify(manifest.contributes.ui)) {
+    throw new Error("Mount UI contributions do not match manifest");
+  }
   return Object.freeze({
     manifest,
+    ...(ui === undefined ? {} : { ui }),
     projections: Object.freeze(plugin.projections.map((projection) => Object.freeze({ id: projection.id }))),
     commands: Object.freeze(plugin.commands.map((command) => Object.freeze({
       id: command.id,

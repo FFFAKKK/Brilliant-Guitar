@@ -1,5 +1,5 @@
-import { isEventProperties } from "./note-input.ts";
-import type { EventProperties } from "./note-input.ts";
+import { isEventProperties } from "../../../../shared/notation/note-properties.ts";
+import type { EventProperties } from "../../../../shared/notation/note-properties.ts";
 
 export const SCORE_CLIPBOARD_FORMAT = "brilliant-guitar.score-events" as const;
 export const SCORE_CLIPBOARD_VERSION = 1 as const;
@@ -13,7 +13,11 @@ export interface ScoreClipboardFragmentV1 {
 
 export function createScoreClipboardFragment(events: readonly EventProperties[]): ScoreClipboardFragmentV1 {
   return { format: SCORE_CLIPBOARD_FORMAT, version: SCORE_CLIPBOARD_VERSION,
-    events: events.map((event) => structuredClone(event)) };
+    events: events.map((event): EventProperties => ({ duration: event.duration.base === 32 ? { base: 32, dots: 0 }
+      : { base: event.duration.base, dots: event.duration.dots },
+      content: event.content.kind === "rest" ? { kind: "rest" } : { kind: "note", pitch: {
+        step: event.content.pitch.step, octave: event.content.pitch.octave, alter: event.content.pitch.alter,
+      } } })) };
 }
 
 export function isScoreClipboardFragmentV1(value: unknown): value is ScoreClipboardFragmentV1 {

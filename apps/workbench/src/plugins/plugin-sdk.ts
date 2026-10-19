@@ -7,6 +7,10 @@ import type {
   PluginTier,
 } from "./plugin-package-contract.ts";
 import { PluginHostServiceRegistry } from "./plugin-security.ts";
+import { capturePluginMountUi } from "./plugin-mount-ui.ts";
+import type { PluginMountUiFacet, PluginMountUiInput } from "./plugin-mount-ui.ts";
+export type { PluginMountUiFacet, PluginMountUiInput, PluginMountComponentInput, PluginMountComponent, PluginMountCommand, PluginMountContext, PluginMountRuntimeHost,
+  PluginMountInstance, PluginMountMenuItem, PluginMountShortcut } from "./plugin-mount-ui.ts";
 
 export type {
   PluginKernelAssemblyEntryV1,
@@ -217,7 +221,7 @@ export interface PluginComponentExtensionContribution {
 export interface PluginSettingsContribution<T = unknown> {
   readonly schemaVersion: number;
   readonly defaults: T;
-  /** Returns a normalized value, or null when the stored value is incompatible. */
+  /** Synchronously returns normalized JSON data, or null when incompatible. The registry copies/freezes accepted data. */
   parse(value: unknown): T | null;
 }
 
@@ -231,10 +235,15 @@ export function defineNoteControlExtension(
   return Object.freeze({ ...contribution, extensionPoint: NOTE_CONTROL_EXTENSION_POINT });
 }
 
-const packageBrand: unique symbol = Symbol("brilliant-guitar.ui-plugin-package");
+// Packages cross independently bundled SDK/host boundaries in the same runtime.
+// This identifies the author package path; manifest/capture validation still applies.
+// It is not an authorization token and does not survive JSON/IPC serialization.
+const packageBrand: unique symbol = Symbol.for("brilliant-guitar.ui-plugin-package");
 
 export interface UiPluginPackage {
   readonly [packageBrand]: true;
+  readonly apiVersion: "3.0" | "4.0";
+  readonly ui?: PluginMountUiFacet;
   readonly id: string;
   readonly name: string;
   readonly version: string;
@@ -259,6 +268,9 @@ export interface UiPluginPackage {
 export type PluginPackage = UiPluginPackage;
 
 export interface DefinePluginInput {
+  /** Omitted means the existing 3.0 React contract. DOM mount contributions require explicit 4.0. */
+  readonly apiVersion?: "3.0" | "4.0";
+  readonly ui?: PluginMountUiInput | null;
   readonly id: string;
   readonly name: string;
   readonly version: string;
@@ -435,6 +447,11 @@ function workflows(
 
 /** Stable authoring entry point. Internal host contracts are produced by the platform adapter. */
 export function definePlugin(input: DefinePluginInput): UiPluginPackage {
+  const apiVersion = input.apiVersion === undefined ? "3.0" : input.apiVersion;
+  if (apiVersion !== "3.0" && apiVersion !== "4.0") throw new Error("Unsupported plugin API version");
+  if (apiVersion === "3.0" && input.ui !== undefined) throw new Error("Mount UI facet requires plugin API 4.0");
+  if (apiVersion === "4.0" && ((input.views?.length ?? 0) || (input.commands?.length ?? 0)
+    || (input.componentExtensions?.length ?? 0))) throw new Error("Plugin API 4.0 requires mount UI contributions");
   if (!/^[a-z][a-z0-9-]*(?:\.[a-z][a-z0-9-]*)+$/.test(input.id)) throw new Error(`Invalid plugin ID: ${input.id}`);
   if (!input.name.trim()) throw new Error("Plugin name is required");
   if (!/^\d+\.\d+\.\d+$/.test(input.version)) throw new Error(`Invalid plugin version: ${input.version}`);
@@ -443,7 +460,13 @@ export function definePlugin(input: DefinePluginInput): UiPluginPackage {
   }
   if (input.settings) {
     try {
-      if (input.settings.parse(input.settings.defaults) === null) {
+      const parsed = input.settings.parse(input.settings.defaults);
+      if (parsed && (typeof parsed === "object" || typeof parsed === "function")
+        && "then" in parsed && typeof parsed.then === "function") {
+        void Promise.resolve(parsed).catch(() => {});
+        throw new Error(`Invalid plugin settings defaults: ${input.id}`);
+      }
+      if (parsed === null) {
         throw new Error(`Invalid plugin settings defaults: ${input.id}`);
       }
     } catch (error) {
@@ -463,6 +486,8 @@ export function definePlugin(input: DefinePluginInput): UiPluginPackage {
   }]);
   return Object.freeze({
     [packageBrand]: true as const,
+    apiVersion,
+    ...(input.ui == null ? {} : { ui: capturePluginMountUi(input.ui, input.id) }),
     id: input.id,
     name: input.name,
     version: input.version,

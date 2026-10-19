@@ -18,12 +18,12 @@ function session(version: number, measures: readonly StaffMeasure[]): ScoreSessi
     playbackSource: unsupportedPlaybackSource("document", version) };
 }
 
-test("insert focus advances after the new event", () => {
+test("insert focus advances after the new event using notation projections alone", () => {
   const before = session(1, [measure("m1", [note("e1")])]);
   const after = session(2, [measure("m1", [note("e1"), note("e2", "D")])]);
   if (before.notation.kind !== "staff") throw new Error("Expected staff");
   const point = eventEndPoint(before.notation, "e1")!;
-  const result = reconcileScoreFocus(before, after, { kind: "append", measureId: "m1",
+  const result = reconcileScoreFocus({ notation: before.notation }, { notation: after.notation }, { kind: "append", measureId: "m1",
     anchor: { kind: "after-event", eventId: "e1" }, offsetUnits: 16,
     duration: { base: 4, dots: 0 }, content: note("draft", "D").content }, point, null);
   assert.deepEqual(result.directive, { kind: "after-insert", eventId: "e2" });
@@ -60,4 +60,3 @@ test("updates retain selection while deletion returns to a caret", () => {
   assert.equal(deletion.target.kind, "caret");
   assert.equal(deletion.target.kind === "caret" && deletion.target.point.offsetUnits, 16);
 });
-

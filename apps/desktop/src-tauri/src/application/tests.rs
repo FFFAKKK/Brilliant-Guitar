@@ -16,6 +16,194 @@ fn create_request(workspace_id: &str, request_id: &str) -> CreateScoreRequest {
     }
 }
 
+fn replacement_expected(current: &ScoreSessionRead) -> DocumentReplacementPrecondition {
+    DocumentReplacementPrecondition::Document {
+        document_id: current.document_id.clone(),
+        document_version: current.document_version,
+    }
+}
+
+fn guarded_request(
+    workspace: &str,
+    expected: DocumentReplacementPrecondition,
+) -> GuardedCreateScoreRequest {
+    let request = create_request(workspace, &id());
+    GuardedCreateScoreRequest {
+        workspace_id: request.workspace_id,
+        request_id: request.request_id,
+        input: request.input,
+        expected,
+    }
+}
+
+#[test]
+fn guarded_create_detects_same_document_changed_version_and_preserves_saved_state() {
+    let workspace = id();
+    let mut service = ScoreSessionService::default();
+    let initial = service.create(create_request(&workspace, &id())).unwrap();
+    let path = PathBuf::from("retained.bgp.json");
+    service
+        .mark_saved(&workspace, path.clone(), initial.document_version)
+        .unwrap();
+    let changed = edit(
+        &mut service,
+        &workspace,
+        &initial,
+        ScoreEditAction::SetTempo { tempo_bpm: 120.0 },
+    );
+    assert_eq!(initial.document_id, changed.document_id);
+    assert_ne!(initial.document_version, changed.document_version);
+    let error = service
+        .create_guarded(guarded_request(&workspace, replacement_expected(&initial)))
+        .unwrap_err();
+    assert_eq!(error.status, 409);
+    assert_eq!(error.issue.unwrap().code, "document.stale");
+    assert_eq!(service.read(&workspace).unwrap(), Some(changed.clone()));
+    assert_eq!(service.file_path(&workspace).unwrap(), Some(path));
+    assert_eq!(
+        service.sessions[&workspace].saved_version,
+        Some(initial.document_version)
+    );
+    // Reproduce the original ID-only gap without pretending the compatibility route is protected.
+    let mut legacy = create_request(&workspace, &id());
+    legacy.expected_document_id = Some(initial.document_id);
+    let replaced = service.create(legacy).unwrap();
+    assert_ne!(replaced.document_id, changed.document_id);
+}
+
+#[test]
+fn guarded_create_accepts_empty_then_replays_without_replacing_or_weakening_guard() {
+    let workspace = id();
+    let mut service = ScoreSessionService::default();
+    let request = guarded_request(&workspace, DocumentReplacementPrecondition::Empty {});
+    let first = service.create_guarded(request.clone()).unwrap();
+    assert_eq!(service.create_guarded(request.clone()).unwrap(), first);
+    let changed = edit(
+        &mut service,
+        &workspace,
+        &first,
+        ScoreEditAction::SetTempo { tempo_bpm: 132.0 },
+    );
+    assert_eq!(service.create_guarded(request.clone()).unwrap(), changed);
+    let mut different = request.clone();
+    different.input.title = "different".into();
+    assert_eq!(service.create_guarded(different).unwrap_err().status, 409);
+    let mut different = request;
+    different.expected = replacement_expected(&changed);
+    assert_eq!(service.create_guarded(different).unwrap_err().status, 409);
+    assert_eq!(
+        service
+            .create_guarded(guarded_request(
+                &workspace,
+                DocumentReplacementPrecondition::Empty {}
+            ))
+            .unwrap_err()
+            .status,
+        409
+    );
+    assert_eq!(service.read(&workspace).unwrap(), Some(changed.clone()));
+    let replacement = service
+        .create_guarded(guarded_request(&workspace, replacement_expected(&changed)))
+        .unwrap();
+    assert_ne!(replacement.document_id, changed.document_id);
+    assert_eq!(service.file_path(&workspace).unwrap(), None);
+    assert_eq!(service.sessions[&workspace].saved_version, None);
+}
+
+#[test]
+fn guarded_file_import_checks_identity_absence_and_version_before_committing() {
+    let workspace = id();
+    let mut service = ScoreSessionService::default();
+    let first = service.create(create_request(&workspace, &id())).unwrap();
+    let document = service.export_document(&workspace).unwrap();
+    let path = PathBuf::from("accepted.bgp.json");
+    let opened = service
+        .import_file_guarded(
+            workspace.clone(),
+            &document,
+            path.clone(),
+            &replacement_expected(&first),
+        )
+        .unwrap();
+    for expected in [
+        DocumentReplacementPrecondition::Empty {},
+        DocumentReplacementPrecondition::Document {
+            document_id: id(),
+            document_version: opened.session.document_version,
+        },
+        DocumentReplacementPrecondition::Document {
+            document_id: opened.session.document_id.clone(),
+            document_version: opened.session.document_version + 1,
+        },
+    ] {
+        assert_eq!(
+            service
+                .import_file_guarded(
+                    workspace.clone(),
+                    &document,
+                    PathBuf::from("wrong.json"),
+                    &expected
+                )
+                .unwrap_err()
+                .status,
+            409
+        );
+        assert_eq!(
+            service.read(&workspace).unwrap(),
+            Some(opened.session.clone())
+        );
+        assert_eq!(service.file_path(&workspace).unwrap(), Some(path.clone()));
+        assert_eq!(
+            service.sessions[&workspace].saved_version,
+            Some(opened.saved_version)
+        );
+    }
+    let empty_workspace = id();
+    assert!(
+        service
+            .import_file_guarded(
+                empty_workspace,
+                &document,
+                path,
+                &DocumentReplacementPrecondition::Empty {}
+            )
+            .is_ok()
+    );
+}
+
+#[test]
+fn replacement_precondition_rejects_invalid_shapes_ids_and_unsafe_versions() {
+    for value in [
+        json!({"kind":"empty","documentId":"ignored"}),
+        json!({"kind":"document","documentId":"x"}),
+        json!({"kind":"document","documentId":"x","documentVersion":-1}),
+        json!({"kind":"other"}),
+        json!(null),
+    ] {
+        assert!(serde_json::from_value::<DocumentReplacementPrecondition>(value).is_err());
+    }
+    let service = ScoreSessionService::default();
+    for (document_id, document_version) in [
+        (String::new(), 0),
+        ("x".repeat(257), 0),
+        ("valid".into(), 9_007_199_254_740_992),
+    ] {
+        assert_eq!(
+            service
+                .check_replacement(
+                    &id(),
+                    &DocumentReplacementPrecondition::Document {
+                        document_id,
+                        document_version
+                    }
+                )
+                .unwrap_err()
+                .status,
+            400
+        );
+    }
+}
+
 #[test]
 fn create_read_and_close_session() {
     let workspace_id = id();
@@ -31,7 +219,9 @@ fn create_read_and_close_session() {
     assert_eq!(created.document_version, 0);
     match &created.notation {
         NotationView::Staff { tempo_bpm, .. } => assert_eq!(*tempo_bpm, 96.0),
-        NotationView::Unsupported { message } => panic!("unexpected notation projection: {message}"),
+        NotationView::Unsupported { message } => {
+            panic!("unexpected notation projection: {message}")
+        }
     }
     match &created.playback_source {
         PlaybackSourceProjection::Ready {
@@ -807,4 +997,115 @@ fn physical_save_close_and_reopen_preserves_the_business_document() {
     assert_eq!(reopened.redo_depth, 0);
 
     std::fs::remove_dir_all(directory).expect("remove business flow directory");
+}
+
+#[test]
+fn native_file_replacement_keeps_atomic_read_and_saved_checkpoint() {
+    let mut producer = ScoreSessionService::default();
+    let first_workspace = id();
+    let mut first_request = create_request(&first_workspace, &id());
+    first_request.input.title = "验收作品 A".into();
+    let first_created = producer.create(first_request).expect("create first source");
+    let first_score = append_note(
+        &mut producer,
+        &first_workspace,
+        &first_created,
+        InputSequenceAnchor::Start,
+        PitchStep::E,
+    );
+    let second_workspace = id();
+    let mut second_request = create_request(&second_workspace, &id());
+    second_request.input.title = "验收作品 B".into();
+    let second_created = producer
+        .create(second_request)
+        .expect("create second source");
+    let second_score = append_note(
+        &mut producer,
+        &second_workspace,
+        &second_created,
+        InputSequenceAnchor::Start,
+        PitchStep::G,
+    );
+    let directory = std::env::temp_dir().join(format!("brilliant-native-readonly-{}", id()));
+    std::fs::create_dir(&directory).expect("create isolated file directory");
+    let first_path = directory.join("first.bgp.json");
+    let second_path = directory.join("second.bgp.json");
+    for (source, path) in [
+        (&first_workspace, &first_path),
+        (&second_workspace, &second_path),
+    ] {
+        let encoded = producer
+            .export_document(source)
+            .expect("export source document");
+        crate::document_io::atomic_write(path, encoded.as_bytes()).expect("write source file");
+    }
+    let mut opened = ScoreSessionService::default();
+    let workspace = id();
+    let first_json = crate::document_io::read_document(&first_path).expect("read first file");
+    let first = opened
+        .import_file(workspace.clone(), &first_json, first_path)
+        .expect("open first file");
+    assert_eq!(first.session.document_id, first_score.document_id);
+    assert_eq!(first.session.notation, first_score.notation);
+    assert_eq!(first.name, "first");
+    assert_eq!(first.saved_version, first.session.document_version);
+
+    let second_json = crate::document_io::read_document(&second_path).expect("read second file");
+    let second = opened
+        .import_file(workspace.clone(), &second_json, second_path.clone())
+        .expect("open second file");
+    assert_ne!(first.session.document_id, second.session.document_id);
+    assert_eq!(second.session.document_id, second_score.document_id);
+    assert_eq!(second.session.notation, second_score.notation);
+    assert_eq!(second.session.title, "验收作品 B");
+    assert_eq!(second.session.undo_depth, 0);
+    assert_eq!(second.session.redo_depth, 0);
+    assert_eq!(second.name, "second");
+    assert_eq!(
+        opened.file_path(&workspace).expect("accepted file path"),
+        Some(second_path.clone())
+    );
+    let wire = serde_json::to_value(&second).expect("serialize native IPC result");
+    assert_eq!(wire["savedVersion"], json!(second.session.document_version));
+    assert!(wire.get("saved_version").is_none());
+    assert_eq!(
+        wire["session"]["documentId"],
+        json!(second_score.document_id)
+    );
+    assert_eq!(
+        wire["session"]["playbackSource"]["documentId"],
+        wire["session"]["documentId"]
+    );
+    assert_eq!(
+        wire["session"]["playbackSource"]["documentVersion"],
+        wire["session"]["documentVersion"]
+    );
+
+    let broken_path = directory.join("broken.bgp.json");
+    crate::document_io::atomic_write(&broken_path, br#"{"schemaVersion":"future"}"#)
+        .expect("write invalid project");
+    let broken_json =
+        crate::document_io::read_document(&broken_path).expect("read invalid project");
+    assert!(
+        opened
+            .import_file(workspace.clone(), &broken_json, broken_path)
+            .is_err()
+    );
+    let retained = opened
+        .read(&workspace)
+        .expect("read retained project")
+        .expect("retained session");
+    assert_eq!(
+        serde_json::to_value(retained).expect("serialize retained session"),
+        wire["session"]
+    );
+    assert_eq!(
+        opened.file_path(&workspace).expect("retained file path"),
+        Some(second_path)
+    );
+    assert_eq!(
+        opened.sessions[&workspace].saved_version,
+        Some(second.saved_version)
+    );
+    std::fs::remove_dir_all(directory).expect("remove isolated file directory");
 }

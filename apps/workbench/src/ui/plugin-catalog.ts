@@ -31,6 +31,8 @@ export class UiPluginCatalog {
     return [...this.#plugins];
   }
 
+  clear(): void { this.#plugins.length = 0; }
+
   findComponentExtensions(extensionPoint: string): readonly UiDiscoveredComponentExtension[] {
     return this.#plugins.flatMap((plugin) => plugin.componentExtensions
       .filter((contribution) => contribution.extensionPoint === extensionPoint)

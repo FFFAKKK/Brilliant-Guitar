@@ -17,6 +17,30 @@ pub struct CreateScoreRequest {
     pub expected_document_id: Option<String>,
 }
 
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
+#[serde(
+    tag = "kind",
+    rename_all = "kebab-case",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub enum DocumentReplacementPrecondition {
+    Empty {},
+    Document {
+        document_id: String,
+        document_version: u64,
+    },
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct GuardedCreateScoreRequest {
+    pub workspace_id: String,
+    pub input: NewScoreInput,
+    pub request_id: String,
+    pub expected: DocumentReplacementPrecondition,
+}
+
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct EventDuration {
@@ -69,6 +93,23 @@ pub struct EventProperties {
     pub content: InputContent,
 }
 
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ScoreEventRange {
+    pub measure_id: String,
+    pub voice_id: String,
+    pub start_event_id: String,
+    pub end_event_id: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ScoreClipboardFragment {
+    pub format: String,
+    pub version: u8,
+    pub events: Vec<EventProperties>,
+}
+
 #[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum DeleteTimePolicy {
@@ -87,6 +128,38 @@ pub enum DeleteTimePolicy {
 pub enum ScoreEditAction {
     Undo,
     Redo,
+    InsertMeasure {
+        measure_id: String,
+        position: MeasureInsertPosition,
+    },
+    RemoveMeasure {
+        measure_id: String,
+    },
+    SetMeasureMeter {
+        measure_id: String,
+        meter: Meter,
+        scope: MeterChangeScope,
+    },
+    SetKeySignature {
+        part_id: String,
+        measure_id: String,
+        change: KeySignatureChange,
+    },
+    SetStaffClef {
+        staff_id: String,
+        clef: StaffClef,
+    },
+    DeleteRange {
+        range: ScoreEventRange,
+    },
+    PasteFragment {
+        measure_id: String,
+        voice_id: String,
+        anchor: InputSequenceAnchor,
+        #[serde(default)]
+        offset_units: Option<u16>,
+        fragment: ScoreClipboardFragment,
+    },
     DeleteEvent {
         event_id: String,
         #[serde(default)]
@@ -95,6 +168,11 @@ pub enum ScoreEditAction {
     SetEventProperties {
         event_id: String,
         properties: EventProperties,
+    },
+    SetFrettedPosition {
+        part_id: String,
+        event_id: String,
+        position: FrettedPosition,
     },
     SetTitle {
         title: String,
@@ -106,6 +184,9 @@ pub enum ScoreEditAction {
         title: String,
         tempo_bpm: f64,
     },
+    SetDocumentMetadata {
+        metadata: DocumentMetadataInput,
+    },
     Append {
         measure_id: String,
         anchor: InputSequenceAnchor,
@@ -114,6 +195,15 @@ pub enum ScoreEditAction {
         duration: EventDuration,
         content: InputContent,
     },
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum StaffClef {
+    Treble,
+    Bass,
+    Alto,
+    Tenor,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -136,7 +226,17 @@ pub struct ScoreSessionRead {
     pub undo_depth: u64,
     pub redo_depth: u64,
     pub notation: NotationView,
+    pub tablature: TablatureProjection,
     pub playback_source: PlaybackSourceProjection,
+    pub metadata: DocumentMetadataInput,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct DocumentMetadataInput {
+    pub title: String,
+    pub authors: Vec<String>,
+    pub tempo_bpm: f64,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
@@ -368,11 +468,54 @@ pub enum NotationView {
         staff_id: String,
         clef: &'static str,
         tempo_bpm: f64,
+        key_signature_changes: Vec<KeySignatureChangeView>,
         measures: Vec<StaffMeasure>,
     },
     Unsupported {
         message: String,
     },
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(tag = "kind", rename_all = "kebab-case", rename_all_fields = "camelCase")]
+pub enum TablatureProjection {
+    Tablature {
+        part_id: String, staff_id: String, tempo_bpm: f64,
+        string_count: i64, fret_count: Option<i64>, capo_fret: i64,
+        measures: Vec<TablatureMeasure>,
+    },
+    Unsupported { message: String },
+}
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TablatureMeasure {
+    pub id: String, pub voice_id: String, pub meter: Meter,
+    pub events: Vec<TablatureEvent>, pub rule_warnings: Vec<StaffRuleWarning>,
+}
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct TablatureEvent {
+    pub id: String, pub duration: EventDuration, pub content: TablatureContent,
+}
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(tag = "kind", rename_all = "kebab-case", rename_all_fields = "camelCase")]
+pub enum TablatureContent { Rest, Note { note_id: String, position: FrettedPosition } }
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct FrettedPosition { pub string_number: i64, pub fret: i64 }
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
+pub enum KeySignatureChange {
+    Set { fifths: i8 },
+    Inherit {},
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct KeySignatureChangeView {
+    pub measure_id: String,
+    pub measure_index: usize,
+    pub fifths: i64,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
@@ -400,10 +543,25 @@ pub struct StaffRuleWarning {
     pub overflow: ExactFraction,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Meter {
     pub numerator: i64,
     pub denominator: i64,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum MeasureInsertPosition {
+    Before,
+    After,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum MeterChangeScope {
+    Measure,
+    MeterRun,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
@@ -419,12 +577,15 @@ pub struct NativeFileResult {
     pub session: ScoreSessionRead,
     pub name: String,
     pub saved_version: u64,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub warnings: Vec<WorkbenchIssue>,
 }
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum WorkbenchIssueSeverity {
     Error,
+    Warning,
 }
 
 #[derive(Clone, Debug, Serialize)]

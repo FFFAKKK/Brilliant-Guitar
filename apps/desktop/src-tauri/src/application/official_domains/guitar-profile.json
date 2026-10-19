@@ -1,0 +1,59 @@
+{
+  "id": "brilliant.instrument.guitar",
+  "family": "fretted-string",
+  "stringCount": 6,
+  "fretCount": null,
+  "capoFret": 0,
+  "tuning": [
+    {
+      "stringNumber": 1,
+      "soundingPitch": {
+        "step": "E",
+        "alter": 0,
+        "octave": 4
+      }
+    },
+    {
+      "stringNumber": 2,
+      "soundingPitch": {
+        "step": "B",
+        "alter": 0,
+        "octave": 3
+      }
+    },
+    {
+      "stringNumber": 3,
+      "soundingPitch": {
+        "step": "G",
+        "alter": 0,
+        "octave": 3
+      }
+    },
+    {
+      "stringNumber": 4,
+      "soundingPitch": {
+        "step": "D",
+        "alter": 0,
+        "octave": 3
+      }
+    },
+    {
+      "stringNumber": 5,
+      "soundingPitch": {
+        "step": "A",
+        "alter": 0,
+        "octave": 2
+      }
+    },
+    {
+      "stringNumber": 6,
+      "soundingPitch": {
+        "step": "E",
+        "alter": 0,
+        "octave": 2
+      }
+    }
+  ],
+  "writtenPitchOffsetSemitones": 12,
+  "supportsChords": true
+}

@@ -20,6 +20,7 @@ import { captureInternalUiPluginModule } from "../ui/plugin-module-capture.ts";
 import { UiPluginCatalog } from "../ui/plugin-catalog.ts";
 import { UiPluginDiagnosticStore, UiPluginHostError, isUiPluginHostError, uiPluginIdentity } from "../ui/plugin-diagnostic.ts";
 import type { UiPluginDiagnostic } from "../ui/plugin-diagnostic.ts";
+import { notifyObservers } from "../ui/notify-observers.ts";
 import { UiProjectionRegistry } from "../ui/projection-registry.ts";
 import { UiPluginHost as ConcreteUiPluginHost } from "../ui/plugin-manager.ts";
 import { WorkbenchFeatureRegistry } from "../ui/plugin-manifest.ts";
@@ -53,7 +54,7 @@ import type { PluginActivationChange } from "./plugin-session-activation.ts";
 export type { PluginActivationChange, PluginActivationEffect } from "./plugin-session-activation.ts";
 
 export type PluginRuntimeStatus = "discovered" | "installed" | "active" | "failed";
-export type PluginPlatformPhase = "configuring" | "running";
+export type PluginPlatformPhase = "configuring" | "running" | "disposed";
 
 export interface PluginRuntimeInfo {
   readonly manifest: UiPluginManifest;
@@ -63,6 +64,24 @@ export interface PluginRuntimeInfo {
   /** Desired activation state to use when the next process session is assembled. */
   readonly nextLaunchActive: boolean;
   readonly restartRequired: boolean;
+  readonly error?: string;
+}
+
+/** A contribution host owns execution resources, never plugin identity or activation state. */
+export interface PluginContributionHost {
+  readonly components: Pick<ConcreteUiPluginHost["components"], "get" | "list">;
+  readonly interactions: NotationInteractionDirectory;
+  readonly projections: UiProjectionRegistry;
+  install(plugin: InternalUiPluginModule): void;
+  resolveCommands(snapshot: UiProjectionSnapshot, includedPluginIds: ReadonlySet<string>): readonly WorkbenchCommand[];
+  resolveViews(snapshot: UiProjectionSnapshot, includedPluginIds: ReadonlySet<string>): ReadonlyMap<string, UiResolvedViewContribution>;
+  dispose(): void;
+}
+export interface PluginContributionHostContext {
+  readonly features: WorkbenchFeatureRegistry;
+  readonly projections: UiProjectionRegistry;
+  reportDiagnostic(diagnostic: UiPluginDiagnostic): void;
+  settings(pluginId: string): PluginSettingsHost | null;
 }
 
 export interface PluginSessionPlanV1 {
@@ -78,6 +97,7 @@ export interface PluginStartOptions {
 }
 
 export interface PluginPlatformOptions {
+  readonly createContributionHost?: (context: PluginContributionHostContext) => PluginContributionHost;
   readonly hostFeatures: WorkbenchFeatureRegistry;
   readonly hostServices?: PluginHostServiceRegistry;
   readonly hostServicePolicy?: PluginHostServicePolicyOptions;
@@ -120,7 +140,8 @@ function sortedHostServiceGrants(
 export class PluginPlatform {
   readonly diagnostics: UiPluginDiagnosticStore;
   readonly #catalog = new UiPluginCatalog();
-  readonly #ui: ConcreteUiPluginHost;
+  readonly #ui: PluginContributionHost;
+  readonly #uiFeatures: WorkbenchFeatureRegistry;
   readonly #settings = new PluginSettingsRegistry();
   readonly #componentDirectory: PluginComponentDirectory;
   readonly #interactionDirectory: PluginInteractionDirectory;
@@ -143,16 +164,21 @@ export class PluginPlatform {
   #snapshot: readonly PluginRuntimeInfo[] = Object.freeze([]);
   #settingsPersistence: PluginSettingsPersistence | null = null;
   #activationPersistence: PluginActivationPersistence | null = null;
+  #disposed = false;
+  readonly #stopSettings: () => void;
 
   constructor(options: PluginPlatformOptions) {
+    this.#uiFeatures = options.hostFeatures;
     this.diagnostics = options.diagnostics ?? new UiPluginDiagnosticStore();
     this.#onDiagnostic = options.onDiagnostic;
     this.#hostServicePolicy = new PluginHostServicePolicy(
       options.hostServices ?? new PluginHostServiceRegistry([]),
       options.hostServicePolicy,
     );
-    this.#ui = new ConcreteUiPluginHost(options.hostFeatures, new UiProjectionRegistry(options.projections),
-      (diagnostic) => this.#report(diagnostic));
+    const projections = new UiProjectionRegistry(options.projections);
+    this.#ui = options.createContributionHost?.({ features: options.hostFeatures, projections,
+      reportDiagnostic: diagnostic => this.#report(diagnostic), settings: pluginId => this.#settingsHost(pluginId) })
+      ?? new ConcreteUiPluginHost(options.hostFeatures, projections, diagnostic => this.#report(diagnostic));
     this.#componentDirectory = Object.freeze({
       get: (id: string) => this.#ui.components.get(id),
       list: () => this.#ui.components.list(),
@@ -161,7 +187,7 @@ export class PluginPlatform {
       hasId: (id: string) => this.#ui.interactions.hasId(id),
       hasKind: (kind: ConcreteNotationKind) => this.#ui.interactions.hasKind(kind),
       list: () => this.#ui.interactions.list(),
-      translate: <Input extends InputContext, Draft = unknown, Intent extends EditIntent = EditIntent>(
+      translate: <Input extends InputContext, Draft = unknown, Intent extends EditIntent<unknown, unknown> = EditIntent>(
         kind: ConcreteNotationKind, signal: InputSignal, context: Input,
       ) => this.#ui.interactions.translate<Input, Draft, Intent>(kind, signal, context),
       readDraft: <Draft>(kind: ConcreteNotationKind, composition: unknown) =>
@@ -180,11 +206,11 @@ export class PluginPlatform {
     });
     this.#settingsDirectory = Object.freeze({
       has: (pluginId: string) => this.#settings.has(pluginId),
-      subscribe: (listener: () => void) => this.#settings.subscribe(listener),
+      subscribe: (listener: () => void) => { this.#assertAlive(); return this.#settings.subscribe(listener); },
       read: <T = unknown>(pluginId: string) => this.#settings.read<T>(pluginId),
-      write: <T = unknown>(pluginId: string, value: unknown) => this.#settings.write<T>(pluginId, value),
-      reset: <T = unknown>(pluginId: string) => this.#settings.reset<T>(pluginId),
-      restore: (value: unknown) => this.#settings.restore(value),
+      write: <T = unknown>(pluginId: string, value: unknown) => { this.#assertAlive(); return this.#settings.write<T>(pluginId, value); },
+      reset: <T = unknown>(pluginId: string) => { this.#assertAlive(); return this.#settings.reset<T>(pluginId); },
+      restore: (value: unknown) => { this.#assertAlive(); return this.#settings.restore(value); },
       serialize: () => this.#settings.serialize(),
     });
     this.#hostServiceGrantDirectory = Object.freeze({
@@ -202,10 +228,11 @@ export class PluginPlatform {
       listByPlugin: (ownerPluginId: string) => Object.freeze([...this.#workflows.values()]
         .filter((workflow) => workflow.ownerPluginId === ownerPluginId)),
     });
-    this.#settings.subscribe(() => this.#publish());
+    this.#stopSettings = this.#settings.subscribe(() => this.#publish());
   }
 
   register(registration: PluginRegistration): void {
+    this.#assertAlive();
     if (this.phase() === "running") throw new Error("Plugin platform has already started");
     let plugin: InternalUiPluginModule;
     let pluginPackage: PluginPackage | null = null;
@@ -232,6 +259,7 @@ export class PluginPlatform {
   }
 
   start(options: PluginStartOptions = {}): PluginSessionPlanV1 {
+    this.#assertAlive();
     if (this.phase() === "running") return this.sessionPlan();
     this.#activation.start(options.selectedPluginIds);
     for (const plugin of this.#catalog.installationPlan()) {
@@ -240,6 +268,10 @@ export class PluginPlatform {
         continue;
       }
       try {
+        const missingFeatures = plugin.manifest.requires.hostFeatures.filter(id => !this.#uiFeatures.has(id));
+        const missingProjections = plugin.manifest.requires.projections.filter(id => !this.#ui.projections.has(id));
+        if (plugin.manifest.apiVersion === "4.0" && (missingFeatures.length || missingProjections.length)) throw new Error(
+          `Unavailable plugin requirements: ${[...missingFeatures, ...missingProjections].join(", ")}`);
         const hostServiceGrant = this.#resolveHostServiceGrant(plugin);
         this.#validateInstruments(plugin);
         this.#validatePlaybackOutputs(plugin);
@@ -281,14 +313,14 @@ export class PluginPlatform {
           cause: error,
         });
         this.#report(failure.diagnostic);
-        this.#records.set(plugin.manifest.id, this.#runtimeInfo(plugin.manifest, "failed"));
+        this.#records.set(plugin.manifest.id, Object.freeze({ ...this.#runtimeInfo(plugin.manifest, "failed"), error: failure.diagnostic.detail }));
       }
     }
     this.#publish();
     return this.sessionPlan();
   }
 
-  phase(): PluginPlatformPhase { return this.#activation.phase(); }
+  phase(): PluginPlatformPhase { return this.#disposed ? "disposed" : this.#activation.phase(); }
 
   list(): readonly PluginRuntimeInfo[] {
     return this.#snapshot;
@@ -297,6 +329,7 @@ export class PluginPlatform {
   readonly getSnapshot = (): readonly PluginRuntimeInfo[] => this.#snapshot;
 
   readonly subscribe = (listener: () => void): (() => void) => {
+    this.#assertAlive();
     this.#listeners.add(listener);
     return () => { this.#listeners.delete(listener); };
   };
@@ -312,12 +345,13 @@ export class PluginPlatform {
    * session; after start it only changes the next-launch plan. The current session is immutable.
    */
   restoreActivation(pluginIds: readonly string[]): void {
+    this.#assertAlive();
     this.#activation.restoreDesired(pluginIds);
     if (this.#refreshActivationRecords()) this.#publish();
   }
 
   activatedPluginIds(): ReadonlySet<string> {
-    return this.#activation.activeIds();
+    return this.#disposed ? new Set() : this.#activation.activeIds();
   }
 
   nextLaunchPluginIds(): ReadonlySet<string> {
@@ -367,26 +401,75 @@ export class PluginPlatform {
     }));
   }
   connectSettings(storage: PluginSettingsStoragePort): PluginSettingsPersistence {
+    this.#assertAlive();
     if (this.phase() !== "running") throw new Error("Plugin platform has not started");
     if (this.#settingsPersistence) throw new Error("Plugin settings storage is already connected");
     this.#settingsPersistence = new PluginSettingsPersistence(this.#settings, storage);
     return this.#settingsPersistence;
   }
   connectActivation(storage: PluginActivationStoragePort): PluginActivationPersistence {
+    this.#assertAlive();
     if (this.#activationPersistence) throw new Error("Plugin activation storage is already connected");
     this.#activationPersistence = new PluginActivationPersistence(this, storage);
     return this.#activationPersistence;
   }
 
   resolveCommands(snapshot: UiProjectionSnapshot): readonly WorkbenchCommand[] {
+    this.#assertAlive();
     return this.#ui.resolveCommands(snapshot, this.#activation.activeIds());
   }
 
   resolveViews(snapshot: UiProjectionSnapshot): ReadonlyMap<string, UiResolvedViewContribution> {
+    this.#assertAlive();
     return this.#ui.resolveViews(snapshot, this.#activation.activeIds());
   }
 
+  /** Frozen, data-only mount descriptors for UI management; implementations remain private. */
+  uiContributions(pluginId: string) {
+    const ui = this.#catalog.list().find(plugin => plugin.manifest.id === pluginId)?.ui;
+    if (!ui) return undefined;
+    return Object.freeze({ components: Object.freeze(ui.components.map(({ mount: _mount, ...data }) => Object.freeze(data))),
+      commands: Object.freeze(ui.commands.map(command => Object.freeze({ id: command.id, label: command.label ?? command.id }))),
+      menuItems: ui.menuItems, shortcuts: ui.shortcuts });
+  }
+
+  /** Placement query over the active catalog. Does not own another registry or lifecycle. */
+  facets(facetId?: string) {
+    if (this.#disposed || facetId !== undefined && facetId !== "ui") return Object.freeze([]);
+    return Object.freeze(this.#catalog.list().filter(plugin => this.#records.get(plugin.manifest.id)?.active && plugin.ui)
+      .map(plugin => {
+        const units = plugin.ui!.components;
+        const surface = (unit: typeof units[number], kind: "module" | "page") => Object.freeze({ id: unit.id,
+          componentId: unit.id, kind, slots: unit.slots, role: unit.role });
+        const page = (unit: typeof units[number]) => unit.uiKind === "page" || unit.role === "view";
+        return Object.freeze({ facetId: "ui", contractVersion: 1, pluginId: plugin.manifest.id,
+          value: Object.freeze({ facetId: "ui", contractVersion: 1,
+            modules: Object.freeze(units.filter(unit => !page(unit)).map(unit => surface(unit, "module"))),
+            pages: Object.freeze(units.filter(page).map(unit => surface(unit, "page"))),
+            slots: Object.freeze([...new Set(units.flatMap(unit => unit.slots))]) }) });
+      }));
+  }
+
+  /** Ends this entire application session permanently. Not a per-plugin hot unload API. */
+  dispose(): void {
+    if (this.#disposed) return;
+    this.#disposed = true;
+    this.#stopSettings();
+    this.#settingsPersistence?.dispose(); this.#activationPersistence?.dispose();
+    try { this.#ui.dispose(); }
+    finally {
+      this.#catalog.clear(); this.#settings.dispose();
+      this.#hostServiceGrants.clear(); this.#settingsHosts.clear(); this.#records.clear();
+      this.#instrumentOwners.clear(); this.#playbackOutputOwners.clear();
+      this.#applicationCapabilities.clear(); this.#workflows.clear();
+      try { this.#publish(); } finally { this.#listeners.clear(); }
+    }
+  }
+
+  #assertAlive(): void { if (this.#disposed) throw new Error("Plugin platform is disposed"); }
+
   #setNextLaunchActivation(pluginId: string, enabled: boolean): PluginActivationChange {
+    this.#assertAlive();
     const change = this.#activation.setDesired(pluginId, enabled);
     if (change.effect !== "rejected" && this.#refreshActivationRecord(pluginId)) this.#publish();
     return change;
@@ -414,7 +497,7 @@ export class PluginPlatform {
 
   #report(diagnostic: UiPluginDiagnostic): void {
     this.diagnostics.report(diagnostic);
-    this.#onDiagnostic?.(diagnostic);
+    if (this.#onDiagnostic) notifyObservers([() => this.#onDiagnostic?.(diagnostic)]);
   }
 
   #settingsHost(pluginId: string): PluginSettingsHost | null {
@@ -423,12 +506,12 @@ export class PluginPlatform {
     if (existing) return existing;
     const host: PluginSettingsHost = Object.freeze({
       read: <T = unknown>() => this.#settings.read<T>(pluginId),
-      write: <T = unknown>(value: unknown) => this.#settingsPersistence
+      write: <T = unknown>(value: unknown) => { this.#assertAlive(); return this.#settingsPersistence
         ? this.#settingsPersistence.write<T>(pluginId, value)
-        : Promise.resolve(this.#settings.write<T>(pluginId, value)),
-      reset: <T = unknown>() => this.#settingsPersistence
+        : Promise.resolve(this.#settings.write<T>(pluginId, value)); },
+      reset: <T = unknown>() => { this.#assertAlive(); return this.#settingsPersistence
         ? this.#settingsPersistence.reset<T>(pluginId)
-        : Promise.resolve(this.#settings.reset<T>(pluginId)),
+        : Promise.resolve(this.#settings.reset<T>(pluginId)); },
     });
     this.#settingsHosts.set(pluginId, host);
     return host;
@@ -689,6 +772,6 @@ export class PluginPlatform {
 
   #publish(): void {
     this.#snapshot = Object.freeze([...this.#records.values()].map((record) => Object.freeze({ ...record })));
-    for (const listener of this.#listeners) listener();
+    notifyObservers(this.#listeners);
   }
 }

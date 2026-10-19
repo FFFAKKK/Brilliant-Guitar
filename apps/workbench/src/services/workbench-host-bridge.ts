@@ -3,6 +3,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { Window as TauriWindow } from "@tauri-apps/api/window";
 import type { ScoreEditRequest } from "../contracts/note-input";
 import type { NewScoreInput } from "../contracts/new-score";
+import type { DocumentReplacementPrecondition } from "../contracts/document-replacement.ts";
 import type {
   CapabilityDocumentPrecondition,
   CapabilityTransportRequest,
@@ -61,12 +62,19 @@ export interface WorkbenchHostBridge {
   ): Promise<unknown | null>;
   read(workspaceId: string): Promise<unknown | null>;
   create(workspaceId: string, input: NewScoreInput, requestId: string, expectedDocumentId: string | null): Promise<unknown>;
+  createGuarded?(workspaceId: string, input: NewScoreInput, requestId: string, expected: DocumentReplacementPrecondition): Promise<unknown>;
   edit(workspaceId: string, input: ScoreEditRequest): Promise<unknown>;
   exportDocument(workspaceId: string): Promise<string>;
   importDocument(workspaceId: string, document: unknown): Promise<unknown>;
   readonly nativeFiles?: boolean;
   openNativeDocument?(workspaceId: string): Promise<NativeFileResult | null>;
+  openNativeDocumentGuarded?(workspaceId: string, expected: DocumentReplacementPrecondition): Promise<NativeFileResult | null>;
+  listRecentDocuments?(): Promise<unknown>;
+  removeRecentDocument?(recordId: string): Promise<unknown>;
+  openRecentDocumentGuarded?(workspaceId: string, recordId: string, expected: DocumentReplacementPrecondition): Promise<NativeFileResult>;
+  recordCurrentFile?(workspaceId: string, expected: DocumentReplacementPrecondition): Promise<unknown>;
   saveNativeDocument?(workspaceId: string, suggestedName: string, saveAs: boolean): Promise<NativeFileResult | null>;
+  saveNativeDocumentGuarded?(workspaceId: string, suggestedName: string, saveAs: boolean, expected: DocumentReplacementPrecondition): Promise<NativeFileResult | null>;
   onNativeCloseRequested?(handler: () => boolean | Promise<boolean>): Promise<() => void>;
   closeNativeWindow?(workspaceId: string): Promise<void>;
   readApplicationSettings?(): Promise<unknown>;
@@ -94,6 +102,7 @@ export interface NativeFileResult {
   readonly session: unknown;
   readonly name: string;
   readonly savedVersion: number;
+  readonly warnings?: readonly WorkbenchIssue[];
 }
 
 type Invoke = <T>(command: string, args?: Record<string, unknown>) => Promise<T>;
@@ -220,6 +229,12 @@ export class TauriWorkbenchHostBridge implements WorkbenchHostBridge {
     }, "无法创建乐谱");
   }
 
+  createGuarded(workspaceId: string, input: NewScoreInput, requestId: string, expected: DocumentReplacementPrecondition) {
+    return this.call<unknown>("workbench_create_guarded_v1", {
+      request: { workspaceId, input, requestId, expected },
+    }, "无法安全新建作品，请确认桌面宿主版本");
+  }
+
   edit(workspaceId: string, input: ScoreEditRequest) {
     return this.call<unknown>("workbench_edit_v1", {
       request: { workspaceId, ...input },
@@ -240,9 +255,19 @@ export class TauriWorkbenchHostBridge implements WorkbenchHostBridge {
     return this.call<NativeFileResult | null>("workbench_open_file_v1", { workspaceId }, "无法打开乐谱文件");
   }
 
+  openNativeDocumentGuarded(workspaceId: string, expected: DocumentReplacementPrecondition) {
+    return this.call<NativeFileResult | null>("workbench_open_file_guarded_v1", { workspaceId, expected },
+      "无法安全打开作品，请确认桌面宿主版本");
+  }
+
   saveNativeDocument(workspaceId: string, suggestedName: string, saveAs: boolean) {
     return this.call<NativeFileResult | null>("workbench_save_file_v1",
       { workspaceId, suggestedName, saveAs }, "无法保存当前乐谱");
+  }
+
+  saveNativeDocumentGuarded(workspaceId: string, suggestedName: string, saveAs: boolean, expected: DocumentReplacementPrecondition) {
+    return this.call<NativeFileResult | null>("workbench_save_file_guarded_v1",
+      { workspaceId, suggestedName, saveAs, expected }, "无法安全保存作品，请确认桌面宿主版本");
   }
 
   async onNativeCloseRequested(handler: () => boolean | Promise<boolean>): Promise<() => void> {
@@ -306,6 +331,22 @@ export class TauriWorkbenchHostBridge implements WorkbenchHostBridge {
     } finally {
       signal?.removeEventListener("abort", cancel);
     }
+  }
+
+  listRecentDocuments() {
+    return this.call<unknown>("workbench_list_recent_documents_v1", {}, "无法读取最近文件目录");
+  }
+
+  removeRecentDocument(recordId: string) {
+    return this.call<unknown>("workbench_remove_recent_document_v1", { recordId }, "无法移除最近文件记录");
+  }
+
+  openRecentDocumentGuarded(workspaceId: string, recordId: string, expected: DocumentReplacementPrecondition) {
+    return this.call<NativeFileResult>("workbench_open_recent_document_guarded_v1", { workspaceId, recordId, expected }, "无法安全打开最近文件");
+  }
+
+  recordCurrentFile(workspaceId: string, expected: DocumentReplacementPrecondition) {
+    return this.call<unknown>("workbench_record_current_file_v1", { workspaceId, expected }, "无法登记当前文件");
   }
 
   async streamAgentModel(

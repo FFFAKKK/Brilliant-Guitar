@@ -10,6 +10,7 @@ import type {
 import { PluginHostServiceRegistry } from "../plugins/plugin-security.ts";
 
 export const WORKBENCH_PLUGIN_API_VERSION = "3.0" as const;
+export const MOUNT_PLUGIN_API_VERSION = "4.0" as const;
 
 export type WorkbenchFeatureId = string;
 
@@ -18,7 +19,7 @@ export interface UiPluginManifest {
   readonly name: string;
   readonly version: string;
   readonly tier?: PluginTier;
-  readonly apiVersion: typeof WORKBENCH_PLUGIN_API_VERSION;
+  readonly apiVersion: typeof WORKBENCH_PLUGIN_API_VERSION | typeof MOUNT_PLUGIN_API_VERSION;
   readonly runtime: "internal-module";
   readonly activation: "always" | "user";
   readonly requires: Readonly<{
@@ -36,6 +37,8 @@ export interface UiPluginManifest {
     readonly applicationCapabilities?: readonly string[];
     readonly workflows?: readonly string[];
     readonly kernelModules?: readonly PluginKernelModuleManifestV1[];
+    readonly ui?: Readonly<{ contractVersion: 1; components: readonly string[]; commands: readonly string[];
+      menus: readonly string[]; shortcuts: readonly string[] }>;
   }>;
 }
 
@@ -47,7 +50,7 @@ function uniqueStrings(value: unknown): value is readonly string[] {
     && new Set(value).size === value.length;
 }
 
-function exactDataRecord(value: unknown, required: readonly string[], optional: readonly string[] = []):
+export function exactDataRecord(value: unknown, required: readonly string[], optional: readonly string[] = []):
   Record<string, unknown> | null {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
   const allowed = new Set([...required, ...optional]);
@@ -69,7 +72,7 @@ function exactDataRecord(value: unknown, required: readonly string[], optional: 
   return captured;
 }
 
-function capturedArrayValues(value: unknown): readonly unknown[] | null {
+export function capturedArrayValues(value: unknown): readonly unknown[] | null {
   if (!Array.isArray(value)) return null;
   let keys: readonly PropertyKey[];
   try { keys = Reflect.ownKeys(value); } catch { return null; }
@@ -83,7 +86,7 @@ function capturedArrayValues(value: unknown): readonly unknown[] | null {
   return result;
 }
 
-function capturedStrings(value: unknown): readonly string[] | null {
+export function capturedStrings(value: unknown): readonly string[] | null {
   const values = capturedArrayValues(value);
   if (!values) return null;
   const result: string[] = [];
@@ -123,7 +126,7 @@ export function captureUiPluginManifest(value: unknown): UiPluginManifest | null
       || typeof candidate.name !== "string" || candidate.name.trim().length === 0 || candidate.name.length > 128
       || typeof candidate.version !== "string" || !semanticVersion.test(candidate.version)
       || (candidate.tier !== undefined && !isPluginTier(candidate.tier))
-      || candidate.apiVersion !== WORKBENCH_PLUGIN_API_VERSION
+      || (candidate.apiVersion !== WORKBENCH_PLUGIN_API_VERSION && candidate.apiVersion !== MOUNT_PLUGIN_API_VERSION)
       || candidate.runtime !== "internal-module"
       || (candidate.activation !== "always" && candidate.activation !== "user")) return null;
     const requires = exactDataRecord(candidate.requires, ["hostFeatures", "projections"], ["hostServices"]);
@@ -132,7 +135,8 @@ export function captureUiPluginManifest(value: unknown): UiPluginManifest | null
     const projections = capturedStrings(requires?.projections);
     const contributes = exactDataRecord(candidate.contributes,
       ["views", "commands", "interactions", "componentExtensions"],
-      ["instruments", "playbackOutputs", "applicationCapabilities", "workflows", "kernelModules"]);
+      ["instruments", "playbackOutputs", "applicationCapabilities", "workflows", "kernelModules", "ui"]);
+    if (contributes && Object.hasOwn(contributes, "ui") && candidate.apiVersion !== MOUNT_PLUGIN_API_VERSION) return null;
     const views = capturedStrings(contributes?.views);
     const commands = capturedStrings(contributes?.commands);
     const interactions = capturedStrings(contributes?.interactions);
@@ -146,17 +150,28 @@ export function captureUiPluginManifest(value: unknown): UiPluginManifest | null
       ? undefined : capturedStrings(contributes.workflows);
     const kernelModules = contributes?.kernelModules === undefined
       ? undefined : capturedKernelModules(contributes.kernelModules);
+    let ui: UiPluginManifest["contributes"]["ui"];
+    if (contributes?.ui !== undefined) {
+      if (candidate.apiVersion !== MOUNT_PLUGIN_API_VERSION) return null;
+      const facet = exactDataRecord(contributes.ui, ["contractVersion", "components", "commands", "menus", "shortcuts"]);
+      const components = capturedStrings(facet?.components), uiCommands = capturedStrings(facet?.commands);
+      const menus = capturedStrings(facet?.menus), shortcuts = capturedStrings(facet?.shortcuts);
+      if (facet?.contractVersion !== 1 || !components || !uiCommands || !menus || !shortcuts) return null;
+      if ([...components, ...uiCommands, ...menus, ...shortcuts].some(id => !dottedId.test(id) || !id.startsWith(`${candidate.id}.`))) return null;
+      ui = Object.freeze({ contractVersion: 1, components, commands: uiCommands, menus, shortcuts });
+    }
     if (!hostFeatures || hostServices === null || !projections || !contributes || !views || !commands || !interactions
       || !componentExtensions
       || instruments === null || playbackOutputs === null || applicationCapabilities === null || workflows === null
       || kernelModules === null) return null;
+    if (candidate.apiVersion === MOUNT_PLUGIN_API_VERSION && (views.length || commands.length || componentExtensions.length)) return null;
     if (hostServices !== undefined) new PluginHostServiceRegistry(hostServices);
     const manifest: UiPluginManifest = Object.freeze({
       id: candidate.id,
       name: candidate.name,
       version: candidate.version,
       ...(candidate.tier === undefined ? {} : { tier: candidate.tier }),
-      apiVersion: WORKBENCH_PLUGIN_API_VERSION,
+      apiVersion: candidate.apiVersion,
       runtime: "internal-module",
       activation: candidate.activation,
       requires: Object.freeze({ hostFeatures, ...(hostServices === undefined ? {} : { hostServices }), projections }),
@@ -167,6 +182,7 @@ export function captureUiPluginManifest(value: unknown): UiPluginManifest | null
         ...(applicationCapabilities === undefined ? {} : { applicationCapabilities }),
         ...(workflows === undefined ? {} : { workflows }),
         ...(kernelModules === undefined ? {} : { kernelModules }),
+        ...(ui === undefined ? {} : { ui }),
       }),
     });
     createPluginKernelAssemblyPlanV1([{

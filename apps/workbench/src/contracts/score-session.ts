@@ -4,6 +4,9 @@ import { isNotationView } from "./notation.ts";
 import type { NotationView } from "./notation.ts";
 import { isPlaybackSourceProjection } from "./playback.ts";
 import type { PlaybackSourceProjection } from "./playback.ts";
+import { isTablatureProjection } from "../../../../shared/notation/tablature-model.ts";
+import type { TablatureProjection, TablatureView } from "../../../../shared/notation/tablature-model.ts";
+import type { StaffView } from "./notation.ts";
 
 export interface ScoreDocumentMetadataProjection {
   readonly title: string;
@@ -16,6 +19,8 @@ export interface ScoreSessionRead extends ScoreSessionSummary {
   readonly undoDepth: number;
   readonly redoDepth: number;
   readonly notation: NotationView;
+  /** Current hosts return both projections from one snapshot; absent only on older hosts. */
+  readonly tablature?: TablatureProjection;
   readonly playbackSource: PlaybackSourceProjection;
   /** Optional until every desktop host ships the metadata projection. */
   readonly metadata?: ScoreDocumentMetadataProjection;
@@ -35,9 +40,39 @@ export function isScoreSessionRead(value: unknown): value is ScoreSessionRead {
     && typeof (metadata as Record<string, unknown>).tempoBpm === "number"
     && Number.isFinite((metadata as Record<string, unknown>).tempoBpm)
     && ((metadata as Record<string, unknown>).tempoBpm as number) > 0);
-  return metadataValid && isNotationView(notation) && isPlaybackSourceProjection(r.playbackSource)
+  const tablature = r.tablature;
+  const tabValid = tablature === undefined || (isTablatureProjection(tablature)
+    && (tablature.kind === "unsupported" || (tablature.measures.length === value.measureCount
+      && (metadata === undefined || tablature.tempoBpm === (metadata as ScoreDocumentMetadataProjection).tempoBpm)
+      && (!isNotationView(notation) || notation.kind === "unsupported" || pairedNotationMatches(notation, tablature)))));
+  return metadataValid && tabValid && isNotationView(notation) && isPlaybackSourceProjection(r.playbackSource)
+    && (tablature === undefined || !isTablatureProjection(tablature) || tablature.kind === "unsupported"
+      || r.playbackSource.kind === "unsupported" || tablature.tempoBpm === r.playbackSource.bpm)
     && r.playbackSource.documentId === value.documentId && r.playbackSource.documentVersion === value.documentVersion
     && (metadata === undefined || r.playbackSource.kind === "unsupported"
       || r.playbackSource.bpm === (metadata as ScoreDocumentMetadataProjection).tempoBpm)
+    && (metadata === undefined || notation.kind === "unsupported"
+      || notation.tempoBpm === (metadata as ScoreDocumentMetadataProjection).tempoBpm)
     && (notation.kind === "unsupported" || notation.measures.length === value.measureCount);
+}
+
+/** Reject accidentally mixed reads even when the outer receipt looks current. */
+function pairedNotationMatches(staff: StaffView, tab: TablatureView): boolean {
+  return staff.partId === tab.partId && staff.staffId === tab.staffId && staff.tempoBpm === tab.tempoBpm
+    && staff.measures.length === tab.measures.length && staff.measures.every((measure, index) => {
+      const other = tab.measures[index]!;
+      return measure.id === other.id && measure.voiceId === other.voiceId
+        && measure.meter.numerator === other.meter.numerator && measure.meter.denominator === other.meter.denominator
+        && measure.events.length === other.events.length && measure.events.every((event, i) => {
+          const item = other.events[i]!;
+          return event.id === item.id && event.duration.base === item.duration.base && event.duration.dots === item.duration.dots
+            && event.content.kind === item.content.kind;
+        }) && measure.ruleWarnings.length === other.ruleWarnings.length && measure.ruleWarnings.every((warning, i) => {
+          const item = other.ruleWarnings[i]!;
+          return ["nominalDuration", "actualDuration", "overflow"].every(key => {
+            const field = key as "nominalDuration" | "actualDuration" | "overflow";
+            return warning[field].numerator === item[field].numerator && warning[field].denominator === item[field].denominator;
+          });
+        });
+    });
 }

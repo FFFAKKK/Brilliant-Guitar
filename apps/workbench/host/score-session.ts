@@ -5,6 +5,8 @@ import { validateNewScoreInput } from "../src/contracts/new-score.ts";
 import type { NewScoreInput } from "../src/contracts/new-score.ts";
 import type { ScoreSessionRead } from "../src/contracts/score-session.ts";
 import { projectNotation } from "./notation-projection.ts";
+import { projectFrettedTablature, prepareFrettedPositionEdit, supportsPlainFrettedNotation } from "./fretted-notation.ts";
+import { guitarNotationDomain } from "./guitar-notation.ts";
 import { projectPlaybackSource } from "./playback-projection.ts";
 import { prepareEventProperties } from "./event-properties-command.ts";
 import { compilePluginKernelCatalogV1 } from "./plugin-kernel-catalog.ts";
@@ -21,6 +23,7 @@ import type { BatchCommand, DeleteRangeCommand, RemoveEventCommand, RemoveMeasur
 import type { WorkbenchIssue, WorkbenchIssueTarget } from "../src/contracts/workbench-issue.ts";
 import { createPluginKernelAssemblyPlanV1 } from "../src/plugins/plugin-package-contract.ts";
 import { restDurations } from "./rest-durations.ts";
+import { measureMeterTargets } from "../../../shared/notation/measure-edit.ts";
 const require = createRequire(import.meta.url);
 let cachedWorkbenchModuleCatalog: KernelIntegratedCatalog | undefined;
 
@@ -28,30 +31,35 @@ function compileWorkbenchModuleCatalog() {
   if (cachedWorkbenchModuleCatalog) return cachedWorkbenchModuleCatalog;
   const keySignature = require("../.kernel/src/first-party-modules/key-signature.js") as
     typeof import("../.kernel/src/first-party-modules/key-signature.js");
-  const plan = createPluginKernelAssemblyPlanV1([{
-    id: keySignature.KEY_SIGNATURE_NAMESPACE,
+  const guitar = require("../.kernel/src/first-party-modules/guitar-domain.js") as
+    typeof import("../.kernel/src/first-party-modules/guitar-domain.js");
+  const modules = [
+    { id: keySignature.KEY_SIGNATURE_NAMESPACE, entry: keySignature.KEY_SIGNATURE_MODULE_REGISTRATION_ENTRIES[0] },
+    { id: guitar.GUITAR_DOMAIN_NAMESPACE, entry: guitar.GUITAR_DOMAIN_MODULE_REGISTRATION_ENTRIES[0] },
+  ];
+  if (modules.some(module => !module.entry)) throw new WorkbenchHostError("暂时无法初始化乐谱编辑环境", 503);
+  const plan = createPluginKernelAssemblyPlanV1(modules.map(module => ({
+    id: module.id,
     version: "1.0.0",
     activation: "always",
     tier: "system",
     kernelModules: [{
-      moduleId: keySignature.KEY_SIGNATURE_NAMESPACE,
+      moduleId: module.id,
       apiVersion: 1,
       runtime: "internal-module",
       activation: "session-fixed",
     }],
-  }]);
-  const registrationEntry = keySignature.KEY_SIGNATURE_MODULE_REGISTRATION_ENTRIES[0];
-  if (!registrationEntry) throw new WorkbenchHostError("暂时无法初始化乐谱编辑环境", 503);
-  const compiled = compilePluginKernelCatalogV1(plan, [{
-    pluginId: keySignature.KEY_SIGNATURE_NAMESPACE,
+  })));
+  const compiled = compilePluginKernelCatalogV1(plan, modules.map(module => ({
+    pluginId: module.id,
     pluginVersion: "1.0.0",
     tier: "system",
-    moduleId: keySignature.KEY_SIGNATURE_NAMESPACE,
+    moduleId: module.id,
     apiVersion: 1,
     runtime: "internal-module",
     activation: "session-fixed",
-    implementation: registrationEntry,
-  }]);
+    implementation: module.entry!,
+  })));
   if (!compiled.ok) throw new WorkbenchHostError("暂时无法初始化乐谱编辑环境", 503, compiled.failure);
   cachedWorkbenchModuleCatalog = compiled.catalog;
   return cachedWorkbenchModuleCatalog;
@@ -79,9 +87,11 @@ function actionTarget(current: ScoreSessionRead, action: ScoreEditRequest["actio
     return { scope: "measure", measureId: action.measureId };
   }
   if (action.kind === "set-staff-clef") return { scope: "component", componentId: "score-properties" };
-  if (action.kind === "delete-event" || action.kind === "set-event-properties") {
-    if (current.notation.kind === "staff") {
-      const measure = current.notation.measures.find((item) => item.events.some((event) => event.id === action.eventId));
+  if (action.kind === "delete-event" || action.kind === "set-event-properties" || action.kind === "set-fretted-position") {
+    const projection = current.notation.kind === "staff" ? current.notation
+      : current.tablature?.kind === "tablature" ? current.tablature : null;
+    if (projection) {
+      const measure = projection.measures.find((item) => item.events.some((event) => event.id === action.eventId));
       if (measure) return { scope: "event", measureId: measure.id, eventId: action.eventId };
     }
   }
@@ -203,6 +213,7 @@ export class ScoreSessionService {
     return { documentId: document.id, title: document.metadata.title, measureCount: document.measureDefinitions.length,
       documentVersion, undoDepth: read.value.history.undoDepth, redoDepth: read.value.history.redoDepth,
       notation: projectNotation(document, warnings), playbackSource: projectPlaybackSource(document, documentVersion),
+      tablature: projectFrettedTablature(document, document.parts[0]?.id ?? "", guitarNotationDomain, warnings),
       metadata: { title: document.metadata.title, authors: [...document.metadata.authors], tempoBpm: document.metadata.tempo.bpm } };
   }
 
@@ -244,12 +255,37 @@ export class ScoreSessionService {
     }
     const action = request.action;
     if (current.notation.kind !== "staff" && action.kind !== "set-measure-meter"
-      && action.kind !== "set-key-signature" && action.kind !== "set-staff-clef") {
+      && action.kind !== "set-key-signature" && action.kind !== "set-staff-clef"
+      && action.kind !== "set-fretted-position"
+      && !((action.kind === "undo" || action.kind === "redo") && current.tablature?.kind === "tablature")) {
       throw new WorkbenchHostError("当前乐谱格式尚不支持编辑", 422);
     }
     let result;
     if (action.kind === "undo") result = entry.bus.undo();
     else if (action.kind === "redo") result = entry.bus.redo();
+    else if (action.kind === "set-fretted-position") {
+      const read = entry.bus.read();
+      if (!read.ok) throw new WorkbenchHostError("暂时无法读取乐谱", 503);
+      const document = read.value.snapshot.document;
+      if (!document.parts.some(part => part.id === action.partId)) {
+        throw new WorkbenchHostError("目标声部已改变，请重新选择", 409, undefined,
+          issue("editor.part-stale", "目标声部已改变，请重新选择", actionTarget(current, action)));
+      }
+      if (!supportsPlainFrettedNotation(document, guitarNotationDomain)) {
+        throw new WorkbenchHostError("当前作品没有兼容的弦品编辑能力", 422, undefined,
+          issue("notation.tablature.domain-unavailable", "当前作品没有兼容的弦品编辑能力", actionTarget(current, action)));
+      }
+      const prepared = prepareFrettedPositionEdit(document, action.partId, {
+        kind: "update-event", eventId: action.eventId,
+        properties: { kind: "fretted-position", position: action.position },
+      }, guitarNotationDomain);
+      if (!prepared.ok) {
+        const code = prepared.code === "notation.tablature.selection-stale" ? "editor.selection-stale" : prepared.code;
+        throw new WorkbenchHostError("无法修改当前弦品，请重新选择", code === "editor.selection-stale" ? 409 : 422,
+          undefined, issue(code, "无法修改当前弦品，请重新选择", actionTarget(current, action)));
+      }
+      result = entry.bus.submit(prepared.command);
+    }
     else if (action.kind === "set-event-properties" || action.kind === "set-title" || action.kind === "set-document-metadata") {
       const read = entry.bus.read();
       if (!read.ok) throw new WorkbenchHostError("暂时无法读取乐谱", 503);
@@ -391,15 +427,7 @@ export class ScoreSessionService {
         throw new WorkbenchHostError(message, 409, undefined,
           issue("editor.measure-stale", message, actionTarget(current, action)));
       }
-      const original = doc.measureDefinitions[startIndex]!.meter;
-      const definitions = [doc.measureDefinitions[startIndex]!];
-      if (action.scope === "meter-run") {
-        for (const definition of doc.measureDefinitions.slice(startIndex + 1)) {
-          if (definition.meter.numerator !== original.numerator
-            || definition.meter.denominator !== original.denominator) break;
-          definitions.push(definition);
-        }
-      }
+      const definitions = measureMeterTargets(doc.measureDefinitions, action.measureId, action.scope);
       const commands = definitions.map((definition): SetMeasureDefinitionCommand => ({
         commandVersion: 1,
         commandId: "core.measure.set-definition",

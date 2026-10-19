@@ -5,35 +5,39 @@ mod application;
 mod capability;
 mod capability_receipt;
 mod commands;
+mod config_writer;
 mod diagnostics;
 mod document_io;
 mod dto;
 mod error;
 mod json_store;
+mod recent_documents;
 mod score_change_set;
 mod settings;
+mod startup;
 mod state;
 mod workspace_configuration;
 
-use tauri::Manager;
+use std::sync::{
+    Arc,
+    atomic::{AtomicBool, Ordering},
+};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let mut context = tauri::generate_context!();
+    let windows = startup::defer_windows(&mut context.config_mut().app.windows);
+    let startup_rejected = Arc::new(AtomicBool::new(false));
+    let setup_rejected = Arc::clone(&startup_rejected);
+    let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .setup(|app| {
-            let recovery_root = app.path().app_data_dir()?.join("recovery");
-            let settings_path = app.path().app_config_dir()?.join("settings.v1.json");
-            let workspace_configuration_root = app.path().app_config_dir()?.join("workspaces");
-            let agent_run_root = app.path().app_data_dir()?.join("agent").join("runs");
-            let capability_receipt_root = app.path().app_data_dir()?.join("agent").join("receipts");
-            app.manage(state::AppState::with_paths(
-                recovery_root,
-                settings_path,
-                workspace_configuration_root,
-                agent_run_root,
-                capability_receipt_root,
-            ));
+        .setup(move |app| {
+            if let Err(error) = startup::initialize(app, &windows) {
+                setup_rejected.store(true, Ordering::Release);
+                // Returning Err here makes Tauri panic inside its event loop.
+                // Keep the failed process alive only until its native notice is dismissed.
+                startup::show_failure(app, error.as_ref());
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -48,12 +52,19 @@ pub fn run() {
             commands::workbench_score_prepare_tempo_change_v1,
             commands::workbench_score_prepare_metadata_transaction_v1,
             commands::workbench_create_v1,
+            commands::workbench_create_guarded_v1,
             commands::workbench_edit_v1,
             commands::workbench_export_v1,
             commands::workbench_import_v1,
             commands::workbench_close_v1,
             commands::workbench_open_file_v1,
+            commands::workbench_open_file_guarded_v1,
+            commands::workbench_list_recent_documents_v1,
+            commands::workbench_remove_recent_document_v1,
+            commands::workbench_open_recent_document_guarded_v1,
+            commands::workbench_record_current_file_v1,
             commands::workbench_save_file_v1,
+            commands::workbench_save_file_guarded_v1,
             commands::workbench_plugin_diagnostic_v1,
             commands::workbench_read_plugin_diagnostics_v1,
             commands::workbench_read_settings_v1,
@@ -80,6 +91,15 @@ pub fn run() {
             commands::workbench_agent_model_stream_v1,
             commands::workbench_agent_provider_cancel_v1,
         ])
-        .run(tauri::generate_context!())
-        .expect("failed to run desktop workbench");
+        .build(context)
+        .expect("failed to build desktop workbench");
+    // Closing the only native dialog can end a zero-webview event loop before
+    // its async callback requests exit. Startup rejection is already decisive.
+    let runtime_exit_code = app.run_return(|_, _| {});
+    let exit_code = if startup_rejected.load(Ordering::Acquire) {
+        1
+    } else {
+        runtime_exit_code
+    };
+    std::process::exit(exit_code);
 }

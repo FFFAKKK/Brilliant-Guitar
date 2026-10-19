@@ -24,12 +24,14 @@ use crate::{
         read_document, read_recovery,
     },
     dto::{
-        CapabilityTransportRequest, CreateScoreRequest, NativeFileResult, ScoreEditRequest,
-        ScoreMeasureIndexV1, ScoreMeasureRangeV1, ScoreMetadataTransactionChangeSetV1,
-        ScoreMetadataV1, ScorePrepareMetadataTransactionInputV1, ScorePrepareTempoChangeInputV1,
-        ScoreSessionRead, ScoreStructureV1, ScoreSummaryV1, ScoreTempoChangeSetV1,
+        CapabilityTransportRequest, CreateScoreRequest, DocumentReplacementPrecondition,
+        GuardedCreateScoreRequest, NativeFileResult, ScoreEditRequest, ScoreMeasureIndexV1,
+        ScoreMeasureRangeV1, ScoreMetadataTransactionChangeSetV1, ScoreMetadataV1,
+        ScorePrepareMetadataTransactionInputV1, ScorePrepareTempoChangeInputV1, ScoreSessionRead,
+        ScoreStructureV1, ScoreSummaryV1, ScoreTempoChangeSetV1,
     },
     error::HostError,
+    recent_documents::RecentDocumentsSnapshotV1,
     settings::{ApplicationSettingsSnapshotV1, ApplicationSettingsV1},
     state::AppState,
     workspace_configuration::{WorkspaceConfigurationSnapshotV1, WorkspaceConfigurationV1},
@@ -830,6 +832,17 @@ pub fn workbench_create_v1(
 }
 
 #[tauri::command]
+pub fn workbench_create_guarded_v1(
+    state: State<'_, AppState>,
+    request: GuardedCreateScoreRequest,
+) -> Result<ScoreSessionRead, HostError> {
+    let workspace_id = request.workspace_id.clone();
+    let session = locked(state.inner())?.create_guarded(request)?;
+    schedule_current_recovery(state.inner(), &workspace_id);
+    Ok(session)
+}
+
+#[tauri::command]
 pub fn workbench_edit_v1(
     state: State<'_, AppState>,
     request: ScoreEditRequest,
@@ -877,6 +890,26 @@ pub async fn workbench_open_file_v1(
     state: State<'_, AppState>,
     workspace_id: String,
 ) -> Result<Option<NativeFileResult>, HostError> {
+    open_file(&app, state.inner(), workspace_id, None)
+}
+
+#[tauri::command]
+pub async fn workbench_open_file_guarded_v1(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    workspace_id: String,
+    expected: DocumentReplacementPrecondition,
+) -> Result<Option<NativeFileResult>, HostError> {
+    locked(state.inner())?.check_replacement(&workspace_id, &expected)?;
+    open_file(&app, state.inner(), workspace_id, Some(&expected))
+}
+
+fn open_file(
+    app: &AppHandle,
+    state: &AppState,
+    workspace_id: String,
+    expected: Option<&DocumentReplacementPrecondition>,
+) -> Result<Option<NativeFileResult>, HostError> {
     let Some(selected) = app
         .dialog()
         .file()
@@ -889,10 +922,159 @@ pub async fn workbench_open_file_v1(
     let path = selected
         .into_path()
         .map_err(|_| HostError::new("无法访问所选文件", 422))?;
+    accept_opened_file(state, workspace_id, path, expected).map(Some)
+}
+
+fn accept_opened_file(
+    state: &AppState,
+    workspace_id: String,
+    path: std::path::PathBuf,
+    expected: Option<&DocumentReplacementPrecondition>,
+) -> Result<NativeFileResult, HostError> {
+    let path = std::fs::canonicalize(path).map_err(|_| {
+        HostError::issue(
+            "file.io-failed",
+            "无法读取所选文件",
+            422,
+            crate::dto::WorkbenchIssueSource::File,
+            crate::dto::WorkbenchIssueTarget::Component {
+                component_id: "navigation.file".into(),
+            },
+            Some(true),
+        )
+    })?;
     let document_json = read_document(&path)?;
-    let result = locked(state.inner())?.import_file(workspace_id.clone(), &document_json, path)?;
-    state.recovery.remove(state.recovery_path(&workspace_id))?;
-    Ok(Some(result))
+    let mut service = locked(state)?;
+    let mut result = match expected {
+        Some(expected) => service.import_file_guarded(
+            workspace_id.clone(),
+            &document_json,
+            path.clone(),
+            expected,
+        )?,
+        None => service.import_file(workspace_id.clone(), &document_json, path.clone())?,
+    };
+    // Keep edits from racing successful replacement and recovery cleanup.
+    if state
+        .recovery
+        .remove(state.recovery_path(&workspace_id))
+        .is_err()
+    {
+        result.warnings.push(file_acceptance_warning(
+            "file.recovery-unavailable",
+            "作品已打开，恢复文件清理尚未完成",
+        ));
+    }
+    if state.recent_documents.record(&path, &result.name).is_err() {
+        result.warnings.push(file_acceptance_warning(
+            "file.recent-unavailable",
+            "作品已打开，最近记录未能更新",
+        ));
+    }
+    Ok(result)
+}
+
+fn file_acceptance_warning(code: &str, message: &str) -> crate::dto::WorkbenchIssue {
+    crate::dto::WorkbenchIssue {
+        code: code.into(),
+        message: message.into(),
+        severity: crate::dto::WorkbenchIssueSeverity::Warning,
+        source: crate::dto::WorkbenchIssueSource::File,
+        target: crate::dto::WorkbenchIssueTarget::Component {
+            component_id: "navigation.file".into(),
+        },
+        retryable: Some(code == "file.recent-unavailable"),
+    }
+}
+
+fn recent_error(error: std::io::Error) -> HostError {
+    let status = match error.kind() {
+        std::io::ErrorKind::InvalidInput => 400,
+        std::io::ErrorKind::InvalidData | std::io::ErrorKind::Unsupported => 422,
+        _ => 503,
+    };
+    HostError::issue(
+        "file.recent-unavailable",
+        "无法更新或读取最近文件目录",
+        status,
+        crate::dto::WorkbenchIssueSource::File,
+        crate::dto::WorkbenchIssueTarget::Component {
+            component_id: "navigation.file".into(),
+        },
+        Some(true),
+    )
+}
+
+#[tauri::command]
+pub fn workbench_list_recent_documents_v1(
+    state: State<'_, AppState>,
+) -> Result<RecentDocumentsSnapshotV1, HostError> {
+    state.recent_documents.list().map_err(recent_error)
+}
+
+#[tauri::command]
+pub fn workbench_remove_recent_document_v1(
+    state: State<'_, AppState>,
+    record_id: String,
+) -> Result<RecentDocumentsSnapshotV1, HostError> {
+    state
+        .recent_documents
+        .remove(&record_id)
+        .map_err(recent_error)
+}
+
+fn open_recent_file(
+    state: &AppState,
+    workspace_id: String,
+    record_id: &str,
+    expected: &DocumentReplacementPrecondition,
+) -> Result<NativeFileResult, HostError> {
+    locked(state)?.check_replacement(&workspace_id, expected)?;
+    // resolve releases the directory gate before the service lock is acquired again.
+    let path = state
+        .recent_documents
+        .resolve(record_id)
+        .map_err(recent_error)?
+        .ok_or_else(|| HostError::new("最近文件记录已移除，请刷新目录", 404))?;
+    accept_opened_file(state, workspace_id, path, Some(expected))
+}
+
+#[tauri::command]
+pub async fn workbench_open_recent_document_guarded_v1(
+    state: State<'_, AppState>,
+    workspace_id: String,
+    record_id: String,
+    expected: DocumentReplacementPrecondition,
+) -> Result<NativeFileResult, HostError> {
+    open_recent_file(state.inner(), workspace_id, &record_id, &expected)
+}
+
+fn record_current_file(
+    state: &AppState,
+    workspace_id: &str,
+    expected: &DocumentReplacementPrecondition,
+) -> Result<RecentDocumentsSnapshotV1, HostError> {
+    if matches!(expected, DocumentReplacementPrecondition::Empty {}) {
+        return Err(HostError::new("登记最近文件需要当前作品身份", 400));
+    }
+    let service = locked(state)?;
+    service.check_replacement(workspace_id, expected)?;
+    let path = service
+        .file_path(workspace_id)?
+        .ok_or_else(|| HostError::new("当前作品尚无文件位置", 404))?;
+    state
+        .recent_documents
+        .record(&path, &crate::application::file_display_name(&path))
+        .map_err(recent_error)
+}
+
+#[tauri::command]
+pub fn workbench_record_current_file_v1(
+    state: State<'_, AppState>,
+    workspace_id: String,
+    expected: DocumentReplacementPrecondition,
+) -> Result<RecentDocumentsSnapshotV1, HostError> {
+    record_current_file(state.inner(), &workspace_id, &expected)
 }
 
 #[tauri::command]
@@ -903,7 +1085,63 @@ pub async fn workbench_save_file_v1(
     suggested_name: String,
     save_as: bool,
 ) -> Result<Option<NativeFileResult>, HostError> {
-    let existing = locked(state.inner())?.file_path(&workspace_id)?;
+    save_file(
+        &app,
+        state.inner(),
+        workspace_id,
+        suggested_name,
+        save_as,
+        None,
+    )
+}
+
+#[tauri::command]
+pub async fn workbench_save_file_guarded_v1(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    workspace_id: String,
+    suggested_name: String,
+    save_as: bool,
+    expected: DocumentReplacementPrecondition,
+) -> Result<Option<NativeFileResult>, HostError> {
+    save_file(
+        &app,
+        state.inner(),
+        workspace_id,
+        suggested_name,
+        save_as,
+        Some(expected),
+    )
+}
+
+fn save_file(
+    app: &AppHandle,
+    state: &AppState,
+    workspace_id: String,
+    suggested_name: String,
+    save_as: bool,
+    expected: Option<DocumentReplacementPrecondition>,
+) -> Result<Option<NativeFileResult>, HostError> {
+    let (existing, expected) = {
+        let service = locked(state)?;
+        let expected = match expected {
+            Some(value) => value,
+            None => {
+                let value = service
+                    .read(&workspace_id)?
+                    .ok_or_else(|| HostError::new("当前没有可保存的作品", 404))?;
+                DocumentReplacementPrecondition::Document {
+                    document_id: value.document_id,
+                    document_version: value.document_version,
+                }
+            }
+        };
+        if matches!(expected, DocumentReplacementPrecondition::Empty {}) {
+            return Err(HostError::new("保存需要当前作品身份和版本", 400));
+        }
+        service.check_replacement(&workspace_id, &expected)?;
+        (service.file_path(&workspace_id)?, expected)
+    };
     let path = if !save_as && let Some(path) = existing {
         path
     } else {
@@ -928,13 +1166,42 @@ pub async fn workbench_save_file_v1(
                 .map_err(|_| HostError::new("无法访问所选保存位置", 422))?,
         )
     };
-    let (document_json, saved_version) = locked(state.inner())?.export_snapshot(&workspace_id)?;
-    atomic_write(&path, document_json.as_bytes())?;
-    let result = locked(state.inner())?.mark_saved(&workspace_id, path, saved_version)?;
-    if result.session.document_version == result.saved_version {
-        state.recovery.remove(state.recovery_path(&workspace_id))?;
+    persist_selected_file(state, &workspace_id, path, &expected).map(Some)
+}
+
+// Dialog stays outside the service gate. The final guard and physical commit
+// stay together, so no other command can replace/edit the exported document.
+fn persist_selected_file(
+    state: &AppState,
+    workspace_id: &str,
+    path: std::path::PathBuf,
+    expected: &DocumentReplacementPrecondition,
+) -> Result<NativeFileResult, HostError> {
+    if matches!(expected, DocumentReplacementPrecondition::Empty {}) {
+        return Err(HostError::new("保存需要当前作品身份和版本", 400));
     }
-    Ok(Some(result))
+    let mut service = locked(state)?;
+    service.check_replacement(workspace_id, expected)?;
+    let (document_json, saved_version) = service.export_snapshot(workspace_id)?;
+    atomic_write(&path, document_json.as_bytes())?;
+    let mut result = service.mark_saved(workspace_id, path.clone(), saved_version)?;
+    if state
+        .recovery
+        .remove(state.recovery_path(workspace_id))
+        .is_err()
+    {
+        result.warnings.push(file_acceptance_warning(
+            "file.recovery-unavailable",
+            "作品已保存，恢复文件清理尚未完成",
+        ));
+    }
+    if state.recent_documents.record(&path, &result.name).is_err() {
+        result.warnings.push(file_acceptance_warning(
+            "file.recent-unavailable",
+            "作品已保存，最近记录未能更新",
+        ));
+    }
+    Ok(result)
 }
 
 fn schedule_current_recovery(state: &AppState, workspace_id: &str) {
@@ -987,7 +1254,99 @@ fn invalid_recovery() -> HostError {
 }
 
 #[cfg(test)]
+mod recent_tests;
+
+#[cfg(test)]
+mod save_tests;
+
+#[cfg(test)]
 mod tests {
+    #[test]
+    fn guarded_file_acceptance_preserves_recovery_on_conflict_and_bad_input() {
+        use crate::dto::{DocumentReplacementPrecondition, NewScoreInput};
+        let directory =
+            std::env::temp_dir().join(format!("brilliant-guarded-open-{}", Uuid::new_v4()));
+        std::fs::create_dir_all(&directory).unwrap();
+        let state = AppState::new(directory.join("recovery"));
+        let workspace = Uuid::new_v4().to_string();
+        let initial = locked(&state)
+            .unwrap()
+            .create(CreateScoreRequest {
+                workspace_id: workspace.clone(),
+                input: NewScoreInput {
+                    title: "保留作品".into(),
+                    measure_count: 1,
+                },
+                request_id: Uuid::new_v4().to_string(),
+                expected_document_id: None,
+            })
+            .unwrap();
+        let expected = DocumentReplacementPrecondition::Document {
+            document_id: initial.document_id.clone(),
+            document_version: initial.document_version,
+        };
+        let path = directory.join("selected.json");
+        std::fs::write(
+            &path,
+            locked(&state).unwrap().export_document(&workspace).unwrap(),
+        )
+        .unwrap();
+        locked(&state)
+            .unwrap()
+            .mark_saved(&workspace, path.clone(), initial.document_version)
+            .unwrap();
+        // A second command changes the same document while the first is choosing/reading a file.
+        let changed = locked(&state)
+            .unwrap()
+            .edit(ScoreEditRequest {
+                workspace_id: workspace.clone(),
+                document_id: initial.document_id,
+                expected_version: initial.document_version,
+                request_id: Uuid::new_v4().to_string(),
+                action: crate::dto::ScoreEditAction::SetTempo { tempo_bpm: 144.0 },
+            })
+            .unwrap();
+        schedule_current_recovery(&state, &workspace);
+        state.recovery.flush().unwrap();
+        let recovery_path = state.recovery_path(&workspace);
+        let retained_recovery = std::fs::read(&recovery_path).unwrap();
+        let error = accept_opened_file(&state, workspace.clone(), path.clone(), Some(&expected))
+            .unwrap_err();
+        assert_eq!(error.status, 409);
+        assert_eq!(
+            locked(&state).unwrap().read(&workspace).unwrap(),
+            Some(changed.clone())
+        );
+        assert_eq!(
+            locked(&state).unwrap().file_path(&workspace).unwrap(),
+            Some(path.clone())
+        );
+        assert_eq!(std::fs::read(&recovery_path).unwrap(), retained_recovery);
+        let expected = DocumentReplacementPrecondition::Document {
+            document_id: changed.document_id.clone(),
+            document_version: changed.document_version,
+        };
+        let invalid = directory.join("invalid.json");
+        std::fs::write(&invalid, "{\"schemaVersion\":999999}").unwrap();
+        assert!(accept_opened_file(&state, workspace.clone(), invalid, Some(&expected)).is_err());
+        assert_eq!(
+            locked(&state).unwrap().read(&workspace).unwrap(),
+            Some(changed)
+        );
+        assert_eq!(std::fs::read(&recovery_path).unwrap(), retained_recovery);
+        let accepted =
+            accept_opened_file(&state, workspace.clone(), path.clone(), Some(&expected)).unwrap();
+        assert_eq!(accepted.session.document_version, initial.document_version);
+        assert_eq!(accepted.saved_version, initial.document_version);
+        assert_eq!(
+            locked(&state).unwrap().file_path(&workspace).unwrap(),
+            Some(std::fs::canonicalize(path).unwrap())
+        );
+        assert!(!recovery_path.exists());
+        drop(state);
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+
     use super::*;
     use crate::dto::{CreateScoreRequest, NewScoreInput};
     use uuid::Uuid;
@@ -1012,6 +1371,7 @@ mod tests {
             .expect("create recoverable score");
         schedule_current_recovery(&original, &workspace_id);
         original.recovery.flush().expect("persist recovery file");
+        drop(original);
 
         let restarted = AppState::new(recovery_root.clone());
         let recovered = read_or_recover(&restarted, &workspace_id)
@@ -1027,6 +1387,7 @@ mod tests {
             .recovery
             .remove(restarted.recovery_path(&workspace_id))
             .expect("remove recovery file");
+        drop(restarted);
         std::fs::remove_dir_all(recovery_root).expect("remove recovery directory");
     }
 }

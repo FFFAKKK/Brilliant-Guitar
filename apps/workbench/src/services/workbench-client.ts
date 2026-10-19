@@ -1,5 +1,12 @@
 import type { ScoreEditRequest } from "../contracts/note-input";
 import type { NewScoreInput } from "../contracts/new-score";
+import { isDocumentReplacementPrecondition } from "../contracts/document-replacement.ts";
+import type { DocumentReplacementPrecondition } from "../contracts/document-replacement.ts";
+import { isRecentDocumentsSnapshotV1, isRecentRecordId } from "../contracts/recent-documents.ts";
+import type { RecentDocumentsSnapshotV1 } from "../contracts/recent-documents.ts";
+import { isWorkbenchIssue } from "../contracts/workbench-issue.ts";
+import type { NativeFileResult } from "./workbench-host-bridge.ts";
+
 import { DEFAULT_APPLICATION_SETTINGS, isApplicationSettingsV1, normalizeApplicationSettingsSnapshot } from "../contracts/application-settings.ts";
 import type { ApplicationSettingsSnapshotV1, ApplicationSettingsV1 } from "../contracts/application-settings.ts";
 import { DEFAULT_WORKSPACE_CONFIGURATION, isWorkspaceConfigurationSnapshotV1, isWorkspaceConfigurationV1 } from "../contracts/workspace-configuration.ts";
@@ -97,6 +104,8 @@ export function resolveWorkbenchWorkspaceId(
     return createId();
   }
 }
+
+export type WorkbenchNativeFileResult = Omit<NativeFileResult, "session"> & { readonly session: ScoreSessionRead };
 
 /** Browser holds session identity and read metadata, never a second editable score. */
 export class WorkbenchClient {
@@ -215,6 +224,12 @@ export class WorkbenchClient {
     return this.bridge.exportDocument(this.workspaceId);
   }
 
+  async createGuarded(input: NewScoreInput, requestId: string, expected: DocumentReplacementPrecondition): Promise<ScoreSessionRead> {
+    if (!isDocumentReplacementPrecondition(expected)) throw new Error("作品替换预条件无效");
+    if (!this.bridge.createGuarded) throw new Error("当前宿主不支持受保护新建作品");
+    return this.session(await this.bridge.createGuarded(this.workspaceId, input, requestId, expected), "无法确认创建结果，请重试")!;
+  }
+
   async importDocument(document: unknown): Promise<ScoreSessionRead> {
     const session = await this.bridge.importDocument(this.workspaceId, document);
     if (!isScoreSessionRead(session)) throw new Error("文件打开结果无效");
@@ -225,26 +240,71 @@ export class WorkbenchClient {
     return this.bridge.nativeFiles === true;
   }
 
-  async openNativeDocument(): Promise<{ session: ScoreSessionRead; name: string; savedVersion: number } | null> {
+  async openNativeDocument(): Promise<WorkbenchNativeFileResult | null> {
     if (!this.bridge.openNativeDocument) throw new Error("当前宿主不支持原生打开文件");
     const result = await this.bridge.openNativeDocument(this.workspaceId);
+    return this.nativeFileResult(result);
+  }
+
+  async openNativeDocumentGuarded(expected: DocumentReplacementPrecondition): Promise<WorkbenchNativeFileResult | null> {
+    if (!isDocumentReplacementPrecondition(expected)) throw new Error("作品替换预条件无效");
+    if (!this.bridge.openNativeDocumentGuarded) throw new Error("当前宿主不支持受保护打开作品");
+    return this.nativeFileResult(await this.bridge.openNativeDocumentGuarded(this.workspaceId, expected));
+  }
+
+  private nativeFileResult(result: NativeFileResult | null): WorkbenchNativeFileResult | null {
     if (result === null) return null;
     const session = this.session(result.session, "文件打开结果无效")!;
     if (typeof result.name !== "string" || !result.name || !Number.isSafeInteger(result.savedVersion)
       || result.savedVersion < 0) throw new Error("文件打开结果无效");
-    return { session, name: result.name, savedVersion: result.savedVersion };
+    const warnings = result.warnings;
+    if (warnings !== undefined && (!Array.isArray(warnings) || warnings.length > 4
+      || warnings.some(warning => !isWorkbenchIssue(warning) || warning.severity !== "warning"))) throw new Error("文件打开警告结果无效");
+    return { session, name: result.name, savedVersion: result.savedVersion, ...(warnings?.length ? {warnings: Object.freeze([...warnings])} : {}) };
   }
 
-  async saveNativeDocument(suggestedName: string, saveAs: boolean): Promise<{
-    session: ScoreSessionRead; name: string; savedVersion: number;
-  } | null> {
+  private recentSnapshot(value: unknown): RecentDocumentsSnapshotV1 {
+    if (!isRecentDocumentsSnapshotV1(value)) throw new Error("最近文件目录结果无效");
+    return value;
+  }
+
+  async listRecentDocuments(): Promise<RecentDocumentsSnapshotV1> {
+    if (!this.bridge.listRecentDocuments) throw new Error("当前宿主不支持最近文件目录");
+    return this.recentSnapshot(await this.bridge.listRecentDocuments());
+  }
+
+  async removeRecentDocument(recordId: string): Promise<RecentDocumentsSnapshotV1> {
+    if (!isRecentRecordId(recordId)) throw new Error("最近文件记录ID无效");
+    if (!this.bridge.removeRecentDocument) throw new Error("当前宿主不支持移除最近文件记录");
+    return this.recentSnapshot(await this.bridge.removeRecentDocument(recordId));
+  }
+
+  async openRecentDocumentGuarded(recordId: string, expected: DocumentReplacementPrecondition): Promise<WorkbenchNativeFileResult> {
+    if (!isRecentRecordId(recordId) || !isDocumentReplacementPrecondition(expected)) throw new Error("最近文件打开参数无效");
+    if (!this.bridge.openRecentDocumentGuarded) throw new Error("当前宿主不支持受保护打开最近文件");
+    const result = this.nativeFileResult(await this.bridge.openRecentDocumentGuarded(this.workspaceId, recordId, expected));
+    if (!result) throw new Error("最近文件打开结果无效");
+    return result;
+  }
+
+  async recordCurrentFile(expected: DocumentReplacementPrecondition): Promise<RecentDocumentsSnapshotV1> {
+    if (!isDocumentReplacementPrecondition(expected) || expected.kind !== "document") throw new Error("登记最近文件需要当前作品身份");
+    if (!this.bridge.recordCurrentFile) throw new Error("当前宿主不支持登记最近文件");
+    return this.recentSnapshot(await this.bridge.recordCurrentFile(this.workspaceId, expected));
+  }
+
+  async saveNativeDocument(suggestedName: string, saveAs: boolean): Promise<WorkbenchNativeFileResult | null> {
     if (!this.bridge.saveNativeDocument) throw new Error("当前宿主不支持原生保存文件");
     const result = await this.bridge.saveNativeDocument(this.workspaceId, suggestedName, saveAs);
-    if (result === null) return null;
-    const session = this.session(result.session, "文件保存结果无效")!;
-    if (typeof result.name !== "string" || !result.name || !Number.isSafeInteger(result.savedVersion)
-      || result.savedVersion < 0) throw new Error("文件保存结果无效");
-    return { session, name: result.name, savedVersion: result.savedVersion };
+    return this.nativeFileResult(result);
+  }
+
+  async saveNativeDocumentGuarded(suggestedName: string, saveAs: boolean, expected: DocumentReplacementPrecondition): Promise<WorkbenchNativeFileResult | null> {
+    if (!isDocumentReplacementPrecondition(expected) || expected.kind !== "document" || typeof saveAs !== "boolean") {
+      throw new Error("保存需要有效的作品身份和版本");
+    }
+    if (!this.bridge.saveNativeDocumentGuarded) throw new Error("当前宿主不支持受保护保存作品");
+    return this.nativeFileResult(await this.bridge.saveNativeDocumentGuarded(this.workspaceId, suggestedName, saveAs, expected));
   }
 
   onNativeCloseRequested(handler: () => boolean | Promise<boolean>): Promise<() => void> {

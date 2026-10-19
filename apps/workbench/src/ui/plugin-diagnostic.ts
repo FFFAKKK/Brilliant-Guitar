@@ -1,4 +1,5 @@
 import type { UiPluginManifest } from "./plugin-manifest.ts";
+import { notifyObservers } from "./notify-observers.ts";
 
 export type UiPluginFailureCode =
   | "UI-PLG-001"
@@ -133,6 +134,6 @@ export class UiPluginDiagnosticStore {
     if (this.#fingerprints.has(fingerprint)) return;
     this.#fingerprints.add(fingerprint);
     this.#snapshot = Object.freeze([...this.#snapshot, diagnostic]);
-    queueMicrotask(() => { for (const listener of this.#listeners) listener(); });
+    queueMicrotask(() => { notifyObservers(this.#listeners); });
   }
 }

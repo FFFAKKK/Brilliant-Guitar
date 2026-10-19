@@ -1,5 +1,5 @@
 import type { ScoreDocument } from "../.kernel/src/core-kernel/index.js";
-import { KEY_SIGNATURE_NAMESPACE } from "../.kernel/src/first-party-modules/key-signature.js";
+import { supportsPlainGuitarNotation } from "./guitar-notation.ts";
 import type { PlaybackSourceProjection } from "../src/contracts/playback.ts";
 import { isPlaybackSourceProjection } from "../src/contracts/playback.ts";
 
@@ -17,7 +17,7 @@ export function projectPlaybackSource(document: ScoreDocument, documentVersion: 
   const part = document.parts[0];
   if (document.parts.length !== 1 || !part) return unsupported(document, documentVersion,
     "playback.structure-unsupported", "第一版播放暂只支持单声部乐谱");
-  if (document.extensions.some(block => block.namespace !== KEY_SIGNATURE_NAMESPACE)
+  if (!supportsPlainGuitarNotation(document)
     || document.measureDefinitions.some((measure) => measure.pickupDuration !== undefined)) {
     return unsupported(document, documentVersion, "playback.structure-unsupported", "当前乐谱结构暂不支持播放");
   }

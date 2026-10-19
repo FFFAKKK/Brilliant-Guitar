@@ -1,0 +1,31 @@
+{
+  "name": "brilliant-guitar-frame-visual",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "author:build": "node scripts/build-author-validation-kit.mjs",
+    "author:check": "node scripts/build-author-validation-kit.mjs --check",
+    "author:verify": "node tools/verify-author-submission.mjs",
+    "foundation:measure": "node tools/measure-foundation-capacity.mjs",
+    "foundation:measure-files": "node --experimental-strip-types tools/measure-document-capacity.mjs",
+    "foundation:check": "node tools/check-foundation-boundaries.mjs",
+    "motion:build": "node scripts/build-motion.mjs",
+    "motion:check": "node scripts/build-motion.mjs --check",
+    "notation:build": "node scripts/build-notation.mjs",
+    "notation:capacity-build": "node scripts/build-notation-capacity.mjs",
+    "notation:capacity-check": "node scripts/build-notation-capacity.mjs --check",
+    "startup:build": "node scripts/build-plugin-startup.mjs",
+    "startup:check": "node scripts/build-plugin-startup.mjs --check",
+    "desktop:build": "node scripts/build-desktop.mjs",
+    "desktop:check": "node scripts/build-desktop.mjs --check",
+    "pretest": "node scripts/build-notation.mjs --check && node scripts/build-plugin-startup.mjs --check",
+    "test": "node --test --test-isolation=none \"tests/*.test.js\"",
+    "serve": "python -u scripts/serve-preview.py --port 5193"
+  },
+  "dependencies": {
+    "motion": "14.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}
