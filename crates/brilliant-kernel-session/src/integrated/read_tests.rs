@@ -68,6 +68,51 @@ fn reader(fixture: &Value) -> Reader {
 }
 
 #[test]
+fn typed_read_ports_follow_integrated_submit_history_and_checkpoint() {
+    use brilliant_kernel_contracts::{KernelSessionReadResultV1, SelectorRequestV1};
+    let fixture = fixture();
+    let mut host = reader(&fixture);
+    let mut session = IntegratedKernelSessionV2::create(
+        fixture["initial"].as_str().unwrap().as_bytes(),
+        &mut host,
+    )
+    .unwrap();
+    for step in fixture["journey"].as_array().unwrap() {
+        let result: Value = serde_json::from_slice(
+            &session.operate(step["request"].as_str().unwrap().as_bytes(), &mut host),
+        )
+        .unwrap();
+        assert_eq!(result["ok"], true);
+        let wire: Value =
+            serde_json::from_slice(&session.operate(br#"{"operation":"read"}"#, &mut host))
+                .unwrap();
+        let KernelSessionReadResultV1::Ok(state) = session.read_core_state() else {
+            panic!("typed state")
+        };
+        assert_eq!(
+            serde_json::to_value(&state.snapshot.document).unwrap(),
+            wire["state"]["snapshot"]["document"]
+        );
+        assert_eq!(
+            serde_json::to_value(&state.history).unwrap(),
+            wire["state"]["history"]
+        );
+        assert_eq!(state.dirty, wire["state"]["dirty"]);
+        let selected = session.select_stage4(SelectorRequestV1::ScoreOverview);
+        assert_eq!(selected.document_version, state.snapshot.document_version);
+        let page = session
+            .read_rule_warning_page(
+                &state.snapshot.document.id,
+                state.snapshot.document_version,
+                0,
+                100,
+            )
+            .unwrap();
+        assert!(page.warnings.is_empty());
+    }
+}
+
+#[test]
 fn reads_follow_prepare_transform_final_candidate_and_history_at_equal_versions() {
     let fixture = fixture();
     let mut executor = reader(&fixture);

@@ -53,6 +53,34 @@ pub struct IntegratedKernelRuntimeV2 {
 }
 
 impl IntegratedKernelRuntimeV2 {
+    /// Detached reads of this same runtime. No Core-only write gateway is exposed.
+    pub fn read_core_state(&self) -> brilliant_kernel_contracts::KernelSessionReadResultV1 {
+        match self.runtime.read_state() {
+            Ok(state) => brilliant_kernel_contracts::KernelSessionReadResultV1::Ok(Box::new(state)),
+            Err(failure) => brilliant_kernel_contracts::KernelSessionReadResultV1::Rejected(
+                failure.into_stable_failure(),
+            ),
+        }
+    }
+
+    pub fn select_stage4(&self, selector: SelectorRequestV1) -> KernelStage4SelectValueV1 {
+        self.runtime.select_stage4(selector)
+    }
+
+    pub fn read_rule_warning_page_v1(
+        &self,
+        document_id: &StableId,
+        document_version: DocumentVersionV1,
+        offset: usize,
+        limit: usize,
+    ) -> std::result::Result<
+        brilliant_kernel_contracts::KernelRuleWarningPageV1,
+        brilliant_kernel_contracts::KernelRuleWarningReadFailureV1,
+    > {
+        self.runtime
+            .read_rule_warning_page(document_id, document_version, offset, limit)
+    }
+
     pub fn create(
         bytes: &[u8],
         executor: &mut dyn ContributionExecutorV2,
