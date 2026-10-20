@@ -634,6 +634,10 @@ impl ScoreSessionService {
         Ok(self.sessions.remove(workspace_id).is_some())
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.sessions.is_empty()
+    }
+
     pub fn file_path(&self, workspace_id: &str) -> Result<Option<PathBuf>, HostError> {
         validate_workspace_id(workspace_id)?;
         Ok(self

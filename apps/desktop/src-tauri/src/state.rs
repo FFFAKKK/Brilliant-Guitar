@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 use std::sync::Mutex;
+use std::collections::HashMap;
 
 use crate::agent_credential::AgentCredentialStore;
 use crate::agent_provider::{AgentProviderCancellationRegistry, AgentProviderService};
@@ -16,6 +17,7 @@ use crate::workspace_configuration::WorkspaceConfigurationStore;
 
 pub struct AppState {
     pub service: Mutex<ScoreSessionService>,
+    pub closing_workspaces: Mutex<HashMap<String, String>>,
     pub recovery: RecoveryManager,
     pub diagnostics: DiagnosticLog,
     pub settings: ApplicationSettingsStore,
@@ -104,6 +106,7 @@ impl AppState {
             settings_path.with_file_name("plugin-startup-recovery.v1.json");
         Ok(Self {
             service: Mutex::new(ScoreSessionService::default()),
+            closing_workspaces: Mutex::new(HashMap::new()),
             recovery: RecoveryManager::default(),
             diagnostics: DiagnosticLog::new(diagnostics_root),
             settings: ApplicationSettingsStore::new(settings_path),

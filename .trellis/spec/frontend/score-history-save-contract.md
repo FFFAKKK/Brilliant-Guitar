@@ -52,6 +52,23 @@ fn status(&self, path: PathBuf) -> Result<(), HostError>;
 fn remove(&self, path: PathBuf) -> Result<(), HostError>;
 ```
 
+新原生窗口关闭协议独立于旧文档关闭：
+
+```ts
+type NativeClosePrecondition = { kind: "empty" }
+  | { kind: "document"; sessionId: string; documentId: string; documentVersion: number };
+client.onNativeCloseRequestedGuarded(handler: () => void | Promise<void>): Promise<() => void>;
+client.closeNativeWindowGuarded(expected: NativeClosePrecondition): Promise<boolean>;
+// IPC: workbench_close_window_guarded_v1({workspaceId, expected})
+// true = 宿主已分派原生destroy；false = 用户取消关闭或保存。
+// createReadonlyScoreDocumentSession({ ..., nativeClose?: boolean }) 默认false；
+// createDesktopReadonlyScoreSession由可信组合根明确启用true。
+```
+
+guard字段严格；ID为1–256个UTF-16单元，版本为非负安全整数。
+旧`workbench_close_v1({workspaceId}) -> boolean`、旧boolean listener和无参数
+`client.closeNativeWindow()`保持原合同；缺少新端口时报错，不用旧端口补位。
+
 `notation.core.document.undo`、`redo`、`save`、`save-as`由核心UI内部贡献，经同一个router、菜单和全局快捷键执行：`Mod+Z`、`Mod+Shift+Z`/`Mod+Y`、`Mod+S`、`Mod+Shift+S`。输入框、IME和修饰键边界仍由原宿主处理。
 
 ## 3. 所有权与流程
@@ -74,7 +91,19 @@ fn remove(&self, path: PathBuf) -> Result<(), HostError>;
 - `remove(path)`只有物理删除成功或文件已经不存在才清除pending/失败状态；删除失败保留最新内容。成功Open/Save在原service锁内先入队已接受作品，再remove；清理失败后的恢复必须是新作品，不能复活被替换的旧快照。
 - `file.recovery-unavailable`复用文件来源的`WorkbenchIssue`。有效session仍ready，dirty/保存检查点由原persistence决定；备份源通过现有warnings状态、React通过原feedback端口反馈。显式新建同样保留宿主warnings，不能在重置文件检查点时清空它。
 - 健康重读替换旧恢复warning，保留recent等独立警告；Open/Save合并session与操作级warnings。取消或失败不清空现有警告。
-- 文档关闭在同一service锁内仅flush/remove本workspace，均成功后才关闭session；任一步失败保留session供重试。原生窗口最终销毁的顺序由后续关闭切片处理。
+- 旧文档关闭在同一service锁内仅flush/remove本workspace，均成功后才关闭session；任一步失败保留session供重试。当前两个桌面入口使用下述新窗口协议，不把旧文档关闭回执当作窗口销毁。
+
+### 原生窗口销毁后才释放文档
+
+- Rust只允许main窗口调用新关闭命令。先在原service锁内比较session实例、作品ID和版本并捕获原SaveSnapshot；原生确认和文件选择在锁外、命令worker中运行。没有物理保存检查点或Kernel dirty为true时，宿主统一提供“保存／不保存／取消”。恢复导入虽然有干净历史，没有物理检查点仍须确认。
+- 保存使用确认前的原快照、原文件绑定和原保存版本，不在确认之后重新导出。取消不派发destroy；保存失败保留当前作品、检查点和原目标字节。确认/文件选择期间编辑或同ID重开，旧关闭或保存均被拒绝。
+- 最终比较、导出/flush本workspace恢复快照、登记closing和原生destroy派发按此顺序持有同一service锁。首次派发失败撤销本次登记，保留作品与恢复供重试；已接受的派发不能被后续失败重发撤销。
+- destroy回执不是销毁完成。只有真实`WindowEvent::Destroyed`才remove恢复并关闭session；清理失败仍释放已销毁session，但保留磁盘恢复副本。closing tombstone持续到进程结束，迟到read/create不能从恢复复活作品。无登记的意外销毁不清理恢复。
+- 所有workspace typed读、编辑、Open、Save和旧close共用closing门；Agent的拒绝是`CapabilityResult::Unavailable`，正常写入Resolved回执，不遗留Started。锁顺序始终service→closing。
+- Rust在main活动文档存在或service繁忙时同步阻止CloseRequested，保护JS尚未注册的窗口；无活动文档的空壳可以退出。新JS listener先同步preventDefault，再执行异步handler，永不自行close/destroy；旧listener保留原协议。
+- backup原文档owner串行关闭与原busy/epoch/dispose。未加载时只read-existing，不为关闭自动创建文档；取消释放busy，派发成功保持busy直到销毁。失败保留accepted作品并反馈，重试先重读。关闭监听只注册一次，释放会解绑，迟到注册立即解绑；原图形reload可重试失败注册。
+- React同样使用新宿主确认。文件动作采用同步互斥；稳定listener通过ref取最新session和工作状态，保存/打开未完成时不重入关闭。桌面不再重复注册浏览器beforeunload，浏览器原保护保留。新建/打开的现有未保存确认不变。
+- 保留延后窗口启动、配置租约最后字段及启动失败退出码。当前实现只服务已有单main窗口，不据此开放多窗口产品能力。
 
 ## 4. 错误矩阵
 
@@ -94,6 +123,13 @@ fn remove(&self, path: PathBuf) -> Result<(), HostError>;
 | 恢复清理失败 | 保留pending/失败状态；Open/Save保持已接受作品和检查点，文档关闭保持session |
 | 另一workspace恢复写失败 | 本workspace的flush/remove不继承其失败 |
 | session warnings非法、超过4项或包含error | 拒绝坏回执，保留最后accepted结果 |
+| 关闭guard不合法/宿主缺失新端口/非boolean回执 | 拒绝，保留作品；不降级旧close |
+| 关闭确认期间作品/实例改变 | `file.close-stale`，409；不销毁、不清恢复 |
+| 已在原生关闭中 | `file.workspace-closing`，409；Agent返回`capability.workspace-closing`并落Resolved回执 |
+| 确认或关闭前保存被取消 | false；保留作品、恢复及检查点，可重试 |
+| 窗口destroy分派失败 | 首次登记撤回，保留恢复/作品；已接受派发的登记保持 |
+| Destroyed后的恢复删除失败 | 只记录清理失败，恢复磁盘字节保留；窗口已销毁，不虚构仍可编辑 |
+| backup关闭监听失败 | 原文档状态反馈失败；原reload重试监听和读取，不新增文档 |
 
 ## 5. 案例
 
@@ -105,6 +141,7 @@ fn remove(&self, path: PathBuf) -> Result<(), HostError>;
 - 恢复故障：新建成功但恢复目录被占用，作品仍ready且显示warning；修复目录后flush写入相同作品，健康重读清除恢复warning，recent警告保持。
 - 替换与清理：打开B后删除恢复文件失败，保留B的最新快照；之后恢复不得得到旧作品A。
 - 基础兼容：旧宿主没有warnings/persistence仍沿原合同；无pending的清理失败可再次关闭，不被历史失败状态永久阻塞。
+- 关闭：未保存作品取消后可继续编辑；选择不保存后直到Destroyed前仍保留恢复。确认时发生同ID重开，旧快照不能覆盖文件或关闭新实例。
 - 错误：先释放service锁再导出/入队，导致并发编辑倒序；删除失败却清pending，导致恢复内容丢失。
 
 ## 6. 验证
@@ -116,6 +153,11 @@ fn remove(&self, path: PathBuf) -> Result<(), HostError>;
 - `apps/desktop/src-tauri/src/document_io.rs`恢复回归：按路径flush/status、失败删除保留最新pending、目录修复后重试、持续消息不饿死写入、后台失败保持到成功重试。
 - `apps/desktop/src-tauri/src/commands/recovery_tests.rs`：创建warning、capability查询/拒绝不写与mutation接线、Open/Save清理失败保留新作品和检查点、workspace关闭隔离、无pending清理重试；四线程40次编辑后的恢复字节等于当前service导出。
 - `apps/workbench/test/browser/document-save.browser.html`：在Workbench Vite服务打开，真实React hook/client/bridge验证迟到保存、取消、错误、同渲染重入、保存后warning及“保存并继续”。原生IPC由测试注入，不替代原生文件选择框验收。
+- `apps/desktop/src-tauri/src/native_close.rs`决策回归和`commands/native_close_tests.rs`：取消、保存失败/取消/成功、确认前原快照、恢复导入无物理检查点、stale实例、dispatch与Destroyed分离、失败重试和清理失败保留字节。
+- `apps/desktop/src-tauri/tests/native_close.rs`：Windows独立子进程、独立WebView数据目录；真实空壳关闭、service繁忙时阻止默认关闭、原guarded命令派发后session/恢复仍在、Agent结果与Resolved回执、真实Destroyed后清理。默认ignored，须显式运行；构建器只为Windows MSVC测试链接Common Controls v6，不改变生产资源。
+- `apps/workbench/test/workbench-native-close.test.ts`：已安装Tauri SDK不默认destroy，异步handler失败也保持prevent；实际desktop工厂覆盖欢迎页和dirty工作区。
+- `apps/workbench/test/readonly-score-native-close.test.ts`：原owner的read-existing、busy/取消/失败/重试、释放、迟到注册和旧端口不降级；React浏览器页另覆盖稳定listener、保存互斥和桌面无双重beforeunload。
+- `design/frame-visual/tests/startup-center-product.test.js`和`startup-center-session.test.js`：实际desktop工厂使用原bundled SDK；共享测试替身须提供`transformCallback`、`plugin:event|listen`、`__TAURI_EVENT_PLUGIN_INTERNALS__.unregisterListener(event,eventId)`及`plugin:event|unlisten({event,eventId})`。断言只有一份关闭监听、文档重读复用它、dispose后监听和callback均归零；不能把替身缺口当作生产注册失败并取消保护。
 - `design/frame-visual/tests/score-note-input.test.js`：原UI router、菜单、键盘、投影与输入的undo/redo/save链。作品变更与DOM绘制替身不能冒充原生窗口验证。
 - 相关正式/备份边界、类型、生成、整包和离线Rust专项通过后才封存；原生文件对话框与输入手感另行验收。
 
@@ -143,4 +185,14 @@ let document = locked(state)?.export_document(workspace_id)?;
 
 // 正确：在原service锁内提交、导出并入队；恢复副作用失败单独反馈。
 change_document(state, workspace_id, |service| service.edit(request))?;
+```
+
+```ts
+// 错误：文档先被清掉，随后窗口close失败。
+await legacyDocumentClose();
+await window.close();
+
+// 正确：捕获accepted实例，由宿主确认、保留恢复并分派destroy。
+// session只在真实Destroyed中释放。
+await client.closeNativeWindowGuarded(nativeClosePrecondition(acceptedSession));
 ```

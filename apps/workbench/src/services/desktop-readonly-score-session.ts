@@ -7,5 +7,6 @@ import type { ReadonlyDocumentInitialization } from "./readonly-score-document-s
 export function createDesktopReadonlyScoreSession({ initialization = "ensure-document" }: {
   initialization?: ReadonlyDocumentInitialization;
 } = {}) {
-  return createReadonlyScoreDocumentSession({ client: new WorkbenchClient(new TauriWorkbenchHostBridge()), initialization });
+  return createReadonlyScoreDocumentSession({ client: new WorkbenchClient(new TauriWorkbenchHostBridge()),
+    initialization, nativeClose: true });
 }

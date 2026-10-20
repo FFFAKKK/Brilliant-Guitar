@@ -7,6 +7,8 @@ import type { SavedFileCheckpoint } from "./document-file.ts";
 import { readOrCreateInitialScore } from "./initial-score.ts";
 import { notifyObservers } from "../ui/notify-observers.ts";
 import type { DocumentReplacementPrecondition } from "../contracts/document-replacement.ts";
+import { nativeClosePrecondition } from "../contracts/native-close.ts";
+import type { NativeClosePrecondition } from "../contracts/native-close.ts";
 import type { WorkbenchNativeFileResult } from "./workbench-client.ts";
 import type { WorkbenchIssue } from "../contracts/workbench-issue.ts";
 import type { RecentDocumentsSnapshotV1 } from "../contracts/recent-documents.ts";
@@ -32,6 +34,8 @@ interface ReadonlyDocumentClient {
   recordCurrentFile?(expected: DocumentReplacementPrecondition): Promise<RecentDocumentsSnapshotV1>;
   saveNativeDocumentGuarded?(suggestedName: string, saveAs: boolean, expected: DocumentReplacementPrecondition): Promise<WorkbenchNativeFileResult | null>;
   usesNativeFiles(): boolean;
+  onNativeCloseRequestedGuarded?(handler: () => void | Promise<void>): Promise<() => void>;
+  closeNativeWindowGuarded?(expected: NativeClosePrecondition): Promise<boolean>;
 }
 export interface ReadonlyDocumentState {
   readonly status: "empty" | "loading" | "ready" | "error" | "disposed";
@@ -54,8 +58,8 @@ type Result = { readonly ok: true; readonly changed: boolean; readonly cancelled
 export type ReadonlyDocumentInitialization = "ensure-document" | "read-existing";
 
 /** Application read model only. The Rust session remains the music/file authority. */
-export function createReadonlyScoreDocumentSession({ client, createId = () => crypto.randomUUID(), initialization = "ensure-document" }: {
-  client: ReadonlyDocumentClient; createId?: () => string; initialization?: ReadonlyDocumentInitialization;
+export function createReadonlyScoreDocumentSession({ client, createId = () => crypto.randomUUID(), initialization = "ensure-document", nativeClose = false }: {
+  client: ReadonlyDocumentClient; createId?: () => string; initialization?: ReadonlyDocumentInitialization; nativeClose?: boolean;
 }) {
   if (initialization !== "ensure-document" && initialization !== "read-existing") throw new TypeError("initialization 必须是 ensure-document 或 read-existing");
   let current: ScoreSessionRead | null | undefined;
@@ -64,6 +68,8 @@ export function createReadonlyScoreDocumentSession({ client, createId = () => cr
   let warnings: readonly WorkbenchIssue[] = Object.freeze([]);
   let busy = false, disposed = false, epoch = 0;
   let initial: Promise<ScoreSessionRead | null> | null = null;
+  let unlistenClose: (() => void) | undefined;
+  let closeRegistration: Promise<void> | null = null;
   const initialId = createId();
   const readListeners = new Set<() => void>(), stateListeners = new Set<() => void>();
   const notify = notifyObservers;
@@ -229,6 +235,56 @@ export function createReadonlyScoreDocumentSession({ client, createId = () => cr
     if (!isScoreEditRequest(request)) return { ok: false, code: "document.invalid-input", message: "历史请求无效" };
     return applyEdit(request);
   }
+  async function closeNativeWindow(): Promise<Result> {
+    if (disposed) return { ok: false, code: "document.disposed", message: "作品会话已释放" };
+    if (busy) return { ok: false, code: "document.busy", message: "作品操作尚未完成" };
+    busy = true; const token = ++epoch; notify(stateListeners);
+    let dispatched = false;
+    try {
+      if (disposed || token !== epoch) return { ok: false, code: "document.disposed", message: "作品会话已释放" };
+      if (!client.closeNativeWindowGuarded) throw new Error("当前宿主不支持受保护关闭");
+      // Closing the welcome page must not run ensure-document initialization.
+      // A previous failed close may have saved successfully before dispatch failed.
+      if (current === undefined || failure) {
+        const value = await client.read();
+        if (disposed || token !== epoch) return { ok: false, code: "document.disposed", message: "作品会话已释放" };
+        accept(value); notify(readListeners);
+      }
+      const expected = nativeClosePrecondition(current ?? null);
+      if (disposed || token !== epoch) return { ok: false, code: "document.disposed", message: "作品会话已释放" };
+      dispatched = await client.closeNativeWindowGuarded(expected);
+      if (disposed || token !== epoch) return { ok: false, code: "document.disposed", message: "作品会话已释放" };
+      return dispatched ? { ok: true, changed: false } : { ok: true, changed: false, cancelled: true };
+    } catch (error) {
+      if (disposed || token !== epoch) return { ok: false, code: "document.disposed", message: "作品会话已释放" };
+      failure = error instanceof Error ? error : new Error("无法安全关闭当前工作区");
+      notify(readListeners);
+      return { ok: false, code: "document.close-failed", message: failure.message };
+    } finally {
+      // Native dispatch is not destruction. Keep local actions blocked while
+      // the host waits for Destroyed; no document or checkpoint is cleared here.
+      if (!disposed && token === epoch && !dispatched) { busy = false; notify(stateListeners); }
+    }
+  }
+  function ensureCloseListener(): Promise<void> {
+    if (unlistenClose) return Promise.resolve();
+    if (closeRegistration) return closeRegistration;
+    closeRegistration = Promise.resolve().then(() => {
+      if (disposed) return;
+      if (!client.onNativeCloseRequestedGuarded) throw new Error("当前宿主不支持受保护关闭监听");
+      return client.onNativeCloseRequestedGuarded(async () => { await closeNativeWindow(); });
+    }).then(dispose => {
+      if (disposed) dispose?.(); else unlistenClose = dispose;
+    }).finally(() => { closeRegistration = null; });
+    return closeRegistration;
+  }
+  if (nativeClose) {
+    void ensureCloseListener().catch((error: unknown) => {
+      if (disposed) return;
+      failure = error instanceof Error ? error : new Error("无法监听窗口关闭");
+      notify(readListeners); notify(stateListeners);
+    });
+  }
   return Object.freeze({
     read: ensureLoaded,
     subscribe: (listener: () => void) => subscribe(readListeners, listener),
@@ -244,6 +300,7 @@ export function createReadonlyScoreDocumentSession({ client, createId = () => cr
       && typeof client.saveNativeDocumentGuarded === "function",
     undo: () => history("undo"),
     redo: () => history("redo"),
+    closeNativeWindow,
     async save(saveAs = false): Promise<Result> {
       if (typeof saveAs !== "boolean") return { ok: false, code: "document.invalid-input", message: "保存参数无效" };
       if (disposed) return { ok: false, code: "document.disposed", message: "作品会话已释放" };
@@ -472,9 +529,14 @@ export function createReadonlyScoreDocumentSession({ client, createId = () => cr
         } finally { if (!disposed && token === epoch) { busy = false; notify(stateListeners); } }
       },
     }),
-    reload: () => run(() => current === undefined ? loadInitial() : client.read()),
+    reload: () => run(async () => {
+      if (nativeClose) await ensureCloseListener();
+      if (disposed) throw new Error("作品会话已释放");
+      return current === undefined ? loadInitial() : client.read();
+    }),
     dispose() {
       if (disposed) return; disposed = true; epoch++; busy = false;
+      unlistenClose?.(); unlistenClose = undefined;
       readListeners.clear(); stateListeners.clear(); current = undefined; failure = null; checkpoint = null; warnings = Object.freeze([]);
     },
   });

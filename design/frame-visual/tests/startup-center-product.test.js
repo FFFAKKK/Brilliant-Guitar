@@ -12,6 +12,7 @@ import { STAFF_FIXTURE } from "../src/fixtures/staff-snapshot.js";
 import { createStartupCenterPage } from "../scripts/startup-center-page.mjs";
 import { withTestDocument } from "./support/dom-test-environment.js";
 import { createStartupCenterTestShell } from "./support/startup-center-fixtures.js";
+import { installTauriEventMock } from "./support/tauri-event-mock.js";
 
 const flush = () => new Promise(resolve => setImmediate(resolve));
 async function until(predicate) { for (let i = 0; i < 40 && !predicate(); i++) await flush(); assert.equal(!!predicate(), true, "operation must settle"); }
@@ -28,7 +29,7 @@ function fixture({ document, window }, { classic = false, settings = null } = {}
   const tauriFlag = Object.getOwnPropertyDescriptor(globalThis, "isTauri");
   if (classic) Object.defineProperty(globalThis, "isTauri", { configurable: true, value: true });
   let current = null, saved = structuredClone(settings);
-  window.__TAURI_INTERNALS__ = { metadata: { currentWindow: { label: "main" } }, async invoke(command, args) {
+  const nativeEvents = installTauriEventMock(window, async (command, args) => {
     calls.push({ command, args });
     if (overrides[command]) return overrides[command](args);
     if (command === "workbench_read_plugin_settings_v1") return saved;
@@ -46,17 +47,17 @@ function fixture({ document, window }, { classic = false, settings = null } = {}
     if (command === "plugin:window|current_monitor") return null;
     if (["plugin:window|unmaximize", "plugin:window|maximize", "plugin:window|set_size", "plugin:window|set_min_size"].includes(command)) return;
     throw new Error("Unexpected IPC " + command);
-  } };
+  });
   const storage = new TauriPluginSettingsStorage();
   const app = classic ? null : mountStartupCenterApplication({ ...shell, windowPort: createDesktopStartupWindow(),
     createDocumentSession: createDesktopReadonlyScoreSession,
     appearanceStore: createDesktopStartupAppearanceStore({ settingsStorage: storage }),
     store: createDesktopPluginPlanStore({ directory, settingsStorage: storage }) });
-  return { ...shell, app, calls, overrides, get settings() { return structuredClone(saved); },
+  return { ...shell, app, calls, overrides, nativeEvents, get settings() { return structuredClone(saved); },
     replaceSettings(value) { saved = structuredClone(value); }, count: command => calls.filter(call => call.command === command).length,
     dispose() {
       if (app) app.dispose(); else window.dispatchEvent(new Event("pagehide"));
-      shell.root.remove(); shell.workspaceRoot.remove(); delete window.__TAURI_INTERNALS__;
+      shell.root.remove(); shell.workspaceRoot.remove(); nativeEvents.dispose();
       if (classic) { if (tauriFlag) Object.defineProperty(globalThis, "isTauri", tauriFlag); else delete globalThis.isTauri; }
     } };
 }
@@ -65,6 +66,7 @@ test("product three-page view uses host recents, preserves one plugin draft and 
   const f = fixture(env);
   try {
     assert.equal((await f.app.ready).ok, true); await flush();
+    assert.equal(f.nativeEvents.listeners.size, 1, "actual desktop factory registers one guarded close listener");
     assert.equal(f.count("workbench_create_guarded_v1"), 0); assert.equal(f.workspaceRoot.children.length, 0);
     assert.equal(f.root.querySelectorAll("[data-record-id]").length, 1);
     assert.equal(f.root.querySelector("[data-example-id]"), null);
@@ -154,6 +156,8 @@ test("initial document read failure offers explicit retry before any create or p
     assert.match(f.node("launch-status").title, /read refused/);
     delete f.overrides.workbench_read_v1;
     f.node("launch-retry").click(); await until(() => !f.node("launch-new").disabled);
+    assert.equal(f.nativeEvents.eventCalls.filter(call => call.command === "plugin:event|listen").length, 1,
+      "document read retry must reuse the accepted native close listener");
     assert.equal(f.count("workbench_read_v1"), 2); assert.equal(f.count("workbench_create_guarded_v1"), 0);
     assert.equal(f.workspaceRoot.children.length, 0);
   } finally { f.dispose(); }

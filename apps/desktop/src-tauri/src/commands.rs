@@ -31,6 +31,7 @@ use crate::{
         ScoreStructureV1, ScoreSummaryV1, ScoreTempoChangeSetV1,
     },
     error::HostError,
+    native_close::locked_workspace,
     recent_documents::RecentDocumentsSnapshotV1,
     settings::{ApplicationSettingsSnapshotV1, ApplicationSettingsV1},
     state::AppState,
@@ -381,6 +382,15 @@ fn invoke_with_recovery(
         descriptor.id == invocation.capability_id && descriptor.kind == CapabilityKind::Mutation
     });
     let mut service = locked(state)?;
+    if crate::native_close::workspace_is_closing(state, &workspace_id)? {
+        return Ok(CapabilityResult::Unavailable {
+            invocation_id: invocation.invocation_id,
+            capability_id: invocation.capability_id,
+            contract_version: invocation.contract_version,
+            code: "capability.workspace-closing".into(),
+            message: "工作区正在关闭，无法继续调用能力".into(),
+        });
+    }
     let result = crate::capability::invoke(&mut service, invocation);
     if mutation && matches!(result, CapabilityResult::Completed { .. }) {
         // The mutation is already committed. The next session read reports
@@ -709,7 +719,7 @@ fn read_or_recover(
     state: &AppState,
     workspace_id: &str,
 ) -> Result<Option<ScoreSessionRead>, HostError> {
-    let mut service = locked(state)?;
+    let mut service = locked_workspace(state, workspace_id)?;
     if let Some(mut session) = service.read(workspace_id)? {
         session.warnings = recovery_status(state, workspace_id).into_iter().collect();
         return Ok(Some(session));
@@ -752,7 +762,7 @@ pub fn workbench_score_read_summary_v1(
     state: State<'_, AppState>,
     workspace_id: String,
 ) -> Result<Option<ScoreSummaryV1>, HostError> {
-    locked(state.inner())?.read_summary(&workspace_id)
+    locked_workspace(state.inner(), &workspace_id)?.read_summary(&workspace_id)
 }
 
 #[tauri::command]
@@ -760,7 +770,7 @@ pub fn workbench_score_read_metadata_v1(
     state: State<'_, AppState>,
     workspace_id: String,
 ) -> Result<Option<ScoreMetadataV1>, HostError> {
-    locked(state.inner())?.read_metadata(&workspace_id)
+    locked_workspace(state.inner(), &workspace_id)?.read_metadata(&workspace_id)
 }
 
 #[tauri::command]
@@ -768,7 +778,7 @@ pub fn workbench_score_read_structure_v1(
     state: State<'_, AppState>,
     workspace_id: String,
 ) -> Result<Option<ScoreStructureV1>, HostError> {
-    locked(state.inner())?.read_structure(&workspace_id)
+    locked_workspace(state.inner(), &workspace_id)?.read_structure(&workspace_id)
 }
 
 #[tauri::command]
@@ -778,7 +788,7 @@ pub fn workbench_score_read_measure_index_v1(
     expected_document_id: String,
     expected_document_version: u64,
 ) -> Result<Option<ScoreMeasureIndexV1>, HostError> {
-    locked(state.inner())?.read_measure_index(
+    locked_workspace(state.inner(), &workspace_id)?.read_measure_index(
         &workspace_id,
         &expected_document_id,
         expected_document_version,
@@ -793,7 +803,7 @@ pub fn workbench_score_read_measure_range_v1(
     end_measure_id: String,
     max_measures: usize,
 ) -> Result<Option<ScoreMeasureRangeV1>, HostError> {
-    locked(state.inner())?.read_measure_range(
+    locked_workspace(state.inner(), &workspace_id)?.read_measure_range(
         &workspace_id,
         start_measure_id,
         end_measure_id,
@@ -812,7 +822,7 @@ pub fn workbench_score_prepare_tempo_change_v1(
     expected_document_version: u64,
     input: ScorePrepareTempoChangeInputV1,
 ) -> Result<Option<ScoreTempoChangeSetV1>, HostError> {
-    locked(state.inner())?.prepare_tempo_change(
+    locked_workspace(state.inner(), &workspace_id)?.prepare_tempo_change(
         &workspace_id,
         &expected_document_id,
         expected_document_version,
@@ -828,7 +838,7 @@ pub fn workbench_score_prepare_metadata_transaction_v1(
     expected_document_version: u64,
     input: ScorePrepareMetadataTransactionInputV1,
 ) -> Result<Option<ScoreMetadataTransactionChangeSetV1>, HostError> {
-    locked(state.inner())?.prepare_metadata_transaction(
+    locked_workspace(state.inner(), &workspace_id)?.prepare_metadata_transaction(
         &workspace_id,
         &expected_document_id,
         expected_document_version,
@@ -869,7 +879,7 @@ pub fn workbench_export_v1(
     state: State<'_, AppState>,
     workspace_id: String,
 ) -> Result<String, HostError> {
-    locked(state.inner())?.export_document(&workspace_id)
+    locked_workspace(state.inner(), &workspace_id)?.export_document(&workspace_id)
 }
 
 #[tauri::command]
@@ -892,7 +902,7 @@ pub fn workbench_close_v1(
 }
 
 fn close_document(state: &AppState, workspace_id: &str) -> Result<bool, HostError> {
-    let mut service = locked(state)?;
+    let mut service = locked_workspace(state, workspace_id)?;
     service.read(workspace_id)?;
     let path = state.recovery_path(workspace_id);
     state.recovery.flush(path.clone())?;
@@ -916,7 +926,7 @@ pub async fn workbench_open_file_guarded_v1(
     workspace_id: String,
     expected: DocumentReplacementPrecondition,
 ) -> Result<Option<NativeFileResult>, HostError> {
-    locked(state.inner())?.check_replacement(&workspace_id, &expected)?;
+    locked_workspace(state.inner(), &workspace_id)?.check_replacement(&workspace_id, &expected)?;
     open_file(&app, state.inner(), workspace_id, Some(&expected))
 }
 
@@ -960,7 +970,7 @@ fn accept_opened_file(
         )
     })?;
     let document_json = read_document(&path)?;
-    let mut service = locked(state)?;
+    let mut service = locked_workspace(state, &workspace_id)?;
     let mut result = match expected {
         Some(expected) => service.import_file_guarded(
             workspace_id.clone(),
@@ -1042,7 +1052,7 @@ fn open_recent_file(
     record_id: &str,
     expected: &DocumentReplacementPrecondition,
 ) -> Result<NativeFileResult, HostError> {
-    locked(state)?.check_replacement(&workspace_id, expected)?;
+    locked_workspace(state, &workspace_id)?.check_replacement(&workspace_id, expected)?;
     // resolve releases the directory gate before the service lock is acquired again.
     let path = state
         .recent_documents
@@ -1070,7 +1080,7 @@ fn record_current_file(
     if matches!(expected, DocumentReplacementPrecondition::Empty {}) {
         return Err(HostError::new("登记最近文件需要当前作品身份", 400));
     }
-    let service = locked(state)?;
+    let service = locked_workspace(state, workspace_id)?;
     service.check_replacement(workspace_id, expected)?;
     let path = service
         .file_path(workspace_id)?
@@ -1136,7 +1146,7 @@ fn save_file(
     expected: Option<DocumentReplacementPrecondition>,
 ) -> Result<Option<NativeFileResult>, HostError> {
     let (snapshot, expected) = {
-        let service = locked(state)?;
+        let service = locked_workspace(state, &workspace_id)?;
         let expected = match expected {
             Some(value) => value,
             None => {
@@ -1155,10 +1165,22 @@ fn save_file(
         service.check_replacement(&workspace_id, &expected)?;
         (service.export_snapshot(&workspace_id)?, expected)
     };
+    save_snapshot(app, state, &workspace_id, &suggested_name, save_as, &expected, &snapshot)
+}
+
+pub(crate) fn save_snapshot(
+    app: &AppHandle,
+    state: &AppState,
+    workspace_id: &str,
+    suggested_name: &str,
+    save_as: bool,
+    expected: &DocumentReplacementPrecondition,
+    snapshot: &crate::application::SaveSnapshot,
+) -> Result<Option<NativeFileResult>, HostError> {
     let path = if !save_as && let Some(path) = snapshot.file_path() {
         path
     } else {
-        let file_name = sanitize_file_name(&suggested_name);
+        let file_name = sanitize_file_name(suggested_name);
         let Some(selected) = app
             .dialog()
             .file()
@@ -1179,7 +1201,7 @@ fn save_file(
                 .map_err(|_| HostError::new("无法访问所选保存位置", 422))?,
         )
     };
-    persist_save_snapshot(state, &workspace_id, path, &expected, &snapshot).map(Some)
+    persist_save_snapshot(state, workspace_id, path, expected, snapshot).map(Some)
 }
 
 // Dialog stays outside the service gate. The final guard and physical commit
@@ -1195,7 +1217,7 @@ fn persist_selected_file(
         return Err(HostError::new("保存需要当前作品身份和版本", 400));
     }
     let snapshot = {
-        let service = locked(state)?;
+        let service = locked_workspace(state, workspace_id)?;
         service.check_replacement(workspace_id, expected)?;
         service.export_snapshot(workspace_id)?
     };
@@ -1212,7 +1234,7 @@ fn persist_save_snapshot(
     if matches!(expected, DocumentReplacementPrecondition::Empty {}) {
         return Err(HostError::new("保存需要当前作品身份和版本", 400));
     }
-    let mut service = locked(state)?;
+    let mut service = locked_workspace(state, workspace_id)?;
     service.check_replacement(workspace_id, expected)?;
     let mut result = service.save_file(workspace_id, path.clone(), snapshot)?;
     if clear_file_recovery(state, &service, workspace_id).is_err() {
@@ -1235,7 +1257,7 @@ fn change_document(
     workspace_id: &str,
     operation: impl FnOnce(&mut crate::application::ScoreSessionService) -> Result<ScoreSessionRead, HostError>,
 ) -> Result<ScoreSessionRead, HostError> {
-    let mut service = locked(state)?;
+    let mut service = locked_workspace(state, workspace_id)?;
     let mut session = operation(&mut service)?;
     let warning = schedule_current_recovery(state, &service, workspace_id)
         .or_else(|| recovery_status(state, workspace_id));
@@ -1318,6 +1340,9 @@ mod save_tests;
 
 #[cfg(test)]
 mod recovery_tests;
+
+#[cfg(test)]
+mod native_close_tests;
 
 #[cfg(test)]
 mod tests {

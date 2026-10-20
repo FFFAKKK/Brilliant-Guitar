@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { NewScoreInput } from "../contracts/new-score";
 import type { ScoreSessionRead } from "../contracts/score-session";
+import { nativeClosePrecondition } from "../contracts/native-close.ts";
 import type { NotationRenderer } from "../notation/notation-renderer";
 import type { WorkbenchClient } from "../services/workbench-client";
 import { checkpointMatches, downloadText, fileStem, hasUnsavedDocument, readFileCheckpoint, reconcileSavedSession, writeFileCheckpoint } from "../services/document-file";
@@ -10,7 +11,7 @@ import type { WorkbenchTaskRuntime } from "../runtime/workbench-runtime.tsx";
 import { issueFromError } from "./issue-from-error.ts";
 
 type PendingAction = { readonly kind: "new" } | { readonly kind: "open"; readonly file: File }
-  | { readonly kind: "open-native" } | { readonly kind: "close-native" };
+  | { readonly kind: "open-native" };
 
 /** Document commands own file prompts/checkpoints; the score and Core stay authoritative. */
 export function useDocumentFiles(session: ScoreSessionRead | null, client: WorkbenchClient,
@@ -26,7 +27,9 @@ export function useDocumentFiles(session: ScoreSessionRead | null, client: Workb
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sessionRef = useRef(session);
   sessionRef.current = session;
-  const savePendingRef = useRef(false);
+  const operationPendingRef = useRef(false);
+  const unavailableRef = useRef(unavailable);
+  unavailableRef.current = unavailable;
   const available = !unavailable && !working;
   const nativeFiles = client.usesNativeFiles();
   const saved = checkpointMatches(session, checkpoint);
@@ -41,9 +44,9 @@ export function useDocumentFiles(session: ScoreSessionRead | null, client: Workb
   }
 
   async function saveDocument(asName?: string, forceSaveAs = false): Promise<boolean> {
-    if (!session || !available || savePendingRef.current) return false;
+    if (!session || !available || operationPendingRef.current) return false;
     const saving = session;
-    savePendingRef.current = true;
+    operationPendingRef.current = true;
     setWorking("save"); setSaveFailure(false); setFileError("");
     const token = runtime?.operations.begin("file.save", "document");
     let succeeded = false;
@@ -77,14 +80,15 @@ export function useDocumentFiles(session: ScoreSessionRead | null, client: Workb
       setFileError(issue.message); runtime?.feedback.report(issue); if (token) runtime?.operations.fail(token, issue);
       return false;
     } finally {
-      savePendingRef.current = false;
+      operationPendingRef.current = false;
       if (succeeded && token) runtime?.operations.finish(token);
       setWorking(null);
     }
   }
 
   async function exportSvg(): Promise<void> {
-    if (!session || !available || session.notation.kind !== "staff") return;
+    if (!session || !available || operationPendingRef.current || session.notation.kind !== "staff") return;
+    operationPendingRef.current = true;
     setWorking("export"); setFileError("");
     const token = runtime?.operations.begin("file.export-svg", "document");
     let succeeded = false;
@@ -96,11 +100,12 @@ export function useDocumentFiles(session: ScoreSessionRead | null, client: Workb
       const issue = issueFromError(error, { code: "file.export-failed", message: "无法导出当前谱面", severity: "error",
         source: "renderer", target: { scope: "component", componentId: "notation.staff-view" }, retryable: true });
       setFileError(issue.message); runtime?.feedback.report(issue); if (token) runtime?.operations.fail(token, issue);
-    } finally { if (succeeded && token) runtime?.operations.finish(token); setWorking(null); }
+    } finally { operationPendingRef.current = false; if (succeeded && token) runtime?.operations.finish(token); setWorking(null); }
   }
 
   async function openDocument(file: File): Promise<void> {
-    if (!available) return;
+    if (!available || operationPendingRef.current) return;
+    operationPendingRef.current = true;
     setWorking("open"); setFileError(""); setSaveFailure(false);
     const token = runtime?.operations.begin("file.open", "document");
     let succeeded = false;
@@ -116,11 +121,12 @@ export function useDocumentFiles(session: ScoreSessionRead | null, client: Workb
       const issue = issueFromError(error, { code: "file.open-failed", message: "无法打开该乐谱文件", severity: "error",
         source: "file", target: { scope: "component", componentId: "navigation.file" }, retryable: true });
       setFileError(issue.message); runtime?.feedback.report(issue); if (token) runtime?.operations.fail(token, issue);
-    } finally { if (succeeded && token) runtime?.operations.finish(token); setWorking(null); }
+    } finally { operationPendingRef.current = false; if (succeeded && token) runtime?.operations.finish(token); setWorking(null); }
   }
 
   async function openNativeDocument(): Promise<void> {
-    if (!available) return;
+    if (!available || operationPendingRef.current) return;
+    operationPendingRef.current = true;
     setWorking("open"); setFileError(""); setSaveFailure(false);
     const token = runtime?.operations.begin("file.open", "document");
     let succeeded = false;
@@ -134,39 +140,47 @@ export function useDocumentFiles(session: ScoreSessionRead | null, client: Workb
       const issue = issueFromError(error, { code: "file.open-failed", message: "无法打开该乐谱文件", severity: "error",
         source: "file", target: { scope: "component", componentId: "navigation.file" }, retryable: true });
       setFileError(issue.message); runtime?.feedback.report(issue); if (token) runtime?.operations.fail(token, issue);
-    } finally { if (succeeded && token) runtime?.operations.finish(token); setWorking(null); }
+    } finally { operationPendingRef.current = false; if (succeeded && token) runtime?.operations.finish(token); setWorking(null); }
   }
 
   const closeNativeWindow = useCallback(async (): Promise<boolean> => {
+    if (unavailableRef.current || operationPendingRef.current) return false;
+    operationPendingRef.current = true;
     setWorking("close"); setFileError("");
     const token = runtime?.operations.begin("file.close", "document");
     let succeeded = false;
+    let dispatched = false;
     try {
-      await client.closeNativeWindow();
+      dispatched = await client.closeNativeWindowGuarded(nativeClosePrecondition(sessionRef.current));
       succeeded = true;
-      return true;
+      return dispatched;
     } catch (error) {
       const issue = issueFromError(error, { code: "file.close-failed", message: "无法安全关闭当前工作区", severity: "error",
         source: "file", target: { scope: "component", componentId: "navigation.file" }, retryable: true });
       setFileError(issue.message); runtime?.feedback.report(issue); if (token) runtime?.operations.fail(token, issue);
       return false;
-    } finally { if (succeeded && token) runtime?.operations.finish(token); setWorking(null); }
+    } finally {
+      if (succeeded && token) runtime?.operations.finish(token);
+      if (!dispatched) { operationPendingRef.current = false; setWorking(null); }
+    }
   }, [client, runtime?.feedback, runtime?.operations]);
+  const closeHandlerRef = useRef(closeNativeWindow);
+  closeHandlerRef.current = closeNativeWindow;
 
   function requestNewScore() {
-    if (!available) return;
+    if (!available || operationPendingRef.current) return;
     setFileError("");
     if (dirty) setPendingAction({ kind: "new" }); else setNewScoreOpen(true);
   }
 
   function requestOpenFile(file: File) {
-    if (!available) return;
+    if (!available || operationPendingRef.current) return;
     setFileError("");
     if (dirty) setPendingAction({ kind: "open", file }); else void openDocument(file);
   }
 
   function requestOpenPicker() {
-    if (!available) return;
+    if (!available || operationPendingRef.current) return;
     if (!nativeFiles) { fileInputRef.current?.click(); return; }
     setFileError("");
     if (dirty) setPendingAction({ kind: "open-native" }); else void openNativeDocument();
@@ -177,36 +191,39 @@ export function useDocumentFiles(session: ScoreSessionRead | null, client: Workb
     if (action.kind === "new") setNewScoreOpen(true);
     else if (action.kind === "open") void openDocument(action.file);
     else if (action.kind === "open-native") void openNativeDocument();
-    else void closeNativeWindow();
   }
 
   async function createScore(input: NewScoreInput, requestId: string): Promise<void> {
-    const created = await client.create(input, requestId, session?.documentId ?? null);
-    remember(null); setFileError(""); setSaveFailure(false);
-    onSession(created);
+    if (unavailableRef.current || operationPendingRef.current) throw new Error("作品操作尚未完成");
+    operationPendingRef.current = true; setWorking("open");
+    try {
+      const created = await client.create(input, requestId, sessionRef.current?.documentId ?? null);
+      remember(null); setFileError(""); setSaveFailure(false);
+      onSession(created);
+    } finally { operationPendingRef.current = false; setWorking(null); }
   }
 
   useEffect(() => {
-    if (!dirty) return;
+    if (nativeFiles || !dirty) return;
     const guard = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
     window.addEventListener("beforeunload", guard);
     return () => window.removeEventListener("beforeunload", guard);
-  }, [dirty]);
+  }, [dirty, nativeFiles]);
 
   useEffect(() => {
     if (!nativeFiles) return;
     let active = true;
     let unlisten: (() => void) | undefined;
-    void client.onNativeCloseRequested(async () => {
-      if (!dirty) {
-        await closeNativeWindow();
-        return false;
-      }
-      if (active) setPendingAction({ kind: "close-native" });
-      return false;
-    }).then((dispose) => { if (active) unlisten = dispose; else dispose(); });
+    void client.onNativeCloseRequestedGuarded(async () => {
+      if (active) await closeHandlerRef.current();
+    }).then((dispose) => { if (active) unlisten = dispose; else dispose(); }).catch((error: unknown) => {
+      if (!active) return;
+      const issue = issueFromError(error, { code: "file.close-listener-failed", message: "无法监听窗口关闭，请重试启动工作区",
+        severity: "error", source: "file", target: { scope: "component", componentId: "navigation.file" }, retryable: true });
+      setFileError(issue.message); runtime?.feedback.report(issue);
+    });
     return () => { active = false; unlisten?.(); };
-  }, [client, closeNativeWindow, dirty, nativeFiles]);
+  }, [client, nativeFiles, runtime?.feedback]);
 
   return { available, working, state, name, fileError, fileInputRef, newScoreOpen, setNewScoreOpen,
     saveAsOpen, setSaveAsOpen, pendingAction, setPendingAction, requestNewScore,

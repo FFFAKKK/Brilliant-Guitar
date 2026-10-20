@@ -2707,7 +2707,25 @@ var TauriWorkbenchHostBridge = class {
   async closeNativeWindow(workspaceId) {
     await this.call("workbench_close_v1", { workspaceId }, "\u65E0\u6CD5\u5173\u95ED\u5F53\u524D\u5DE5\u4F5C\u533A");
     this.forceClosing = true;
-    await this.currentWindow().close();
+    try {
+      await this.currentWindow().close();
+    } catch (error) {
+      this.forceClosing = false;
+      throw error;
+    }
+  }
+  async onNativeCloseRequestedGuarded(handler) {
+    return this.currentWindow().onCloseRequested(async (event) => {
+      event.preventDefault();
+      await handler();
+    });
+  }
+  closeNativeWindowGuarded(workspaceId, expected) {
+    return this.call(
+      "workbench_close_window_guarded_v1",
+      { workspaceId, expected },
+      "\u65E0\u6CD5\u5B89\u5168\u5173\u95ED\u5F53\u524D\u5DE5\u4F5C\u533A\uFF0C\u8BF7\u786E\u8BA4\u684C\u9762\u5BBF\u4E3B\u7248\u672C"
+    );
   }
   readApplicationSettings() {
     return this.call("workbench_read_settings_v1", {}, "\u65E0\u6CD5\u8BFB\u53D6\u5E94\u7528\u914D\u7F6E");
@@ -2824,6 +2842,24 @@ function isDocumentReplacementPrecondition(value) {
   const r = value;
   if (r.kind === "empty") return Object.keys(r).length === 1;
   return r.kind === "document" && Object.keys(r).length === 3 && typeof r.documentId === "string" && r.documentId.length > 0 && r.documentId.length <= 256 && typeof r.documentVersion === "number" && Number.isSafeInteger(r.documentVersion) && r.documentVersion >= 0;
+}
+
+// ../../apps/workbench/src/contracts/native-close.ts
+function isNativeClosePrecondition(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const r = value;
+  if (r.kind === "empty") return isDocumentReplacementPrecondition(r);
+  return Object.keys(r).length === 4 && typeof r.sessionId === "string" && r.sessionId.length > 0 && r.sessionId.length <= 256 && isDocumentReplacementPrecondition({ kind: r.kind, documentId: r.documentId, documentVersion: r.documentVersion });
+}
+function nativeClosePrecondition(session) {
+  if (!session) return { kind: "empty" };
+  if (!session.persistence) throw new Error("\u5F53\u524D\u5BBF\u4E3B\u672A\u63D0\u4F9B\u5173\u95ED\u6240\u9700\u7684\u4F1A\u8BDD\u8EAB\u4EFD\uFF0C\u8BF7\u66F4\u65B0\u5BBF\u4E3B");
+  return {
+    kind: "document",
+    sessionId: session.persistence.sessionId,
+    documentId: session.documentId,
+    documentVersion: session.documentVersion
+  };
 }
 
 // ../../apps/workbench/src/contracts/recent-documents.ts
@@ -3718,6 +3754,17 @@ var WorkbenchClient = class {
     if (!this.bridge.closeNativeWindow) return;
     await this.bridge.closeNativeWindow(this.workspaceId);
   }
+  onNativeCloseRequestedGuarded(handler) {
+    if (!this.bridge.onNativeCloseRequestedGuarded) return Promise.reject(new Error("\u5F53\u524D\u5BBF\u4E3B\u4E0D\u652F\u6301\u53D7\u4FDD\u62A4\u5173\u95ED"));
+    return this.bridge.onNativeCloseRequestedGuarded(handler);
+  }
+  async closeNativeWindowGuarded(expected) {
+    if (!isNativeClosePrecondition(expected)) throw new Error("\u5173\u95ED\u9700\u8981\u6709\u6548\u7684\u4F1A\u8BDD\u8EAB\u4EFD\u548C\u7248\u672C");
+    if (!this.bridge.closeNativeWindowGuarded) throw new Error("\u5F53\u524D\u5BBF\u4E3B\u4E0D\u652F\u6301\u53D7\u4FDD\u62A4\u5173\u95ED");
+    const result = await this.bridge.closeNativeWindowGuarded(this.workspaceId, expected);
+    if (typeof result !== "boolean") throw new Error("\u65E0\u6CD5\u786E\u8BA4\u7A97\u53E3\u5173\u95ED\u7ED3\u679C");
+    return result;
+  }
   async readApplicationSettings() {
     if (!this.bridge.readApplicationSettings) return {
       settings: DEFAULT_APPLICATION_SETTINGS,
@@ -3933,7 +3980,7 @@ function keySignatureChangeIsNoOp(view, measureId, change) {
 }
 
 // ../../apps/workbench/src/services/readonly-score-document-session.ts
-function createReadonlyScoreDocumentSession({ client, createId = () => crypto.randomUUID(), initialization = "ensure-document" }) {
+function createReadonlyScoreDocumentSession({ client, createId = () => crypto.randomUUID(), initialization = "ensure-document", nativeClose = false }) {
   if (initialization !== "ensure-document" && initialization !== "read-existing") throw new TypeError("initialization \u5FC5\u987B\u662F ensure-document \u6216 read-existing");
   let current;
   let checkpoint = null;
@@ -3941,6 +3988,8 @@ function createReadonlyScoreDocumentSession({ client, createId = () => crypto.ra
   let warnings = Object.freeze([]);
   let busy = false, disposed = false, epoch = 0;
   let initial = null;
+  let unlistenClose;
+  let closeRegistration = null;
   const initialId = createId();
   const readListeners = /* @__PURE__ */ new Set(), stateListeners = /* @__PURE__ */ new Set();
   const notify = notifyObservers;
@@ -4133,6 +4182,64 @@ function createReadonlyScoreDocumentSession({ client, createId = () => crypto.ra
     if (!isScoreEditRequest(request)) return { ok: false, code: "document.invalid-input", message: "\u5386\u53F2\u8BF7\u6C42\u65E0\u6548" };
     return applyEdit(request);
   }
+  async function closeNativeWindow() {
+    if (disposed) return { ok: false, code: "document.disposed", message: "\u4F5C\u54C1\u4F1A\u8BDD\u5DF2\u91CA\u653E" };
+    if (busy) return { ok: false, code: "document.busy", message: "\u4F5C\u54C1\u64CD\u4F5C\u5C1A\u672A\u5B8C\u6210" };
+    busy = true;
+    const token = ++epoch;
+    notify(stateListeners);
+    let dispatched = false;
+    try {
+      if (disposed || token !== epoch) return { ok: false, code: "document.disposed", message: "\u4F5C\u54C1\u4F1A\u8BDD\u5DF2\u91CA\u653E" };
+      if (!client.closeNativeWindowGuarded) throw new Error("\u5F53\u524D\u5BBF\u4E3B\u4E0D\u652F\u6301\u53D7\u4FDD\u62A4\u5173\u95ED");
+      if (current === void 0 || failure) {
+        const value = await client.read();
+        if (disposed || token !== epoch) return { ok: false, code: "document.disposed", message: "\u4F5C\u54C1\u4F1A\u8BDD\u5DF2\u91CA\u653E" };
+        accept(value);
+        notify(readListeners);
+      }
+      const expected = nativeClosePrecondition(current ?? null);
+      if (disposed || token !== epoch) return { ok: false, code: "document.disposed", message: "\u4F5C\u54C1\u4F1A\u8BDD\u5DF2\u91CA\u653E" };
+      dispatched = await client.closeNativeWindowGuarded(expected);
+      if (disposed || token !== epoch) return { ok: false, code: "document.disposed", message: "\u4F5C\u54C1\u4F1A\u8BDD\u5DF2\u91CA\u653E" };
+      return dispatched ? { ok: true, changed: false } : { ok: true, changed: false, cancelled: true };
+    } catch (error) {
+      if (disposed || token !== epoch) return { ok: false, code: "document.disposed", message: "\u4F5C\u54C1\u4F1A\u8BDD\u5DF2\u91CA\u653E" };
+      failure = error instanceof Error ? error : new Error("\u65E0\u6CD5\u5B89\u5168\u5173\u95ED\u5F53\u524D\u5DE5\u4F5C\u533A");
+      notify(readListeners);
+      return { ok: false, code: "document.close-failed", message: failure.message };
+    } finally {
+      if (!disposed && token === epoch && !dispatched) {
+        busy = false;
+        notify(stateListeners);
+      }
+    }
+  }
+  function ensureCloseListener() {
+    if (unlistenClose) return Promise.resolve();
+    if (closeRegistration) return closeRegistration;
+    closeRegistration = Promise.resolve().then(() => {
+      if (disposed) return;
+      if (!client.onNativeCloseRequestedGuarded) throw new Error("\u5F53\u524D\u5BBF\u4E3B\u4E0D\u652F\u6301\u53D7\u4FDD\u62A4\u5173\u95ED\u76D1\u542C");
+      return client.onNativeCloseRequestedGuarded(async () => {
+        await closeNativeWindow();
+      });
+    }).then((dispose) => {
+      if (disposed) dispose?.();
+      else unlistenClose = dispose;
+    }).finally(() => {
+      closeRegistration = null;
+    });
+    return closeRegistration;
+  }
+  if (nativeClose) {
+    void ensureCloseListener().catch((error) => {
+      if (disposed) return;
+      failure = error instanceof Error ? error : new Error("\u65E0\u6CD5\u76D1\u542C\u7A97\u53E3\u5173\u95ED");
+      notify(readListeners);
+      notify(stateListeners);
+    });
+  }
   return Object.freeze({
     read: ensureLoaded,
     subscribe: (listener) => subscribe(readListeners, listener),
@@ -4146,6 +4253,7 @@ function createReadonlyScoreDocumentSession({ client, createId = () => crypto.ra
     canSaveAs: () => !disposed && !busy && !failure && Boolean(current) && client.usesNativeFiles() && typeof client.saveNativeDocumentGuarded === "function",
     undo: () => history("undo"),
     redo: () => history("redo"),
+    closeNativeWindow,
     async save(saveAs = false) {
       if (typeof saveAs !== "boolean") return { ok: false, code: "document.invalid-input", message: "\u4FDD\u5B58\u53C2\u6570\u65E0\u6548" };
       if (disposed) return { ok: false, code: "document.disposed", message: "\u4F5C\u54C1\u4F1A\u8BDD\u5DF2\u91CA\u653E" };
@@ -4388,12 +4496,18 @@ function createReadonlyScoreDocumentSession({ client, createId = () => crypto.ra
         }
       }
     }),
-    reload: () => run(() => current === void 0 ? loadInitial() : client.read()),
+    reload: () => run(async () => {
+      if (nativeClose) await ensureCloseListener();
+      if (disposed) throw new Error("\u4F5C\u54C1\u4F1A\u8BDD\u5DF2\u91CA\u653E");
+      return current === void 0 ? loadInitial() : client.read();
+    }),
     dispose() {
       if (disposed) return;
       disposed = true;
       epoch++;
       busy = false;
+      unlistenClose?.();
+      unlistenClose = void 0;
       readListeners.clear();
       stateListeners.clear();
       current = void 0;
@@ -4406,7 +4520,11 @@ function createReadonlyScoreDocumentSession({ client, createId = () => crypto.ra
 
 // ../../apps/workbench/src/services/desktop-readonly-score-session.ts
 function createDesktopReadonlyScoreSession({ initialization = "ensure-document" } = {}) {
-  return createReadonlyScoreDocumentSession({ client: new WorkbenchClient(new TauriWorkbenchHostBridge()), initialization });
+  return createReadonlyScoreDocumentSession({
+    client: new WorkbenchClient(new TauriWorkbenchHostBridge()),
+    initialization,
+    nativeClose: true
+  });
 }
 
 // ../../apps/workbench/src/services/desktop-startup-window.ts

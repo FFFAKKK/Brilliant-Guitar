@@ -4,6 +4,7 @@ import type { Window as TauriWindow } from "@tauri-apps/api/window";
 import type { ScoreEditRequest } from "../contracts/note-input";
 import type { NewScoreInput } from "../contracts/new-score";
 import type { DocumentReplacementPrecondition } from "../contracts/document-replacement.ts";
+import type { NativeClosePrecondition } from "../contracts/native-close.ts";
 import type {
   CapabilityDocumentPrecondition,
   CapabilityTransportRequest,
@@ -77,6 +78,8 @@ export interface WorkbenchHostBridge {
   saveNativeDocumentGuarded?(workspaceId: string, suggestedName: string, saveAs: boolean, expected: DocumentReplacementPrecondition): Promise<NativeFileResult | null>;
   onNativeCloseRequested?(handler: () => boolean | Promise<boolean>): Promise<() => void>;
   closeNativeWindow?(workspaceId: string): Promise<void>;
+  onNativeCloseRequestedGuarded?(handler: () => void | Promise<void>): Promise<() => void>;
+  closeNativeWindowGuarded?(workspaceId: string, expected: NativeClosePrecondition): Promise<boolean>;
   readApplicationSettings?(): Promise<unknown>;
   writeApplicationSettings?(settings: ApplicationSettingsV1): Promise<unknown>;
   resetApplicationSettings?(): Promise<unknown>;
@@ -280,7 +283,23 @@ export class TauriWorkbenchHostBridge implements WorkbenchHostBridge {
   async closeNativeWindow(workspaceId: string): Promise<void> {
     await this.call<boolean>("workbench_close_v1", { workspaceId }, "无法关闭当前工作区");
     this.forceClosing = true;
-    await this.currentWindow().close();
+    try { await this.currentWindow().close(); }
+    catch (error) { this.forceClosing = false; throw error; }
+  }
+
+  async onNativeCloseRequestedGuarded(handler: () => void | Promise<void>): Promise<() => void> {
+    return this.currentWindow().onCloseRequested(async (event) => {
+      // The installed SDK checks this flag after awaiting our callback. Set it
+      // before any async work, including a handler that rejects.
+      event.preventDefault();
+      await handler();
+    });
+  }
+
+  closeNativeWindowGuarded(workspaceId: string, expected: NativeClosePrecondition): Promise<boolean> {
+    // Rust owns native destruction; JS never follows this receipt with close().
+    return this.call<boolean>("workbench_close_window_guarded_v1", { workspaceId, expected },
+      "无法安全关闭当前工作区，请确认桌面宿主版本");
   }
 
   readApplicationSettings() {

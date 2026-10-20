@@ -2,6 +2,8 @@ import type { ScoreEditRequest } from "../contracts/note-input";
 import type { NewScoreInput } from "../contracts/new-score";
 import { isDocumentReplacementPrecondition } from "../contracts/document-replacement.ts";
 import type { DocumentReplacementPrecondition } from "../contracts/document-replacement.ts";
+import { isNativeClosePrecondition } from "../contracts/native-close.ts";
+import type { NativeClosePrecondition } from "../contracts/native-close.ts";
 import { isRecentDocumentsSnapshotV1, isRecentRecordId } from "../contracts/recent-documents.ts";
 import type { RecentDocumentsSnapshotV1 } from "../contracts/recent-documents.ts";
 import { isWorkbenchIssue } from "../contracts/workbench-issue.ts";
@@ -317,6 +319,19 @@ export class WorkbenchClient {
   async closeNativeWindow(): Promise<void> {
     if (!this.bridge.closeNativeWindow) return;
     await this.bridge.closeNativeWindow(this.workspaceId);
+  }
+
+  onNativeCloseRequestedGuarded(handler: () => void | Promise<void>): Promise<() => void> {
+    if (!this.bridge.onNativeCloseRequestedGuarded) return Promise.reject(new Error("当前宿主不支持受保护关闭"));
+    return this.bridge.onNativeCloseRequestedGuarded(handler);
+  }
+
+  async closeNativeWindowGuarded(expected: NativeClosePrecondition): Promise<boolean> {
+    if (!isNativeClosePrecondition(expected)) throw new Error("关闭需要有效的会话身份和版本");
+    if (!this.bridge.closeNativeWindowGuarded) throw new Error("当前宿主不支持受保护关闭");
+    const result = await this.bridge.closeNativeWindowGuarded(this.workspaceId, expected);
+    if (typeof result !== "boolean") throw new Error("无法确认窗口关闭结果");
+    return result;
   }
 
   async readApplicationSettings(): Promise<ApplicationSettingsSnapshotV1> {

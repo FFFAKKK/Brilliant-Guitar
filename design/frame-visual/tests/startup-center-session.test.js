@@ -8,6 +8,7 @@ import { createDesktopReadonlyScoreSession, TauriPluginSettingsStorage } from ".
 import { defaultStartupPlan } from "../src/startup/plugin-startup-plan.js";
 import { STAFF_FIXTURE } from "../src/fixtures/staff-snapshot.js";
 import { withTestDocument } from "./support/dom-test-environment.js";
+import { installTauriEventMock } from "./support/tauri-event-mock.js";
 
 const flush = () => new Promise(resolve => setImmediate(resolve));
 const id = "00000000-0000-4000-8000-000000000001";
@@ -41,7 +42,7 @@ function fixture({ window, document }, options = {}) {
     }
     throw new Error("Unexpected IPC " + command);
   };
-  window.__TAURI_INTERNALS__ = { invoke };
+  const nativeEvents = installTauriEventMock(window, invoke);
   const store = createDesktopPluginPlanStore({ directory, settingsStorage: new TauriPluginSettingsStorage() });
   const app = createStartupCenterSession({ store, workspaceRoot,
     createDocumentSession(input) { factoryCalls++; assert.deepEqual(input, { initialization: "read-existing" }); source = createDesktopReadonlyScoreSession(input); return source; },
@@ -56,11 +57,11 @@ function fixture({ window, document }, options = {}) {
       const runtime = createBackupUiRuntime(input); runtimes.push(runtime); return runtime;
     },
   });
-  return { app, root, workspaceRoot, calls, modes, runtimes, overrides, store,
+  return { app, root, workspaceRoot, calls, modes, runtimes, overrides, store, nativeEvents,
     source: () => source, factoryCalls: () => factoryCalls,
     setCurrent(value) { current = value; }, setSaved(value) { saved = value; },
     count: command => calls.filter(call => call.command === command).length,
-    dispose() { app.dispose(); root.remove(); workspaceRoot.remove(); delete window.__TAURI_INTERNALS__; },
+    dispose() { app.dispose(); root.remove(); workspaceRoot.remove(); nativeEvents.dispose(); },
   };
 }
 
@@ -68,6 +69,7 @@ test("startup preparation uses the real desktop read-existing source and indepen
   const f = fixture(env);
   try {
     assert.equal((await f.app.ready).ok, true); await flush();
+    assert.equal(f.nativeEvents.listeners.size, 1);
     assert.equal(f.factoryCalls(), 1); assert.equal(f.app.snapshot().phase, "welcome");
     assert.throws(() => createStartupCenterSession({ workspaceRoot: f.workspaceRoot, showView() {},
       createDocumentSession() { throw new Error("must not create a second source"); }, store: f.store }), /已有启动协调所有者/);

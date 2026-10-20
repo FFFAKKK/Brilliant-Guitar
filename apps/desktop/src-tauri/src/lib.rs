@@ -11,6 +11,7 @@ mod document_io;
 mod dto;
 mod error;
 mod json_store;
+mod native_close;
 mod recent_documents;
 mod score_change_set;
 mod settings;
@@ -22,6 +23,7 @@ use std::sync::{
     Arc,
     atomic::{AtomicBool, Ordering},
 };
+use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -31,6 +33,7 @@ pub fn run() {
     let setup_rejected = Arc::clone(&startup_rejected);
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .on_window_event(on_window_event)
         .setup(move |app| {
             if let Err(error) = startup::initialize(app, &windows) {
                 setup_rejected.store(true, Ordering::Release);
@@ -57,6 +60,7 @@ pub fn run() {
             commands::workbench_export_v1,
             commands::workbench_import_v1,
             commands::workbench_close_v1,
+            native_close::workbench_close_window_guarded_v1,
             commands::workbench_open_file_v1,
             commands::workbench_open_file_guarded_v1,
             commands::workbench_list_recent_documents_v1,
@@ -102,4 +106,29 @@ pub fn run() {
         runtime_exit_code
     };
     std::process::exit(exit_code);
+}
+
+fn on_window_event(window: &tauri::Window, event: &tauri::WindowEvent) {
+    if window.label() != "main" {
+        return;
+    }
+    match event {
+        tauri::WindowEvent::CloseRequested { api, .. } => {
+            // Protect active documents before JS registers, and while another
+            // command holds the service gate. Empty failed shells can still exit.
+            if window.try_state::<state::AppState>().is_some_and(|state| {
+                state.service.try_lock().map(|service| !service.is_empty()).unwrap_or(true)
+            }) {
+                api.prevent_close();
+            }
+        }
+        tauri::WindowEvent::Destroyed => {
+            if let Some(state) = window.try_state::<state::AppState>()
+                && let Err(error) = native_close::finish_window_close(&state, window.label())
+            {
+                eprintln!("window-close cleanup: {error}");
+            }
+        }
+        _ => {}
+    }
 }
