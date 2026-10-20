@@ -1,3 +1,4 @@
+import { capturePluginBusinessContributions } from "../plugins/plugin-contributions.ts";
 import type { InternalUiPluginModule } from "./plugin-manager.ts";
 import type { UiComponentDefinition } from "./plugin-contract.ts";
 import { isUiComponentDefinition } from "./plugin-contract.ts";
@@ -70,37 +71,6 @@ export function captureInternalUiPluginModule(plugin: InternalUiPluginModule): I
       ...(extension.order === undefined ? {} : { order: extension.order }),
       render: extension.render,
     }))),
-    instruments: Object.freeze((plugin.instruments ?? []).map((instrument) => Object.freeze({
-      id: instrument.id,
-      label: instrument.label,
-      family: instrument.family,
-      notationKinds: Object.freeze([...instrument.notationKinds]),
-      ...(instrument.noteControlExtensionIds === undefined
-        ? {}
-        : { noteControlExtensionIds: Object.freeze([...instrument.noteControlExtensionIds]) }),
-      ...(instrument.playbackProfileId === undefined ? {} : { playbackProfileId: instrument.playbackProfileId }),
-    }))),
-    playbackOutputs: Object.freeze((plugin.playbackOutputs ?? []).map((output) => Object.freeze({
-      id: output.id,
-      kind: output.kind,
-      label: output.label,
-      createEngine: output.createEngine,
-    }))),
-    applicationCapabilities: Object.freeze((plugin.applicationCapabilities ?? []).map((capability) => Object.freeze({
-      id: capability.id,
-      contractVersion: capability.contractVersion,
-      callers: Object.freeze([...capability.callers]),
-      validateInput: capability.validateInput,
-      validateOutput: capability.validateOutput,
-    }))),
-    workflows: Object.freeze((plugin.workflows ?? []).map((workflow) => Object.freeze({
-      id: workflow.id,
-      contractVersion: workflow.contractVersion,
-      name: workflow.name,
-      description: workflow.description,
-      runtime: workflow.runtime,
-      operationIds: Object.freeze([...workflow.operationIds]),
-      entryOperationIds: Object.freeze([...workflow.entryOperationIds]),
-    }))),
+    ...capturePluginBusinessContributions(plugin),
   });
 }

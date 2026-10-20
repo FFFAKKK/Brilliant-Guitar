@@ -108,7 +108,7 @@ test("requirements and host-service permissions are checked before any mount res
   assert.equal(mounts, 0); platform.dispose();
 });
 
-test("business contribution failure rolls back mount resources without stopping other plugins", () => {
+test("known business contribution failure acquires no mount resources and does not stop other plugins", () => {
   let acquired = 0, released = 0;
   const platform = new PluginPlatform({ hostFeatures: new WorkbenchFeatureRegistry([]), projections: [],
     createContributionHost: context => createMountContributionHost(context, () => {
@@ -122,9 +122,9 @@ test("business contribution failure rolls back mount resources without stopping 
   platform.start();
   assert.equal(platform.list()[0]?.status, "active");
   assert.equal(platform.list()[1]?.status, "failed");
-  assert.equal(acquired, 2); assert.equal(released, 1);
+  assert.equal(acquired, 1); assert.equal(released, 0);
   assert.equal(platform.interactions().hasKind("staff"), true);
-  platform.dispose(); assert.equal(released, 2);
+  platform.dispose(); assert.equal(released, 1);
   assert.deepEqual(platform.interactions().list(), []);
 });
 

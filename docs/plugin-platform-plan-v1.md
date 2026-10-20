@@ -2,6 +2,11 @@
 
 日期：2026-09-18。
 
+> **2026-10-20 实现更新：** 公共 `PluginManifest/PluginModule/PluginCatalog` 位于 `plugins/`，
+> 平台可无 UI 宿主启动纯业务包。3.0 React 与4.0 mount仍沿用同一固定会话平台；
+> UI旧导入、`adaptUiPluginPackage`完整返回及内部模块直接注册保持兼容。
+> 具体签名和失败行为见[当前协议合同](../.trellis/spec/frontend/plugin-protocol-convergence-contract.md)。
+
 > **2026-09-20 架构更新：** UI 与 Agent 共用 `ApplicationCapabilityGateway` 的部分属于过渡实现，
 > 不再是目标架构。新设计采用“类型化直接访问 + 插件工作流”，并保留固定会话与统一 PluginPlatform。
 > 详细背景、术语、迁移表和审计标准以
@@ -33,9 +38,10 @@ Tauri / Rust Kernel
 
 平台层和 UI 宿主层保持分工：
 
-- `UiPluginCatalog` 负责编译模块的发现和扩展点依赖排序。
+- `PluginCatalog` 负责公共包目录和扩展点依赖排序；旧 `UiPluginCatalog` 保留原对象与方法，
+  复用同一排序算法。
 - `UiPluginHost` 负责 UI 组件、命令、交互、Projection 和扩展贡献的合同校验与解析。
-- `PluginPlatform` 负责把目录、宿主、激活集合和运行状态统一起来。
+- `PluginPlatform` 负责公共目录、业务描述、权限、激活集合和运行状态；UI宿主是可选执行端口。
 - 组件只通过 Projection、命令和扩展点工作，不读取插件清单或插件目录。
 
 现有 Plugin API `3.0` 的 `applicationCapabilities`、只读能力目录和 `ApplicationCapabilityGateway` 已完成过渡期
@@ -53,9 +59,16 @@ Agent 则根据任务使用 Direct Tool Adapter 或插件工作流。旧的宿�
 
 ```text
 PluginPackage
-  ├─ Application contributions → UiPluginHost
+  ├─ Business descriptions     → platform-owned readonly directories
+  ├─ UI slice (optional)       → React / mount contribution host
   └─ kernelModules             → immutable assembly plan → trusted Kernel adapter
 ```
+
+`new PluginPlatform({})` 或显式 `uiHost:null` 不创建具体 UI host 或 Projection Registry。
+旧 `hostFeatures/projections/createContributionHost` 入口仍经 UI 兼容组合器保持原行为；
+可信工作台组合根显式提供原宿主工厂。纯业务包不需要空 UI 模块，声明 UI/交互却没有宿主的包
+只使自己失败，不发布业务描述或 grant。宿主 `install` 保留，内部采用 `prepare/publish`；
+mount在取得执行资源前完成交互校验。当前实现不修改领域 validator 或旧 Gateway 边界。
 
 插件等级固定为 `system`、`product` 和 `third-party`。Kernel 模块固定使用 `session-fixed` 生命周期；非系统插件可以在启动中心选择是否进入下一次会话，但进入会话后不能启停、替换或卸载。第三方 Kernel 模块只能声明 `wasm` runtime，不能伪装成受信任的内部模块。模块 ID 在整个平台内只能有一个所有者。
 
@@ -195,7 +208,7 @@ SDK 不公开 `UiPluginHost`、Projection Registry、React 内部宿主上下文
 - 桌面诊断日志采用有界轮转文件；前端读取时重新校验记录字段、数量和标识符，不信任 IPC 泛型声明。
 - 启动后拒绝追加注册，保证组合根的确定性。
 
-验证结果：平台专用测试 4 项全部通过；在后续并行的 Agent Provider 改动出现前，工作台完整测试套件 264 项全部通过。当前全局类型检查被 `src/agent/openai-provider.ts` 的两个隐式 `any` 阻塞，属于独立改动，不属于插件平台。
+历史验证结果：平台专用测试 4 项全部通过；在后续并行的 Agent Provider 改动出现前，工作台完整测试套件 264 项全部通过。当时全局类型检查被 `src/agent/openai-provider.ts` 的两个隐式 `any` 阻塞，属于独立改动，不属于插件平台。
 
 ### B：稳定 SDK
 
@@ -209,7 +222,8 @@ SDK 不公开 `UiPluginHost`、Projection Registry、React 内部宿主上下文
 
 - `plugins/plugin-sdk.ts` 公开 `definePlugin()`、`definePluginProjection()` 和
   `defineNoteControlExtension()`。
-- `plugins/plugin-sdk-adapter.ts` 是唯一把公开插件包转换为 `InternalUiPluginModule` 的位置。
+- `plugins/plugin-sdk-adapter.ts` 的 `adaptPluginPackage` 捕获公共包，业务贡献与可选UI切片分离；
+  原 `adaptUiPluginPackage` 继续返回完整 `InternalUiPluginModule` 供旧调用消费。
 - 公开合同不暴露 `UiPluginHost`、Projection Registry、Tauri command 或 Rust DTO。
 - Manifest 中的 Projection、View、Command 和组件扩展清单由适配器生成，插件作者不再重复维护。
 - History、Paper Zoom、Note Control、Playback Transport、Playback Output、Agent Assistant

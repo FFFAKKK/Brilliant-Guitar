@@ -22,8 +22,9 @@ export function createMountContributionHost(context: PluginContributionHostConte
       const { ui: _implementation, ...module } = plugin;
       const businessModule: InternalUiPluginModule = { ...module,
         manifest: { ...plugin.manifest, apiVersion: "3.0", contributes } };
+      const prepared = business.prepare(businessModule);
       const release = installMount(plugin);
-      try { business.install(businessModule); }
+      try { business.publish(prepared); }
       catch (error) {
         try { release(); } catch (cleanup) { throw new AggregateError([error, cleanup], "Mount installation rollback failed"); }
         throw error;

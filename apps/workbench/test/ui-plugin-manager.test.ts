@@ -63,6 +63,31 @@ test("the startup extension host installs compiled V2 modules through declarativ
   assert.equal(manager.ownerOfCommand("example.run")?.id, "example.tool");
 });
 
+test("prepare captures without publishing and only the originating current token can publish once", () => {
+  const manager = host(), other = host();
+  const source = plugin("example.prepared", definition("example.prepared-panel"), [], [],
+    [interaction("example.prepared.input")]);
+  const prepared = manager.prepare(source);
+  assert.deepEqual(manager.list(), []);
+  assert.deepEqual(manager.components.list(), []);
+  assert.deepEqual(manager.interactions.list(), []);
+  assert.equal(manager.ownerOf("example.prepared-panel"), undefined);
+  assert.throws(() => other.publish(prepared), /another host/);
+  assert.throws(() => manager.publish({ module: source }), /another host/);
+  (source.views[0]!.definition.slots as string[]).push("overlay");
+  manager.publish(prepared);
+  assert.deepEqual(manager.components.get("example.prepared-panel")?.slots, ["bottom"]);
+  assert.equal(manager.interactions.hasId("example.prepared.input"), true);
+  assert.throws(() => manager.publish(prepared), /consumed/);
+  const stale = manager.prepare(plugin("example.stale", definition("example.stale-panel")));
+  manager.install(plugin("example.intervening", definition("example.intervening-panel")));
+  assert.throws(() => manager.publish(stale), /stale/);
+  const disposed = manager.prepare(plugin("example.disposed", definition("example.disposed-panel")));
+  manager.dispose();
+  assert.throws(() => manager.publish(disposed), /stale/);
+  assert.deepEqual(manager.list(), []);
+});
+
 test("the UI host captures installed module descriptions and callbacks", () => {
   const manager = host();
   const source = plugin("example.capture", definition("example.capture-panel"));

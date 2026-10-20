@@ -8,7 +8,7 @@ import type {
   WorkflowDirectory,
 } from "../contracts/workflow.ts";
 import type { AnyUiProjection, UiProjectionSnapshot } from "../ui/projection-registry.ts";
-import type { UiPluginManifest } from "../ui/plugin-manifest.ts";
+import type { PluginManifest } from "./plugin-manifest.ts";
 import type { UiComponentRegistry } from "../ui/component-registry.ts";
 import type { ConcreteNotationKind, NotationInteractionDirectory } from "../input/notation-interaction-registry.ts";
 import type { EditIntent } from "../input/edit-intent.ts";
@@ -16,15 +16,16 @@ import type { InputContext } from "../input/input-context.ts";
 import type { InputSignal, KeyPressSignal } from "../input/input-signal.ts";
 import type { UiResolvedViewContribution } from "../ui/view-contribution.ts";
 import type { InternalUiPluginModule } from "../ui/plugin-manager.ts";
-import { captureInternalUiPluginModule } from "../ui/plugin-module-capture.ts";
-import { UiPluginCatalog } from "../ui/plugin-catalog.ts";
+import { PluginCatalog } from "./plugin-catalog.ts";
+import { adaptInternalUiPluginModule, capturePluginModule, legacyUiPluginModule } from "./plugin-module.ts";
+import type { PluginModule } from "./plugin-module.ts";
 import { UiPluginDiagnosticStore, UiPluginHostError, isUiPluginHostError, uiPluginIdentity } from "../ui/plugin-diagnostic.ts";
 import type { UiPluginDiagnostic } from "../ui/plugin-diagnostic.ts";
 import { notifyObservers } from "../ui/notify-observers.ts";
-import { UiProjectionRegistry } from "../ui/projection-registry.ts";
-import { UiPluginHost as ConcreteUiPluginHost } from "../ui/plugin-manager.ts";
-import { WorkbenchFeatureRegistry } from "../ui/plugin-manifest.ts";
-import { adaptUiPluginPackage } from "./plugin-sdk-adapter.ts";
+import type { UiProjectionRegistry } from "../ui/projection-registry.ts";
+import { createLegacyContributionHost } from "../ui/plugin-contribution-host.ts";
+import { WorkbenchFeatureRegistry } from "./plugin-manifest.ts";
+import { adaptPluginPackage } from "./plugin-sdk-adapter.ts";
 import { isUiPluginPackage } from "./plugin-sdk.ts";
 import { NOTE_CONTROL_EXTENSION_POINT } from "./plugin-sdk.ts";
 import type { PluginInstrumentContribution, PluginPlaybackOutputContribution, PluginSettingsHost,
@@ -57,7 +58,7 @@ export type PluginRuntimeStatus = "discovered" | "installed" | "active" | "faile
 export type PluginPlatformPhase = "configuring" | "running" | "disposed";
 
 export interface PluginRuntimeInfo {
-  readonly manifest: UiPluginManifest;
+  readonly manifest: PluginManifest;
   readonly status: PluginRuntimeStatus;
   /** Immutable activation state of the current process session. */
   readonly active: boolean;
@@ -69,7 +70,7 @@ export interface PluginRuntimeInfo {
 
 /** A contribution host owns execution resources, never plugin identity or activation state. */
 export interface PluginContributionHost {
-  readonly components: Pick<ConcreteUiPluginHost["components"], "get" | "list">;
+  readonly components: Pick<UiComponentRegistry, "get" | "list">;
   readonly interactions: NotationInteractionDirectory;
   readonly projections: UiProjectionRegistry;
   install(plugin: InternalUiPluginModule): void;
@@ -97,16 +98,18 @@ export interface PluginStartOptions {
 }
 
 export interface PluginPlatformOptions {
+  /** Direct trusted host injection. Explicit null selects headless even with legacy feature options. */
+  readonly uiHost?: PluginContributionHost | null;
   readonly createContributionHost?: (context: PluginContributionHostContext) => PluginContributionHost;
-  readonly hostFeatures: WorkbenchFeatureRegistry;
+  readonly hostFeatures?: WorkbenchFeatureRegistry;
   readonly hostServices?: PluginHostServiceRegistry;
   readonly hostServicePolicy?: PluginHostServicePolicyOptions;
-  readonly projections: readonly AnyUiProjection[];
+  readonly projections?: readonly AnyUiProjection[];
   readonly diagnostics?: UiPluginDiagnosticStore;
   readonly onDiagnostic?: (diagnostic: UiPluginDiagnostic) => void;
 }
 
-export type PluginRegistration = InternalUiPluginModule | PluginPackage;
+export type PluginRegistration = InternalUiPluginModule | PluginModule | PluginPackage;
 export type PluginComponentDirectory = Pick<UiComponentRegistry, "get" | "list">;
 export type PluginInteractionDirectory = NotationInteractionDirectory;
 export type PluginProjectionDirectory = Pick<UiProjectionRegistry, "has" | "list" | "snapshot">;
@@ -117,7 +120,7 @@ export interface PluginHostServiceGrantDirectory {
   list(): readonly PluginHostServiceGrantV1[];
 }
 
-function kernelPackageSource(manifest: UiPluginManifest): PluginKernelPackageManifestSource {
+function kernelPackageSource(manifest: PluginManifest): PluginKernelPackageManifestSource {
   return {
     id: manifest.id,
     version: manifest.version,
@@ -136,11 +139,11 @@ function sortedHostServiceGrants(
     : left.pluginId > right.pluginId ? 1 : 0));
 }
 
-/** One package/lifecycle facade that delegates application execution to the internal UI host. */
+/** One package/lifecycle authority with an optional UI execution host. */
 export class PluginPlatform {
   readonly diagnostics: UiPluginDiagnosticStore;
-  readonly #catalog = new UiPluginCatalog();
-  readonly #ui: PluginContributionHost;
+  readonly #catalog = new PluginCatalog();
+  readonly #ui: PluginContributionHost | null;
   readonly #uiFeatures: WorkbenchFeatureRegistry;
   readonly #settings = new PluginSettingsRegistry();
   readonly #componentDirectory: PluginComponentDirectory;
@@ -168,41 +171,46 @@ export class PluginPlatform {
   readonly #stopSettings: () => void;
 
   constructor(options: PluginPlatformOptions) {
-    this.#uiFeatures = options.hostFeatures;
+    this.#uiFeatures = options.hostFeatures ?? new WorkbenchFeatureRegistry([]);
     this.diagnostics = options.diagnostics ?? new UiPluginDiagnosticStore();
     this.#onDiagnostic = options.onDiagnostic;
     this.#hostServicePolicy = new PluginHostServicePolicy(
       options.hostServices ?? new PluginHostServiceRegistry([]),
       options.hostServicePolicy,
     );
-    const projections = new UiProjectionRegistry(options.projections);
-    this.#ui = options.createContributionHost?.({ features: options.hostFeatures, projections,
-      reportDiagnostic: diagnostic => this.#report(diagnostic), settings: pluginId => this.#settingsHost(pluginId) })
-      ?? new ConcreteUiPluginHost(options.hostFeatures, projections, diagnostic => this.#report(diagnostic));
+    if (options.uiHost !== undefined && options.createContributionHost !== undefined) {
+      throw new Error("Choose uiHost or createContributionHost, not both");
+    }
+    const legacy = options.hostFeatures !== undefined || options.projections !== undefined
+      || options.createContributionHost !== undefined;
+    this.#ui = options.uiHost !== undefined ? options.uiHost : legacy ? createLegacyContributionHost({
+      hostFeatures: this.#uiFeatures, projections: options.projections ?? [],
+      ...(options.createContributionHost === undefined ? {} : { createContributionHost: options.createContributionHost }),
+    }, { reportDiagnostic: diagnostic => this.#report(diagnostic), settings: pluginId => this.#settingsHost(pluginId) }) : null;
     this.#componentDirectory = Object.freeze({
-      get: (id: string) => this.#ui.components.get(id),
-      list: () => this.#ui.components.list(),
+      get: (id: string) => this.#requireUiHost().components.get(id),
+      list: () => this.#requireUiHost().components.list(),
     });
     this.#interactionDirectory = Object.freeze({
-      hasId: (id: string) => this.#ui.interactions.hasId(id),
-      hasKind: (kind: ConcreteNotationKind) => this.#ui.interactions.hasKind(kind),
-      list: () => this.#ui.interactions.list(),
+      hasId: (id: string) => this.#requireUiHost().interactions.hasId(id),
+      hasKind: (kind: ConcreteNotationKind) => this.#requireUiHost().interactions.hasKind(kind),
+      list: () => this.#requireUiHost().interactions.list(),
       translate: <Input extends InputContext, Draft = unknown, Intent extends EditIntent<unknown, unknown> = EditIntent>(
         kind: ConcreteNotationKind, signal: InputSignal, context: Input,
-      ) => this.#ui.interactions.translate<Input, Draft, Intent>(kind, signal, context),
+      ) => this.#requireUiHost().interactions.translate<Input, Draft, Intent>(kind, signal, context),
       readDraft: <Draft>(kind: ConcreteNotationKind, composition: unknown) =>
-        this.#ui.interactions.readDraft<Draft>(kind, composition),
+        this.#requireUiHost().interactions.readDraft<Draft>(kind, composition),
       startComposition: <Draft>(kind: ConcreteNotationKind, draft: Draft) =>
-        this.#ui.interactions.startComposition<Draft>(kind, draft),
+        this.#requireUiHost().interactions.startComposition<Draft>(kind, draft),
       navigate: <Context, Result>(kind: ConcreteNotationKind, signal: KeyPressSignal, context: Context) =>
-        this.#ui.interactions.navigate<Context, Result>(kind, signal, context),
+        this.#requireUiHost().interactions.navigate<Context, Result>(kind, signal, context),
       edit: <Context, Result>(kind: ConcreteNotationKind, signal: KeyPressSignal, context: Context) =>
-        this.#ui.interactions.edit<Context, Result>(kind, signal, context),
+        this.#requireUiHost().interactions.edit<Context, Result>(kind, signal, context),
     } satisfies NotationInteractionDirectory);
     this.#projectionDirectory = Object.freeze({
-      has: (id: string) => this.#ui.projections.has(id),
-      list: () => this.#ui.projections.list(),
-      snapshot: (...args: Parameters<UiProjectionRegistry["snapshot"]>) => this.#ui.projections.snapshot(...args),
+      has: (id: string) => this.#requireUiHost().projections.has(id),
+      list: () => this.#requireUiHost().projections.list(),
+      snapshot: (...args: Parameters<UiProjectionRegistry["snapshot"]>) => this.#requireUiHost().projections.snapshot(...args),
     });
     this.#settingsDirectory = Object.freeze({
       has: (pluginId: string) => this.#settings.has(pluginId),
@@ -234,13 +242,15 @@ export class PluginPlatform {
   register(registration: PluginRegistration): void {
     this.#assertAlive();
     if (this.phase() === "running") throw new Error("Plugin platform has already started");
-    let plugin: InternalUiPluginModule;
+    let plugin: PluginModule;
     let pluginPackage: PluginPackage | null = null;
     if (isUiPluginPackage(registration)) {
       pluginPackage = registration;
-      plugin = adaptUiPluginPackage(registration, { settings: (pluginId) => this.#settingsHost(pluginId) });
+      plugin = adaptPluginPackage(registration, { settings: (pluginId) => this.#settingsHost(pluginId) });
+    } else if ("projections" in registration) {
+      plugin = adaptInternalUiPluginModule(registration);
     } else {
-      plugin = captureInternalUiPluginModule(registration);
+      plugin = capturePluginModule(registration);
     }
     if (this.#records.has(plugin.manifest.id)) throw new Error(`Plugin already registered: ${plugin.manifest.id}`);
     createPluginKernelAssemblyPlanV1([
@@ -269,15 +279,21 @@ export class PluginPlatform {
       }
       try {
         const missingFeatures = plugin.manifest.requires.hostFeatures.filter(id => !this.#uiFeatures.has(id));
-        const missingProjections = plugin.manifest.requires.projections.filter(id => !this.#ui.projections.has(id));
-        if (plugin.manifest.apiVersion === "4.0" && (missingFeatures.length || missingProjections.length)) throw new Error(
+        const missingProjections = plugin.manifest.requires.projections.filter(id => !this.#ui?.projections.has(id));
+        if ((plugin.manifest.apiVersion === "4.0" || !this.#ui) && (missingFeatures.length || missingProjections.length)) throw new Error(
           `Unavailable plugin requirements: ${[...missingFeatures, ...missingProjections].join(", ")}`);
         const hostServiceGrant = this.#resolveHostServiceGrant(plugin);
         this.#validateInstruments(plugin);
         this.#validatePlaybackOutputs(plugin);
         this.#validateApplicationCapabilities(plugin);
         this.#validateWorkflows(plugin);
-        this.#ui.install(plugin);
+        if (plugin.ui && !this.#ui) throw new UiPluginHostError({
+          code: "UI-PLG-003", stage: "requirements", plugin: uiPluginIdentity(plugin.manifest),
+          subject: { kind: "capability", id: "workbench.ui-host" },
+          message: "插件需要的界面宿主不可用", detail: `Plugin ${plugin.manifest.id} requires a UI host`,
+        });
+        // Existing configured hosts also receive UI-free packages, preserving their original API checks/callbacks.
+        this.#ui?.install(legacyUiPluginModule(plugin));
         for (const instrument of plugin.instruments ?? []) {
           this.#instrumentOwners.set(instrument.id, plugin.manifest.id);
         }
@@ -416,17 +432,17 @@ export class PluginPlatform {
 
   resolveCommands(snapshot: UiProjectionSnapshot): readonly WorkbenchCommand[] {
     this.#assertAlive();
-    return this.#ui.resolveCommands(snapshot, this.#activation.activeIds());
+    return this.#requireUiHost().resolveCommands(snapshot, this.#activation.activeIds());
   }
 
   resolveViews(snapshot: UiProjectionSnapshot): ReadonlyMap<string, UiResolvedViewContribution> {
     this.#assertAlive();
-    return this.#ui.resolveViews(snapshot, this.#activation.activeIds());
+    return this.#requireUiHost().resolveViews(snapshot, this.#activation.activeIds());
   }
 
   /** Frozen, data-only mount descriptors for UI management; implementations remain private. */
   uiContributions(pluginId: string) {
-    const ui = this.#catalog.list().find(plugin => plugin.manifest.id === pluginId)?.ui;
+    const ui = this.#catalog.list().find(plugin => plugin.manifest.id === pluginId)?.ui?.ui;
     if (!ui) return undefined;
     return Object.freeze({ components: Object.freeze(ui.components.map(({ mount: _mount, ...data }) => Object.freeze(data))),
       commands: Object.freeze(ui.commands.map(command => Object.freeze({ id: command.id, label: command.label ?? command.id }))),
@@ -436,9 +452,9 @@ export class PluginPlatform {
   /** Placement query over the active catalog. Does not own another registry or lifecycle. */
   facets(facetId?: string) {
     if (this.#disposed || facetId !== undefined && facetId !== "ui") return Object.freeze([]);
-    return Object.freeze(this.#catalog.list().filter(plugin => this.#records.get(plugin.manifest.id)?.active && plugin.ui)
+    return Object.freeze(this.#catalog.list().filter(plugin => this.#records.get(plugin.manifest.id)?.active && plugin.ui?.ui)
       .map(plugin => {
-        const units = plugin.ui!.components;
+        const units = plugin.ui!.ui!.components;
         const surface = (unit: typeof units[number], kind: "module" | "page") => Object.freeze({ id: unit.id,
           componentId: unit.id, kind, slots: unit.slots, role: unit.role });
         const page = (unit: typeof units[number]) => unit.uiKind === "page" || unit.role === "view";
@@ -456,7 +472,7 @@ export class PluginPlatform {
     this.#disposed = true;
     this.#stopSettings();
     this.#settingsPersistence?.dispose(); this.#activationPersistence?.dispose();
-    try { this.#ui.dispose(); }
+    try { this.#ui?.dispose(); }
     finally {
       this.#catalog.clear(); this.#settings.dispose();
       this.#hostServiceGrants.clear(); this.#settingsHosts.clear(); this.#records.clear();
@@ -464,6 +480,11 @@ export class PluginPlatform {
       this.#applicationCapabilities.clear(); this.#workflows.clear();
       try { this.#publish(); } finally { this.#listeners.clear(); }
     }
+  }
+
+  #requireUiHost(): PluginContributionHost {
+    if (!this.#ui) throw new Error("Plugin UI host is not configured");
+    return this.#ui;
   }
 
   #assertAlive(): void { if (this.#disposed) throw new Error("Plugin platform is disposed"); }
@@ -475,7 +496,7 @@ export class PluginPlatform {
     return change;
   }
 
-  #runtimeInfo(manifest: UiPluginManifest, status: PluginRuntimeStatus): PluginRuntimeInfo {
+  #runtimeInfo(manifest: PluginManifest, status: PluginRuntimeStatus): PluginRuntimeInfo {
     return Object.freeze({ manifest, status, ...this.#activation.state(manifest.id) });
   }
 
@@ -517,7 +538,7 @@ export class PluginPlatform {
     return host;
   }
 
-  #resolveHostServiceGrant(plugin: InternalUiPluginModule): PluginHostServiceGrantV1 {
+  #resolveHostServiceGrant(plugin: PluginModule): PluginHostServiceGrantV1 {
     const resolution = this.#hostServicePolicy.resolve({
       pluginId: plugin.manifest.id,
       pluginVersion: plugin.manifest.version,
@@ -542,7 +563,7 @@ export class PluginPlatform {
     });
   }
 
-  #validateInstruments(plugin: InternalUiPluginModule): void {
+  #validateInstruments(plugin: PluginModule): void {
     const instruments = plugin.instruments ?? [];
     const actualIds = instruments.map((instrument) => instrument.id);
     const declaredIds = plugin.manifest.contributes.instruments ?? [];
@@ -588,7 +609,7 @@ export class PluginPlatform {
         });
       }
       for (const extensionId of extensionIds) {
-        const extension = plugin.componentExtensions.find((item) => item.id === extensionId);
+        const extension = plugin.ui?.componentExtensions.find((item) => item.id === extensionId);
         if (!extension || extension.extensionPoint !== NOTE_CONTROL_EXTENSION_POINT) {
           throw new UiPluginHostError({
             code: "UI-PLG-009",
@@ -612,7 +633,7 @@ export class PluginPlatform {
     }
   }
 
-  #validatePlaybackOutputs(plugin: InternalUiPluginModule): void {
+  #validatePlaybackOutputs(plugin: PluginModule): void {
     const outputs = plugin.playbackOutputs ?? [];
     const actualIds = outputs.map((output) => output.id);
     const declaredIds = plugin.manifest.contributes.playbackOutputs ?? [];
@@ -660,7 +681,7 @@ export class PluginPlatform {
     }
   }
 
-  #validateApplicationCapabilities(plugin: InternalUiPluginModule): void {
+  #validateApplicationCapabilities(plugin: PluginModule): void {
     const capabilities = plugin.applicationCapabilities ?? [];
     const actualIds = capabilities.map((capability) => capability.id);
     const declaredIds = plugin.manifest.contributes.applicationCapabilities ?? [];
@@ -712,7 +733,7 @@ export class PluginPlatform {
     }
   }
 
-  #validateWorkflows(plugin: InternalUiPluginModule): void {
+  #validateWorkflows(plugin: PluginModule): void {
     const workflows = plugin.workflows ?? [];
     const actualIds = workflows.map((workflow) => workflow.id);
     const declaredIds = plugin.manifest.contributes.workflows ?? [];

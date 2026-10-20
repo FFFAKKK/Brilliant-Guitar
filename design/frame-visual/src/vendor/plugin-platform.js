@@ -1,5 +1,110 @@
 // Generated from the formal plugin platform and SDK. Run npm run startup:build; do not edit.
 
+// ../../apps/workbench/src/plugins/plugin-catalog.ts
+var PluginCatalogBase = class {
+  #plugins = [];
+  #uiOf;
+  constructor(plugins, uiOf) {
+    this.#uiOf = uiOf;
+    this.registerAll(plugins);
+  }
+  register(plugin) {
+    this.#plugins.push(plugin);
+  }
+  registerAll(plugins) {
+    for (const plugin of plugins) this.register(plugin);
+  }
+  list() {
+    return [...this.#plugins];
+  }
+  clear() {
+    this.#plugins.length = 0;
+  }
+  findComponentExtensions(extensionPoint) {
+    return this.#plugins.flatMap((plugin) => (this.#uiOf(plugin)?.componentExtensions ?? []).filter((contribution) => contribution.extensionPoint === extensionPoint).map((contribution) => ({ pluginId: plugin.manifest.id, contribution })));
+  }
+  installationPlan() {
+    const owners = /* @__PURE__ */ new Map();
+    for (const plugin of this.#plugins) {
+      for (const view of this.#uiOf(plugin)?.views ?? []) {
+        for (const extensionPoint of view.definition.extensionPoints ?? []) {
+          const current = owners.get(extensionPoint) ?? [];
+          owners.set(extensionPoint, [...current, plugin]);
+        }
+      }
+    }
+    const dependencies = /* @__PURE__ */ new Map();
+    for (const plugin of this.#plugins) {
+      const requiredOwners = /* @__PURE__ */ new Set();
+      for (const extension of this.#uiOf(plugin)?.componentExtensions ?? []) {
+        const candidates = owners.get(extension.extensionPoint) ?? [];
+        const owner = candidates[0];
+        if (candidates.length === 1 && owner && owner !== plugin) requiredOwners.add(owner);
+      }
+      dependencies.set(plugin, requiredOwners);
+    }
+    const pending = new Set(this.#plugins);
+    const installed = /* @__PURE__ */ new Set();
+    const plan = [];
+    while (pending.size > 0) {
+      let progressed = false;
+      for (const plugin of this.#plugins) {
+        if (!pending.has(plugin)) continue;
+        const requirements = dependencies.get(plugin) ?? /* @__PURE__ */ new Set();
+        if ([...requirements].some((owner) => !installed.has(owner))) continue;
+        pending.delete(plugin);
+        installed.add(plugin);
+        plan.push(plugin);
+        progressed = true;
+      }
+      if (progressed) continue;
+      for (const plugin of this.#plugins) if (pending.delete(plugin)) plan.push(plugin);
+    }
+    return plan;
+  }
+};
+var PluginCatalog = class extends PluginCatalogBase {
+  constructor(plugins = []) {
+    super(plugins, (plugin) => plugin.ui);
+  }
+};
+
+// ../../apps/workbench/src/plugins/plugin-contributions.ts
+function capturePluginBusinessContributions(plugin) {
+  return Object.freeze({
+    instruments: Object.freeze((plugin.instruments ?? []).map((instrument) => Object.freeze({
+      id: instrument.id,
+      label: instrument.label,
+      family: instrument.family,
+      notationKinds: Object.freeze([...instrument.notationKinds]),
+      ...instrument.noteControlExtensionIds === void 0 ? {} : { noteControlExtensionIds: Object.freeze([...instrument.noteControlExtensionIds]) },
+      ...instrument.playbackProfileId === void 0 ? {} : { playbackProfileId: instrument.playbackProfileId }
+    }))),
+    playbackOutputs: Object.freeze((plugin.playbackOutputs ?? []).map((output) => Object.freeze({
+      id: output.id,
+      kind: output.kind,
+      label: output.label,
+      createEngine: output.createEngine
+    }))),
+    applicationCapabilities: Object.freeze((plugin.applicationCapabilities ?? []).map((capability) => Object.freeze({
+      id: capability.id,
+      contractVersion: capability.contractVersion,
+      callers: Object.freeze([...capability.callers]),
+      validateInput: capability.validateInput,
+      validateOutput: capability.validateOutput
+    }))),
+    workflows: Object.freeze((plugin.workflows ?? []).map((workflow) => Object.freeze({
+      id: workflow.id,
+      contractVersion: workflow.contractVersion,
+      name: workflow.name,
+      description: workflow.description,
+      runtime: workflow.runtime,
+      operationIds: Object.freeze([...workflow.operationIds]),
+      entryOperationIds: Object.freeze([...workflow.entryOperationIds])
+    })))
+  });
+}
+
 // ../../apps/workbench/src/ui/plugin-contract.ts
 function isUiComponentDefinition(value) {
   if (typeof value !== "object" || value === null) return false;
@@ -181,7 +286,7 @@ function describePluginHostServiceDenial(denial) {
   return parts.join("; ");
 }
 
-// ../../apps/workbench/src/ui/plugin-manifest.ts
+// ../../apps/workbench/src/plugins/plugin-manifest.ts
 var WORKBENCH_PLUGIN_API_VERSION = "3.0";
 var MOUNT_PLUGIN_API_VERSION = "4.0";
 var dottedId3 = /^[a-z][a-z0-9-]*(?:\.[a-z][a-z0-9-]*)+$/;
@@ -255,7 +360,7 @@ function capturedKernelModules(value) {
   }
   return Object.freeze(result);
 }
-function captureUiPluginManifest(value) {
+function capturePluginManifest(value) {
   try {
     const candidate = exactDataRecord(
       value,
@@ -329,8 +434,8 @@ function captureUiPluginManifest(value) {
     return null;
   }
 }
-function isUiPluginManifest(value) {
-  return captureUiPluginManifest(value) !== null;
+function isPluginManifest(value) {
+  return capturePluginManifest(value) !== null;
 }
 var WorkbenchFeatureRegistry = class {
   #features;
@@ -562,7 +667,7 @@ function captureComponentDefinition(definition) {
   });
 }
 function captureInternalUiPluginModule(plugin) {
-  const manifest = captureUiPluginManifest(plugin.manifest);
+  const manifest = capturePluginManifest(plugin.manifest);
   if (!manifest) throw new Error("Invalid UI plugin manifest");
   const ui = plugin.ui === void 0 ? void 0 : capturePluginMountUi(plugin.ui, manifest.id);
   if (ui !== void 0 && manifest.apiVersion !== "4.0") throw new Error("Mount UI facet requires plugin API 4.0");
@@ -603,100 +708,61 @@ function captureInternalUiPluginModule(plugin) {
       ...extension.order === void 0 ? {} : { order: extension.order },
       render: extension.render
     }))),
-    instruments: Object.freeze((plugin.instruments ?? []).map((instrument) => Object.freeze({
-      id: instrument.id,
-      label: instrument.label,
-      family: instrument.family,
-      notationKinds: Object.freeze([...instrument.notationKinds]),
-      ...instrument.noteControlExtensionIds === void 0 ? {} : { noteControlExtensionIds: Object.freeze([...instrument.noteControlExtensionIds]) },
-      ...instrument.playbackProfileId === void 0 ? {} : { playbackProfileId: instrument.playbackProfileId }
-    }))),
-    playbackOutputs: Object.freeze((plugin.playbackOutputs ?? []).map((output) => Object.freeze({
-      id: output.id,
-      kind: output.kind,
-      label: output.label,
-      createEngine: output.createEngine
-    }))),
-    applicationCapabilities: Object.freeze((plugin.applicationCapabilities ?? []).map((capability) => Object.freeze({
-      id: capability.id,
-      contractVersion: capability.contractVersion,
-      callers: Object.freeze([...capability.callers]),
-      validateInput: capability.validateInput,
-      validateOutput: capability.validateOutput
-    }))),
-    workflows: Object.freeze((plugin.workflows ?? []).map((workflow) => Object.freeze({
-      id: workflow.id,
-      contractVersion: workflow.contractVersion,
-      name: workflow.name,
-      description: workflow.description,
-      runtime: workflow.runtime,
-      operationIds: Object.freeze([...workflow.operationIds]),
-      entryOperationIds: Object.freeze([...workflow.entryOperationIds])
-    })))
+    ...capturePluginBusinessContributions(plugin)
   });
 }
 
-// ../../apps/workbench/src/ui/plugin-catalog.ts
-var UiPluginCatalog = class {
-  #plugins = [];
-  constructor(plugins = []) {
-    this.registerAll(plugins);
+// ../../apps/workbench/src/plugins/plugin-module.ts
+function hasPluginUiSlice(plugin) {
+  return plugin.ui !== void 0 || plugin.projections.length > 0 || plugin.commands.length > 0 || plugin.views.length > 0 || plugin.interactions.length > 0 || plugin.componentExtensions.length > 0;
+}
+function capturePluginModule(plugin) {
+  const manifest = capturePluginManifest(plugin.manifest);
+  if (!manifest) throw new Error("Invalid plugin manifest");
+  const capturedUi = plugin.ui === null ? null : captureInternalUiPluginModule(plugin.ui);
+  if (capturedUi && JSON.stringify(capturedUi.manifest) !== JSON.stringify(manifest)) {
+    throw new Error("Plugin UI slice manifest does not match its package");
   }
-  register(plugin) {
-    this.#plugins.push(plugin);
+  if (!capturedUi && (manifest.requires.projections.length || manifest.contributes.views.length || manifest.contributes.commands.length || manifest.contributes.interactions.length || manifest.contributes.componentExtensions.length || manifest.contributes.ui !== void 0)) {
+    throw new Error("Plugin manifest declares a missing UI slice");
   }
-  registerAll(plugins) {
-    for (const plugin of plugins) this.register(plugin);
+  let ui = null;
+  if (capturedUi) {
+    const {
+      instruments: _instruments,
+      playbackOutputs: _outputs,
+      applicationCapabilities: _capabilities,
+      workflows: _workflows,
+      ...slice
+    } = capturedUi;
+    ui = Object.freeze({ ...slice, manifest });
   }
-  list() {
-    return [...this.#plugins];
-  }
-  clear() {
-    this.#plugins.length = 0;
-  }
-  findComponentExtensions(extensionPoint) {
-    return this.#plugins.flatMap((plugin) => plugin.componentExtensions.filter((contribution) => contribution.extensionPoint === extensionPoint).map((contribution) => ({ pluginId: plugin.manifest.id, contribution })));
-  }
-  installationPlan() {
-    const owners = /* @__PURE__ */ new Map();
-    for (const plugin of this.#plugins) {
-      for (const view of plugin.views) {
-        for (const extensionPoint of view.definition.extensionPoints ?? []) {
-          const current = owners.get(extensionPoint) ?? [];
-          owners.set(extensionPoint, [...current, plugin]);
-        }
-      }
-    }
-    const dependencies = /* @__PURE__ */ new Map();
-    for (const plugin of this.#plugins) {
-      const requiredOwners = /* @__PURE__ */ new Set();
-      for (const extension of plugin.componentExtensions) {
-        const candidates = owners.get(extension.extensionPoint) ?? [];
-        const owner = candidates[0];
-        if (candidates.length === 1 && owner && owner !== plugin) requiredOwners.add(owner);
-      }
-      dependencies.set(plugin, requiredOwners);
-    }
-    const pending = new Set(this.#plugins);
-    const installed = /* @__PURE__ */ new Set();
-    const plan = [];
-    while (pending.size > 0) {
-      let progressed = false;
-      for (const plugin of this.#plugins) {
-        if (!pending.has(plugin)) continue;
-        const requirements = dependencies.get(plugin) ?? /* @__PURE__ */ new Set();
-        if ([...requirements].some((owner) => !installed.has(owner))) continue;
-        pending.delete(plugin);
-        installed.add(plugin);
-        plan.push(plugin);
-        progressed = true;
-      }
-      if (progressed) continue;
-      for (const plugin of this.#plugins) if (pending.delete(plugin)) plan.push(plugin);
-    }
-    return plan;
-  }
-};
+  return Object.freeze({ manifest, ui, ...capturePluginBusinessContributions(plugin) });
+}
+function adaptInternalUiPluginModule(plugin) {
+  const captured = captureInternalUiPluginModule(plugin);
+  return capturePluginModule({
+    manifest: captured.manifest,
+    ui: hasPluginUiSlice(captured) ? captured : null,
+    ...capturePluginBusinessContributions(captured)
+  });
+}
+function legacyUiPluginModule(plugin) {
+  return Object.freeze({
+    ...plugin.ui ?? {
+      projections: Object.freeze([]),
+      commands: Object.freeze([]),
+      views: Object.freeze([]),
+      interactions: Object.freeze([]),
+      componentExtensions: Object.freeze([])
+    },
+    manifest: plugin.manifest,
+    instruments: plugin.instruments,
+    playbackOutputs: plugin.playbackOutputs,
+    applicationCapabilities: plugin.applicationCapabilities,
+    workflows: plugin.workflows
+  });
+}
 
 // ../../apps/workbench/src/ui/notify-observers.ts
 function notifyObservers(listeners) {
@@ -907,6 +973,8 @@ var UiPluginHost = class {
   #notationOwners = /* @__PURE__ */ new Map();
   #extensionOwners = /* @__PURE__ */ new Map();
   #extensionPointOwners = /* @__PURE__ */ new Map();
+  #prepared = /* @__PURE__ */ new WeakMap();
+  #revision = 0;
   #reportDiagnostic;
   constructor(features, projections, reportDiagnostic) {
     this.#features = features;
@@ -929,8 +997,12 @@ var UiPluginHost = class {
     this.#reportDiagnostic(error.diagnostic);
   }
   install(plugin) {
+    this.publish(this.prepare(plugin));
+  }
+  /** Validates without publishing components, interactions or ownership. */
+  prepare(plugin) {
     if (plugin.manifest.apiVersion !== "3.0") throw new Error("This UI host supports plugin API 3.0; select a mount contribution host for 4.0");
-    if (!isUiPluginManifest(plugin.manifest)) throw this.#failure(
+    if (!isPluginManifest(plugin.manifest)) throw this.#failure(
       plugin,
       "UI-PLG-001",
       "manifest",
@@ -1143,6 +1215,19 @@ var UiPluginHost = class {
           { kind: "extension-point", id: extension.extensionPoint }
         );
     }
+    const prepared = Object.freeze({ module: plugin });
+    this.#prepared.set(prepared, this.#revision);
+    return prepared;
+  }
+  /** Publishes once against the prepared host revision. */
+  publish(prepared) {
+    if (this.#prepared.get(prepared) !== this.#revision) {
+      throw new Error("UI plugin preparation is stale, consumed or belongs to another host");
+    }
+    this.#prepared.delete(prepared);
+    this.#revision += 1;
+    const plugin = prepared.module;
+    const commandIds = plugin.commands.map((command) => command.id);
     for (const view of plugin.views) {
       this.components.register(view.definition);
       this.#componentOwners.set(view.definition.id, plugin.manifest.id);
@@ -1164,6 +1249,7 @@ var UiPluginHost = class {
   }
   /** Whole-session release. The platform prevents this host from being reused after disposal. */
   dispose() {
+    this.#revision += 1;
     this.interactions.clear();
     for (const definition of this.components.list()) this.components.unregister(definition.id);
     this.#plugins.clear();
@@ -1262,6 +1348,12 @@ var UiPluginHost = class {
   }
 };
 
+// ../../apps/workbench/src/ui/plugin-contribution-host.ts
+function createLegacyContributionHost(options, services) {
+  const projections = new UiProjectionRegistry(options.projections);
+  return options.createContributionHost?.({ features: options.hostFeatures, projections, ...services }) ?? new UiPluginHost(options.hostFeatures, projections, services.reportDiagnostic);
+}
+
 // ../../apps/workbench/src/plugins/plugin-sdk-adapter.ts
 function projectionReader(reader) {
   return reader;
@@ -1281,32 +1373,7 @@ function viewHost(host, pluginId, services) {
 function adaptUiPluginPackage(plugin, services) {
   return captureInternalUiPluginModule({
     ...plugin.ui === void 0 ? {} : { ui: plugin.ui },
-    manifest: {
-      id: plugin.id,
-      name: plugin.name,
-      version: plugin.version,
-      tier: plugin.tier,
-      apiVersion: plugin.apiVersion,
-      runtime: "internal-module",
-      activation: plugin.activation,
-      requires: {
-        hostFeatures: plugin.hostFeatures,
-        hostServices: plugin.hostServices,
-        projections: plugin.projections.map((projection) => projection.id)
-      },
-      contributes: {
-        views: plugin.views.map((view) => view.definition.id),
-        commands: plugin.commands.map((command) => command.id),
-        interactions: plugin.interactions.map((interaction) => interaction.id),
-        componentExtensions: plugin.componentExtensions.map((extension) => extension.id),
-        instruments: plugin.instruments.map((instrument) => instrument.id),
-        playbackOutputs: plugin.playbackOutputs.map((output) => output.id),
-        applicationCapabilities: plugin.applicationCapabilities.map((capability) => capability.id),
-        workflows: plugin.workflows.map((workflow) => workflow.id),
-        kernelModules: plugin.kernelModules,
-        ...plugin.ui === void 0 ? {} : { ui: mountUiManifest(plugin.ui) }
-      }
-    },
+    manifest: pluginPackageManifest(plugin),
     projections: plugin.projections,
     commands: plugin.commands.map((contribution) => {
       const create = contribution.create;
@@ -1343,6 +1410,47 @@ function adaptUiPluginPackage(plugin, services) {
       };
     })
   });
+}
+function adaptPluginPackage(plugin, services) {
+  const hasUi = plugin.ui !== void 0 || plugin.projections.length > 0 || plugin.commands.length > 0 || plugin.views.length > 0 || plugin.interactions.length > 0 || plugin.componentExtensions.length > 0;
+  return capturePluginModule({
+    manifest: pluginPackageManifest(plugin),
+    ui: hasUi ? adaptUiPluginPackage(plugin, services) : null,
+    instruments: plugin.instruments,
+    playbackOutputs: plugin.playbackOutputs,
+    applicationCapabilities: plugin.applicationCapabilities,
+    workflows: plugin.workflows
+  });
+}
+function pluginPackageManifest(plugin) {
+  const manifest = capturePluginManifest({
+    id: plugin.id,
+    name: plugin.name,
+    version: plugin.version,
+    tier: plugin.tier,
+    apiVersion: plugin.apiVersion,
+    runtime: "internal-module",
+    activation: plugin.activation,
+    requires: {
+      hostFeatures: plugin.hostFeatures,
+      hostServices: plugin.hostServices,
+      projections: plugin.projections.map((projection) => projection.id)
+    },
+    contributes: {
+      views: plugin.views.map((view) => view.definition.id),
+      commands: plugin.commands.map((command) => command.id),
+      interactions: plugin.interactions.map((interaction) => interaction.id),
+      componentExtensions: plugin.componentExtensions.map((extension) => extension.id),
+      instruments: plugin.instruments.map((instrument) => instrument.id),
+      playbackOutputs: plugin.playbackOutputs.map((output) => output.id),
+      applicationCapabilities: plugin.applicationCapabilities.map((capability) => capability.id),
+      workflows: plugin.workflows.map((workflow) => workflow.id),
+      kernelModules: plugin.kernelModules,
+      ...plugin.ui === void 0 ? {} : { ui: mountUiManifest(plugin.ui) }
+    }
+  });
+  if (!manifest) throw new Error("Invalid UI plugin manifest");
+  return manifest;
 }
 
 // ../../apps/workbench/src/plugins/plugin-sdk.ts
@@ -1867,7 +1975,7 @@ function sortedHostServiceGrants(grants) {
 }
 var PluginPlatform = class {
   diagnostics;
-  #catalog = new UiPluginCatalog();
+  #catalog = new PluginCatalog();
   #ui;
   #uiFeatures;
   #settings = new PluginSettingsRegistry();
@@ -1895,38 +2003,40 @@ var PluginPlatform = class {
   #disposed = false;
   #stopSettings;
   constructor(options) {
-    this.#uiFeatures = options.hostFeatures;
+    this.#uiFeatures = options.hostFeatures ?? new WorkbenchFeatureRegistry([]);
     this.diagnostics = options.diagnostics ?? new UiPluginDiagnosticStore();
     this.#onDiagnostic = options.onDiagnostic;
     this.#hostServicePolicy = new PluginHostServicePolicy(
       options.hostServices ?? new PluginHostServiceRegistry([]),
       options.hostServicePolicy
     );
-    const projections = new UiProjectionRegistry(options.projections);
-    this.#ui = options.createContributionHost?.({
-      features: options.hostFeatures,
-      projections,
-      reportDiagnostic: (diagnostic) => this.#report(diagnostic),
-      settings: (pluginId) => this.#settingsHost(pluginId)
-    }) ?? new UiPluginHost(options.hostFeatures, projections, (diagnostic) => this.#report(diagnostic));
+    if (options.uiHost !== void 0 && options.createContributionHost !== void 0) {
+      throw new Error("Choose uiHost or createContributionHost, not both");
+    }
+    const legacy = options.hostFeatures !== void 0 || options.projections !== void 0 || options.createContributionHost !== void 0;
+    this.#ui = options.uiHost !== void 0 ? options.uiHost : legacy ? createLegacyContributionHost({
+      hostFeatures: this.#uiFeatures,
+      projections: options.projections ?? [],
+      ...options.createContributionHost === void 0 ? {} : { createContributionHost: options.createContributionHost }
+    }, { reportDiagnostic: (diagnostic) => this.#report(diagnostic), settings: (pluginId) => this.#settingsHost(pluginId) }) : null;
     this.#componentDirectory = Object.freeze({
-      get: (id) => this.#ui.components.get(id),
-      list: () => this.#ui.components.list()
+      get: (id) => this.#requireUiHost().components.get(id),
+      list: () => this.#requireUiHost().components.list()
     });
     this.#interactionDirectory = Object.freeze({
-      hasId: (id) => this.#ui.interactions.hasId(id),
-      hasKind: (kind) => this.#ui.interactions.hasKind(kind),
-      list: () => this.#ui.interactions.list(),
-      translate: (kind, signal, context) => this.#ui.interactions.translate(kind, signal, context),
-      readDraft: (kind, composition) => this.#ui.interactions.readDraft(kind, composition),
-      startComposition: (kind, draft) => this.#ui.interactions.startComposition(kind, draft),
-      navigate: (kind, signal, context) => this.#ui.interactions.navigate(kind, signal, context),
-      edit: (kind, signal, context) => this.#ui.interactions.edit(kind, signal, context)
+      hasId: (id) => this.#requireUiHost().interactions.hasId(id),
+      hasKind: (kind) => this.#requireUiHost().interactions.hasKind(kind),
+      list: () => this.#requireUiHost().interactions.list(),
+      translate: (kind, signal, context) => this.#requireUiHost().interactions.translate(kind, signal, context),
+      readDraft: (kind, composition) => this.#requireUiHost().interactions.readDraft(kind, composition),
+      startComposition: (kind, draft) => this.#requireUiHost().interactions.startComposition(kind, draft),
+      navigate: (kind, signal, context) => this.#requireUiHost().interactions.navigate(kind, signal, context),
+      edit: (kind, signal, context) => this.#requireUiHost().interactions.edit(kind, signal, context)
     });
     this.#projectionDirectory = Object.freeze({
-      has: (id) => this.#ui.projections.has(id),
-      list: () => this.#ui.projections.list(),
-      snapshot: (...args) => this.#ui.projections.snapshot(...args)
+      has: (id) => this.#requireUiHost().projections.has(id),
+      list: () => this.#requireUiHost().projections.list(),
+      snapshot: (...args) => this.#requireUiHost().projections.snapshot(...args)
     });
     this.#settingsDirectory = Object.freeze({
       has: (pluginId) => this.#settings.has(pluginId),
@@ -1971,9 +2081,11 @@ var PluginPlatform = class {
     let pluginPackage = null;
     if (isUiPluginPackage(registration)) {
       pluginPackage = registration;
-      plugin = adaptUiPluginPackage(registration, { settings: (pluginId) => this.#settingsHost(pluginId) });
+      plugin = adaptPluginPackage(registration, { settings: (pluginId) => this.#settingsHost(pluginId) });
+    } else if ("projections" in registration) {
+      plugin = adaptInternalUiPluginModule(registration);
     } else {
-      plugin = captureInternalUiPluginModule(registration);
+      plugin = capturePluginModule(registration);
     }
     if (this.#records.has(plugin.manifest.id)) throw new Error(`Plugin already registered: ${plugin.manifest.id}`);
     createPluginKernelAssemblyPlanV1([
@@ -2000,8 +2112,8 @@ var PluginPlatform = class {
       }
       try {
         const missingFeatures = plugin.manifest.requires.hostFeatures.filter((id) => !this.#uiFeatures.has(id));
-        const missingProjections = plugin.manifest.requires.projections.filter((id) => !this.#ui.projections.has(id));
-        if (plugin.manifest.apiVersion === "4.0" && (missingFeatures.length || missingProjections.length)) throw new Error(
+        const missingProjections = plugin.manifest.requires.projections.filter((id) => !this.#ui?.projections.has(id));
+        if ((plugin.manifest.apiVersion === "4.0" || !this.#ui) && (missingFeatures.length || missingProjections.length)) throw new Error(
           `Unavailable plugin requirements: ${[...missingFeatures, ...missingProjections].join(", ")}`
         );
         const hostServiceGrant = this.#resolveHostServiceGrant(plugin);
@@ -2009,7 +2121,15 @@ var PluginPlatform = class {
         this.#validatePlaybackOutputs(plugin);
         this.#validateApplicationCapabilities(plugin);
         this.#validateWorkflows(plugin);
-        this.#ui.install(plugin);
+        if (plugin.ui && !this.#ui) throw new UiPluginHostError({
+          code: "UI-PLG-003",
+          stage: "requirements",
+          plugin: uiPluginIdentity(plugin.manifest),
+          subject: { kind: "capability", id: "workbench.ui-host" },
+          message: "\u63D2\u4EF6\u9700\u8981\u7684\u754C\u9762\u5BBF\u4E3B\u4E0D\u53EF\u7528",
+          detail: `Plugin ${plugin.manifest.id} requires a UI host`
+        });
+        this.#ui?.install(legacyUiPluginModule(plugin));
         for (const instrument of plugin.instruments ?? []) {
           this.#instrumentOwners.set(instrument.id, plugin.manifest.id);
         }
@@ -2154,15 +2274,15 @@ var PluginPlatform = class {
   }
   resolveCommands(snapshot) {
     this.#assertAlive();
-    return this.#ui.resolveCommands(snapshot, this.#activation.activeIds());
+    return this.#requireUiHost().resolveCommands(snapshot, this.#activation.activeIds());
   }
   resolveViews(snapshot) {
     this.#assertAlive();
-    return this.#ui.resolveViews(snapshot, this.#activation.activeIds());
+    return this.#requireUiHost().resolveViews(snapshot, this.#activation.activeIds());
   }
   /** Frozen, data-only mount descriptors for UI management; implementations remain private. */
   uiContributions(pluginId) {
-    const ui = this.#catalog.list().find((plugin) => plugin.manifest.id === pluginId)?.ui;
+    const ui = this.#catalog.list().find((plugin) => plugin.manifest.id === pluginId)?.ui?.ui;
     if (!ui) return void 0;
     return Object.freeze({
       components: Object.freeze(ui.components.map(({ mount: _mount, ...data }) => Object.freeze(data))),
@@ -2174,8 +2294,8 @@ var PluginPlatform = class {
   /** Placement query over the active catalog. Does not own another registry or lifecycle. */
   facets(facetId) {
     if (this.#disposed || facetId !== void 0 && facetId !== "ui") return Object.freeze([]);
-    return Object.freeze(this.#catalog.list().filter((plugin) => this.#records.get(plugin.manifest.id)?.active && plugin.ui).map((plugin) => {
-      const units = plugin.ui.components;
+    return Object.freeze(this.#catalog.list().filter((plugin) => this.#records.get(plugin.manifest.id)?.active && plugin.ui?.ui).map((plugin) => {
+      const units = plugin.ui.ui.components;
       const surface = (unit, kind) => Object.freeze({
         id: unit.id,
         componentId: unit.id,
@@ -2206,7 +2326,7 @@ var PluginPlatform = class {
     this.#settingsPersistence?.dispose();
     this.#activationPersistence?.dispose();
     try {
-      this.#ui.dispose();
+      this.#ui?.dispose();
     } finally {
       this.#catalog.clear();
       this.#settings.dispose();
@@ -2223,6 +2343,10 @@ var PluginPlatform = class {
         this.#listeners.clear();
       }
     }
+  }
+  #requireUiHost() {
+    if (!this.#ui) throw new Error("Plugin UI host is not configured");
+    return this.#ui;
   }
   #assertAlive() {
     if (this.#disposed) throw new Error("Plugin platform is disposed");
@@ -2330,7 +2454,7 @@ var PluginPlatform = class {
         });
       }
       for (const extensionId of extensionIds) {
-        const extension = plugin.componentExtensions.find((item) => item.id === extensionId);
+        const extension = plugin.ui?.componentExtensions.find((item) => item.id === extensionId);
         if (!extension || extension.extensionPoint !== NOTE_CONTROL_EXTENSION_POINT) {
           throw new UiPluginHostError({
             code: "UI-PLG-009",
@@ -2511,9 +2635,10 @@ function createMountContributionHost(context, installMount) {
         ...module,
         manifest: { ...plugin.manifest, apiVersion: "3.0", contributes }
       };
+      const prepared = business.prepare(businessModule);
       const release = installMount(plugin);
       try {
-        business.install(businessModule);
+        business.publish(prepared);
       } catch (error) {
         try {
           release();
@@ -2549,7 +2674,7 @@ function createMountContributionHost(context, installMount) {
 export {
   PluginPlatform,
   WorkbenchFeatureRegistry,
-  captureUiPluginManifest,
+  capturePluginManifest as captureUiPluginManifest,
   createMountContributionHost,
   definePlugin,
   isPluginPackage

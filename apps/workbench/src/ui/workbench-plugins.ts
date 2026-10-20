@@ -5,7 +5,7 @@ import { WorkbenchFeatureRegistry } from "./plugin-manifest.ts";
 import { persistUiPluginDiagnostic } from "../services/plugin-diagnostic-host.ts";
 import { PluginPlatform } from "../plugins/plugin-platform.ts";
 import { PluginManifestDiscovery } from "../plugins/plugin-discovery.ts";
-import { adaptUiPluginPackage } from "../plugins/plugin-sdk-adapter.ts";
+import { pluginPackageManifest } from "../plugins/plugin-sdk-adapter.ts";
 import { bootstrapPersistedPluginPlatform } from "../plugins/plugin-platform-bootstrap.ts";
 import type { PluginStartupController } from "../plugins/plugin-startup-controller.ts";
 import {
@@ -28,6 +28,7 @@ import {
 } from "../services/workbench-host-bridge.ts";
 import { isTauri } from "@tauri-apps/api/core";
 import { UiPluginHostError, uiPluginIdentity } from "./plugin-diagnostic.ts";
+import { UiPluginHost } from "./plugin-manager.ts";
 
 export const workbenchFeatures = new WorkbenchFeatureRegistry([
   "workbench.commands",
@@ -56,11 +57,13 @@ export const workbenchPluginPlatform = new PluginPlatform({
   hostFeatures: workbenchFeatures,
   hostServices: workbenchPluginHostServices,
   projections: FIRST_PARTY_UI_PROJECTIONS,
+  createContributionHost: ({ features, projections, reportDiagnostic }) =>
+    new UiPluginHost(features, projections, reportDiagnostic),
   diagnostics: workbenchPluginDiagnostics,
   onDiagnostic: (diagnostic) => { persistUiPluginDiagnostic(diagnostic); },
 });
 for (const plugin of FIRST_PARTY_UI_PLUGINS) {
-  const manifest = adaptUiPluginPackage(plugin).manifest;
+  const manifest = pluginPackageManifest(plugin);
   const result = workbenchPluginDiscovery.inspect(manifest);
   if (result.accepted) workbenchPluginPlatform.register(plugin);
   else workbenchPluginDiagnostics.report(new UiPluginHostError({

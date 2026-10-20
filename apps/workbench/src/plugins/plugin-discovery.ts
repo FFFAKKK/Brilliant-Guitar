@@ -1,5 +1,5 @@
-import type { UiPluginManifest, WorkbenchFeatureRegistry } from "../ui/plugin-manifest.ts";
-import { captureUiPluginManifest } from "../ui/plugin-manifest.ts";
+import type { PluginManifest, WorkbenchFeatureRegistry } from "./plugin-manifest.ts";
+import { capturePluginManifest } from "./plugin-manifest.ts";
 import { PluginHostServiceRegistry } from "./plugin-security.ts";
 
 export type PluginManifestDiscoveryFailureCode =
@@ -17,7 +17,7 @@ export interface PluginManifestDiscoveryFailure {
 }
 
 export type PluginManifestDiscoveryResult =
-  | { readonly accepted: true; readonly manifest: UiPluginManifest }
+  | { readonly accepted: true; readonly manifest: PluginManifest }
   | { readonly accepted: false; readonly failure: PluginManifestDiscoveryFailure };
 
 export interface PluginManifestDiscoveryOptions {
@@ -40,7 +40,7 @@ export class PluginManifestDiscovery {
   readonly #hostFeatures: WorkbenchFeatureRegistry;
   readonly #hostServices: PluginHostServiceRegistry;
   readonly #projections: ReadonlySet<string>;
-  readonly #manifests = new Map<string, UiPluginManifest>();
+  readonly #manifests = new Map<string, PluginManifest>();
   readonly #failures: PluginManifestDiscoveryFailure[] = [];
 
   constructor(options: PluginManifestDiscoveryOptions) {
@@ -50,7 +50,7 @@ export class PluginManifestDiscovery {
   }
 
   inspect(value: unknown): PluginManifestDiscoveryResult {
-    const manifest = captureUiPluginManifest(value);
+    const manifest = capturePluginManifest(value);
     if (!manifest) {
       const failure: PluginManifestDiscoveryFailure = {
         code: "manifest.invalid",
@@ -112,7 +112,7 @@ export class PluginManifestDiscovery {
     return values.map((value) => this.inspect(value));
   }
 
-  list(): readonly UiPluginManifest[] {
+  list(): readonly PluginManifest[] {
     return [...this.#manifests.values()];
   }
 

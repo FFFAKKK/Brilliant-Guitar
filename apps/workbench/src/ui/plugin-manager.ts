@@ -36,6 +36,10 @@ export interface InternalUiPluginModule {
   readonly workflows?: readonly WorkflowContribution[];
 }
 
+export interface PreparedUiPluginInstallation {
+  readonly module: InternalUiPluginModule;
+}
+
 interface InstalledPlugin {
   readonly module: InternalUiPluginModule;
   readonly projections: UiProjectionReader;
@@ -58,6 +62,8 @@ export class UiPluginHost {
   readonly #notationOwners = new Map<string, string>();
   readonly #extensionOwners = new Map<string, string>();
   readonly #extensionPointOwners = new Map<string, Readonly<{ componentId: string; pluginId: string }>>();
+  readonly #prepared = new WeakMap<PreparedUiPluginInstallation, number>();
+  #revision = 0;
   readonly #reportDiagnostic: ((diagnostic: UiPluginDiagnostic) => void) | undefined;
 
   constructor(features: WorkbenchFeatureRegistry, projections: UiProjectionRegistry,
@@ -79,6 +85,11 @@ export class UiPluginHost {
   }
 
   install(plugin: InternalUiPluginModule): void {
+    this.publish(this.prepare(plugin));
+  }
+
+  /** Validates without publishing components, interactions or ownership. */
+  prepare(plugin: InternalUiPluginModule): PreparedUiPluginInstallation {
     if (plugin.manifest.apiVersion !== "3.0") throw new Error("This UI host supports plugin API 3.0; select a mount contribution host for 4.0");
     if (!isUiPluginManifest(plugin.manifest)) throw this.#failure(plugin, "UI-PLG-001", "manifest",
       "界面插件清单无效", "Invalid UI plugin manifest");
@@ -190,6 +201,20 @@ export class UiPluginHost {
           { kind: "extension-point", id: extension.extensionPoint });
     }
 
+    const prepared = Object.freeze({ module: plugin });
+    this.#prepared.set(prepared, this.#revision);
+    return prepared;
+  }
+
+  /** Publishes once against the prepared host revision. */
+  publish(prepared: PreparedUiPluginInstallation): void {
+    if (this.#prepared.get(prepared) !== this.#revision) {
+      throw new Error("UI plugin preparation is stale, consumed or belongs to another host");
+    }
+    this.#prepared.delete(prepared);
+    this.#revision += 1;
+    const plugin = prepared.module;
+    const commandIds = plugin.commands.map(command => command.id);
     for (const view of plugin.views) {
       this.components.register(view.definition);
       this.#componentOwners.set(view.definition.id, plugin.manifest.id);
@@ -211,6 +236,7 @@ export class UiPluginHost {
 
   /** Whole-session release. The platform prevents this host from being reused after disposal. */
   dispose(): void {
+    this.#revision += 1;
     this.interactions.clear();
     for (const definition of this.components.list()) this.components.unregister(definition.id);
     this.#plugins.clear();
