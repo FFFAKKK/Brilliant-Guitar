@@ -16,11 +16,11 @@ use crate::{
         AgentRunRecoverySummaryV1, AgentRunStoreCommitInputV1, AgentRunStoreCommitResultV1,
         AgentRunStoreEntryV1,
     },
-    capability::{CapabilityCaller, CapabilityInvocation, CapabilityResult},
+    capability::{CAPABILITY_CATALOG, CapabilityCaller, CapabilityInvocation, CapabilityKind, CapabilityResult},
     capability_receipt::{CapabilityReceiptBeginV1, CapabilityReceiptLookupV1},
     diagnostics::{PluginDiagnosticInput, PluginDiagnosticRecord},
     document_io::{
-        normalize_save_path, prepare_recovery_path, quarantine_recovery,
+        normalize_save_path, quarantine_recovery,
         read_document, read_recovery,
     },
     dto::{
@@ -329,8 +329,7 @@ pub fn workbench_invoke_capability_v1(
     request: CapabilityTransportRequest,
 ) -> Result<CapabilityResult, HostError> {
     let invocation = CapabilityInvocation::from_transport(request, CapabilityCaller::Ui);
-    let mut service = locked(state.inner())?;
-    Ok(crate::capability::invoke(&mut service, invocation))
+    invoke_with_recovery(state.inner(), invocation)
 }
 
 #[tauri::command]
@@ -365,13 +364,29 @@ pub fn workbench_agent_invoke_capability_v1(
         }
         CapabilityReceiptBeginV1::Started => {}
     }
-    let mut service = locked(state.inner())?;
-    let result = crate::capability::invoke(&mut service, invocation.clone());
-    drop(service);
+    let result = invoke_with_recovery(state.inner(), invocation.clone())?;
     state
         .capability_receipts
         .resolve(&invocation, result.clone())
         .map_err(capability_receipt_error)?;
+    Ok(result)
+}
+
+fn invoke_with_recovery(
+    state: &AppState,
+    invocation: CapabilityInvocation,
+) -> Result<CapabilityResult, HostError> {
+    let workspace_id = invocation.workspace_id.clone();
+    let mutation = CAPABILITY_CATALOG.iter().any(|descriptor| {
+        descriptor.id == invocation.capability_id && descriptor.kind == CapabilityKind::Mutation
+    });
+    let mut service = locked(state)?;
+    let result = crate::capability::invoke(&mut service, invocation);
+    if mutation && matches!(result, CapabilityResult::Completed { .. }) {
+        // The mutation is already committed. The next session read reports
+        // recovery failures; never turn its known success into a replay.
+        let _ = schedule_current_recovery(state, &service, &workspace_id);
+    }
     Ok(result)
 }
 
@@ -694,7 +709,9 @@ fn read_or_recover(
     state: &AppState,
     workspace_id: &str,
 ) -> Result<Option<ScoreSessionRead>, HostError> {
-    if let Some(session) = locked(state)?.read(workspace_id)? {
+    let mut service = locked(state)?;
+    if let Some(mut session) = service.read(workspace_id)? {
+        session.warnings = recovery_status(state, workspace_id).into_iter().collect();
         return Ok(Some(session));
     }
     let recovery_path = state.recovery_path(workspace_id);
@@ -710,7 +727,7 @@ fn read_or_recover(
     let Some(document_json) = recovery else {
         return Ok(None);
     };
-    match locked(state)?.import_document(workspace_id.to_owned(), &document_json) {
+    match service.import_document(workspace_id.to_owned(), &document_json) {
         Ok(session) => Ok(Some(session)),
         Err(_) => {
             quarantine_recovery(&recovery_path)?;
@@ -826,9 +843,7 @@ pub fn workbench_create_v1(
     request: CreateScoreRequest,
 ) -> Result<ScoreSessionRead, HostError> {
     let workspace_id = request.workspace_id.clone();
-    let session = locked(state.inner())?.create(request)?;
-    schedule_current_recovery(state.inner(), &workspace_id);
-    Ok(session)
+    change_document(state.inner(), &workspace_id, |service| service.create(request))
 }
 
 #[tauri::command]
@@ -837,9 +852,7 @@ pub fn workbench_create_guarded_v1(
     request: GuardedCreateScoreRequest,
 ) -> Result<ScoreSessionRead, HostError> {
     let workspace_id = request.workspace_id.clone();
-    let session = locked(state.inner())?.create_guarded(request)?;
-    schedule_current_recovery(state.inner(), &workspace_id);
-    Ok(session)
+    change_document(state.inner(), &workspace_id, |service| service.create_guarded(request))
 }
 
 #[tauri::command]
@@ -848,9 +861,7 @@ pub fn workbench_edit_v1(
     request: ScoreEditRequest,
 ) -> Result<ScoreSessionRead, HostError> {
     let workspace_id = request.workspace_id.clone();
-    let session = locked(state.inner())?.edit(request)?;
-    schedule_current_recovery(state.inner(), &workspace_id);
-    Ok(session)
+    change_document(state.inner(), &workspace_id, |service| service.edit(request))
 }
 
 #[tauri::command]
@@ -867,9 +878,9 @@ pub fn workbench_import_v1(
     workspace_id: String,
     document_json: String,
 ) -> Result<ScoreSessionRead, HostError> {
-    let session = locked(state.inner())?.import_document(workspace_id.clone(), &document_json)?;
-    schedule_current_recovery(state.inner(), &workspace_id);
-    Ok(session)
+    change_document(state.inner(), &workspace_id, |service| {
+        service.import_document(workspace_id.clone(), &document_json)
+    })
 }
 
 #[tauri::command]
@@ -877,11 +888,16 @@ pub fn workbench_close_v1(
     state: State<'_, AppState>,
     workspace_id: String,
 ) -> Result<bool, HostError> {
-    locked(state.inner())?.read(&workspace_id)?;
-    state.recovery.flush()?;
-    state.recovery.remove(state.recovery_path(&workspace_id))?;
-    let closed = locked(state.inner())?.close(&workspace_id)?;
-    Ok(closed)
+    close_document(state.inner(), &workspace_id)
+}
+
+fn close_document(state: &AppState, workspace_id: &str) -> Result<bool, HostError> {
+    let mut service = locked(state)?;
+    service.read(workspace_id)?;
+    let path = state.recovery_path(workspace_id);
+    state.recovery.flush(path.clone())?;
+    state.recovery.remove(path)?;
+    service.close(workspace_id)
 }
 
 #[tauri::command]
@@ -954,12 +970,9 @@ fn accept_opened_file(
         )?,
         None => service.import_file(workspace_id.clone(), &document_json, path.clone())?,
     };
-    // Keep edits from racing successful replacement and recovery cleanup.
-    if state
-        .recovery
-        .remove(state.recovery_path(&workspace_id))
-        .is_err()
-    {
+    // Queue the accepted replacement before cleanup. A failed removal must
+    // retain this document, not a pending snapshot from the replaced document.
+    if clear_file_recovery(state, &service, &workspace_id).is_err() {
         result.warnings.push(file_acceptance_warning(
             "file.recovery-unavailable",
             "作品已打开，恢复文件清理尚未完成",
@@ -1202,11 +1215,7 @@ fn persist_save_snapshot(
     let mut service = locked(state)?;
     service.check_replacement(workspace_id, expected)?;
     let mut result = service.save_file(workspace_id, path.clone(), snapshot)?;
-    if state
-        .recovery
-        .remove(state.recovery_path(workspace_id))
-        .is_err()
-    {
+    if clear_file_recovery(state, &service, workspace_id).is_err() {
         result.warnings.push(file_acceptance_warning(
             "file.recovery-unavailable",
             "作品已保存，恢复文件清理尚未完成",
@@ -1221,16 +1230,47 @@ fn persist_save_snapshot(
     Ok(result)
 }
 
-fn schedule_current_recovery(state: &AppState, workspace_id: &str) {
-    let Ok(document_json) = locked(state).and_then(|service| service.export_document(workspace_id))
-    else {
-        return;
-    };
-    let path = state.recovery_path(workspace_id);
-    if prepare_recovery_path(&path).is_err() {
-        return;
-    }
-    let _ = state.recovery.schedule(path, document_json);
+fn change_document(
+    state: &AppState,
+    workspace_id: &str,
+    operation: impl FnOnce(&mut crate::application::ScoreSessionService) -> Result<ScoreSessionRead, HostError>,
+) -> Result<ScoreSessionRead, HostError> {
+    let mut service = locked(state)?;
+    let mut session = operation(&mut service)?;
+    let warning = schedule_current_recovery(state, &service, workspace_id)
+        .or_else(|| recovery_status(state, workspace_id));
+    session.warnings = warning.into_iter().collect();
+    Ok(session)
+}
+
+// The caller holds the same service lock that committed the document.
+fn schedule_current_recovery(
+    state: &AppState,
+    service: &crate::application::ScoreSessionService,
+    workspace_id: &str,
+) -> Option<crate::dto::WorkbenchIssue> {
+    service.export_document(workspace_id)
+        .and_then(|document| state.recovery.schedule(state.recovery_path(workspace_id), document))
+        .err()
+        .map(|_| file_acceptance_warning(
+            "file.recovery-unavailable", "自动恢复副本暂不可用，请保存项目文件",
+        ))
+}
+
+fn recovery_status(state: &AppState, workspace_id: &str) -> Option<crate::dto::WorkbenchIssue> {
+    state.recovery.status(state.recovery_path(workspace_id)).err()
+        .map(|_| file_acceptance_warning(
+            "file.recovery-unavailable", "自动恢复副本暂不可用，请保存项目文件",
+        ))
+}
+
+fn clear_file_recovery(
+    state: &AppState,
+    service: &crate::application::ScoreSessionService,
+    workspace_id: &str,
+) -> Result<(), HostError> {
+    let _ = schedule_current_recovery(state, service, workspace_id);
+    state.recovery.remove(state.recovery_path(workspace_id))
 }
 
 fn sanitize_file_name(value: &str) -> String {
@@ -1275,6 +1315,9 @@ mod recent_tests;
 
 #[cfg(test)]
 mod save_tests;
+
+#[cfg(test)]
+mod recovery_tests;
 
 #[cfg(test)]
 mod tests {
@@ -1323,8 +1366,8 @@ mod tests {
                 action: crate::dto::ScoreEditAction::SetTempo { tempo_bpm: 144.0 },
             })
             .unwrap();
-        schedule_current_recovery(&state, &workspace);
-        state.recovery.flush().unwrap();
+        schedule_current_recovery(&state, &locked(&state).unwrap(), &workspace);
+        state.recovery.flush(state.recovery_path(&workspace)).unwrap();
         let recovery_path = state.recovery_path(&workspace);
         let retained_recovery = std::fs::read(&recovery_path).unwrap();
         let error = accept_opened_file(&state, workspace.clone(), path.clone(), Some(&expected))
@@ -1386,8 +1429,8 @@ mod tests {
                 expected_document_id: None,
             })
             .expect("create recoverable score");
-        schedule_current_recovery(&original, &workspace_id);
-        original.recovery.flush().expect("persist recovery file");
+        schedule_current_recovery(&original, &locked(&original).unwrap(), &workspace_id);
+        original.recovery.flush(original.recovery_path(&workspace_id)).expect("persist recovery file");
         drop(original);
 
         let restarted = AppState::new(recovery_root.clone());

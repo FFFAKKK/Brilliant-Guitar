@@ -622,8 +622,8 @@ fn stale_version_or_replaced_identity_cannot_overwrite_disk_or_change_file_path(
 #[test]
 fn failed_physical_write_preserves_the_document_and_recovery() {
     let (root, state, workspace, initial) = fixture();
-    schedule_current_recovery(&state, &workspace);
-    state.recovery.flush().unwrap();
+    schedule_current_recovery(&state, &locked(&state).unwrap(), &workspace);
+    state.recovery.flush(state.recovery_path(&workspace)).unwrap();
     let recovery = state.recovery_path(&workspace);
     let before = std::fs::read(&recovery).unwrap();
     let blocked = root.join("is-a-directory");

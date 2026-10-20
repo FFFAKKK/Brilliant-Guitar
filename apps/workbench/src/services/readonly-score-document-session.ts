@@ -90,6 +90,12 @@ export function createReadonlyScoreDocumentSession({ client, createId = () => cr
       throw new Error("作品读取版本已过期，请重新读取");
     }
     current = value; failure = null;
+    // A fresh accepted read replaces observed recovery status. Unrelated
+    // post-commit warnings still keep their existing retry lifecycle.
+    warnings = Object.freeze([
+      ...(replacement ? [] : warnings.filter(warning => warning.code !== "file.recovery-unavailable")),
+      ...(value?.warnings ?? []),
+    ]);
   }
   async function loadInitial(): Promise<ScoreSessionRead | null> {
     const token = epoch;
@@ -166,7 +172,7 @@ export function createReadonlyScoreDocumentSession({ client, createId = () => cr
     let opened: WorkbenchNativeFileResult | null = null;
     return run(async () => { opened = await operation(); if (!opened && !cancellable) throw new Error("文件打开结果无效"); return opened?.session ?? null; }, cancellable, () => {
       if (!opened) throw new Error("文件打开结果无效");
-      warnings = Object.freeze([...(opened.warnings ?? [])]);
+      warnings = Object.freeze([...(opened.session.warnings ?? []), ...(opened.warnings ?? [])]);
       return { documentId: opened.session.documentId, documentVersion: opened.savedVersion, name: opened.name };
     }, true);
   }
@@ -261,7 +267,7 @@ export function createReadonlyScoreDocumentSession({ client, createId = () => cr
         }
         return saved.session;
       }, true, () => {
-        warnings = Object.freeze([...(saved!.warnings ?? [])]);
+        warnings = Object.freeze([...(saved!.session.warnings ?? []), ...(saved!.warnings ?? [])]);
         return { documentId: saved!.session.documentId, documentVersion: saved!.savedVersion, name: saved!.name };
       });
     },
@@ -424,7 +430,7 @@ export function createReadonlyScoreDocumentSession({ client, createId = () => cr
       if (Object.keys(validateNewScoreInput(accepted)).length) return { ok: false, code: "document.invalid-input", message: "新建作品参数超出支持范围" };
       const expected = replacementPrecondition();
       return run(() => client.createGuarded(accepted, createId(), expected), false,
-        () => { warnings = Object.freeze([]); return null; }, true);
+        () => null, true);
     },
     async open(): Promise<Result> {
       const guard = replacementGuard(); if (guard) return guard;

@@ -67,3 +67,14 @@ test("native persistence projection rejects missing or contradictory fields", ()
     { sessionId: "session-a", savedVersion: 2, dirty: "false" },
   ]) assert.equal(isScoreSessionRead({ ...score(2), persistence }), false);
 });
+
+test("session warnings use the shared diagnostic validator and remain optional on older hosts", () => {
+  const warning = { code: "file.recovery-unavailable", message: "保存项目文件以保留当前作品",
+    severity: "warning", source: "file", target: { scope: "component", componentId: "navigation.file" } };
+  assert.equal(isScoreSessionRead({ ...score(2), warnings: [warning] }), true);
+  assert.equal(isScoreSessionRead(score(2)), true);
+  for (const warnings of [null, {}, [null], [{ ...warning, severity: "error" }],
+    [{ ...warning, target: {} }], Array(5).fill(warning)]) {
+    assert.equal(isScoreSessionRead({ ...score(2), warnings }), false);
+  }
+});

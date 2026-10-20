@@ -231,6 +231,8 @@ pub struct ScoreSessionRead {
     pub metadata: DocumentMetadataInput,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub persistence: Option<ScorePersistenceState>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub warnings: Vec<WorkbenchIssue>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -591,14 +593,14 @@ pub struct NativeFileResult {
     pub warnings: Vec<WorkbenchIssue>,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum WorkbenchIssueSeverity {
     Error,
     Warning,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum WorkbenchIssueSource {
     Core,
@@ -607,7 +609,7 @@ pub enum WorkbenchIssueSource {
     File,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(
     tag = "scope",
     rename_all = "kebab-case",
@@ -629,7 +631,7 @@ pub enum WorkbenchIssueTarget {
     },
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WorkbenchIssue {
     pub code: String,

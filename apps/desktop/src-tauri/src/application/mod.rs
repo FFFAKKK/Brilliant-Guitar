@@ -1085,6 +1085,7 @@ fn session_projection(session: &NotationSession) -> Result<SessionProjection, Ho
                 tempo_bpm: document.metadata.tempo.bpm.get(),
             },
             persistence: None,
+            warnings: vec![],
         },
         measure_index: ScoreMeasureIndexV1 {
             document_id,

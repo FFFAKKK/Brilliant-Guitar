@@ -7,6 +7,8 @@ import type { PlaybackSourceProjection } from "./playback.ts";
 import { isTablatureProjection } from "../../../../shared/notation/tablature-model.ts";
 import type { TablatureProjection, TablatureView } from "../../../../shared/notation/tablature-model.ts";
 import type { StaffView } from "./notation.ts";
+import { isWorkbenchIssue } from "./workbench-issue.ts";
+import type { WorkbenchIssue } from "./workbench-issue.ts";
 
 export interface ScoreDocumentMetadataProjection {
   readonly title: string;
@@ -32,6 +34,8 @@ export interface ScoreSessionRead extends ScoreSessionSummary {
   /** Optional until every desktop host ships the metadata projection. */
   readonly metadata?: ScoreDocumentMetadataProjection;
   readonly persistence?: ScorePersistenceState;
+  /** Observed host-side recovery warnings; not an acknowledgement of durability. */
+  readonly warnings?: readonly WorkbenchIssue[];
 }
 
 export function isScoreSessionRead(value: unknown): value is ScoreSessionRead {
@@ -40,6 +44,8 @@ export function isScoreSessionRead(value: unknown): value is ScoreSessionRead {
   const r = value as unknown as Record<string, unknown>;
   if (typeof r.undoDepth !== "number" || !Number.isSafeInteger(r.undoDepth) || r.undoDepth < 0 || typeof r.redoDepth !== "number" || !Number.isSafeInteger(r.redoDepth) || r.redoDepth < 0) return false;
   const metadata = r.metadata;
+  if (r.warnings !== undefined && (!Array.isArray(r.warnings) || r.warnings.length > 4
+    || r.warnings.some(warning => !isWorkbenchIssue(warning) || warning.severity !== "warning"))) return false;
   const persistence = r.persistence;
   if (persistence !== undefined) {
     if (typeof persistence !== "object" || persistence === null || Array.isArray(persistence)) return false;

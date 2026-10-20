@@ -2,19 +2,20 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::{self, Receiver, RecvTimeoutError, Sender};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use uuid::Uuid;
 
 use crate::error::HostError;
 
 const MAX_DOCUMENT_BYTES: u64 = 32 * 1024 * 1024;
-const RECOVERY_DEBOUNCE: Duration = Duration::from_millis(250);
+const RECOVERY_INTERVAL: Duration = Duration::from_millis(250);
 
 enum RecoveryCommand {
-    Persist { path: PathBuf, contents: String },
+    Persist { path: PathBuf, contents: String, directory_ready: bool },
     Remove { path: PathBuf, done: Sender<bool> },
-    Flush { done: Sender<bool> },
+    Flush { path: PathBuf, done: Sender<bool> },
+    Status { path: PathBuf, done: Sender<bool> },
 }
 
 pub struct RecoveryManager {
@@ -34,9 +35,12 @@ impl Default for RecoveryManager {
 
 impl RecoveryManager {
     pub fn schedule(&self, path: PathBuf, contents: String) -> Result<(), HostError> {
+        let prepared = prepare_recovery_path(&path);
         self.sender
-            .send(RecoveryCommand::Persist { path, contents })
-            .map_err(|_| recovery_error("无法安排乐谱恢复写入"))
+            .send(RecoveryCommand::Persist { path, contents, directory_ready: prepared.is_ok() })
+            .map_err(|_| recovery_error("无法安排乐谱恢复写入"))?;
+        // Retain the accepted snapshot even when its directory needs repair.
+        prepared
     }
 
     pub fn remove(&self, path: PathBuf) -> Result<(), HostError> {
@@ -50,57 +54,102 @@ impl RecoveryManager {
         }
     }
 
-    pub fn flush(&self) -> Result<(), HostError> {
+    pub fn flush(&self, path: PathBuf) -> Result<(), HostError> {
         let (done, result) = mpsc::channel();
         self.sender
-            .send(RecoveryCommand::Flush { done })
+            .send(RecoveryCommand::Flush { path, done })
             .map_err(|_| recovery_error("无法确认乐谱恢复写入"))?;
         match result.recv() {
             Ok(true) => Ok(()),
             _ => Err(recovery_error("无法确认乐谱恢复写入")),
         }
     }
+
+    // No known failure is not an acknowledgement that pending bytes are durable.
+    pub fn status(&self, path: PathBuf) -> Result<(), HostError> {
+        let (done, result) = mpsc::channel();
+        self.sender
+            .send(RecoveryCommand::Status { path, done })
+            .map_err(|_| recovery_error("无法读取乐谱恢复状态"))?;
+        match result.recv() {
+            Ok(true) => Ok(()),
+            _ => Err(recovery_error("乐谱恢复副本尚未写入，请保存项目文件")),
+        }
+    }
 }
 
 fn recovery_worker(receiver: Receiver<RecoveryCommand>) {
     let mut pending = std::collections::HashMap::<PathBuf, String>::new();
+    let mut failed = std::collections::HashSet::<PathBuf>::new();
+    let mut deadline = Instant::now() + RECOVERY_INTERVAL;
     loop {
-        match receiver.recv_timeout(RECOVERY_DEBOUNCE) {
-            Ok(RecoveryCommand::Persist { path, contents }) => {
+        if Instant::now() >= deadline {
+            flush_recovery(&mut pending, &mut failed);
+            deadline = Instant::now() + RECOVERY_INTERVAL;
+        }
+        match receiver.recv_timeout(deadline.saturating_duration_since(Instant::now())) {
+            Ok(RecoveryCommand::Persist { path, contents, directory_ready }) => {
+                if !directory_ready {
+                    failed.insert(path.clone());
+                }
                 pending.insert(path, contents);
             }
             Ok(RecoveryCommand::Remove { path, done }) => {
-                pending.remove(&path);
-                let removed = match fs::remove_file(path) {
+                let removed = match fs::remove_file(&path) {
                     Ok(()) => true,
                     Err(error) => error.kind() == std::io::ErrorKind::NotFound,
                 };
+                if removed {
+                    pending.remove(&path);
+                    failed.remove(&path);
+                } else {
+                    failed.insert(path);
+                }
                 let _ = done.send(removed);
             }
-            Ok(RecoveryCommand::Flush { done }) => {
-                let _ = done.send(flush_recovery(&mut pending));
+            Ok(RecoveryCommand::Flush { path, done }) => {
+                let _ = done.send(flush_recovery_path(&path, &mut pending, &mut failed));
             }
-            Err(RecvTimeoutError::Timeout) => {
-                let _ = flush_recovery(&mut pending);
+            Ok(RecoveryCommand::Status { path, done }) => {
+                let _ = done.send(!failed.contains(&path));
             }
+            Err(RecvTimeoutError::Timeout) => {}
             Err(RecvTimeoutError::Disconnected) => {
-                let _ = flush_recovery(&mut pending);
+                flush_recovery(&mut pending, &mut failed);
                 break;
             }
         }
     }
 }
 
-fn flush_recovery(pending: &mut std::collections::HashMap<PathBuf, String>) -> bool {
-    let writes = std::mem::take(pending);
-    let mut succeeded = true;
-    for (path, contents) in writes {
-        if atomic_write(&path, contents.as_bytes()).is_err() {
-            succeeded = false;
-            pending.insert(path, contents);
-        }
+fn flush_recovery_path(
+    path: &Path,
+    pending: &mut std::collections::HashMap<PathBuf, String>,
+    failed: &mut std::collections::HashSet<PathBuf>,
+) -> bool {
+    let Some(contents) = pending.get(path) else {
+        // A cleanup failure with no pending write must allow cleanup to retry.
+        return true;
+    };
+    if prepare_recovery_path(path)
+        .and_then(|()| atomic_write(path, contents.as_bytes()))
+        .is_err()
+    {
+        failed.insert(path.to_owned());
+        return false;
     }
-    succeeded
+    pending.remove(path);
+    failed.remove(path);
+    true
+}
+
+fn flush_recovery(
+    pending: &mut std::collections::HashMap<PathBuf, String>,
+    failed: &mut std::collections::HashSet<PathBuf>,
+) {
+    for path in pending.keys().cloned().collect::<Vec<_>>() {
+        flush_recovery_path(&path, pending, failed);
+    }
 }
 
 pub fn read_document(path: &Path) -> Result<String, HostError> {
@@ -384,7 +433,7 @@ mod tests {
             .schedule(cancelled.clone(), "discarded".into())
             .expect("schedule cancelled");
         manager.remove(cancelled.clone()).expect("cancel recovery");
-        manager.flush().expect("flush recovery");
+        manager.flush(first.clone()).expect("flush recovery");
 
         assert_eq!(
             fs::read_to_string(first).expect("read latest recovery"),
@@ -410,5 +459,98 @@ mod tests {
             b"not valid score json"
         );
         fs::remove_dir_all(directory).expect("remove quarantine directory");
+    }
+
+    #[test]
+    fn recovery_flush_and_failure_status_are_scoped_to_one_path() {
+        let directory = std::env::temp_dir().join(format!("brilliant-recovery-{}", Uuid::new_v4()));
+        fs::create_dir(&directory).unwrap();
+        let blocked = directory.join("blocked.bgp.json");
+        let other = directory.join("other.bgp.json");
+        fs::create_dir(&blocked).unwrap();
+        let manager = RecoveryManager::default();
+        manager.schedule(blocked.clone(), "blocked".into()).unwrap();
+        manager.schedule(other.clone(), "other".into()).unwrap();
+        assert!(manager.flush(blocked.clone()).is_err());
+        assert!(manager.status(blocked.clone()).is_err());
+        manager.flush(other.clone()).unwrap();
+        manager.status(other.clone()).unwrap();
+        assert_eq!(fs::read_to_string(&other).unwrap(), "other");
+        fs::remove_dir(&blocked).unwrap();
+        manager.flush(blocked.clone()).unwrap();
+        manager.status(blocked).unwrap();
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn failed_recovery_removal_retains_the_latest_pending_snapshot() {
+        let directory = std::env::temp_dir().join(format!("brilliant-recovery-{}", Uuid::new_v4()));
+        fs::create_dir(&directory).unwrap();
+        let path = directory.join("score.bgp.json");
+        fs::create_dir(&path).unwrap();
+        let manager = RecoveryManager::default();
+        manager.schedule(path.clone(), "old".into()).unwrap();
+        manager.schedule(path.clone(), "latest".into()).unwrap();
+        assert!(manager.remove(path.clone()).is_err());
+        assert!(manager.status(path.clone()).is_err());
+        fs::remove_dir(&path).unwrap();
+        manager.flush(path.clone()).unwrap();
+        assert_eq!(fs::read_to_string(&path).unwrap(), "latest");
+        manager.remove(path.clone()).unwrap();
+        manager.flush(path.clone()).unwrap();
+        manager.status(path.clone()).unwrap();
+        assert!(!path.exists());
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn unavailable_recovery_directory_does_not_drop_queued_work() {
+        let directory = std::env::temp_dir().join(format!("brilliant-recovery-{}", Uuid::new_v4()));
+        fs::create_dir(&directory).unwrap();
+        let blocker = directory.join("recovery");
+        fs::write(&blocker, b"fixture").unwrap();
+        let path = blocker.join("score.bgp.json");
+        let manager = RecoveryManager::default();
+        assert!(manager.schedule(path.clone(), "latest".into()).is_err());
+        assert!(manager.status(path.clone()).is_err());
+        assert!(manager.flush(path.clone()).is_err());
+        fs::remove_file(&blocker).unwrap();
+        manager.flush(path.clone()).unwrap();
+        manager.status(path.clone()).unwrap();
+        assert_eq!(fs::read_to_string(path).unwrap(), "latest");
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn ongoing_status_requests_do_not_starve_background_recovery() {
+        let directory = std::env::temp_dir().join(format!("brilliant-recovery-{}", Uuid::new_v4()));
+        fs::create_dir(&directory).unwrap();
+        let path = directory.join("score.bgp.json");
+        let manager = RecoveryManager::default();
+        manager.schedule(path.clone(), "latest".into()).unwrap();
+        let limit = Instant::now() + Duration::from_secs(5);
+        while !path.exists() && Instant::now() < limit {
+            manager.status(path.clone()).unwrap();
+        }
+        assert_eq!(fs::read_to_string(&path).unwrap(), "latest");
+        manager.remove(path).unwrap();
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn background_recovery_failure_remains_visible_until_successful_retry() {
+        let directory = std::env::temp_dir().join(format!("brilliant-recovery-{}", Uuid::new_v4()));
+        fs::create_dir(&directory).unwrap();
+        let path = directory.join("score.bgp.json");
+        fs::create_dir(&path).unwrap();
+        let manager = RecoveryManager::default();
+        manager.schedule(path.clone(), "latest".into()).unwrap();
+        let limit = Instant::now() + Duration::from_secs(5);
+        while manager.status(path.clone()).is_ok() && Instant::now() < limit {}
+        assert!(manager.status(path.clone()).is_err());
+        fs::remove_dir(&path).unwrap();
+        manager.flush(path.clone()).unwrap();
+        manager.status(path).unwrap();
+        fs::remove_dir_all(directory).unwrap();
     }
 }

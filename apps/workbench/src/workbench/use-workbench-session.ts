@@ -21,6 +21,9 @@ export function useWorkbenchSession(
   const [attempt, setAttempt] = useState(0);
   const pending = useRef<{ attempt: number; result: Promise<ScoreSessionRead> } | null>(null);
   useEffect(() => {
+    for (const warning of session?.warnings ?? []) runtime?.feedback.report(warning);
+  }, [session, runtime?.feedback.report]);
+  useEffect(() => {
     let active = true;
     const token = runtime?.operations.begin("score.session-load", "workbench");
     let succeeded = false;

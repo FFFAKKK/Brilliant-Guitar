@@ -2887,6 +2887,7 @@ function isScoreSessionRead(value) {
   const r = value;
   if (typeof r.undoDepth !== "number" || !Number.isSafeInteger(r.undoDepth) || r.undoDepth < 0 || typeof r.redoDepth !== "number" || !Number.isSafeInteger(r.redoDepth) || r.redoDepth < 0) return false;
   const metadata = r.metadata;
+  if (r.warnings !== void 0 && (!Array.isArray(r.warnings) || r.warnings.length > 4 || r.warnings.some((warning) => !isWorkbenchIssue(warning) || warning.severity !== "warning"))) return false;
   const persistence = r.persistence;
   if (persistence !== void 0) {
     if (typeof persistence !== "object" || persistence === null || Array.isArray(persistence)) return false;
@@ -3978,6 +3979,10 @@ function createReadonlyScoreDocumentSession({ client, createId = () => crypto.ra
     }
     current = value;
     failure = null;
+    warnings = Object.freeze([
+      ...replacement ? [] : warnings.filter((warning) => warning.code !== "file.recovery-unavailable"),
+      ...value?.warnings ?? []
+    ]);
   }
   async function loadInitial() {
     const token = epoch;
@@ -4069,7 +4074,7 @@ function createReadonlyScoreDocumentSession({ client, createId = () => crypto.ra
       return opened?.session ?? null;
     }, cancellable, () => {
       if (!opened) throw new Error("\u6587\u4EF6\u6253\u5F00\u7ED3\u679C\u65E0\u6548");
-      warnings = Object.freeze([...opened.warnings ?? []]);
+      warnings = Object.freeze([...opened.session.warnings ?? [], ...opened.warnings ?? []]);
       return { documentId: opened.session.documentId, documentVersion: opened.savedVersion, name: opened.name };
     }, true);
   }
@@ -4161,7 +4166,7 @@ function createReadonlyScoreDocumentSession({ client, createId = () => crypto.ra
         }
         return saved.session;
       }, true, () => {
-        warnings = Object.freeze([...saved.warnings ?? []]);
+        warnings = Object.freeze([...saved.session.warnings ?? [], ...saved.warnings ?? []]);
         return { documentId: saved.session.documentId, documentVersion: saved.savedVersion, name: saved.name };
       });
     },
@@ -4331,10 +4336,7 @@ function createReadonlyScoreDocumentSession({ client, createId = () => crypto.ra
       return run(
         () => client.createGuarded(accepted, createId(), expected),
         false,
-        () => {
-          warnings = Object.freeze([]);
-          return null;
-        },
+        () => null,
         true
       );
     },

@@ -150,3 +150,54 @@ test("native checkpoint receipts are validated without requiring the new field o
   const bridge = new TauriWorkbenchHostBridge(async <T>() => file() as T);
   assert.deepEqual(await new WorkbenchClient(bridge).saveNativeDocumentGuarded("piece", false, expected), file());
 });
+
+test("accepted recovery warnings use the existing ready-state feedback and clear after a fresh healthy read", async () => {
+  const recovery = { code: "file.recovery-unavailable", message: "自动恢复暂不可用",
+    severity: "warning" as const, source: "file" as const,
+    target: { scope: "component" as const, componentId: "navigation.file" }, retryable: false };
+  const recent = { ...recovery, code: "file.recent-unavailable", message: "最近目录暂不可用", retryable: true };
+  let current: ScoreSessionRead = { ...score(), warnings: [recovery] };
+  const bridge = new TauriWorkbenchHostBridge(async <T>(command: string) =>
+    (command === "workbench_read_v1" ? current : { ...file(current), warnings: [recent] }) as T);
+  const source = createReadonlyScoreDocumentSession({ client: new WorkbenchClient(bridge) });
+  try {
+    await source.read();
+    assert.equal(source.snapshot().status, "ready");
+    assert.equal(source.snapshot().dirty, true);
+    assert.deepEqual(source.snapshot().warnings, [recovery]);
+    assert.equal((await source.save(true)).ok, true);
+    assert.equal(source.snapshot().saved, true);
+    assert.deepEqual(source.snapshot().warnings, [recovery, recent]);
+    current = score();
+    assert.equal((await source.reload()).ok, true);
+    assert.equal(source.snapshot().status, "ready");
+    assert.deepEqual(source.snapshot().warnings, [recent], "Only observed recovery status was cleared");
+  } finally { source.dispose(); }
+});
+
+test("guarded creation retains the accepted recovery warning without inventing a saved checkpoint", async () => {
+  const warning = { code: "file.recovery-unavailable", message: "自动恢复暂不可用",
+    severity: "warning" as const, source: "file" as const,
+    target: { scope: "component" as const, componentId: "navigation.file" }, retryable: false };
+  const created: ScoreSessionRead = { ...score(0, 0), warnings: [warning],
+    persistence: { sessionId: "created", savedVersion: null, dirty: true } };
+  const calls: string[] = [];
+  const bridge = new TauriWorkbenchHostBridge(async <T>(command: string) => {
+    calls.push(command);
+    if (command === "workbench_read_v1") return null as T;
+    if (command === "workbench_create_guarded_v1") return created as T;
+    throw new Error("unexpected IPC");
+  });
+  const source = createReadonlyScoreDocumentSession({
+    client: new WorkbenchClient(bridge), initialization: "read-existing",
+  });
+  try {
+    await source.read();
+    assert.deepEqual(await source.newScore({ title: "作品", measureCount: 1 }), { ok: true, changed: true });
+    assert.equal(source.snapshot().status, "ready");
+    assert.equal(source.snapshot().saved, false);
+    assert.equal(source.snapshot().dirty, true);
+    assert.deepEqual(source.snapshot().warnings, [warning]);
+    assert.deepEqual(calls, ["workbench_read_v1", "workbench_create_guarded_v1"]);
+  } finally { source.dispose(); }
+});
