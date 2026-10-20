@@ -1643,7 +1643,7 @@ mod tests {
         let all_have_no_nested_call = input.iter().all(|item| {
             item.get("content")
                 .and_then(Value::as_array)
-                .map_or(true, |content| {
+                .is_none_or(|content| {
                     content.iter().all(|part| {
                         part.get("type").and_then(Value::as_str) != Some("function_call")
                     })

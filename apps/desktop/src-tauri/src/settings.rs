@@ -30,18 +30,13 @@ impl Default for UiSettingsV1 {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum NoteInputRetentionV1 {
+    #[default]
     Rhythm,
     All,
     Reset,
-}
-
-impl Default for NoteInputRetentionV1 {
-    fn default() -> Self {
-        Self::Rhythm
-    }
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -78,21 +73,12 @@ pub struct NoteInputSettingsV1 {
     pub default_duration: NoteInputDurationV1,
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct EditingSettingsV1 {
     pub delete_time_policy: DeleteTimePolicy,
     #[serde(default)]
     pub note_input: NoteInputSettingsV1,
-}
-
-impl Default for EditingSettingsV1 {
-    fn default() -> Self {
-        Self {
-            delete_time_policy: DeleteTimePolicy::default(),
-            note_input: NoteInputSettingsV1::default(),
-        }
-    }
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -412,6 +398,20 @@ mod tests {
         assert!(!snapshot.persisted);
         assert!(!snapshot.recovered_from_invalid);
         assert!(!root.exists());
+    }
+
+    #[test]
+    fn editing_defaults_preserve_the_v1_json_contract() {
+        assert_eq!(
+            serde_json::to_value(EditingSettingsV1::default()).expect("serialize defaults"),
+            serde_json::json!({
+                "deleteTimePolicy": "preserve",
+                "noteInput": {
+                    "retention": "rhythm",
+                    "defaultDuration": { "base": 4, "dots": 0 }
+                }
+            })
+        );
     }
 
     #[test]
