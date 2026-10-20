@@ -229,6 +229,16 @@ pub struct ScoreSessionRead {
     pub tablature: TablatureProjection,
     pub playback_source: PlaybackSourceProjection,
     pub metadata: DocumentMetadataInput,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub persistence: Option<ScorePersistenceState>,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScorePersistenceState {
+    pub session_id: String,
+    pub saved_version: Option<u64>,
+    pub dirty: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]

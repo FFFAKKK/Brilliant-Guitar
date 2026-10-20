@@ -1109,3 +1109,159 @@ fn native_file_replacement_keeps_atomic_read_and_saved_checkpoint() {
     );
     std::fs::remove_dir_all(directory).expect("remove isolated file directory");
 }
+
+#[test]
+fn stale_save_does_not_touch_the_destination_or_checkpoint() {
+    let mut service = ScoreSessionService::default();
+    let (workspace, original) = create(&mut service);
+    let snapshot = service.export_snapshot(&workspace).unwrap();
+    let changed = edit(
+        &mut service,
+        &workspace,
+        &original,
+        ScoreEditAction::SetTitle {
+            title: "Changed during the save dialog".into(),
+        },
+    );
+    let root = save_fixture();
+    let path = root.join("existing.bgp.json");
+    std::fs::write(&path, b"previous disk contents").unwrap();
+
+    let error = service
+        .save_file(&workspace, path.clone(), &snapshot)
+        .unwrap_err();
+
+    assert_eq!(error.issue.unwrap().code, "file.save-stale");
+    assert_eq!(std::fs::read(&path).unwrap(), b"previous disk contents");
+    assert_eq!(service.read(&workspace).unwrap(), Some(changed));
+    assert_eq!(service.file_path(&workspace).unwrap(), None);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn replaced_and_reopened_sessions_reject_old_save_snapshots() {
+    for reopen_same_document in [false, true] {
+        let mut service = ScoreSessionService::default();
+        let (workspace, original) = create(&mut service);
+        let snapshot = service.export_snapshot(&workspace).unwrap();
+        let replacement = if reopen_same_document {
+            let text = service.export_document(&workspace).unwrap();
+            service.import_document(workspace.clone(), &text).unwrap()
+        } else {
+            let mut request = create_request(&workspace, &id());
+            request.expected_document_id = Some(original.document_id.clone());
+            service.create(request).unwrap()
+        };
+        assert_eq!(replacement.document_version, original.document_version);
+        assert_ne!(
+            replacement.persistence.as_ref().unwrap().session_id,
+            original.persistence.as_ref().unwrap().session_id
+        );
+        if reopen_same_document {
+            assert_eq!(replacement.document_id, original.document_id);
+        }
+        let root = save_fixture();
+        let path = root.join("must-not-be-created.bgp.json");
+
+        assert!(
+            service
+                .save_file(&workspace, path.clone(), &snapshot)
+                .is_err()
+        );
+        assert!(!path.exists());
+        assert_eq!(service.read(&workspace).unwrap(), Some(replacement));
+        assert_eq!(service.file_path(&workspace).unwrap(), None);
+        std::fs::remove_dir_all(root).unwrap();
+    }
+}
+
+#[test]
+fn save_snapshots_cannot_cross_workspaces() {
+    let mut service = ScoreSessionService::default();
+    let (source, _) = create(&mut service);
+    let text = service.export_document(&source).unwrap();
+    let target = id();
+    let before = service.import_document(target.clone(), &text).unwrap();
+    let snapshot = service.export_snapshot(&source).unwrap();
+    let root = save_fixture();
+    let path = root.join("wrong-workspace.bgp.json");
+
+    assert!(service.save_file(&target, path.clone(), &snapshot).is_err());
+    assert!(!path.exists());
+    assert_eq!(service.read(&target).unwrap(), Some(before));
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn failed_physical_save_does_not_publish_a_checkpoint() {
+    let mut service = ScoreSessionService::default();
+    let (workspace, before) = create(&mut service);
+    let snapshot = service.export_snapshot(&workspace).unwrap();
+    let root = save_fixture();
+    let blocked = root.join("blocked.bgp.json");
+    std::fs::create_dir(&blocked).unwrap();
+
+    assert!(service.save_file(&workspace, blocked, &snapshot).is_err());
+    assert_eq!(service.read(&workspace).unwrap(), Some(before));
+    assert_eq!(service.file_path(&workspace).unwrap(), None);
+    assert_eq!(std::fs::read_dir(&root).unwrap().count(), 1);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn competing_save_as_cannot_rebind_the_same_version() {
+    let mut service = ScoreSessionService::default();
+    let (workspace, _) = create(&mut service);
+    let first = service.export_snapshot(&workspace).unwrap();
+    let second = service.export_snapshot(&workspace).unwrap();
+    let root = save_fixture();
+    let first_path = root.join("first.bgp.json");
+    let second_path = root.join("second.bgp.json");
+    let saved = service
+        .save_file(&workspace, first_path.clone(), &first)
+        .unwrap();
+
+    assert!(
+        service
+            .save_file(&workspace, second_path.clone(), &second)
+            .is_err()
+    );
+    assert!(!second_path.exists());
+    assert_eq!(service.file_path(&workspace).unwrap(), Some(first_path));
+    assert_eq!(service.read(&workspace).unwrap(), Some(saved.session));
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn saved_history_identity_remains_clean_after_undo_at_a_new_version() {
+    let mut service = ScoreSessionService::default();
+    let (workspace, _) = create(&mut service);
+    let snapshot = service.export_snapshot(&workspace).unwrap();
+    let root = save_fixture();
+    let saved = service
+        .save_file(&workspace, root.join("score.bgp.json"), &snapshot)
+        .unwrap();
+    let changed = edit(
+        &mut service,
+        &workspace,
+        &saved.session,
+        ScoreEditAction::SetTitle {
+            title: "Unsaved change".into(),
+        },
+    );
+    assert!(changed.persistence.as_ref().unwrap().dirty);
+    let undone = edit(&mut service, &workspace, &changed, ScoreEditAction::Undo);
+    let persistence = undone.persistence.as_ref().unwrap();
+
+    assert_eq!(persistence.saved_version, Some(saved.saved_version));
+    assert!(undone.document_version > saved.saved_version);
+    assert!(!persistence.dirty);
+    assert_eq!(service.read(&workspace).unwrap(), Some(undone));
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+fn save_fixture() -> PathBuf {
+    let root = std::env::temp_dir().join(format!("brilliant-save-snapshot-{}", id()));
+    std::fs::create_dir(&root).unwrap();
+    root
+}

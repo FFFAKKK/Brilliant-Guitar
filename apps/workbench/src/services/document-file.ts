@@ -15,13 +15,37 @@ export function fileStem(value: string): string {
 }
 
 export function checkpointMatches(session: ScoreSessionRead | null, checkpoint: SavedFileCheckpoint | null): boolean {
+  if (session?.persistence) {
+    return session.persistence.savedVersion !== null && !session.persistence.dirty;
+  }
   return Boolean(session && checkpoint && checkpoint.documentId === session.documentId
     && checkpoint.documentVersion === session.documentVersion);
 }
 
 export function hasUnsavedDocument(session: ScoreSessionRead | null, checkpoint: SavedFileCheckpoint | null): boolean {
   if (!session || checkpointMatches(session, checkpoint)) return false;
+  if (session.persistence?.savedVersion !== undefined && session.persistence.savedVersion !== null) {
+    return session.persistence.dirty;
+  }
   return session.documentVersion > 0 || session.measureCount !== 1 || session.title !== "未命名乐谱";
+}
+
+/** A save may update its own live session, never a replacement or newer edit. */
+export function reconcileSavedSession(
+  saving: ScoreSessionRead,
+  current: ScoreSessionRead | null,
+  receipt: ScoreSessionRead,
+): ScoreSessionRead | null {
+  if (!current || current.documentId !== saving.documentId || receipt.documentId !== saving.documentId
+    || receipt.documentVersion !== saving.documentVersion) return null;
+  if (saving.persistence) {
+    const id = saving.persistence.sessionId;
+    if (current.persistence?.sessionId !== id || receipt.persistence?.sessionId !== id) return null;
+  } else if (current !== saving && current.documentVersion <= saving.documentVersion) {
+    // Old hosts cannot prove reopen identity. Preserve a replacement read.
+    return null;
+  }
+  return current.documentVersion > receipt.documentVersion ? current : receipt;
 }
 
 export function readFileCheckpoint(): SavedFileCheckpoint | null {

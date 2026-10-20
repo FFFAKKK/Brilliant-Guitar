@@ -2,7 +2,7 @@ import type { NewScoreInput } from "../contracts/new-score.ts";
 import { validateNewScoreInput } from "../contracts/new-score.ts";
 import type { ScoreSessionRead } from "../contracts/score-session.ts";
 import { isScoreSessionRead } from "../contracts/score-session.ts";
-import { hasUnsavedDocument, checkpointMatches, fileStem } from "./document-file.ts";
+import { hasUnsavedDocument, checkpointMatches, fileStem, reconcileSavedSession } from "./document-file.ts";
 import type { SavedFileCheckpoint } from "./document-file.ts";
 import { readOrCreateInitialScore } from "./initial-score.ts";
 import { notifyObservers } from "../ui/notify-observers.ts";
@@ -245,7 +245,8 @@ export function createReadonlyScoreDocumentSession({ client, createId = () => cr
       if (failure || !current) return { ok: false, code: "document.not-ready", message: "请先重新读取作品" };
       if (!client.usesNativeFiles()) return { ok: false, code: "document.native-required", message: "请在桌面应用中保存作品" };
       if (!client.saveNativeDocumentGuarded) return { ok: false, code: "document.save-unavailable", message: "当前宿主不支持受保护保存" };
-      const expected = { kind: "document" as const, documentId: current.documentId, documentVersion: current.documentVersion };
+      const saving = current;
+      const expected = { kind: "document" as const, documentId: saving.documentId, documentVersion: saving.documentVersion };
       const name = fileStem(checkpoint?.name ?? current.title);
       let saved: WorkbenchNativeFileResult | null = null;
       return run(async () => {
@@ -254,6 +255,10 @@ export function createReadonlyScoreDocumentSession({ client, createId = () => cr
         if (!isScoreSessionRead(saved.session) || saved.session.documentId !== expected.documentId
           || saved.session.documentVersion !== expected.documentVersion || saved.savedVersion !== expected.documentVersion
           || typeof saved.name !== "string" || !saved.name) throw new Error("保存结果不匹配当前作品，请重新读取");
+        if (saving.persistence && (!reconcileSavedSession(saving, current ?? null, saved.session)
+          || saved.session.persistence?.savedVersion !== saved.savedVersion || saved.session.persistence.dirty)) {
+          throw new Error("保存结果不匹配当前会话，请重新读取");
+        }
         return saved.session;
       }, true, () => {
         warnings = Object.freeze([...(saved!.warnings ?? [])]);

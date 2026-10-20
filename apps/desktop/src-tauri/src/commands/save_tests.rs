@@ -22,6 +22,46 @@ fn fixture() -> (PathBuf, AppState, String, ScoreSessionRead) {
     (root, state, workspace, value)
 }
 
+fn assert_saved_session(result: &NativeFileResult, before: &ScoreSessionRead) {
+    let mut expected = before.clone();
+    let checkpoint = expected.persistence.as_mut().expect("native checkpoint projection");
+    checkpoint.saved_version = Some(before.document_version);
+    checkpoint.dirty = false;
+    assert_eq!(result.session, expected, "saving changes only the checkpoint, not document/history/session identity");
+}
+
+#[test]
+fn dialog_snapshot_rejects_same_id_same_version_reopen_before_touching_any_file() {
+    let (root, state, workspace, initial) = fixture();
+    let snapshot = locked(&state).unwrap().export_snapshot(&workspace).unwrap();
+    let encoded = locked(&state).unwrap().export_document(&workspace).unwrap();
+    let reopened = locked(&state).unwrap().import_document(workspace.clone(), &encoded).unwrap();
+    assert_eq!(reopened.document_id, initial.document_id);
+    assert_eq!(reopened.document_version, initial.document_version);
+    let path = root.join("protected.bgp.json");
+    std::fs::write(&path, b"retain original file").unwrap();
+    let error = persist_save_snapshot(&state, &workspace, path.clone(), &expected(&initial), &snapshot).unwrap_err();
+    assert_eq!(error.issue.unwrap().code, "file.save-stale");
+    assert_eq!(std::fs::read(path).unwrap(), b"retain original file");
+    assert_eq!(locked(&state).unwrap().read(&workspace).unwrap(), Some(reopened));
+    assert!(state.recent_documents.list().unwrap().entries.is_empty());
+    drop(state); std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn dialog_snapshot_cannot_rebind_a_file_after_another_save_at_the_same_version() {
+    let (root, state, workspace, initial) = fixture();
+    let snapshot = locked(&state).unwrap().export_snapshot(&workspace).unwrap();
+    let accepted = persist_selected_file(&state, &workspace, root.join("first.bgp.json"), &expected(&initial)).unwrap();
+    let rejected_path = root.join("second.bgp.json");
+    let error = persist_save_snapshot(&state, &workspace, rejected_path.clone(), &expected(&initial), &snapshot).unwrap_err();
+    assert_eq!(error.issue.unwrap().code, "file.save-stale");
+    assert!(!rejected_path.exists());
+    assert_eq!(locked(&state).unwrap().read(&workspace).unwrap(), Some(accepted.session));
+    assert_eq!(state.recent_documents.list().unwrap().entries.len(), 1);
+    drop(state); std::fs::remove_dir_all(root).unwrap();
+}
+
 #[test]
 fn document_metadata_survives_one_history_step_guarded_physical_save_and_reopen() {
     let (root, state, workspace, initial) = fixture();
@@ -246,7 +286,7 @@ fn guitar_staff_tab_survive_duration_history_guarded_physical_save_and_reopen() 
     assert_eq!(redo.notation,changed.notation);assert_eq!(redo.tablature,changed.tablature);
     let path=root.join("guitar-dual.bgp.json");
     let saved=persist_selected_file(&state,&workspace,path.clone(),&expected(&redo)).unwrap();
-    assert_eq!(saved.session,redo);assert_eq!(saved.saved_version,redo.document_version);
+    assert_saved_session(&saved, &redo);assert_eq!(saved.saved_version,redo.document_version);
     let encoded=read_document(&path).unwrap();
     locked(&state).unwrap().close(&workspace).unwrap();
     let reopened=locked(&state).unwrap().import_file(workspace.clone(),&encoded,path).unwrap();
@@ -284,7 +324,7 @@ fn public_guitar_position_survives_history_guarded_physical_save_and_reopen() {
     assert_eq!(redo.notation, changed.notation); assert_eq!(redo.tablature, changed.tablature);
     let path = root.join("guitar-position.bgp.json");
     let saved = persist_selected_file(&state, &workspace, path.clone(), &expected(&redo)).unwrap();
-    assert_eq!(saved.session, redo); assert_eq!(saved.saved_version, redo.document_version);
+    assert_saved_session(&saved, &redo); assert_eq!(saved.saved_version, redo.document_version);
     let encoded = read_document(&path).unwrap();
     let raw: serde_json::Value = serde_json::from_str(&encoded).unwrap();
     assert_eq!(raw["extensions"][0]["payload"]["placements"][0],
@@ -389,7 +429,7 @@ fn guarded_save_is_physical_and_reopens_with_the_saved_business_document() {
     let accepted =
         persist_selected_file(&state, &workspace, path.clone(), &expected(&changed)).unwrap();
     assert_eq!(accepted.saved_version, changed.document_version);
-    assert_eq!(accepted.session, changed);
+    assert_saved_session(&accepted, &changed);
     assert!(accepted.warnings.is_empty());
     assert_eq!(state.recent_documents.list().unwrap().entries.len(), 1);
     assert_eq!(

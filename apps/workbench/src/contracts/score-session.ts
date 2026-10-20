@@ -14,6 +14,13 @@ export interface ScoreDocumentMetadataProjection {
   readonly tempoBpm: number;
 }
 
+/** Host checkpoint identity; browser downloads retain their local checkpoint. */
+export interface ScorePersistenceState {
+  readonly sessionId: string;
+  readonly savedVersion: number | null;
+  readonly dirty: boolean;
+}
+
 /** Metadata and notation always describe the same atomic Core read. */
 export interface ScoreSessionRead extends ScoreSessionSummary {
   readonly undoDepth: number;
@@ -24,6 +31,7 @@ export interface ScoreSessionRead extends ScoreSessionSummary {
   readonly playbackSource: PlaybackSourceProjection;
   /** Optional until every desktop host ships the metadata projection. */
   readonly metadata?: ScoreDocumentMetadataProjection;
+  readonly persistence?: ScorePersistenceState;
 }
 
 export function isScoreSessionRead(value: unknown): value is ScoreSessionRead {
@@ -32,6 +40,15 @@ export function isScoreSessionRead(value: unknown): value is ScoreSessionRead {
   const r = value as unknown as Record<string, unknown>;
   if (typeof r.undoDepth !== "number" || !Number.isSafeInteger(r.undoDepth) || r.undoDepth < 0 || typeof r.redoDepth !== "number" || !Number.isSafeInteger(r.redoDepth) || r.redoDepth < 0) return false;
   const metadata = r.metadata;
+  const persistence = r.persistence;
+  if (persistence !== undefined) {
+    if (typeof persistence !== "object" || persistence === null || Array.isArray(persistence)) return false;
+    const state = persistence as Record<string, unknown>;
+    if (typeof state.sessionId !== "string" || !state.sessionId || typeof state.dirty !== "boolean"
+      || (state.savedVersion !== null && (typeof state.savedVersion !== "number"
+        || !Number.isSafeInteger(state.savedVersion) || state.savedVersion < 0
+        || state.savedVersion > value.documentVersion))) return false;
+  }
   const metadataValid = metadata === undefined || (typeof metadata === "object" && metadata !== null
     && !Array.isArray(metadata) && typeof (metadata as Record<string, unknown>).title === "string"
     && (metadata as Record<string, unknown>).title === value.title

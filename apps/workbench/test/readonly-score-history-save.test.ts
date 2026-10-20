@@ -99,3 +99,54 @@ test("post-commit warnings stay separate from a valid saved checkpoint and the c
   await source.read(); assert.equal((await source.save(true)).ok, true); assert.equal(source.snapshot().saved, true);
   assert.deepEqual(source.snapshot().warnings, [warning]); assert.equal(source.snapshot().status, "ready"); source.dispose();
 });
+
+test("native undo back to the saved history is clean at a later document version", async () => {
+  const native = (version: number, dirty: boolean): ScoreSessionRead => ({
+    ...score(version, version === 3 ? 1 : 2, version === 3 ? 1 : 0),
+    persistence: { sessionId: "native-a", savedVersion: 1, dirty },
+  });
+  let current = native(2, true);
+  const client = { read: async () => current, usesNativeFiles: () => true,
+    create: async () => current, createGuarded: async () => current, openNativeDocumentGuarded: async () => null,
+    async edit() { current = native(3, false); return current; },
+    async saveNativeDocumentGuarded() { throw new Error("clean undo must not require a second save"); } };
+  const source = createReadonlyScoreDocumentSession({ client });
+  try {
+    await source.read(); assert.equal(source.snapshot().dirty, true);
+    assert.equal((await source.undo()).ok, true);
+    assert.equal(source.snapshot().documentVersion, 3);
+    assert.equal(source.snapshot().saved, true); assert.equal(source.snapshot().dirty, false);
+    assert.equal(source.canSave(), false); assert.equal(source.canReplace(), true);
+  } finally { source.dispose(); }
+});
+
+test("guarded save rejects a receipt from a same-ID reopened native session", async () => {
+  const original: ScoreSessionRead = { ...score(), persistence: { sessionId: "original", savedVersion: null, dirty: true } };
+  const receipt: WorkbenchNativeFileResult = { ...file(), session: {
+    ...score(), persistence: { sessionId: "reopened", savedVersion: 1, dirty: false },
+  } };
+  const client = { read: async () => original, usesNativeFiles: () => true,
+    create: async () => original, createGuarded: async () => original, openNativeDocumentGuarded: async () => null,
+    saveNativeDocumentGuarded: async () => receipt };
+  const source = createReadonlyScoreDocumentSession({ client });
+  try {
+    await source.read();
+    assert.equal((await source.save()).ok, false);
+    assert.equal(source.snapshot().saved, false); assert.equal(source.snapshot().dirty, true);
+    assert.equal(source.snapshot().documentVersion, original.documentVersion);
+  } finally { source.dispose(); }
+});
+
+test("native checkpoint receipts are validated without requiring the new field on older hosts", async () => {
+  const expected = { kind: "document" as const, documentId: "piece", documentVersion: 1 };
+  for (const persistence of [
+    { sessionId: "native-a", savedVersion: 0, dirty: false },
+    { sessionId: "native-a", savedVersion: 1, dirty: true },
+    { sessionId: "", savedVersion: 1, dirty: false },
+  ]) {
+    const bridge = new TauriWorkbenchHostBridge(async <T>() => ({ ...file(), session: { ...score(), persistence } }) as T);
+    await assert.rejects(new WorkbenchClient(bridge).saveNativeDocumentGuarded("piece", false, expected), /结果/);
+  }
+  const bridge = new TauriWorkbenchHostBridge(async <T>() => file() as T);
+  assert.deepEqual(await new WorkbenchClient(bridge).saveNativeDocumentGuarded("piece", false, expected), file());
+});

@@ -45,6 +45,7 @@ mod staff_clef;
 const MAX_RETAINED_REQUESTS: usize = 64;
 
 struct SessionEntry {
+    instance_id: Uuid,
     session: NotationSession,
     measure_index: ScoreMeasureIndexV1,
     create_request_id: String,
@@ -54,6 +55,40 @@ struct SessionEntry {
     edit_order: VecDeque<String>,
     file_path: Option<PathBuf>,
     saved_version: Option<u64>,
+}
+
+impl SessionEntry {
+    fn read(&self) -> Result<ScoreSessionRead, HostError> {
+        let mut read = session_read(&self.session)?;
+        self.attach_persistence(&mut read)?;
+        Ok(read)
+    }
+
+    fn attach_persistence(&self, read: &mut ScoreSessionRead) -> Result<(), HostError> {
+        read.persistence = Some(crate::dto::ScorePersistenceState {
+            session_id: self.instance_id.to_string(),
+            saved_version: self.saved_version,
+            dirty: read_state(&self.session)?.dirty,
+        });
+        Ok(())
+    }
+}
+
+/// Host-created identity and bytes captured before the save dialog opens.
+/// A reopened document must not inherit an earlier session's save request.
+pub struct SaveSnapshot {
+    document_json: String,
+    document_id: String,
+    document_version: u64,
+    instance_id: Uuid,
+    file_path: Option<PathBuf>,
+    saved_version: Option<u64>,
+}
+
+impl SaveSnapshot {
+    pub fn file_path(&self) -> Option<PathBuf> {
+        self.file_path.clone()
+    }
 }
 
 #[derive(Default)]
@@ -374,7 +409,7 @@ impl ScoreSessionService {
         validate_workspace_id(workspace_id)?;
         self.sessions
             .get(workspace_id)
-            .map(|entry| session_read(&entry.session))
+            .map(SessionEntry::read)
             .transpose()
     }
 
@@ -421,7 +456,7 @@ impl ScoreSessionService {
             if current.create_input_key != input_key || current.create_precondition != expected {
                 return Err(HostError::new("创建参数已改变，请重新打开新建窗口", 409));
             }
-            return session_read(&current.session);
+            return current.read();
         }
         if let Some(expected) = &expected {
             self.check_replacement(&request.workspace_id, expected)?;
@@ -447,21 +482,22 @@ impl ScoreSessionService {
         }
         let session = create_score_session(&request.input)?;
         let projection = session_projection(&session)?;
-        self.sessions.insert(
-            request.workspace_id,
-            SessionEntry {
-                session,
-                measure_index: projection.measure_index,
-                create_request_id: request.request_id,
-                create_input_key: input_key,
-                create_precondition: expected,
-                edits: HashMap::new(),
-                edit_order: VecDeque::new(),
-                file_path: None,
-                saved_version: None,
-            },
-        );
-        Ok(projection.read)
+        let entry = SessionEntry {
+            instance_id: Uuid::new_v4(),
+            session,
+            measure_index: projection.measure_index,
+            create_request_id: request.request_id,
+            create_input_key: input_key,
+            create_precondition: expected,
+            edits: HashMap::new(),
+            edit_order: VecDeque::new(),
+            file_path: None,
+            saved_version: None,
+        };
+        let mut read = projection.read;
+        entry.attach_persistence(&mut read)?;
+        self.sessions.insert(request.workspace_id, entry);
+        Ok(read)
     }
 
     pub fn edit(&mut self, request: ScoreEditRequest) -> Result<ScoreSessionRead, HostError> {
@@ -481,7 +517,7 @@ impl ScoreSessionService {
                     None,
                 )
             })?;
-        let current = session_read(&entry.session)?;
+        let current = entry.read()?;
         if current.document_id != request.document_id {
             return Err(HostError::issue(
                 "editor.document-stale",
@@ -527,7 +563,8 @@ impl ScoreSessionService {
         }
         execute_edit(&mut entry.session, &current, &request.action)?;
         let projection = session_projection(&entry.session)?;
-        let result = projection.read;
+        let mut result = projection.read;
+        entry.attach_persistence(&mut result)?;
         entry.measure_index = projection.measure_index;
         entry.edits.insert(
             request.request_id.clone(),
@@ -574,21 +611,22 @@ impl ScoreSessionService {
         })
         .map_err(|_| HostError::new("无法打开该乐谱文件", 422))?;
         let projection = session_projection(&accepted)?;
-        self.sessions.insert(
-            workspace_id,
-            SessionEntry {
-                session: accepted,
-                measure_index: projection.measure_index,
-                create_request_id: Uuid::new_v4().to_string(),
-                create_input_key: "import".into(),
-                create_precondition: None,
-                edits: HashMap::new(),
-                edit_order: VecDeque::new(),
-                file_path: None,
-                saved_version: None,
-            },
-        );
-        Ok(projection.read)
+        let entry = SessionEntry {
+            instance_id: Uuid::new_v4(),
+            session: accepted,
+            measure_index: projection.measure_index,
+            create_request_id: Uuid::new_v4().to_string(),
+            create_input_key: "import".into(),
+            create_precondition: None,
+            edits: HashMap::new(),
+            edit_order: VecDeque::new(),
+            file_path: None,
+            saved_version: None,
+        };
+        let mut read = projection.read;
+        entry.attach_persistence(&mut read)?;
+        self.sessions.insert(workspace_id, entry);
+        Ok(read)
     }
 
     pub fn close(&mut self, workspace_id: &str) -> Result<bool, HostError> {
@@ -604,13 +642,54 @@ impl ScoreSessionService {
             .and_then(|entry| entry.file_path.clone()))
     }
 
-    pub fn export_snapshot(&self, workspace_id: &str) -> Result<(String, u64), HostError> {
-        let text = self.export_document(workspace_id)?;
+    pub fn export_snapshot(&self, workspace_id: &str) -> Result<SaveSnapshot, HostError> {
+        let document_json = self.export_document(workspace_id)?;
         let entry = self
             .sessions
             .get(workspace_id)
             .ok_or_else(|| HostError::new("当前没有可保存的乐谱", 404))?;
-        Ok((text, session_read(&entry.session)?.document_version))
+        let read = entry.read()?;
+        Ok(SaveSnapshot {
+            document_json,
+            document_id: read.document_id,
+            document_version: read.document_version,
+            instance_id: entry.instance_id,
+            file_path: entry.file_path.clone(),
+            saved_version: entry.saved_version,
+        })
+    }
+
+    pub fn save_file(
+        &mut self,
+        workspace_id: &str,
+        path: PathBuf,
+        snapshot: &SaveSnapshot,
+    ) -> Result<NativeFileResult, HostError> {
+        validate_workspace_id(workspace_id)?;
+        let entry = self.sessions.get(workspace_id);
+        let current = entry.map(SessionEntry::read).transpose()?;
+        if !matches!((entry, current.as_ref()), (Some(entry), Some(current))
+            if entry.instance_id == snapshot.instance_id
+                && current.document_id == snapshot.document_id
+                && current.document_version == snapshot.document_version
+                && entry.file_path == snapshot.file_path
+                && entry.saved_version == snapshot.saved_version)
+        {
+            return Err(HostError::issue(
+                "file.save-stale",
+                "乐谱或保存位置在保存期间已改变，未写入文件，请重新保存",
+                409,
+                WorkbenchIssueSource::File,
+                WorkbenchIssueTarget::Component {
+                    component_id: "navigation.file".into(),
+                },
+                Some(true),
+            ));
+        }
+        // The caller holds the service gate across validation, physical write
+        // and checkpoint publication. No replacement/edit/save can split it.
+        crate::document_io::atomic_write(&path, snapshot.document_json.as_bytes())?;
+        self.mark_saved(workspace_id, path, snapshot.document_version)
     }
 
     pub fn mark_saved(
@@ -628,7 +707,7 @@ impl ScoreSessionService {
         entry.file_path = Some(path.clone());
         entry.saved_version = Some(saved_version);
         Ok(NativeFileResult {
-            session: session_read(&entry.session)?,
+            session: entry.read()?,
             name: file_display_name(&path),
             saved_version,
             warnings: vec![],
@@ -641,7 +720,7 @@ impl ScoreSessionService {
         document_json: &str,
         path: PathBuf,
     ) -> Result<NativeFileResult, HostError> {
-        let session = self.import_document(workspace_id.clone(), document_json)?;
+        let mut session = self.import_document(workspace_id.clone(), document_json)?;
         let entry = self
             .sessions
             .get_mut(&workspace_id)
@@ -649,6 +728,7 @@ impl ScoreSessionService {
         entry.file_path = Some(path.clone());
         entry.saved_version = Some(session.document_version);
         let saved_version = session.document_version;
+        entry.attach_persistence(&mut session)?;
         Ok(NativeFileResult {
             session,
             name: file_display_name(&path),
@@ -1004,6 +1084,7 @@ fn session_projection(session: &NotationSession) -> Result<SessionProjection, Ho
                 authors: document.metadata.authors.iter().map(text).collect::<Result<Vec<_>, _>>()?,
                 tempo_bpm: document.metadata.tempo.bpm.get(),
             },
+            persistence: None,
         },
         measure_index: ScoreMeasureIndexV1 {
             document_id,

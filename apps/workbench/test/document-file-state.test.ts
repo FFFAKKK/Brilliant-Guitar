@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { checkpointMatches, fileStem, hasUnsavedDocument } from "../src/services/document-file.ts";
+import { checkpointMatches, fileStem, hasUnsavedDocument, reconcileSavedSession } from "../src/services/document-file.ts";
+import { isScoreSessionRead } from "../src/contracts/score-session.ts";
 import type { ScoreSessionRead } from "../src/contracts/score-session.ts";
 import { unsupportedPlaybackSource } from "./playback-fixture.ts";
 
@@ -23,4 +24,46 @@ test("项目和 SVG 文件名共用安全文件名，保留作品标题之外的
   assert.equal(fileStem("我的:作品/草稿.bgp.json"), "我的 作品 草稿");
   assert.equal(fileStem("旧文件.svg"), "旧文件");
   assert.equal(fileStem(" .. "), "未命名乐谱");
+});
+
+const native = (version: number, sessionId = "session-a", savedVersion: number | null = null,
+  dirty = true): ScoreSessionRead => ({
+  ...score(version), persistence: { sessionId, savedVersion, dirty },
+});
+
+test("native checkpoints use persisted history identity, not version equality", () => {
+  const undone = native(5, "session-a", 2, false);
+  assert.equal(checkpointMatches(undone, null), true);
+  assert.equal(hasUnsavedDocument(undone, null), false);
+  assert.equal(hasUnsavedDocument(native(6, "session-a", 2), null), true);
+});
+
+test("a late native save never switches a document or a reopened session", () => {
+  const saving = native(2);
+  const receipt = native(2, "session-a", 2, false);
+  assert.equal(reconcileSavedSession(saving, null, receipt), null);
+  assert.equal(reconcileSavedSession(saving, { ...saving, documentId: "score-b" }, receipt), null);
+  assert.equal(reconcileSavedSession(saving, native(2, "session-reopened"), receipt), null);
+  assert.equal(reconcileSavedSession(saving, saving, native(2, "wrong-session", 2, false)), null);
+  assert.equal(reconcileSavedSession(saving, saving, { ...receipt, documentId: "score-b" }), null);
+});
+
+test("save reconciliation preserves newer edits and their unsaved state", () => {
+  const saving = native(2);
+  const receipt = native(2, "session-a", 2, false);
+  const changed = native(3, "session-a", 2);
+  assert.equal(reconcileSavedSession(saving, changed, receipt), changed);
+  assert.equal(hasUnsavedDocument(changed, { documentId: "score-a", documentVersion: 2, name: "score" }), true);
+  assert.equal(reconcileSavedSession(saving, saving, receipt), receipt);
+});
+
+test("native persistence projection rejects missing or contradictory fields", () => {
+  assert.equal(isScoreSessionRead(native(2, "session-a", 2, false)), true);
+  for (const persistence of [
+    null, [], {}, { sessionId: "", savedVersion: 2, dirty: false },
+    { sessionId: "session-a", savedVersion: 3, dirty: false },
+    { sessionId: "session-a", savedVersion: -1, dirty: false },
+    { sessionId: "session-a", savedVersion: 1.5, dirty: false },
+    { sessionId: "session-a", savedVersion: 2, dirty: "false" },
+  ]) assert.equal(isScoreSessionRead({ ...score(2), persistence }), false);
 });

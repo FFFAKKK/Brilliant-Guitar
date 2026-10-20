@@ -20,7 +20,7 @@ use crate::{
     capability_receipt::{CapabilityReceiptBeginV1, CapabilityReceiptLookupV1},
     diagnostics::{PluginDiagnosticInput, PluginDiagnosticRecord},
     document_io::{
-        atomic_write, normalize_save_path, prepare_recovery_path, quarantine_recovery,
+        normalize_save_path, prepare_recovery_path, quarantine_recovery,
         read_document, read_recovery,
     },
     dto::{
@@ -1122,7 +1122,7 @@ fn save_file(
     save_as: bool,
     expected: Option<DocumentReplacementPrecondition>,
 ) -> Result<Option<NativeFileResult>, HostError> {
-    let (existing, expected) = {
+    let (snapshot, expected) = {
         let service = locked(state)?;
         let expected = match expected {
             Some(value) => value,
@@ -1140,9 +1140,9 @@ fn save_file(
             return Err(HostError::new("保存需要当前作品身份和版本", 400));
         }
         service.check_replacement(&workspace_id, &expected)?;
-        (service.file_path(&workspace_id)?, expected)
+        (service.export_snapshot(&workspace_id)?, expected)
     };
-    let path = if !save_as && let Some(path) = existing {
+    let path = if !save_as && let Some(path) = snapshot.file_path() {
         path
     } else {
         let file_name = sanitize_file_name(&suggested_name);
@@ -1166,11 +1166,12 @@ fn save_file(
                 .map_err(|_| HostError::new("无法访问所选保存位置", 422))?,
         )
     };
-    persist_selected_file(state, &workspace_id, path, &expected).map(Some)
+    persist_save_snapshot(state, &workspace_id, path, &expected, &snapshot).map(Some)
 }
 
 // Dialog stays outside the service gate. The final guard and physical commit
 // stay together, so no other command can replace/edit the exported document.
+#[cfg(test)]
 fn persist_selected_file(
     state: &AppState,
     workspace_id: &str,
@@ -1180,11 +1181,27 @@ fn persist_selected_file(
     if matches!(expected, DocumentReplacementPrecondition::Empty {}) {
         return Err(HostError::new("保存需要当前作品身份和版本", 400));
     }
+    let snapshot = {
+        let service = locked(state)?;
+        service.check_replacement(workspace_id, expected)?;
+        service.export_snapshot(workspace_id)?
+    };
+    persist_save_snapshot(state, workspace_id, path, expected, &snapshot)
+}
+
+fn persist_save_snapshot(
+    state: &AppState,
+    workspace_id: &str,
+    path: std::path::PathBuf,
+    expected: &DocumentReplacementPrecondition,
+    snapshot: &crate::application::SaveSnapshot,
+) -> Result<NativeFileResult, HostError> {
+    if matches!(expected, DocumentReplacementPrecondition::Empty {}) {
+        return Err(HostError::new("保存需要当前作品身份和版本", 400));
+    }
     let mut service = locked(state)?;
     service.check_replacement(workspace_id, expected)?;
-    let (document_json, saved_version) = service.export_snapshot(workspace_id)?;
-    atomic_write(&path, document_json.as_bytes())?;
-    let mut result = service.mark_saved(workspace_id, path.clone(), saved_version)?;
+    let mut result = service.save_file(workspace_id, path.clone(), snapshot)?;
     if state
         .recovery
         .remove(state.recovery_path(workspace_id))

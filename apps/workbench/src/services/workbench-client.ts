@@ -257,6 +257,9 @@ export class WorkbenchClient {
     const session = this.session(result.session, "文件打开结果无效")!;
     if (typeof result.name !== "string" || !result.name || !Number.isSafeInteger(result.savedVersion)
       || result.savedVersion < 0) throw new Error("文件打开结果无效");
+    if (session.persistence && (session.persistence.savedVersion !== result.savedVersion || session.persistence.dirty)) {
+      throw new Error("文件检查点结果无效");
+    }
     const warnings = result.warnings;
     if (warnings !== undefined && (!Array.isArray(warnings) || warnings.length > 4
       || warnings.some(warning => !isWorkbenchIssue(warning) || warning.severity !== "warning"))) throw new Error("文件打开警告结果无效");

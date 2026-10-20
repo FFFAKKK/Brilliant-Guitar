@@ -3,7 +3,7 @@ import type { NewScoreInput } from "../contracts/new-score";
 import type { ScoreSessionRead } from "../contracts/score-session";
 import type { NotationRenderer } from "../notation/notation-renderer";
 import type { WorkbenchClient } from "../services/workbench-client";
-import { checkpointMatches, downloadText, fileStem, hasUnsavedDocument, readFileCheckpoint, writeFileCheckpoint } from "../services/document-file";
+import { checkpointMatches, downloadText, fileStem, hasUnsavedDocument, readFileCheckpoint, reconcileSavedSession, writeFileCheckpoint } from "../services/document-file";
 import type { SavedFileCheckpoint } from "../services/document-file";
 import { exportStaffSvg } from "../services/score-svg-export";
 import type { WorkbenchTaskRuntime } from "../runtime/workbench-runtime.tsx";
@@ -24,6 +24,9 @@ export function useDocumentFiles(session: ScoreSessionRead | null, client: Workb
   const [saveFailure, setSaveFailure] = useState(false);
   const [working, setWorking] = useState<"save" | "open" | "export" | "close" | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
+  const savePendingRef = useRef(false);
   const available = !unavailable && !working;
   const nativeFiles = client.usesNativeFiles();
   const saved = checkpointMatches(session, checkpoint);
@@ -38,8 +41,9 @@ export function useDocumentFiles(session: ScoreSessionRead | null, client: Workb
   }
 
   async function saveDocument(asName?: string, forceSaveAs = false): Promise<boolean> {
-    if (!session || !available) return false;
+    if (!session || !available || savePendingRef.current) return false;
     const saving = session;
+    savePendingRef.current = true;
     setWorking("save"); setSaveFailure(false); setFileError("");
     const token = runtime?.operations.begin("file.save", "document");
     let succeeded = false;
@@ -48,8 +52,17 @@ export function useDocumentFiles(session: ScoreSessionRead | null, client: Workb
       if (nativeFiles) {
         const result = await client.saveNativeDocument(nextName, forceSaveAs);
         if (!result) { succeeded = true; return false; }
+        const accepted = reconcileSavedSession(saving, sessionRef.current, result.session);
+        // The file may be committed, but its late receipt cannot change the
+        // replacement session or authorize that session's pending action.
+        if (!accepted) { succeeded = true; return false; }
         remember({ documentId: result.session.documentId, documentVersion: result.savedVersion, name: result.name });
-        onSession(result.session);
+        sessionRef.current = accepted;
+        onSession(accepted);
+        for (const warning of result.warnings ?? []) runtime?.feedback.report(warning);
+        succeeded = true;
+        return checkpointMatches(accepted, { documentId: result.session.documentId,
+          documentVersion: result.savedVersion, name: result.name });
       } else {
         const text = await client.exportDocument();
         downloadText(text, `${nextName}.bgp.json`, "application/json;charset=utf-8");
@@ -63,7 +76,11 @@ export function useDocumentFiles(session: ScoreSessionRead | null, client: Workb
       setSaveFailure(true);
       setFileError(issue.message); runtime?.feedback.report(issue); if (token) runtime?.operations.fail(token, issue);
       return false;
-    } finally { if (succeeded && token) runtime?.operations.finish(token); setWorking(null); }
+    } finally {
+      savePendingRef.current = false;
+      if (succeeded && token) runtime?.operations.finish(token);
+      setWorking(null);
+    }
   }
 
   async function exportSvg(): Promise<void> {

@@ -20536,6 +20536,12 @@ ${problems.join("\n")}`);
     const r = value;
     if (typeof r.undoDepth !== "number" || !Number.isSafeInteger(r.undoDepth) || r.undoDepth < 0 || typeof r.redoDepth !== "number" || !Number.isSafeInteger(r.redoDepth) || r.redoDepth < 0) return false;
     const metadata3 = r.metadata;
+    const persistence = r.persistence;
+    if (persistence !== void 0) {
+      if (typeof persistence !== "object" || persistence === null || Array.isArray(persistence)) return false;
+      const state = persistence;
+      if (typeof state.sessionId !== "string" || !state.sessionId || typeof state.dirty !== "boolean" || state.savedVersion !== null && (typeof state.savedVersion !== "number" || !Number.isSafeInteger(state.savedVersion) || state.savedVersion < 0 || state.savedVersion > value.documentVersion)) return false;
+    }
     const metadataValid = metadata3 === void 0 || typeof metadata3 === "object" && metadata3 !== null && !Array.isArray(metadata3) && typeof metadata3.title === "string" && metadata3.title === value.title && Array.isArray(metadata3.authors) && metadata3.authors.every((author) => typeof author === "string") && typeof metadata3.tempoBpm === "number" && Number.isFinite(metadata3.tempoBpm) && metadata3.tempoBpm > 0;
     const tablature = r.tablature;
     const tabValid = tablature === void 0 || isTablatureProjection(tablature) && (tablature.kind === "unsupported" || tablature.measures.length === value.measureCount && (metadata3 === void 0 || tablature.tempoBpm === metadata3.tempoBpm) && (!isNotationView2(notation) || notation.kind === "unsupported" || pairedNotationMatches(notation, tablature)));
@@ -21286,6 +21292,9 @@ ${problems.join("\n")}`);
       if (result === null) return null;
       const session = this.session(result.session, "\u6587\u4EF6\u6253\u5F00\u7ED3\u679C\u65E0\u6548");
       if (typeof result.name !== "string" || !result.name || !Number.isSafeInteger(result.savedVersion) || result.savedVersion < 0) throw new Error("\u6587\u4EF6\u6253\u5F00\u7ED3\u679C\u65E0\u6548");
+      if (session.persistence && (session.persistence.savedVersion !== result.savedVersion || session.persistence.dirty)) {
+        throw new Error("\u6587\u4EF6\u68C0\u67E5\u70B9\u7ED3\u679C\u65E0\u6548");
+      }
       const warnings = result.warnings;
       if (warnings !== void 0 && (!Array.isArray(warnings) || warnings.length > 4 || warnings.some((warning) => !isWorkbenchIssue(warning) || warning.severity !== "warning"))) throw new Error("\u6587\u4EF6\u6253\u5F00\u8B66\u544A\u7ED3\u679C\u65E0\u6548");
       return { session, name: result.name, savedVersion: result.savedVersion, ...warnings?.length ? { warnings: Object.freeze([...warnings]) } : {} };
@@ -21454,11 +21463,27 @@ ${problems.join("\n")}`);
     return stem.slice(0, 80).trim().replace(/[. ]+$/g, "") || "\u672A\u547D\u540D\u4E50\u8C31";
   }
   function checkpointMatches(session, checkpoint) {
+    if (session?.persistence) {
+      return session.persistence.savedVersion !== null && !session.persistence.dirty;
+    }
     return Boolean(session && checkpoint && checkpoint.documentId === session.documentId && checkpoint.documentVersion === session.documentVersion);
   }
   function hasUnsavedDocument(session, checkpoint) {
     if (!session || checkpointMatches(session, checkpoint)) return false;
+    if (session.persistence?.savedVersion !== void 0 && session.persistence.savedVersion !== null) {
+      return session.persistence.dirty;
+    }
     return session.documentVersion > 0 || session.measureCount !== 1 || session.title !== "\u672A\u547D\u540D\u4E50\u8C31";
+  }
+  function reconcileSavedSession(saving, current2, receipt) {
+    if (!current2 || current2.documentId !== saving.documentId || receipt.documentId !== saving.documentId || receipt.documentVersion !== saving.documentVersion) return null;
+    if (saving.persistence) {
+      const id = saving.persistence.sessionId;
+      if (current2.persistence?.sessionId !== id || receipt.persistence?.sessionId !== id) return null;
+    } else if (current2 !== saving && current2.documentVersion <= saving.documentVersion) {
+      return null;
+    }
+    return current2.documentVersion > receipt.documentVersion ? current2 : receipt;
   }
   async function readOrCreateInitialScore(client, requestId) {
     const current2 = await client.read();
@@ -21738,13 +21763,17 @@ ${problems.join("\n")}`);
         if (failure2 || !current2) return { ok: false, code: "document.not-ready", message: "\u8BF7\u5148\u91CD\u65B0\u8BFB\u53D6\u4F5C\u54C1" };
         if (!client.usesNativeFiles()) return { ok: false, code: "document.native-required", message: "\u8BF7\u5728\u684C\u9762\u5E94\u7528\u4E2D\u4FDD\u5B58\u4F5C\u54C1" };
         if (!client.saveNativeDocumentGuarded) return { ok: false, code: "document.save-unavailable", message: "\u5F53\u524D\u5BBF\u4E3B\u4E0D\u652F\u6301\u53D7\u4FDD\u62A4\u4FDD\u5B58" };
-        const expected = { kind: "document", documentId: current2.documentId, documentVersion: current2.documentVersion };
+        const saving = current2;
+        const expected = { kind: "document", documentId: saving.documentId, documentVersion: saving.documentVersion };
         const name = fileStem(checkpoint?.name ?? current2.title);
         let saved = null;
         return run(async () => {
           saved = await client.saveNativeDocumentGuarded(name, saveAs, expected);
           if (saved === null) return null;
           if (!isScoreSessionRead(saved.session) || saved.session.documentId !== expected.documentId || saved.session.documentVersion !== expected.documentVersion || saved.savedVersion !== expected.documentVersion || typeof saved.name !== "string" || !saved.name) throw new Error("\u4FDD\u5B58\u7ED3\u679C\u4E0D\u5339\u914D\u5F53\u524D\u4F5C\u54C1\uFF0C\u8BF7\u91CD\u65B0\u8BFB\u53D6");
+          if (saving.persistence && (!reconcileSavedSession(saving, current2 ?? null, saved.session) || saved.session.persistence?.savedVersion !== saved.savedVersion || saved.session.persistence.dirty)) {
+            throw new Error("\u4FDD\u5B58\u7ED3\u679C\u4E0D\u5339\u914D\u5F53\u524D\u4F1A\u8BDD\uFF0C\u8BF7\u91CD\u65B0\u8BFB\u53D6");
+          }
           return saved.session;
         }, true, () => {
           warnings = Object.freeze([...saved.warnings ?? []]);

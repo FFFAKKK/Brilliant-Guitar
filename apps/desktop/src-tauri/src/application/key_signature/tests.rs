@@ -93,13 +93,13 @@ fn key_changes_noop_inherit_naturals_and_core_history_share_one_session() {
     );
     assert_eq!(positive.document_version, 1);
     assert_eq!(positive.undo_depth, 1);
-    service
+    let positive = service
         .mark_saved(
             &workspace,
             std::path::PathBuf::from("test-checkpoint.bgp.json"),
             positive.document_version,
         )
-        .unwrap();
+        .unwrap().session;
     assert!(
         !read_state(&service.sessions[&workspace].session)
             .unwrap()
