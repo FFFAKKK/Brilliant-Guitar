@@ -2,37 +2,67 @@
 
 Date: 2026-10-21, Asia/Shanghai.
 
-Redundant checkouts and stale application references have been retired. Six
+Redundant checkouts and stale application references have been retired. Three
 working checkouts remain, all on E:. The C: worktree directory is empty and the
-application archive queue is empty. The future default worktree-root setting
-is still unverified.
+repository's `.worktrees` directory is physically empty. The application archive
+queue is empty. The future default worktree-root setting is still unverified.
 
 Machine-readable observations are in
 [the evidence receipt](2026-10-21-worktree-consolidation-evidence.json).
 
-## Keep six useful checkouts, not six competing main branches
+## Keep three checkouts with distinct responsibilities
 
 The starting inventory contained 67 registered worktrees. Two verified E:
-replacements were added and 63 original registrations retired, leaving six:
-a net reduction of 61.
+replacements were added and 66 original registrations retired, leaving three:
+a net reduction of 64. Temporary recovery checkouts are excluded from this count.
 
 | Retained checkout | Consumer |
 | --- | --- |
 | Main repository | Sole integration entry point |
-| `E:/Codex/worktrees/4c4f/brilliant_guitar` | Unfinished Pi/MCP architecture audit |
-| `E:/Codex/worktrees/7b1c/brilliant_guitar` | Active visual source; unaccepted Tab/tooling proposals |
-| `.worktrees/cvn-7-accepted-baseline` | Actual benchmark baseline |
-| `.worktrees/cvn-7-core-vnext-final-qualification` | Paired benchmark candidate |
-| `.worktrees/rkp-4-history-snapshots-events-replay-planning` | Independent candidate awaiting owner acceptance |
+| `E:/Codex/worktrees/4c4f/brilliant_guitar` | Unfinished docs-only Pi/MCP audit; owner confirmed stopped |
+| `E:/Codex/worktrees/7b1c/brilliant_guitar` | Frozen visual source; owner confirmed stopped; unaccepted Tab/tooling proposals retained |
 
-The remaining proposals and candidates have not been accepted into main merely
-because their physical environments were retained. Benchmark pairs must stay
-distinct while their existing consumers need them.
+The CVN-7 baseline/candidate pair and RKP-4 candidate had no current consumers.
+All 2,754 ordinary files, including 538 ignored files, were preserved and restored
+into independent detached checkouts for direct comparison. After updating the
+operator handoffs and task storage pointers, the original three checkouts and
+temporary rehearsal checkouts were retired without force. Original branches and
+exact commits remain available. Future benchmark operations must first restore
+the two distinct CVN-7 inputs; task acceptance and measurement gates are unchanged.
+
+The remaining visual proposals have not been accepted into main merely because
+their source environment was retained.
 
 Nine stale live worktree attachments, 16 empty marker shells and 24 historical
 human-chat references were resolved. Historical internal approvals, archived
 chats and valid recovery attachments remain available. Changing the Codex
 account is no longer a prerequisite for the completed cleanup.
+
+## Unregistered directories were checked and removed too
+
+The registration list did not include five historical clone, audit and cache
+groups under `.worktrees`. They contained 15 independent primary clones and
+59,890 ordinary files totalling 3,867,295,803 bytes. Two historical reconstruction
+clones each contained four staged paths; those changes were preserved, not
+imported into main.
+
+Complete ZIPs retain the working files, ignored outputs and each clone's Git
+objects, refs and index. Every saved file was directly compared with its source.
+The Git data and dirty originals were restored; each clone's own Git directory,
+HEAD, refs and staged diff were verified. After fresh consumer and source checks,
+only the five exact unregistered directories were removed using native Windows
+file operations. Registered worktrees were not deleted by that route.
+
+The retained ZIPs total 2,582,101,192 bytes. The logical source-minus-archive
+reduction is 1,285,194,611 bytes, about 1.20 GiB on E:. The source-removal phase
+increased observed E: free space by 3,883,249,664 bytes, after ZIP creation;
+that phase measurement is not a net figure after archive overhead.
+The 2,006,702,927 bytes of temporary restore samples were removed separately and
+are excluded from old-source savings. Recovery ZIPs and manifests remain.
+
+The final acceptance receipt confirms that both old-tree directories are empty,
+the archive queue is empty, all five ZIP manifests remain readable, and the
+registered worktree list, main history and existing protected patch were preserved.
 
 ## Recover content before recreating a historical environment
 
@@ -51,7 +81,7 @@ Completed queue repair must not be replayed. Do not retry successful archive
 jobs, rewrite historical account ownership, clear unknown application state,
 or delete Git objects to make old path references disappear.
 
-## Record UI changes now; defer repair until worktree cleanup
+## Recorded UI changes and approved repair reference
 
 The integration changed presentation as well as consolidating files. The user
 did not request a UI change and has instructed that the differences be recorded
@@ -75,15 +105,18 @@ the deferred repair scope. The existing `research/visual-dispositions.json`
 retains all 120 source dispositions. These records are in the recovery/task
 material, not an additional product-code batch.
 
-Combined-presentation acceptance is open. No further UI change or whole-tree
-rollback is part of this maintenance receipt. Worktree cleanup continues
-independently; product repair and remaining native interaction acceptance wait.
+Combined-presentation acceptance is open. After worktree cleanup, the user
+approved the preserved `7b1c` visual source as the presentation reference,
+retaining main's editing, history, save and recovery authorities. The scoped
+repair is authorized but not yet implemented in this receipt. A readonly preview
+switch must not be presented as an editable product capability. No UI edit or
+whole-tree rollback is part of this documentation commit.
 
 ## Preserve the partial native close evidence
 
 The tested product source is main commit
 `3f775837dc625e72b5d3199f65013c7107fcea78`, built from the existing isolated
-export rather than main's unrelated product WIP. Direct source comparison
+export rather than unrelated main working files. Direct source comparison
 found 1,283 exact files, 42 Git-text newline equivalents, no missing files and
 no differing files in the recorded build-input scope.
 
@@ -119,16 +152,23 @@ observation, not a fresh remote query.
 
 Five subsequent local commits end at `3f775837`: guarded save snapshots,
 desktop lint maintenance, ordered recovery, native close and compatible
-headless plugin sessions. This continuation has not pushed them.
+headless plugin sessions. The prior maintenance receipt is committed at
+`fc2944c7`, making six local commits after the last verified remote observation.
+This continuation has not pushed them.
 
 Remaining work is separated by scope:
 
 1. Saving and reading back the supported global worktree-root setting
    `E:/Codex/worktrees`. Existing migrations do not prove that future trees use it.
-2. After the worktree work is settled, reviewing UI-01 through UI-05 and completing
-   the native Don't Save branch. Neither is accepted by this maintenance record.
+   The official Worktrees documentation names Settings > Worktrees > Worktree root.
+   This session has no supported settings-write tool, so the setting remains open.
+2. Applying the approved `7b1c` presentation reference within main's engineering
+   contracts, reviewing UI-01 through UI-05 and completing the native Don't Save
+   branch. Implementation and combined-presentation acceptance remain open.
 
-Main's 30 unrelated tracked product changes and the pre-existing frontend-index
-patch are excluded. Local task metadata, recovery archives and historical
-evidence are not force-added. The previously approved maintenance scope contains
-only this document and its evidence JSON. No shutdown is scheduled.
+Thirty previously reported product modifications were directly equal to the
+index. Path-limited stat refresh changed no staged entries or product content.
+The pre-existing frontend-index patch remains excluded. Local task metadata,
+recovery archives and historical evidence are not force-added. This documentation
+update contains only this document and its evidence JSON; no product code,
+new push or shutdown is included.
