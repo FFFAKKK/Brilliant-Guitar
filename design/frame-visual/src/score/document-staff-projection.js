@@ -1,5 +1,4 @@
 import { createStaffProjectionPort } from "./staff-read-port.js";
-import { normalizeStaffSnapshot } from "./notation-model.js";
 import { notifyObservers } from "../runtime/runtime-support.js";
 
 const freeze = value => Object.freeze(value);
@@ -8,7 +7,7 @@ function readSessionIdentity(session) {
   if (!session || typeof session !== "object" || Array.isArray(session)) {
     throw new TypeError("文档读取结果必须是对象");
   }
-  const { documentId, documentVersion, notation } = session;
+  const { documentId, documentVersion, notation, tablature } = session;
   if (typeof documentId !== "string" || !documentId
     || !Number.isSafeInteger(documentVersion) || documentVersion < 0) {
     throw new TypeError("文档读取结果缺少有效版本身份");
@@ -19,7 +18,7 @@ function readSessionIdentity(session) {
   if (notation.kind === "unsupported" && (typeof notation.message !== "string" || !notation.message.trim())) {
     throw new TypeError("不支持的谱式需要明确原因");
   }
-  return { documentId, documentVersion, notation };
+  return { documentId, documentVersion, notation, tablature };
 }
 
 /**
@@ -71,9 +70,8 @@ export function createDocumentStaffProjection({ readSession, subscribe, retrySes
       }
       // Validate before advancing the accepted document version. Bad notation
       // must not poison the version watermark or replace the previous score.
-      const projected = current.notation.kind === "staff"
-        ? normalizeStaffSnapshot(current.notation) : null;
-      staff.publish(projected);
+      const projected = current.notation.kind === "staff" ? current.notation : null;
+      staff.publish(projected, current.tablature);
       identity = freeze({ documentId: current.documentId, documentVersion: current.documentVersion });
       publishState({ status: projected ? "ready" : "unsupported", ...identity,
         ...(projected ? {} : { message: current.notation.message }) });
@@ -102,7 +100,13 @@ export function createDocumentStaffProjection({ readSession, subscribe, retrySes
   }
 
   return Object.freeze({
-    read: freeze({ snapshot: staff.read.snapshot, status: () => state,
+    read: freeze({ snapshot: staff.read.snapshot, notation: staff.read.notation, status: () => state,
+      notationStatus(kind) {
+        if (["empty", "loading", "error"].includes(state.status)) return state;
+        const value = staff.read.notation(kind);
+        return freeze({ ...state, status: value && value.kind !== "unsupported" ? "ready" : "unsupported",
+          message: value?.kind === "unsupported" ? value.message : kind === "staff" ? state.message : undefined });
+      },
       subscribe: listener => observe(() => listener(staff.read.snapshot())), async retry() {
         if (disposed) return { ok: false, code: "score.document-projection.disposed" };
         if (retrySession) { const result = await retrySession(); if (result?.ok === false || subscribe) return result; }

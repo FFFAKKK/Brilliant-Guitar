@@ -1,9 +1,5 @@
-import { normalizeStaffSnapshot } from "./notation-model.js";
+import { normalizeNotationPair } from "./notation-model.js";
 import { notifyObservers } from "../runtime/runtime-support.js";
-
-function normalize(snapshot) {
-  return snapshot === null ? null : normalizeStaffSnapshot(snapshot);
-}
 
 /**
  * Application-owned read projection for the core staff view.
@@ -11,13 +7,20 @@ function normalize(snapshot) {
  * The UI receives only the frozen read port. `publish` and `dispose` remain
  * with the owner that projects the real score document.
  */
-export function createStaffProjectionPort({ snapshot = null } = {}) {
-  let current = normalize(snapshot);
+export function createStaffProjectionPort({ snapshot = null, tablature = undefined } = {}) {
+  let current = normalizeNotationPair(snapshot, tablature);
   let disposed = false;
   const listeners = new Set();
 
   const read = Object.freeze({
-    snapshot: () => current,
+    snapshot: () => current.notation,
+    notation(kind) {
+      if (kind === "staff") return current.notation;
+      if (kind === "tablature") return current.tablature ?? Object.freeze({
+        kind: "unsupported", message: "当前宿主或作品未提供弦品谱面",
+      });
+      throw new TypeError("未知谱式");
+    },
     subscribe(listener) {
       if (disposed) throw new Error("谱面投影端口已经释放");
       if (typeof listener !== "function") throw new TypeError("谱面投影订阅者必须是函数");
@@ -27,10 +30,10 @@ export function createStaffProjectionPort({ snapshot = null } = {}) {
     },
   });
 
-  function publish(snapshot) {
+  function publish(snapshot, tablature = undefined) {
     if (disposed) return { ok: false, code: "score.projection.disposed" };
-    current = normalize(snapshot);
-    const accepted = current;
+    current = normalizeNotationPair(snapshot, tablature);
+    const accepted = current.notation;
     notifyObservers([...listeners].map(listener => () => listener(accepted)));
     return { ok: true };
   }
@@ -39,7 +42,7 @@ export function createStaffProjectionPort({ snapshot = null } = {}) {
     if (disposed) return;
     disposed = true;
     listeners.clear();
-    current = null;
+    current = { notation: null, tablature: undefined };
   }
 
   return Object.freeze({ read, publish, dispose });

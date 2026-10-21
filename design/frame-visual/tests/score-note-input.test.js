@@ -11,6 +11,8 @@ import { WORKSPACE_MENU_DEFINITIONS } from "../src/host/workspace-menus.js";
 import { createNotices } from "../src/runtime/notices.js";
 import { bindKeyboard } from "../src/host/keyboard.js";
 import { STAFF_FIXTURE } from "../src/fixtures/staff-snapshot.js";
+import { TABLATURE_FIXTURE } from "../src/fixtures/tablature-snapshot.js";
+import { SCORE_PRESENTATION_COMMAND } from "../src/score/score-presentation.js";
 import { SCORE_INPUT_KEY_COMMAND, SCORE_INPUT_CHANGE_COMMAND, SCORE_INPUT_TOOL_COMMAND as IT,
   SCORE_INPUT_POINTER_COMMAND as IP, SCORE_INPUT_KEY_BUFFER_LIMIT } from "../src/contracts/score-note-input.js";
 import { withTestDocument } from "./support/dom-test-environment.js";
@@ -162,6 +164,51 @@ function withInput(run, initial = session(), clipboardPort = null, withoutKeys =
 function withEvents() {
   const value = session(); value.notation.measures[0].events = structuredClone(STAFF_FIXTURE.measures[0].events.slice(0, 3)); return value;
 }
+function withTabEvents() {
+  const value = withEvents();
+  value.tablature = { ...structuredClone(TABLATURE_FIXTURE),
+    measures: [{ ...structuredClone(TABLATURE_FIXTURE.measures[0]),
+      events: structuredClone(TABLATURE_FIXTURE.measures[0].events.slice(0, 3)) }] };
+  return value;
+}
+
+test("readonly Tab blocks original keyboard, property, clipboard and measure writes; returning staff preserves its tools and focus", () => withInput(async f => {
+  const controls = f.element.querySelector(".score-event-controls");
+  const original = f.documents.snapshot();
+  const originalTarget = f.element.dataset.scoreTarget;
+  const revision = Number(f.element._scoreInteraction ? f.routed.at(-1).payload.sourceRevision : -1);
+  assert.equal(f.router.execute(SCORE_PRESENTATION_COMMAND, { kind: "tablature" }).ok, true);
+  await settle();
+  assert.equal(f.element.dataset.notationKind, "tablature");
+  assert.equal(controls.hidden, true);
+  assert.equal(f.element._scoreInteraction, undefined);
+  for (const key of ["C", "4", "R", "Delete", "ArrowRight"]) assert.equal(f.key(key).defaultPrevented, false);
+  assert.equal(f.router.execute(SCORE_INPUT_KEY_COMMAND, { sourceRevision: revision, key: "R", repeat: false }).ok, false);
+  assert.equal(f.router.execute(IT, { sourceRevision: revision, selectionRevision: 1, change: { kind: "rest", value: true } }).ok, false);
+  for (const command of Object.values(K)) assert.equal(f.router.execute(command).ok, false);
+  assert.equal(f.router.execute(M.insertAfter).ok, false);
+  assert.equal(f.writes.length, 0);
+  assert.deepEqual(f.documents.snapshot(), original);
+  assert.equal(f.router.execute(SCORE_PRESENTATION_COMMAND, { kind: "staff" }).ok, true);
+  await settle();
+  assert.equal(f.element.querySelector(".score-event-controls"), controls);
+  assert.equal(controls.hidden, false);
+  assert.ok(f.element._scoreInteraction);
+  assert.equal(f.element.dataset.scoreTarget, originalTarget);
+  assert.deepEqual(f.documents.snapshot(), original);
+}, withTabEvents()));
+
+test("presentation switching is rejected while an original staff write is pending", () => withInput(async f => {
+  let release;
+  f.setGate(new Promise(resolve => { release = resolve; }));
+  try {
+    f.key("C"); f.key("4"); await settle();
+    assert.equal(f.writes.length, 1);
+    assert.equal(f.router.execute(SCORE_PRESENTATION_COMMAND, { kind: "tablature" }).code, "score.presentation.input-pending");
+    assert.equal(f.element.dataset.notationKind, "staff");
+  } finally { release(); await settle(); }
+  assert.equal(f.documents.snapshot().documentVersion, 1);
+}));
 const pick = (f, index, extra = {}) => clickAt(f.element.querySelector('[data-measure-id="measure-1"]'), 25 + index * 20, 15, extra);
 
 const metadataField = (f, key) => f.element.querySelector(`[data-metadata="${key}"]`);

@@ -4,9 +4,8 @@ import { isNotationView } from "./notation.ts";
 import type { NotationView } from "./notation.ts";
 import { isPlaybackSourceProjection } from "./playback.ts";
 import type { PlaybackSourceProjection } from "./playback.ts";
-import { isTablatureProjection } from "../../../../shared/notation/tablature-model.ts";
-import type { TablatureProjection, TablatureView } from "../../../../shared/notation/tablature-model.ts";
-import type { StaffView } from "./notation.ts";
+import { isTablatureProjection, pairedNotationMatches } from "../../../../shared/notation/tablature-model.ts";
+import type { TablatureProjection } from "../../../../shared/notation/tablature-model.ts";
 import { isWorkbenchIssue } from "./workbench-issue.ts";
 import type { WorkbenchIssue } from "./workbench-issue.ts";
 
@@ -77,25 +76,4 @@ export function isScoreSessionRead(value: unknown): value is ScoreSessionRead {
     && (metadata === undefined || notation.kind === "unsupported"
       || notation.tempoBpm === (metadata as ScoreDocumentMetadataProjection).tempoBpm)
     && (notation.kind === "unsupported" || notation.measures.length === value.measureCount);
-}
-
-/** Reject accidentally mixed reads even when the outer receipt looks current. */
-function pairedNotationMatches(staff: StaffView, tab: TablatureView): boolean {
-  return staff.partId === tab.partId && staff.staffId === tab.staffId && staff.tempoBpm === tab.tempoBpm
-    && staff.measures.length === tab.measures.length && staff.measures.every((measure, index) => {
-      const other = tab.measures[index]!;
-      return measure.id === other.id && measure.voiceId === other.voiceId
-        && measure.meter.numerator === other.meter.numerator && measure.meter.denominator === other.meter.denominator
-        && measure.events.length === other.events.length && measure.events.every((event, i) => {
-          const item = other.events[i]!;
-          return event.id === item.id && event.duration.base === item.duration.base && event.duration.dots === item.duration.dots
-            && event.content.kind === item.content.kind;
-        }) && measure.ruleWarnings.length === other.ruleWarnings.length && measure.ruleWarnings.every((warning, i) => {
-          const item = other.ruleWarnings[i]!;
-          return ["nominalDuration", "actualDuration", "overflow"].every(key => {
-            const field = key as "nominalDuration" | "actualDuration" | "overflow";
-            return warning[field].numerator === item[field].numerator && warning[field].denominator === item[field].denominator;
-          });
-        });
-    });
 }

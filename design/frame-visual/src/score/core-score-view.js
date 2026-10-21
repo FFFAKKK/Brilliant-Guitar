@@ -1,23 +1,37 @@
-import { normalizeStaffSnapshot } from "./notation-model.js";
+import { normalizeNotationSnapshot } from "./notation-model.js";
 import { renderStaff } from "./vexflow-staff-renderer.js";
+import { renderTablature } from "./vexflow-tablature-renderer.js";
 import { icon } from "../fixtures/preview-icons.js";
 import { captureFocusRecovery } from "../host/focus-boundary.js";
 import { createScoreSelectionPresentation } from "./score-selection-presentation.js";
 import { createScoreEventControls } from "./score-event-controls.js";
 
-export function createCoreScoreView({ score = null, snapshot = undefined, renderSnapshot = renderStaff,
+const renderNotation = (snapshot, options) => snapshot.kind === "tablature"
+  ? renderTablature(snapshot, options) : renderStaff(snapshot, options);
+const notationLabel = snapshot => snapshot?.kind === "tablature" ? "六线谱（Tab）" : "五线谱";
+
+export function createCoreScoreView({ score = null, snapshot = undefined, renderSnapshot = renderNotation,
   selection = null, execute = null, input = null, properties = false, measures = false, keySignatures = false, staffClefs = false, metadata = false } = {}) {
   let element = null, current = null, stopScore = null, ownsTabIndex = false;
   let currentDrawing = null, selectionPresentation = null;
   let stopInput = null, inputFeedback = null;
   let content = null, eventControls = null;
-  let disposed = false, lastRead = score ? score.snapshot() : snapshot ?? null;
-  const state = { snapshot: lastRead === null ? null : normalizeStaffSnapshot(lastRead) };
+  let disposed = false, visible = true, lastRead = score ? score.snapshot() : snapshot ?? null;
+  const state = { snapshot: lastRead === null ? null : normalizeNotationSnapshot(lastRead) };
   const sourceStatus = () => score?.status?.() ?? { status: state.snapshot === null ? "empty" : "ready" };
+  function refreshControls() {
+    const staff = state.snapshot?.kind === "staff";
+    if (eventControls) {
+      eventControls.element.hidden = !staff;
+      eventControls.setVisible(visible && staff);
+    }
+    selectionPresentation?.setVisible(visible && staff);
+  }
   function refreshInputFeedback() {
     if (!element || !input || disposed) return;
     inputFeedback?.remove();
-    if (sourceStatus().status !== "ready") return;
+    if (sourceStatus().status !== "ready" || state.snapshot?.kind !== "staff"
+      || element.dataset.renderState !== "ready") return;
     const value = input.snapshot();
     inputFeedback ??= element.ownerDocument.createElement("span");
     inputFeedback.className = "score-input-state"; inputFeedback.setAttribute("role", "status");
@@ -55,6 +69,7 @@ export function createCoreScoreView({ score = null, snapshot = undefined, render
     selectionPresentation?.refresh();
     const status = sourceStatus();
     element.dataset.readState = "error";
+    element.setAttribute("aria-busy", "false");
     const text = status.message || "作品暂时无法读取";
     const retry = { label: "重新读取作品", action: () => { void score?.retry?.(); } };
     if (!element.querySelector(".score-view-svg")) {
@@ -70,31 +85,56 @@ export function createCoreScoreView({ score = null, snapshot = undefined, render
   function render() {
     if (!element || disposed) return;
     current?.abort(); delete element._scoreInteraction; currentDrawing = null; selectionPresentation?.refresh();
+    selectionPresentation?.setVisible(visible && state.snapshot?.kind === "staff");
     const status = sourceStatus(); element.dataset.readState = status.status;
+    if (eventControls) {
+      eventControls.element.hidden = state.snapshot?.kind !== "staff";
+      eventControls.setVisible(visible && state.snapshot?.kind === "staff");
+    }
     if (status.status === "error") { showReadFailure(); return; }
     if (state.snapshot === null) {
+      element.setAttribute("aria-busy", "false");
       element.dataset.renderState = "empty";
       showMessage(status.status === "unsupported" ? status.message : status.status === "loading" ? "正在读取作品…" : "尚未提供谱面快照"); return;
     }
     const controller = new AbortController(); current = controller;
     const acceptedSnapshot = state.snapshot;
-    const sourceRevision = selection?.snapshot().sourceRevision ?? null;
-    element.dataset.renderState = "loading"; showMessage("正在显示五线谱…");
-    void Promise.resolve().then(() => renderSnapshot(acceptedSnapshot, { signal: controller.signal })).then(result => {
+    let sourceRevision = null;
+    const label = notationLabel(acceptedSnapshot);
+    element.dataset.renderState = "loading"; element.setAttribute("aria-busy", "true");
+    // Retain paper geometry while replacing the drawing, but never its old hits.
+    if (!element.querySelector(".score-view-svg")) showMessage(`正在显示${label}…`);
+    else refreshInputFeedback();
+    void Promise.resolve().then(() => {
+      if (controller.signal.aborted || disposed) return null;
+      sourceRevision = selection?.snapshot().sourceRevision ?? null;
+      return renderSnapshot(acceptedSnapshot, { signal: controller.signal });
+    }).then(result => {
       if (disposed || controller.signal.aborted || current !== controller) return;
       const svg = result.svg;
       svg.setAttribute("viewBox", `0 0 ${result.layout.width} ${result.layout.height}`);
       svg.setAttribute("preserveAspectRatio", "xMidYMin meet"); svg.removeAttribute("width"); svg.removeAttribute("height");
       svg.style.removeProperty("width"); svg.style.removeProperty("height"); svg.classList.add("score-view-svg");
       element.style.setProperty("aspect-ratio", eventControls ? "auto" : `${result.layout.width} / ${result.layout.height}`);
-      updateContent(() => content.replaceChildren(svg)); element.dataset.renderState = "ready"; element._scoreInteraction = result.interaction;
-      currentDrawing = { svg, interaction: result.interaction, snapshot: acceptedSnapshot, sourceRevision };
-      selectionPresentation?.refresh();
+      updateContent(() => content.replaceChildren(svg)); element.dataset.renderState = "ready";
+      element.setAttribute("aria-busy", "false"); element.setAttribute("aria-label", label);
+      element.dataset.notationKind = acceptedSnapshot.kind;
+      if (acceptedSnapshot.kind === "staff") {
+        element._scoreInteraction = result.interaction;
+        currentDrawing = { svg, interaction: result.interaction, snapshot: acceptedSnapshot, sourceRevision };
+      }
+      refreshControls(); refreshInputFeedback();
       if (sourceStatus().status === "error") showReadFailure();
     }).catch(error => {
       if (disposed || controller.signal.aborted || current !== controller) return;
-      element.dataset.renderState = "error";
-      showMessage("五线谱暂时无法显示：" + (error?.message ?? String(error)), { label: "重新显示五线谱", action: render });
+      element.dataset.renderState = "error"; element.setAttribute("aria-busy", "false");
+      const text = label + "暂时无法显示：" + (error?.message ?? String(error));
+      if (!element.querySelector(".score-view-svg")) showMessage(text, { label: "重新显示" + label, action: render });
+      else updateContent(() => {
+        element.querySelector(".score-view-read-error")?.remove();
+        const feedback = element.ownerDocument.createElement("div"); feedback.className = "score-view-read-error";
+        feedback.setAttribute("role", "alert"); feedback.append(retryButton(text + "；重新显示", render)); content.append(feedback);
+      });
     });
   }
   function sourceChanged(value) {
@@ -103,12 +143,14 @@ export function createCoreScoreView({ score = null, snapshot = undefined, render
     if (status.status === "error") { showReadFailure(); return; }
     element.dataset.readState = status.status; updateContent(() => element.querySelector(".score-view-read-error")?.remove());
     if (value === lastRead && element.dataset.renderState === "ready") return;
-    lastRead = value; state.snapshot = value === null ? null : normalizeStaffSnapshot(value); render();
+    const normalized = value === null ? null : normalizeNotationSnapshot(value);
+    lastRead = value; state.snapshot = normalized; render();
   }
   return {
-    setSnapshot(value) { if (disposed) return; lastRead = value; state.snapshot = value === null ? null : normalizeStaffSnapshot(value); render(); },
+    setSnapshot(value) { if (disposed) return; const normalized = value === null ? null : normalizeNotationSnapshot(value);
+      lastRead = value; state.snapshot = normalized; render(); },
     mount(target) {
-      element = target; element.classList.add("core-score-view"); element.setAttribute("aria-label", "五线谱");
+      element = target; element.classList.add("core-score-view"); element.setAttribute("aria-label", notationLabel(state.snapshot));
       ownsTabIndex = element.getAttribute("tabindex") === null;
       if (ownsTabIndex) element.setAttribute("tabindex", "-1");
       element.dataset.renderState = "loading";
@@ -131,7 +173,8 @@ export function createCoreScoreView({ score = null, snapshot = undefined, render
       if (element?._scoreInteraction) delete element._scoreInteraction; element?.replaceChildren();
       if (ownsTabIndex) element?.removeAttribute("tabindex"); element = null;
     },
-    setVisible(visible) { if (element) element.hidden = !visible; selectionPresentation?.setVisible(visible); eventControls?.setVisible(visible); },
-    handleKeyDown(event) { return selectionPresentation?.handleKeyDown(event) ?? false; },
+    setVisible(value) { visible = value === true; if (element) element.hidden = !visible; refreshControls(); },
+    handleKeyDown(event) { return visible && state.snapshot?.kind === "staff"
+      ? selectionPresentation?.handleKeyDown(event) ?? false : false; },
   };
 }

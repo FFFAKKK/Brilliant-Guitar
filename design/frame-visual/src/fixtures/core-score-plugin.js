@@ -14,9 +14,11 @@ import { SCORE_MEASURE_COMMANDS as M } from "../contracts/score-measure.js";
 import { SCORE_KEY_SIGNATURE_COMMAND } from "../contracts/score-key-signature.js";
 import { SCORE_STAFF_CLEF_COMMAND } from "../contracts/score-staff-clef.js";
 import { SCORE_DOCUMENT_METADATA_COMMAND } from "../contracts/score-document-metadata.js";
+import { createScorePresentation, SCORE_PRESENTATION_COMMAND } from "../score/score-presentation.js";
+import { mountScorePresentationControls } from "../score/score-presentation-controls.js";
 
 export function createCoreScorePlugin({ score = null, snapshot = undefined, documentActions = null, clipboardPort = undefined } = {}) {
-let selection = null, input = null;
+let selection = null, input = null, presentation = null;
 const keySignatures = typeof documentActions?.append === "function" && typeof documentActions?.setKeySignature === "function";
 const staffClefs = typeof documentActions?.append === "function" && typeof documentActions?.setStaffClef === "function";
 const metadata = typeof documentActions?.append === "function" && typeof documentActions?.setDocumentMetadata === "function";
@@ -37,6 +39,13 @@ const uiDeclaration = defineUiPlugin({
         .map(([command, label], index) => ({ menu: "edit", order: index + 8, command, label })) : [])],
   commands: [...(documents.commands ?? []), ...selectionCommands, ...clipboardCommands, { id: SCORE_INPUT_KEY_COMMAND,
     run: payload => input ? input.key(payload) : { ok: false, code: "score.input.not-ready" } },
+    { id: SCORE_PRESENTATION_COMMAND, run: payload => {
+      if (!presentation) return { ok: false, code: "score.presentation.not-ready" };
+      if (input?.read.snapshot().pending) return { ok: false, code: "score.presentation.input-pending" };
+      const result = presentation.select(payload);
+      if (result.ok && result.changed) selection?.cancelComposition();
+      return result;
+    } },
     { id: SCORE_INPUT_CHANGE_COMMAND, run: payload => input ? input.change(payload) : { ok: false, code: "score.input.not-ready" } },
     ...(documentActions?.append ? [[SCORE_INPUT_TOOL_COMMAND, "tool"], [SCORE_INPUT_POINTER_COMMAND, "pointer"]]
       .map(([id, method]) => ({ id, run: payload => input ? input[method](payload) : { ok: false, code: "score.input.not-ready" } })) : []),
@@ -77,12 +86,27 @@ const uiDeclaration = defineUiPlugin({
           clipboard: new ScoreClipboard(clipboardPort) }); input = controller;
         ctx.onDispose(() => { if (input === controller) input = null; controller.dispose(); });
       }
-      const view = createCoreScoreView({ score: source, selection: owner.read, execute: ctx.execute, input: input?.read,
+      // Selection/input stay on the canonical staff read; only the view changes.
+      const display = createScorePresentation(source); presentation = display;
+      ctx.onDispose(() => { if (presentation === display) presentation = null; display.dispose(); });
+      const controller = input;
+      let visible = true;
+      const updateInputVisibility = () => controller?.setVisible(visible && display.read.snapshot()?.kind === "staff");
+      ctx.onDispose(display.read.subscribe(updateInputVisibility));
+      updateInputVisibility();
+      const view = createCoreScoreView({ score: display.read, selection: owner.read, execute: ctx.execute, input: input?.read,
         properties: typeof documentActions?.append === "function", measures: typeof documentActions?.editMeasure === "function", keySignatures, staffClefs, metadata });
       ctx.onDispose(() => view.dispose());
       const mounted = view.mount(element);
-      const controller = input;
-      return { ...mounted, setVisible(value) { controller?.setVisible(value); mounted.setVisible(value); } };
+      return { ...mounted, setVisible(value) { visible = value === true; updateInputVisibility(); mounted.setVisible(value); } };
+    },
+  }, {
+    id: "notation.core.presentation",
+    kind: "slotItem", title: "谱式", slots: ["top"], defaultSlot: "top", order: -100, minWidth: 76, priority: 100,
+    permissions: { commands: [SCORE_PRESENTATION_COMMAND] },
+    mount(element, ctx) {
+      if (!presentation) throw new Error("谱式控件需要核心谱面实例");
+      return mountScorePresentationControls(element, ctx, presentation, input?.read);
     },
   }],
 });

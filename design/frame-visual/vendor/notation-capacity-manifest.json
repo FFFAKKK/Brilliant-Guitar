@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "buildId": "aa37f0c9d444908c7ebc58dbdfd8909a405b0047733d13b875b942626299cd61",
+  "buildId": "84e93dcd09c5e306d416d7a27f51114fda7c0f26d54d3ec991957fa0d857fa50",
   "policyId": "readonly-staff-drawing-20261008-v1",
   "sources": [
     {
@@ -70,8 +70,8 @@
     },
     {
       "path": "design/frame-visual/src/score/notation-model.js",
-      "bytes": 762,
-      "sha256": "5fad9a1eb3ef023d4012e9a07475d8bbce79b08af80fecddbe4e4c8f2dfbe46e"
+      "bytes": 1858,
+      "sha256": "4f33ec860212e41b8505a52886e8d7cfc9df9147979b00fd4021cd4f8eff5ddc"
     },
     {
       "path": "design/frame-visual/src/score/vexflow-runtime.js",
@@ -141,7 +141,12 @@
     {
       "path": "design/frame-visual/src/vendor/shared-notation/source-manifest.json",
       "bytes": 2061,
-      "sha256": "1a7b0a8ab6fdf7343d308056d9e3e76e92541f502e263fcae460fd9bec867c4b"
+      "sha256": "df5af3b68d8607f24f76ff364ff0785ff1ef40c18cb0f2bab893301dd866309a"
+    },
+    {
+      "path": "design/frame-visual/src/vendor/shared-notation/tablature-model.js",
+      "bytes": 4640,
+      "sha256": "f3bb919fe0a82eeb52417e9480434a4890dea27fbf31bd889f86afb5699d8fb6"
     },
     {
       "path": "design/frame-visual/src/vendor/shared-notation/vexflow-note-spec.js",
@@ -270,8 +275,8 @@
     },
     {
       "path": "shared/notation/tablature-model.ts",
-      "bytes": 4648,
-      "sha256": "e233e264c48d8a61e284b4dd7f5a117e2521fff47bdd86dd7b99de2b02df9383"
+      "bytes": 6090,
+      "sha256": "ccb8976b0e7f658717b2c2261f2b638a20e068798a7334fb3822e40288485325"
     },
     {
       "path": "shared/notation/tablature-renderer.ts",
@@ -297,8 +302,8 @@
   "artifacts": [
     {
       "path": "notation-capacity-preview.html",
-      "bytes": 407926,
-      "sha256": "62ceebd99ebb2379002af4e31329511e7ca7b9f4fdde518d5d5432f21f9562f4"
+      "bytes": 408093,
+      "sha256": "4fc8336bf362395a41371d5e3326fc883b4414802ebe64c291ba24bc431bcf6e"
     },
     {
       "path": "vendor/notation-capacity-preview.js",

@@ -1,7 +1,7 @@
 import { isInputDuration, isMeterInput } from "./note-properties.ts";
 import type { EventDuration } from "./note-properties.ts";
 import { isExactFraction } from "./notation-model.ts";
-import type { StaffMeasure } from "./notation-model.ts";
+import type { StaffMeasure, StaffView } from "./notation-model.ts";
 
 /** Instrument-owned dimensions; string 1 is the top line, not necessarily a guitar. */
 export interface FrettedDimensions {
@@ -37,6 +37,27 @@ export type TablatureProjection = TablatureView | { readonly kind: "unsupported"
 export function isTablatureProjection(value: unknown): value is TablatureProjection {
   return isTablatureView(value) || (record(value) && value.kind === "unsupported"
     && typeof value.message === "string" && value.message.length > 0);
+}
+
+/** Reject accidentally mixed reads even when the outer receipt looks current. */
+export function pairedNotationMatches(staff: StaffView, tab: TablatureView): boolean {
+  return staff.partId === tab.partId && staff.staffId === tab.staffId && staff.tempoBpm === tab.tempoBpm
+    && staff.measures.length === tab.measures.length && staff.measures.every((measure, index) => {
+      const other = tab.measures[index]!;
+      return measure.id === other.id && measure.voiceId === other.voiceId
+        && measure.meter.numerator === other.meter.numerator && measure.meter.denominator === other.meter.denominator
+        && measure.events.length === other.events.length && measure.events.every((event, i) => {
+          const item = other.events[i]!;
+          return event.id === item.id && event.duration.base === item.duration.base && event.duration.dots === item.duration.dots
+            && event.content.kind === item.content.kind;
+        }) && measure.ruleWarnings.length === other.ruleWarnings.length && measure.ruleWarnings.every((warning, i) => {
+          const item = other.ruleWarnings[i]!;
+          return ["nominalDuration", "actualDuration", "overflow"].every(key => {
+            const field = key as "nominalDuration" | "actualDuration" | "overflow";
+            return warning[field].numerator === item[field].numerator && warning[field].denominator === item[field].denominator;
+          });
+        });
+    });
 }
 
 const record = (value: unknown): value is Record<string, unknown> =>

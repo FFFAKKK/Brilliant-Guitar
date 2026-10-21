@@ -6,7 +6,7 @@ import { loadVexFlow } from "./vexflow-runtime.js";
 const renderer = createTablatureRenderer(loadVexFlow);
 const theme = Object.freeze({ ink: "#14161a", muted: "#62666d", fontFamily: "Academico" });
 
-/** This drawing port is ready for a real Tab source; the current core view remains staff. */
+/** Draw the accepted Tab projection through the shared notation renderer. */
 export async function renderTablature(input, { signal } = {}) {
   const pages = layoutTablaturePages(input);
   const drawings = [];

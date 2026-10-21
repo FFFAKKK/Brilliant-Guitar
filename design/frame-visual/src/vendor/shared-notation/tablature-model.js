@@ -5,6 +5,26 @@ export function isTablatureProjection(value) {
     return isTablatureView(value) || (record(value) && value.kind === "unsupported"
         && typeof value.message === "string" && value.message.length > 0);
 }
+/** Reject accidentally mixed reads even when the outer receipt looks current. */
+export function pairedNotationMatches(staff, tab) {
+    return staff.partId === tab.partId && staff.staffId === tab.staffId && staff.tempoBpm === tab.tempoBpm
+        && staff.measures.length === tab.measures.length && staff.measures.every((measure, index) => {
+        const other = tab.measures[index];
+        return measure.id === other.id && measure.voiceId === other.voiceId
+            && measure.meter.numerator === other.meter.numerator && measure.meter.denominator === other.meter.denominator
+            && measure.events.length === other.events.length && measure.events.every((event, i) => {
+            const item = other.events[i];
+            return event.id === item.id && event.duration.base === item.duration.base && event.duration.dots === item.duration.dots
+                && event.content.kind === item.content.kind;
+        }) && measure.ruleWarnings.length === other.ruleWarnings.length && measure.ruleWarnings.every((warning, i) => {
+            const item = other.ruleWarnings[i];
+            return ["nominalDuration", "actualDuration", "overflow"].every(key => {
+                const field = key;
+                return warning[field].numerator === item[field].numerator && warning[field].denominator === item[field].denominator;
+            });
+        });
+    });
+}
 const record = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 export function isFrettedDimensions(value) {
     return record(value) && typeof value.stringCount === "number" && Number.isSafeInteger(value.stringCount)

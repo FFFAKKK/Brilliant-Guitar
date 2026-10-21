@@ -2264,6 +2264,21 @@ function isNotationView(value) {
 function isTablatureProjection(value) {
   return isTablatureView(value) || record2(value) && value.kind === "unsupported" && typeof value.message === "string" && value.message.length > 0;
 }
+function pairedNotationMatches(staff, tab) {
+  return staff.partId === tab.partId && staff.staffId === tab.staffId && staff.tempoBpm === tab.tempoBpm && staff.measures.length === tab.measures.length && staff.measures.every((measure, index) => {
+    const other = tab.measures[index];
+    return measure.id === other.id && measure.voiceId === other.voiceId && measure.meter.numerator === other.meter.numerator && measure.meter.denominator === other.meter.denominator && measure.events.length === other.events.length && measure.events.every((event, i) => {
+      const item = other.events[i];
+      return event.id === item.id && event.duration.base === item.duration.base && event.duration.dots === item.duration.dots && event.content.kind === item.content.kind;
+    }) && measure.ruleWarnings.length === other.ruleWarnings.length && measure.ruleWarnings.every((warning, i) => {
+      const item = other.ruleWarnings[i];
+      return ["nominalDuration", "actualDuration", "overflow"].every((key) => {
+        const field = key;
+        return warning[field].numerator === item[field].numerator && warning[field].denominator === item[field].denominator;
+      });
+    });
+  });
+}
 var record2 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 function isFrettedDimensions(value) {
   return record2(value) && typeof value.stringCount === "number" && Number.isSafeInteger(value.stringCount) && value.stringCount >= 1 && value.stringCount <= 32 && (value.fretCount === null || typeof value.fretCount === "number" && Number.isSafeInteger(value.fretCount) && value.fretCount >= 1) && typeof value.capoFret === "number" && Number.isSafeInteger(value.capoFret) && value.capoFret >= 0;
@@ -2934,21 +2949,6 @@ function isScoreSessionRead(value) {
   const tablature = r.tablature;
   const tabValid = tablature === void 0 || isTablatureProjection(tablature) && (tablature.kind === "unsupported" || tablature.measures.length === value.measureCount && (metadata === void 0 || tablature.tempoBpm === metadata.tempoBpm) && (!isNotationView(notation) || notation.kind === "unsupported" || pairedNotationMatches(notation, tablature)));
   return metadataValid && tabValid && isNotationView(notation) && isPlaybackSourceProjection(r.playbackSource) && (tablature === void 0 || !isTablatureProjection(tablature) || tablature.kind === "unsupported" || r.playbackSource.kind === "unsupported" || tablature.tempoBpm === r.playbackSource.bpm) && r.playbackSource.documentId === value.documentId && r.playbackSource.documentVersion === value.documentVersion && (metadata === void 0 || r.playbackSource.kind === "unsupported" || r.playbackSource.bpm === metadata.tempoBpm) && (metadata === void 0 || notation.kind === "unsupported" || notation.tempoBpm === metadata.tempoBpm) && (notation.kind === "unsupported" || notation.measures.length === value.measureCount);
-}
-function pairedNotationMatches(staff, tab) {
-  return staff.partId === tab.partId && staff.staffId === tab.staffId && staff.tempoBpm === tab.tempoBpm && staff.measures.length === tab.measures.length && staff.measures.every((measure, index) => {
-    const other = tab.measures[index];
-    return measure.id === other.id && measure.voiceId === other.voiceId && measure.meter.numerator === other.meter.numerator && measure.meter.denominator === other.meter.denominator && measure.events.length === other.events.length && measure.events.every((event, i) => {
-      const item = other.events[i];
-      return event.id === item.id && event.duration.base === item.duration.base && event.duration.dots === item.duration.dots && event.content.kind === item.content.kind;
-    }) && measure.ruleWarnings.length === other.ruleWarnings.length && measure.ruleWarnings.every((warning, i) => {
-      const item = other.ruleWarnings[i];
-      return ["nominalDuration", "actualDuration", "overflow"].every((key) => {
-        const field = key;
-        return warning[field].numerator === item[field].numerator && warning[field].denominator === item[field].denominator;
-      });
-    });
-  });
 }
 
 // ../../apps/workbench/src/contracts/workspace-id.ts

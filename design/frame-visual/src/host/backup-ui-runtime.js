@@ -1,6 +1,7 @@
 import { createWorkspaceRuntime } from "./workspace-runtime.js";
 import { createCoreScorePlugin } from "../fixtures/core-score-plugin.js";
 import { STAFF_FIXTURE } from "../fixtures/staff-snapshot.js";
+import { TABLATURE_FIXTURE } from "../fixtures/tablature-snapshot.js";
 import { createStaffProjectionPort } from "../score/staff-read-port.js";
 import { createDocumentStaffProjection } from "../score/document-staff-projection.js";
 import { readStartupPlan, validateStartupPlan } from "../startup/plugin-startup-plan.js";
@@ -19,7 +20,7 @@ function createScoreProjection({ documentSession, fixture }) {
       retrySession: documentSession.reload,
     });
   }
-  return createStaffProjectionPort({ snapshot: fixture });
+  return createStaffProjectionPort({ snapshot: fixture, tablature: fixture === STAFF_FIXTURE ? TABLATURE_FIXTURE : undefined });
 }
 
 /**

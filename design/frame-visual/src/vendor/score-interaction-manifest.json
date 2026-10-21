@@ -42,6 +42,6 @@
     "shared/notation/notation-model.ts": "1530a7afce6a91aa077334ddda663756ceec432c5bcca0f15dc4bf893a1fd196",
     "shared/notation/notation-renderer.ts": "3eff403a4e48aaf9fea8af359bc86a50580687206a3156b35d5008e45611a40f",
     "shared/notation/note-properties.ts": "9912f6856c6444fbc41d9f22d0575c3c6251cf26e924c7a7c28afdfbc168ce3b",
-    "shared/notation/tablature-model.ts": "e233e264c48d8a61e284b4dd7f5a117e2521fff47bdd86dd7b99de2b02df9383"
+    "shared/notation/tablature-model.ts": "ccb8976b0e7f658717b2c2261f2b638a20e068798a7334fb3822e40288485325"
   }
 }

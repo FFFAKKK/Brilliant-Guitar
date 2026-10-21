@@ -6,8 +6,19 @@
 .core-score-view .score-view-retry { display: inline-flex; align-items: center; justify-content: center; margin-top: 10px; width: 28px; height: 28px; padding: 0; color: var(--score-ink); background: var(--score-paper); border: 1px solid transparent; border-radius: 4px; }
 .core-score-view .score-view-retry:hover { background: rgb(0 0 0 / 7%); }
 .core-score-view .score-view-retry:focus-visible { outline: 2px solid var(--frame-focus); outline-offset: 2px; }
+.core-score-view .score-view-read-error { position: absolute; inset: 8px 8px auto auto; }
+
+/* Restored notation.core presentation, carried by the original top slot. */
+.score-presentation-controls { display: flex; align-items: center; gap: 4px; width: max-content; }
+.score-presentation-controls button { display: grid; place-items: center; width: 32px; height: 32px; padding: 4px; border: 0; border-radius: var(--ui-radius); background: transparent; color: var(--ui-muted-color); cursor: pointer; }
+.score-presentation-controls button svg { display: block; width: 24px; height: 24px; }
+.score-presentation-controls button:enabled:hover { background: var(--frame-hover); color: var(--ui-text-color); }
+.score-presentation-controls button[aria-pressed="true"] { color: var(--ui-focus-color); background: var(--ui-surface-color); }
+.score-presentation-controls button:focus-visible { outline: 2px solid var(--ui-focus-color); outline-offset: 2px; }
+.score-presentation-controls button:disabled { color: var(--frame-disabled); cursor: default; }
 
 /* Core-owned property controls stay outside the engraving and survive its redraws. */
+.core-score-view .score-event-controls[hidden] { display: none; }
 .core-score-view .score-event-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 6px 8px; box-sizing: border-box; min-height: 40px; color: var(--score-ink); background: var(--score-paper); border-bottom: 1px solid rgb(0 0 0 / 8%); }
 .core-score-view .score-event-controls button,
 .core-score-view .score-event-controls select { display: inline-flex; align-items: center; justify-content: center; flex: none; min-width: 28px; height: 28px; padding: 0 4px; color: inherit; background: transparent; border: 1px solid transparent; border-radius: 4px; font: 12px/1 system-ui; }

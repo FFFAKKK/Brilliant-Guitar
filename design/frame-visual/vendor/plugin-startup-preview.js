@@ -1428,8 +1428,8 @@ ${problems.join("\n")}`);
       });
     }
     initial.sort((a, b) => a.order - b.order || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
-    const normalize3 = (records) => Object.freeze(UI_PANEL_SLOTS.flatMap((slot) => records.filter((record16) => record16.slot === slot).map((record16, order) => Object.freeze({ id: record16.id, componentId: record16.componentId, slot, enabled: record16.enabled, order }))));
-    let placements = normalize3(initial), snapshot = Object.freeze({ panels: placements });
+    const normalize2 = (records) => Object.freeze(UI_PANEL_SLOTS.flatMap((slot) => records.filter((record16) => record16.slot === slot).map((record16, order) => Object.freeze({ id: record16.id, componentId: record16.componentId, slot, enabled: record16.enabled, order }))));
+    let placements = normalize2(initial), snapshot = Object.freeze({ panels: placements });
     const listeners = /* @__PURE__ */ new Set(), pending = [];
     let delivering = false;
     function notify() {
@@ -1453,7 +1453,7 @@ ${problems.join("\n")}`);
       notify
     });
     function publish(next) {
-      const accepted = normalize3(next);
+      const accepted = normalize2(next);
       if (accepted.every((item, index) => Object.keys(item).every((key) => item[key] === placements[index][key]))) return { ok: true, changed: false };
       placements = accepted;
       snapshot = Object.freeze({ panels: placements });
@@ -1536,14 +1536,14 @@ ${problems.join("\n")}`);
         ...model.leftOpen ? model.left.map((item) => item.id) : [],
         ...model.rightOpen && model.activeRight ? [model.activeRight.id] : []
       ]);
-      const positions = new Map(model.placements.map((item) => [item.id, item]));
+      const positions2 = new Map(model.placements.map((item) => [item.id, item]));
       const descriptors = new Map([...model.left, ...model.right].map((item) => [item.id, item]));
       for (const [id, record16] of cells) if (!components.has(record16.componentId, record16.element)) {
         if (record16.carrier !== record16.element) record16.carrier?.remove();
         cells.delete(id);
       }
       for (const id of visible) {
-        const descriptor = descriptors.get(id), position = positions.get(id);
+        const descriptor = descriptors.get(id), position = positions2.get(id);
         if (!cells.has(id)) cells.set(id, {
           componentId: descriptor.componentId,
           element: components.ensure(descriptor.componentId, regions[position.slot].variant)
@@ -1554,7 +1554,7 @@ ${problems.join("\n")}`);
           cells.delete(id);
           continue;
         }
-        const position = positions.get(id);
+        const position = positions2.get(id);
         if (!position) {
           record16.element.hidden = true;
           components.setVisible(record16.componentId, false);
@@ -1733,11 +1733,11 @@ ${problems.join("\n")}`);
     function snapshot() {
       const definitions = new Map(catalog.list({ kind: "panel" }).map((panel) => [panel.id, panel]));
       const placements = composition.snapshot().panels;
-      const positions = new Map(placements.map((panel) => [panel.id, panel]));
+      const positions2 = new Map(placements.map((panel) => [panel.id, panel]));
       const ids = [.../* @__PURE__ */ new Set([...placements.map((panel) => panel.id), ...definitions.keys()])];
       const panels = ids.flatMap((id) => {
         if (reserved.has(id)) return [];
-        const definition = definitions.get(id), position = positions.get(id);
+        const definition = definitions.get(id), position = positions2.get(id);
         const slots = Object.freeze((definition?.slots ?? []).filter((slot) => UI_PANEL_SLOTS.includes(slot)));
         if (!position && !slots.length) return [];
         const available2 = !!position && !!definition && position.componentId === definition.componentId && slots.includes(position.slot);
@@ -12977,6 +12977,7 @@ ${problems.join("\n")}`);
   var record4 = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
   var NOTE_BASES2 = [1, 2, 4, 8, 16];
   var PITCH_STEPS2 = ["C", "D", "E", "F", "G", "A", "B"];
+  var METER_DENOMINATORS2 = [1, 2, 4, 8, 16, 32, 64];
   function isInputDuration2(v) {
     return record4(v) && NOTE_BASES2.includes(v.base) && (v.dots === 0 || v.dots === 1);
   }
@@ -12990,6 +12991,9 @@ ${problems.join("\n")}`);
       return true;
     const p = v.pitch;
     return v.kind === "note" && record4(p) && PITCH_STEPS2.includes(p.step) && typeof p.octave === "number" && Number.isInteger(p.octave) && p.octave >= 2 && p.octave <= 6 && [-1, 0, 1].includes(p.alter);
+  }
+  function isMeterInput2(value) {
+    return record4(value) && typeof value.numerator === "number" && Number.isSafeInteger(value.numerator) && value.numerator >= 1 && value.numerator <= 32 && typeof value.denominator === "number" && METER_DENOMINATORS2.includes(value.denominator);
   }
   var durationUnits2 = (duration) => 64 / duration.base * (duration.dots ? 1.5 : 1);
   var capacityUnits2 = (measure) => 64 * measure.meter.numerator / measure.meter.denominator;
@@ -13052,6 +13056,59 @@ ${problems.join("\n")}`);
     });
   }
 
+  // src/vendor/shared-notation/tablature-model.js
+  function isTablatureProjection(value) {
+    return isTablatureView(value) || record5(value) && value.kind === "unsupported" && typeof value.message === "string" && value.message.length > 0;
+  }
+  function pairedNotationMatches(staff, tab) {
+    return staff.partId === tab.partId && staff.staffId === tab.staffId && staff.tempoBpm === tab.tempoBpm && staff.measures.length === tab.measures.length && staff.measures.every((measure, index) => {
+      const other = tab.measures[index];
+      return measure.id === other.id && measure.voiceId === other.voiceId && measure.meter.numerator === other.meter.numerator && measure.meter.denominator === other.meter.denominator && measure.events.length === other.events.length && measure.events.every((event, i) => {
+        const item = other.events[i];
+        return event.id === item.id && event.duration.base === item.duration.base && event.duration.dots === item.duration.dots && event.content.kind === item.content.kind;
+      }) && measure.ruleWarnings.length === other.ruleWarnings.length && measure.ruleWarnings.every((warning, i) => {
+        const item = other.ruleWarnings[i];
+        return ["nominalDuration", "actualDuration", "overflow"].every((key) => {
+          const field = key;
+          return warning[field].numerator === item[field].numerator && warning[field].denominator === item[field].denominator;
+        });
+      });
+    });
+  }
+  var record5 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+  function isFrettedDimensions2(value) {
+    return record5(value) && typeof value.stringCount === "number" && Number.isSafeInteger(value.stringCount) && value.stringCount >= 1 && value.stringCount <= 32 && (value.fretCount === null || typeof value.fretCount === "number" && Number.isSafeInteger(value.fretCount) && value.fretCount >= 1) && typeof value.capoFret === "number" && Number.isSafeInteger(value.capoFret) && value.capoFret >= 0;
+  }
+  function isFrettedPosition2(value, dimensions) {
+    return isFrettedDimensions2(dimensions) && record5(value) && typeof value.stringNumber === "number" && Number.isSafeInteger(value.stringNumber) && value.stringNumber >= 1 && value.stringNumber <= dimensions.stringCount && typeof value.fret === "number" && Number.isSafeInteger(value.fret) && value.fret >= 0 && value.fret <= Number.MAX_SAFE_INTEGER - dimensions.capoFret;
+  }
+  function isTablatureDuration(value, rest) {
+    return isInputDuration2(value) || rest && record5(value) && value.base === 32 && value.dots === 0;
+  }
+  function isTablatureView(value) {
+    if (!record5(value) || !isFrettedDimensions2(value) || value.kind !== "tablature" || typeof value.partId !== "string" || !value.partId || typeof value.staffId !== "string" || !value.staffId || typeof value.tempoBpm !== "number" || !Number.isFinite(value.tempoBpm) || value.tempoBpm <= 0 || !Array.isArray(value.measures) || !value.measures.length)
+      return false;
+    const ids = /* @__PURE__ */ new Set([value.partId, value.staffId]);
+    const unique = (id) => {
+      if (typeof id !== "string" || !id || ids.has(id))
+        return false;
+      ids.add(id);
+      return true;
+    };
+    return value.measures.every((raw) => {
+      if (!record5(raw) || !unique(raw.id) || !unique(raw.voiceId) || !isMeterInput2(raw.meter) || !Array.isArray(raw.events) || !Array.isArray(raw.ruleWarnings) || !raw.ruleWarnings.every((warning) => record5(warning) && warning.code === "rule.sequence-exceeds-measure" && isExactFraction(warning.nominalDuration) && isExactFraction(warning.actualDuration) && isExactFraction(warning.overflow)))
+        return false;
+      return raw.events.every((event) => {
+        if (!record5(event) || !unique(event.id) || !record5(event.content))
+          return false;
+        const content = event.content;
+        if (!isTablatureDuration(event.duration, content.kind === "rest"))
+          return false;
+        return content.kind === "rest" || content.kind === "note" && unique(content.noteId) && isFrettedPosition2(content.position, value);
+      });
+    });
+  }
+
   // src/score/notation-model.js
   function normalizeStaffSnapshot(input) {
     if (!input || !Array.isArray(input.measures) || !input.measures.length) {
@@ -13061,6 +13118,22 @@ ${problems.join("\n")}`);
       throw new TypeError("\u4E94\u7EBF\u8C31\u5FEB\u7167\u6216\u4E8B\u4EF6\u65E0\u6548\uFF08\u97F3\u9AD8\u3001\u65F6\u503C\u3001\u62CD\u53F7\u3001\u8EAB\u4EFD\u6216\u8C03\u53F7\u5408\u540C\u4E0D\u5339\u914D\uFF09");
     }
     return deepFreeze(structuredClone(input));
+  }
+  function normalizeNotationSnapshot(input) {
+    if (input?.kind === "staff") return normalizeStaffSnapshot(input);
+    if (input?.kind !== "tablature" || !isTablatureProjection(input)) {
+      throw new TypeError("Tab \u5FEB\u7167\u6216\u5F26\u54C1\u3001\u65F6\u503C\u3001\u62CD\u53F7\u3001\u8EAB\u4EFD\u5408\u540C\u65E0\u6548");
+    }
+    return deepFreeze(structuredClone(input));
+  }
+  function normalizeNotationPair(staff, tablature) {
+    const notation = staff === null ? null : normalizeStaffSnapshot(staff);
+    if (tablature === void 0) return { notation, tablature: void 0 };
+    if (!isTablatureProjection(tablature)) throw new TypeError("\u6587\u6863 Tab \u6295\u5F71\u65E0\u6548");
+    if (notation && tablature.kind === "tablature" && !pairedNotationMatches(notation, tablature)) {
+      throw new TypeError("\u4E94\u7EBF\u8C31\u548C Tab \u5FC5\u987B\u6765\u81EA\u540C\u4E00\u6587\u6863\u7248\u672C\u3001\u58F0\u90E8\u548C\u4E8B\u4EF6\u5E8F\u5217");
+    }
+    return { notation, tablature: deepFreeze(structuredClone(tablature)) };
   }
   function deepFreeze(value) {
     if (value && typeof value === "object") {
@@ -13222,13 +13295,13 @@ ${problems.join("\n")}`);
       });
     });
   }
-  function createEngravingSurface(engine, layout, theme2) {
+  function createEngravingSurface(engine, layout, theme3) {
     const { Renderer, default: VexFlow } = engine;
     const staging = document.createElement("div");
-    const renderer2 = new Renderer(staging, Renderer.Backends.SVG);
-    renderer2.resize(layout.width, layout.height);
-    const context = renderer2.getContext();
-    context.setFillStyle(theme2.ink).setStrokeStyle(theme2.ink);
+    const renderer3 = new Renderer(staging, Renderer.Backends.SVG);
+    renderer3.resize(layout.width, layout.height);
+    const context = renderer3.getContext();
+    context.setFillStyle(theme3.ink).setStrokeStyle(theme3.ink);
     const scale = (layout.staffSpace ?? VexFlow.STAVE_LINE_DISTANCE) / VexFlow.STAVE_LINE_DISTANCE;
     const drawing = context.openGroup("notation-engraving");
     if (!drawing)
@@ -13240,13 +13313,13 @@ ${problems.join("\n")}`);
   // src/vendor/shared-notation/vexflow-renderer.js
   function createVexflowRenderer(loadEngravingEngine) {
     return {
-      async render(layout, theme2, signal) {
+      async render(layout, theme3, signal) {
         const throwIfAborted = () => throwIfRenderAborted(signal);
         throwIfAborted();
         const engine = await loadNotationEngine(loadEngravingEngine, signal);
         const { Stave, BarlineType, StaveNote, GhostNote, Voice, Formatter, Dot, Accidental, Beam } = engine;
         throwIfAborted();
-        const { staging, context, scale, drawing } = createEngravingSurface(engine, layout, theme2);
+        const { staging, context, scale, drawing } = createEngravingSurface(engine, layout, theme3);
         const drawingElement = drawing;
         const anchors = [], events = [], measures = [];
         for (const paperMeasure of layout.measures) {
@@ -13377,7 +13450,7 @@ ${problems.join("\n")}`);
             });
           });
           context.save();
-          context.setFont(theme2.fontFamily, layout.staffSpace ? "16px" : "11px").setFillStyle(theme2.muted);
+          context.setFont(theme3.fontFamily, layout.staffSpace ? "16px" : "11px").setFillStyle(theme3.muted);
           if (item.beginsSystem && item.number > 1)
             context.fillText(String(item.number), item.x + 2, item.y + 16);
           context.restore();
@@ -13618,6 +13691,273 @@ ${problems.join("\n")}`);
     const pages = layoutScorePages(normalizeStaffSnapshot(input));
     const drawings = [];
     for (const page of pages) drawings.push(await renderer.render(page, theme, signal));
+    return composeNotationPages(pages, drawings, signal);
+  }
+
+  // src/vendor/shared-notation/tablature-renderer.js
+  function createTablatureRenderer(load) {
+    return { async render(layout, theme3, signal) {
+      const engine = await loadNotationEngine(load, signal);
+      throwIfRenderAborted(signal);
+      const { TabStave, TabNote, StaveNote, GhostNote, Voice, Formatter, Beam, Dot, Clef, BarlineType, Stem } = engine;
+      const { Glyphs } = engine.default;
+      class TablatureStave extends TabStave {
+        getYForNote(line) {
+          return this.getYForLine(Math.floor((this.getNumLines() - 1) / 2) + 3 - line);
+        }
+      }
+      class TablatureRest extends StaveNote {
+        buildNoteHeads() {
+          this.setFont({ ...this.fontInfo, size: "36px" });
+          const heads = super.buildNoteHeads();
+          this.restHead = heads[0];
+          return heads;
+        }
+        getGlyphWidth() {
+          return Math.max(this.restHead.getWidth(), this.restHead.getTextMetrics().actualBoundingBoxRight);
+        }
+        drawNoteHeads() {
+          const head = this.restHead, metrics = head.getTextMetrics();
+          if (!["1", "2"].includes(this.duration)) {
+            const padding = 1.5;
+            this.checkContext().clearRect(this.getNoteHeadBeginX() - metrics.actualBoundingBoxLeft - padding, head.getY() + head.getYShift() - metrics.actualBoundingBoxAscent - padding, metrics.actualBoundingBoxLeft + metrics.actualBoundingBoxRight + padding * 2, metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent + padding * 2);
+          }
+          super.drawNoteHeads();
+        }
+        inkBounds() {
+          const head = this.restHead;
+          const metrics = head.getTextMetrics(), box2 = this.getBoundingBox(), headBox = head.getBoundingBox();
+          const x = Math.min(box2.getX(), headBox.getX() - metrics.actualBoundingBoxLeft);
+          const y = Math.min(box2.getY(), headBox.getY());
+          const right = Math.max(box2.getX() + box2.getW(), headBox.getX() + metrics.actualBoundingBoxRight);
+          const bottom = Math.max(box2.getY() + box2.getH(), headBox.getY() + metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent);
+          return { x, y, width: right - x, height: bottom - y };
+        }
+      }
+      class PositionedTabNote extends TabNote {
+        updateWidth() {
+          super.updateWidth();
+          this.width = 0;
+          for (const digit of this.fretElement) {
+            digit.setFont({ ...digit.fontInfo, family: theme3.fontFamily, size: "16px" });
+            const metrics = digit.getTextMetrics();
+            digit.setYShift((metrics.actualBoundingBoxAscent - metrics.actualBoundingBoxDescent) / 2);
+            digit.setXShift((metrics.width + metrics.actualBoundingBoxLeft - metrics.actualBoundingBoxRight) / 2);
+            this.width = Math.max(this.width, digit.getWidth() + (["1", "2"].includes(this.duration) ? 6 : 0));
+          }
+        }
+        digitBounds() {
+          const digit = this.fretElement[0];
+          const metrics = digit.getTextMetrics();
+          const width = metrics.actualBoundingBoxLeft + metrics.actualBoundingBoxRight;
+          const height = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
+          return {
+            x: this.getAbsoluteX() - width / 2,
+            y: this.getYs()[0] + this.renderOptions.yShift - height / 2,
+            width,
+            height
+          };
+        }
+        drawPositions() {
+          const ctx = this.checkContext(), bounds = this.digitBounds();
+          const padding = ["1", "2"].includes(this.duration) ? 3 : 1.5;
+          ctx.clearRect(bounds.x - padding, bounds.y - padding, bounds.width + padding * 2, bounds.height + padding * 2);
+          const digit = this.fretElement[0];
+          digit.renderText(ctx, this.getAbsoluteX() - digit.getWidth() / 2, this.getYs()[0] + this.renderOptions.yShift);
+          if (["1", "2"].includes(this.duration)) {
+            const group = ctx.openGroup("tab-long-duration");
+            if (!group)
+              throw new Error("Tab long-note marker returned no SVG group");
+            const ring = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+            for (const [name, value] of Object.entries({
+              cx: this.getAbsoluteX(),
+              cy: this.getYs()[0] + this.renderOptions.yShift,
+              rx: bounds.width / 2 + 2,
+              ry: bounds.height / 2 + 2
+            }))
+              ring.setAttribute(name, String(value));
+            ring.setAttribute("fill", "none");
+            ring.setAttribute("stroke", theme3.ink);
+            ring.setAttribute("stroke-width", "1");
+            group.appendChild(ring);
+            ctx.closeGroup();
+          }
+        }
+      }
+      const { staging, context, scale, drawing } = createEngravingSurface(engine, layout, theme3);
+      const anchors = [], events = [], measures = [];
+      for (const paperMeasure of layout.measures) {
+        throwIfRenderAborted(signal);
+        const item = { ...paperMeasure, x: paperMeasure.x / scale, y: paperMeasure.y / scale, width: paperMeasure.width / scale };
+        const stave = new TablatureStave(item.x, item.y, item.width, { numLines: layout.stringCount });
+        if (!item.beginsSystem)
+          stave.setBegBarType(BarlineType.NONE);
+        if (item.beginsSystem && [4, 6].includes(layout.stringCount)) {
+          const clef = new Clef("tab");
+          clef.line = (layout.stringCount - 1) / 2;
+          if (layout.stringCount === 4)
+            clef.setText(Glyphs.fourStringTabClef);
+          stave.addModifier(clef);
+        }
+        if (item.showMeter)
+          stave.addTimeSignature(`${item.measure.meter.numerator}/${item.measure.meter.denominator}`);
+        if (item.number === 1 && item.beginsSystem)
+          stave.setTempo({ duration: "q", bpm: layout.tempoBpm }, -30);
+        stave.setContext(context).draw();
+        const spacing = stave.getSpacingBetweenLines();
+        const stringYs = Array.from({ length: layout.stringCount }, (_value, index) => stave.getYForLine(index));
+        const cursorY = (stringYs[0] + stringYs.at(-1)) / 2;
+        const noteStart = stave.getNoteStartX() + 8, noteEnd = stave.getNoteEndX() - 3;
+        const used = item.measure.events.reduce((sum, event) => sum + durationUnits2(event.duration), 0);
+        let tailX = noteStart + (noteEnd - noteStart) * Math.min(1, used / capacityUnits2(item.measure));
+        let tailY = cursorY;
+        const notes = item.measure.events.map((event) => {
+          const note = event.content.kind === "note" ? new PositionedTabNote({
+            positions: [{ str: event.content.position.stringNumber, fret: event.content.position.fret }],
+            duration: `${event.duration.base}${event.duration.dots ? "d" : ""}`,
+            stemDirection: Stem.DOWN
+          }, event.duration.base !== 1) : new TablatureRest(eventNoteSpec({ ...event, content: { kind: "rest" } }));
+          if (note instanceof PositionedTabNote) {
+            note.renderOptions.drawDots = true;
+            note.renderOptions.drawStemThroughStave = true;
+            if (event.duration.base === 2) {
+              note.setStemLength(Stem.HEIGHT / 2);
+              note.checkStem().setExtension(note.getStemExtension());
+            }
+          }
+          if (event.duration.dots)
+            Dot.buildAndAttach([note]);
+          note.setAttribute("id", `event-${event.id}`);
+          return note;
+        });
+        const overfull = overfullEventIds(item.measure);
+        const warning = describeMeasureRuleWarnings(item.number, item.measure);
+        if (notes.length) {
+          const ghosts = trailingGhostDurations(item.measure).map((duration) => new GhostNote(duration));
+          const voice = new Voice({ numBeats: item.measure.meter.numerator, beatValue: item.measure.meter.denominator }).setMode(Voice.Mode.SOFT).addTickables([...notes, ...ghosts]);
+          const beams = Beam.generateBeams(notes, {
+            groups: Beam.getDefaultBeamGroups(`${item.measure.meter.numerator}/${item.measure.meter.denominator}`),
+            maintainStemDirections: true
+          });
+          new Formatter().joinVoices([voice]).formatToStave([voice], stave);
+          voice.draw(context, stave);
+          beams.forEach((beam) => beam.setContext(context).draw());
+          tailX = ghosts[0]?.getAbsoluteX() ?? noteEnd;
+          tailY = notes.at(-1)?.getYs()[0] ?? cursorY;
+        }
+        const centers = notes.map((note) => ({
+          x: note instanceof PositionedTabNote ? note.getAbsoluteX() : (note.getNoteHeadBeginX() + note.getNoteHeadEndX()) / 2,
+          y: note.getYs()[0] ?? cursorY
+        }));
+        anchors.push(...rhythmicAnchors(item.measure, { noteStart, noteEnd, centers, tailX, tailY, cursorY, lineSpacing: spacing, scale }));
+        const top = stringYs[0] - spacing * 5, bottom = stringYs.at(-1) + spacing * 6;
+        measures.push({
+          measureId: item.measure.id,
+          x: item.x * scale,
+          y: top * scale,
+          width: item.width * scale,
+          height: (bottom - top) * scale,
+          staffBottom: stringYs.at(-1) * scale,
+          lineSpacing: spacing * scale,
+          stringYs: stringYs.map((y) => y * scale)
+        });
+        const measureHit = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        measureHit.setAttribute("x", String(item.x));
+        measureHit.setAttribute("y", String(top));
+        measureHit.setAttribute("width", String(item.width));
+        measureHit.setAttribute("height", String(bottom - top));
+        measureHit.setAttribute("fill", "none");
+        measureHit.setAttribute("stroke", "none");
+        measureHit.setAttribute("pointer-events", "all");
+        measureHit.setAttribute("data-measure-id", item.measure.id);
+        drawing.append(measureHit);
+        notes.forEach((note, index) => {
+          const event = item.measure.events[index];
+          const bounds = note instanceof PositionedTabNote ? note.digitBounds() : note.inkBounds();
+          const padding = spacing * 0.25;
+          const geometry = {
+            measureId: item.measure.id,
+            eventId: event.id,
+            content: event.content,
+            x: (bounds.x - padding) * scale,
+            y: (bounds.y - padding) * scale,
+            width: (bounds.width + padding * 2) * scale,
+            height: (bounds.height + padding * 2) * scale
+          };
+          events.push(geometry);
+          const hit = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+          for (const [name, value] of Object.entries({
+            x: geometry.x / scale,
+            y: geometry.y / scale,
+            width: geometry.width / scale,
+            height: geometry.height / scale
+          }))
+            hit.setAttribute(name, String(value));
+          hit.setAttribute("class", "event-hit");
+          hit.setAttribute("data-event-id", event.id);
+          hit.setAttribute("data-duration-base", String(event.duration.base));
+          hit.setAttribute("fill", "none");
+          hit.setAttribute("stroke", "none");
+          hit.setAttribute("pointer-events", "all");
+          if (overfull.has(event.id)) {
+            hit.setAttribute("data-rule-warning", "overfull");
+            const rendered = Array.from(drawing.querySelectorAll("[id]")).find((element) => element.getAttribute("id") === `vf-event-${event.id}`);
+            rendered?.setAttribute("data-rule-warning", "overfull");
+            if (warning) {
+              const title = document.createElementNS("http://www.w3.org/2000/svg", "title");
+              title.textContent = warning;
+              hit.append(title);
+            }
+          }
+          drawing.append(hit);
+        });
+        context.save();
+        context.setFont(theme3.fontFamily, "16px").setFillStyle(theme3.muted);
+        if (item.beginsSystem && item.number > 1)
+          context.fillText(String(item.number), item.x + 2, item.y + 16);
+        context.restore();
+      }
+      context.closeGroup();
+      throwIfRenderAborted(signal);
+      const svg = staging.querySelector("svg");
+      if (!svg)
+        throw new Error("Tablature renderer returned no drawing");
+      svg.setAttribute("aria-hidden", "true");
+      svg.setAttribute("focusable", "false");
+      return { svg, interaction: { anchors, events, measures } };
+    } };
+  }
+
+  // src/vendor/shared-notation/tablature-layout.js
+  function layoutTablaturePages(view) {
+    if (!isTablatureView(view))
+      throw new Error("Invalid tablature view");
+    const tabStaffSpace = staffSpaces(1.2);
+    const stringHeight = (view.stringCount - 1) * 1.3;
+    return flowScoreMeasures(view.measures, {
+      firstY: SCORE_PAPER.firstStaveY + TEMPO_TOP_RESERVE,
+      pageY: SCORE_PAPER.firstStaveY + staffSpaces(4),
+      systemHeight: tabStaffSpace * (stringHeight + 16),
+      bottomReserve: tabStaffSpace * (stringHeight + 13),
+      justifySystems: true,
+      width: (measure, _index, beginsSystem) => rhythmicMeasureWidth(measure, beginsSystem ? 7 : 0, (event) => event.content.kind === "note" ? Math.max(0, String(event.content.position.fret).length - 1) : 0) * 1.2
+    }).map((measures) => ({
+      width: SCORE_PAPER.width,
+      height: SCORE_PAPER.height,
+      staffSpace: tabStaffSpace,
+      stringCount: view.stringCount,
+      tempoBpm: view.tempoBpm,
+      measures
+    }));
+  }
+
+  // src/score/vexflow-tablature-renderer.js
+  var renderer2 = createTablatureRenderer(loadVexFlow);
+  var theme2 = Object.freeze({ ink: "#14161a", muted: "#62666d", fontFamily: "Academico" });
+  async function renderTablature(input, { signal } = {}) {
+    const pages = layoutTablaturePages(input);
+    const drawings = [];
+    for (const page of pages) drawings.push(await renderer2.render(page, theme2, signal));
     return composeNotationPages(pages, drawings, signal);
   }
 
@@ -14184,9 +14524,9 @@ ${problems.join("\n")}`);
   async function renderClefPreview(clef, load) {
     const { Renderer, Stave, Clef, BarlineType } = await load();
     const staging = document.createElement("div");
-    const renderer2 = new Renderer(staging, Renderer.Backends.SVG);
-    renderer2.resize(64, 120);
-    const context = renderer2.getContext();
+    const renderer3 = new Renderer(staging, Renderer.Backends.SVG);
+    renderer3.resize(64, 120);
+    const context = renderer3.getContext();
     context.setFillStyle("currentColor").setStrokeStyle("currentColor");
     const stave = new Stave(0, 0, 64);
     stave.setBegBarType(BarlineType.NONE).setEndBarType(BarlineType.NONE).addClef(clef).setContext(context).draw();
@@ -14714,10 +15054,12 @@ ${problems.join("\n")}`);
   }
 
   // src/score/core-score-view.js
+  var renderNotation = (snapshot, options) => snapshot.kind === "tablature" ? renderTablature(snapshot, options) : renderStaff(snapshot, options);
+  var notationLabel = (snapshot) => snapshot?.kind === "tablature" ? "\u516D\u7EBF\u8C31\uFF08Tab\uFF09" : "\u4E94\u7EBF\u8C31";
   function createCoreScoreView({
     score = null,
     snapshot = void 0,
-    renderSnapshot = renderStaff,
+    renderSnapshot = renderNotation,
     selection = null,
     execute = null,
     input = null,
@@ -14731,13 +15073,21 @@ ${problems.join("\n")}`);
     let currentDrawing = null, selectionPresentation = null;
     let stopInput = null, inputFeedback = null;
     let content = null, eventControls = null;
-    let disposed = false, lastRead = score ? score.snapshot() : snapshot ?? null;
-    const state = { snapshot: lastRead === null ? null : normalizeStaffSnapshot(lastRead) };
+    let disposed = false, visible = true, lastRead = score ? score.snapshot() : snapshot ?? null;
+    const state = { snapshot: lastRead === null ? null : normalizeNotationSnapshot(lastRead) };
     const sourceStatus = () => score?.status?.() ?? { status: state.snapshot === null ? "empty" : "ready" };
+    function refreshControls() {
+      const staff = state.snapshot?.kind === "staff";
+      if (eventControls) {
+        eventControls.element.hidden = !staff;
+        eventControls.setVisible(visible && staff);
+      }
+      selectionPresentation?.setVisible(visible && staff);
+    }
     function refreshInputFeedback() {
       if (!element || !input || disposed) return;
       inputFeedback?.remove();
-      if (sourceStatus().status !== "ready") return;
+      if (sourceStatus().status !== "ready" || state.snapshot?.kind !== "staff" || element.dataset.renderState !== "ready") return;
       const value = input.snapshot();
       inputFeedback ??= element.ownerDocument.createElement("span");
       inputFeedback.className = "score-input-state";
@@ -14781,6 +15131,7 @@ ${problems.join("\n")}`);
       selectionPresentation?.refresh();
       const status = sourceStatus();
       element.dataset.readState = "error";
+      element.setAttribute("aria-busy", "false");
       const text2 = status.message || "\u4F5C\u54C1\u6682\u65F6\u65E0\u6CD5\u8BFB\u53D6";
       const retry = { label: "\u91CD\u65B0\u8BFB\u53D6\u4F5C\u54C1", action: () => {
         void score?.retry?.();
@@ -14809,13 +15160,19 @@ ${problems.join("\n")}`);
       delete element._scoreInteraction;
       currentDrawing = null;
       selectionPresentation?.refresh();
+      selectionPresentation?.setVisible(visible && state.snapshot?.kind === "staff");
       const status = sourceStatus();
       element.dataset.readState = status.status;
+      if (eventControls) {
+        eventControls.element.hidden = state.snapshot?.kind !== "staff";
+        eventControls.setVisible(visible && state.snapshot?.kind === "staff");
+      }
       if (status.status === "error") {
         showReadFailure();
         return;
       }
       if (state.snapshot === null) {
+        element.setAttribute("aria-busy", "false");
         element.dataset.renderState = "empty";
         showMessage(status.status === "unsupported" ? status.message : status.status === "loading" ? "\u6B63\u5728\u8BFB\u53D6\u4F5C\u54C1\u2026" : "\u5C1A\u672A\u63D0\u4F9B\u8C31\u9762\u5FEB\u7167");
         return;
@@ -14823,10 +15180,17 @@ ${problems.join("\n")}`);
       const controller = new AbortController();
       current2 = controller;
       const acceptedSnapshot = state.snapshot;
-      const sourceRevision = selection?.snapshot().sourceRevision ?? null;
+      let sourceRevision = null;
+      const label = notationLabel(acceptedSnapshot);
       element.dataset.renderState = "loading";
-      showMessage("\u6B63\u5728\u663E\u793A\u4E94\u7EBF\u8C31\u2026");
-      void Promise.resolve().then(() => renderSnapshot(acceptedSnapshot, { signal: controller.signal })).then((result) => {
+      element.setAttribute("aria-busy", "true");
+      if (!element.querySelector(".score-view-svg")) showMessage(`\u6B63\u5728\u663E\u793A${label}\u2026`);
+      else refreshInputFeedback();
+      void Promise.resolve().then(() => {
+        if (controller.signal.aborted || disposed) return null;
+        sourceRevision = selection?.snapshot().sourceRevision ?? null;
+        return renderSnapshot(acceptedSnapshot, { signal: controller.signal });
+      }).then((result) => {
         if (disposed || controller.signal.aborted || current2 !== controller) return;
         const svg = result.svg;
         svg.setAttribute("viewBox", `0 0 ${result.layout.width} ${result.layout.height}`);
@@ -14839,14 +15203,30 @@ ${problems.join("\n")}`);
         element.style.setProperty("aspect-ratio", eventControls ? "auto" : `${result.layout.width} / ${result.layout.height}`);
         updateContent(() => content.replaceChildren(svg));
         element.dataset.renderState = "ready";
-        element._scoreInteraction = result.interaction;
-        currentDrawing = { svg, interaction: result.interaction, snapshot: acceptedSnapshot, sourceRevision };
-        selectionPresentation?.refresh();
+        element.setAttribute("aria-busy", "false");
+        element.setAttribute("aria-label", label);
+        element.dataset.notationKind = acceptedSnapshot.kind;
+        if (acceptedSnapshot.kind === "staff") {
+          element._scoreInteraction = result.interaction;
+          currentDrawing = { svg, interaction: result.interaction, snapshot: acceptedSnapshot, sourceRevision };
+        }
+        refreshControls();
+        refreshInputFeedback();
         if (sourceStatus().status === "error") showReadFailure();
       }).catch((error) => {
         if (disposed || controller.signal.aborted || current2 !== controller) return;
         element.dataset.renderState = "error";
-        showMessage("\u4E94\u7EBF\u8C31\u6682\u65F6\u65E0\u6CD5\u663E\u793A\uFF1A" + (error?.message ?? String(error)), { label: "\u91CD\u65B0\u663E\u793A\u4E94\u7EBF\u8C31", action: render });
+        element.setAttribute("aria-busy", "false");
+        const text2 = label + "\u6682\u65F6\u65E0\u6CD5\u663E\u793A\uFF1A" + (error?.message ?? String(error));
+        if (!element.querySelector(".score-view-svg")) showMessage(text2, { label: "\u91CD\u65B0\u663E\u793A" + label, action: render });
+        else updateContent(() => {
+          element.querySelector(".score-view-read-error")?.remove();
+          const feedback = element.ownerDocument.createElement("div");
+          feedback.className = "score-view-read-error";
+          feedback.setAttribute("role", "alert");
+          feedback.append(retryButton(text2 + "\uFF1B\u91CD\u65B0\u663E\u793A", render));
+          content.append(feedback);
+        });
       });
     }
     function sourceChanged(value) {
@@ -14859,21 +15239,23 @@ ${problems.join("\n")}`);
       element.dataset.readState = status.status;
       updateContent(() => element.querySelector(".score-view-read-error")?.remove());
       if (value === lastRead && element.dataset.renderState === "ready") return;
+      const normalized = value === null ? null : normalizeNotationSnapshot(value);
       lastRead = value;
-      state.snapshot = value === null ? null : normalizeStaffSnapshot(value);
+      state.snapshot = normalized;
       render();
     }
     return {
       setSnapshot(value) {
         if (disposed) return;
+        const normalized = value === null ? null : normalizeNotationSnapshot(value);
         lastRead = value;
-        state.snapshot = value === null ? null : normalizeStaffSnapshot(value);
+        state.snapshot = normalized;
         render();
       },
       mount(target) {
         element = target;
         element.classList.add("core-score-view");
-        element.setAttribute("aria-label", "\u4E94\u7EBF\u8C31");
+        element.setAttribute("aria-label", notationLabel(state.snapshot));
         ownsTabIndex = element.getAttribute("tabindex") === null;
         if (ownsTabIndex) element.setAttribute("tabindex", "-1");
         element.dataset.renderState = "loading";
@@ -14915,27 +15297,32 @@ ${problems.join("\n")}`);
         if (ownsTabIndex) element?.removeAttribute("tabindex");
         element = null;
       },
-      setVisible(visible) {
+      setVisible(value) {
+        visible = value === true;
         if (element) element.hidden = !visible;
-        selectionPresentation?.setVisible(visible);
-        eventControls?.setVisible(visible);
+        refreshControls();
       },
       handleKeyDown(event) {
-        return selectionPresentation?.handleKeyDown(event) ?? false;
+        return visible && state.snapshot?.kind === "staff" ? selectionPresentation?.handleKeyDown(event) ?? false : false;
       }
     };
   }
 
   // src/score/staff-read-port.js
-  function normalize2(snapshot) {
-    return snapshot === null ? null : normalizeStaffSnapshot(snapshot);
-  }
-  function createStaffProjectionPort({ snapshot = null } = {}) {
-    let current2 = normalize2(snapshot);
+  function createStaffProjectionPort({ snapshot = null, tablature = void 0 } = {}) {
+    let current2 = normalizeNotationPair(snapshot, tablature);
     let disposed = false;
     const listeners = /* @__PURE__ */ new Set();
     const read = Object.freeze({
-      snapshot: () => current2,
+      snapshot: () => current2.notation,
+      notation(kind) {
+        if (kind === "staff") return current2.notation;
+        if (kind === "tablature") return current2.tablature ?? Object.freeze({
+          kind: "unsupported",
+          message: "\u5F53\u524D\u5BBF\u4E3B\u6216\u4F5C\u54C1\u672A\u63D0\u4F9B\u5F26\u54C1\u8C31\u9762"
+        });
+        throw new TypeError("\u672A\u77E5\u8C31\u5F0F");
+      },
       subscribe(listener) {
         if (disposed) throw new Error("\u8C31\u9762\u6295\u5F71\u7AEF\u53E3\u5DF2\u7ECF\u91CA\u653E");
         if (typeof listener !== "function") throw new TypeError("\u8C31\u9762\u6295\u5F71\u8BA2\u9605\u8005\u5FC5\u987B\u662F\u51FD\u6570");
@@ -14949,10 +15336,10 @@ ${problems.join("\n")}`);
         };
       }
     });
-    function publish(snapshot2) {
+    function publish(snapshot2, tablature2 = void 0) {
       if (disposed) return { ok: false, code: "score.projection.disposed" };
-      current2 = normalize2(snapshot2);
-      const accepted = current2;
+      current2 = normalizeNotationPair(snapshot2, tablature2);
+      const accepted = current2.notation;
       notifyObservers([...listeners].map((listener) => () => listener(accepted)));
       return { ok: true };
     }
@@ -14960,7 +15347,7 @@ ${problems.join("\n")}`);
       if (disposed) return;
       disposed = true;
       listeners.clear();
-      current2 = null;
+      current2 = { notation: null, tablature: void 0 };
     }
     return Object.freeze({ read, publish, dispose });
   }
@@ -15830,9 +16217,116 @@ ${problems.join("\n")}`);
     });
   }
 
+  // src/score/score-presentation.js
+  var SCORE_PRESENTATION_COMMAND = "notation.core.presentation.select";
+  var SCORE_PRESENTATIONS = Object.freeze([
+    Object.freeze({ kind: "staff", label: "\u4E94\u7EBF\u8C31" }),
+    Object.freeze({ kind: "tablature", label: "\u516D\u7EBF\u8C31\uFF08Tab\uFF09" })
+  ]);
+  function createScorePresentation(score) {
+    if (typeof score?.snapshot !== "function" || typeof score?.subscribe !== "function") throw new TypeError("\u8C31\u5F0F\u5207\u6362\u9700\u8981\u53EA\u8BFB\u8C31\u9762\u6E90");
+    let kind = "staff", disposed = false;
+    const listeners = /* @__PURE__ */ new Set();
+    const notation = (selected) => score.notation?.(selected) ?? (selected === "staff" ? score.snapshot() : { kind: "unsupported", message: "\u5F53\u524D\u5BBF\u4E3B\u6216\u4F5C\u54C1\u672A\u63D0\u4F9B\u5F26\u54C1\u8C31\u9762" });
+    const status = (selected = kind) => {
+      if (score.notationStatus) return score.notationStatus(selected);
+      const source = score.status?.();
+      if (source && ["error", "loading", "empty"].includes(source.status)) return source;
+      const value = notation(selected);
+      return Object.freeze({
+        ...source,
+        status: !value ? "empty" : value.kind === "unsupported" ? "unsupported" : "ready",
+        ...value?.kind === "unsupported" ? { message: value.message } : {}
+      });
+    };
+    const snapshot = () => {
+      const value = notation(kind);
+      return value?.kind === "unsupported" ? null : value;
+    };
+    const changed = () => {
+      if (disposed) return;
+      if (status(kind).status === "unsupported" && status("staff").status === "ready") kind = "staff";
+      notifyObservers(listeners);
+    };
+    const stop = score.subscribe(changed);
+    if (typeof stop !== "function") throw new TypeError("\u8C31\u5F0F\u8BA2\u9605\u9700\u8981\u91CA\u653E\u51FD\u6570");
+    return Object.freeze({
+      read: Object.freeze({ snapshot, status, retry: () => disposed ? { ok: false, code: "score.presentation.disposed" } : score.retry?.(), subscribe(listener) {
+        if (disposed || typeof listener !== "function") throw new TypeError("\u65E0\u6548\u7684\u8C31\u5F0F\u8BA2\u9605");
+        const deliver = () => listener(snapshot());
+        listeners.add(deliver);
+        return () => listeners.delete(deliver);
+      } }),
+      choices: () => SCORE_PRESENTATIONS.map((item) => {
+        const state = status(item.kind);
+        return { ...item, selected: item.kind === kind, enabled: state.status === "ready", message: state.message };
+      }),
+      select(payload) {
+        if (disposed) return { ok: false, code: "score.presentation.disposed" };
+        if (!payload || typeof payload !== "object" || Array.isArray(payload) || Object.keys(payload).length !== 1 || !SCORE_PRESENTATIONS.some((item) => item.kind === payload.kind)) {
+          return { ok: false, code: "score.presentation.invalid-payload" };
+        }
+        const state = status(payload.kind);
+        if (state.status !== "ready") return { ok: false, code: "score.presentation.unavailable", message: state.message };
+        if (kind === payload.kind) return { ok: true, changed: false };
+        kind = payload.kind;
+        changed();
+        return { ok: true, changed: true };
+      },
+      dispose() {
+        if (disposed) return;
+        disposed = true;
+        try {
+          stop();
+        } finally {
+          listeners.clear();
+        }
+      }
+    });
+  }
+
+  // src/score/score-presentation-controls.js
+  var icons = {
+    staff: '<path d="M3 5h18M3 8.5h18M3 12h18M3 15.5h18M3 19h18" opacity=".4"/><path d="M14.5 6v9"/><ellipse cx="12.5" cy="15" rx="2.4" ry="1.7" fill="currentColor" stroke="none" transform="rotate(-20 12.5 15)"/>',
+    tablature: '<path d="M3 4.5h18M3 7.5h18M3 10.5h18M3 13.5h18M3 16.5h18M3 19.5h18" opacity=".4"/><path d="M9 7.5h6M9 13.5h6" stroke="var(--ui-surface-color)" stroke-width="5"/><path d="M10 5.5h3l-3 4h3M10 11.5h3v4h-3z" stroke-width="1"/>'
+  };
+  function mountScorePresentationControls(element, ctx, presentation, input = null) {
+    const group = element.ownerDocument.createElement("div");
+    group.className = "score-presentation-controls";
+    group.setAttribute("role", "group");
+    group.setAttribute("aria-label", "\u8C31\u5F0F");
+    const buttons = SCORE_PRESENTATIONS.map(({ kind, label }) => {
+      const button = element.ownerDocument.createElement("button");
+      button.type = "button";
+      button.dataset.notationChoice = kind;
+      button.setAttribute("aria-label", label);
+      button.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[kind]}</svg>`;
+      button.addEventListener("click", () => ctx.execute(SCORE_PRESENTATION_COMMAND, { kind }));
+      group.append(button);
+      return button;
+    });
+    function refresh() {
+      const pending = input?.snapshot().pending === true;
+      presentation.choices().forEach((choice, index) => {
+        const button = buttons[index];
+        button.disabled = !choice.enabled || pending;
+        button.setAttribute("aria-pressed", String(choice.selected));
+        button.setAttribute("aria-label", choice.kind === "tablature" ? `${choice.label} \xB7 \u53EA\u8BFB` : choice.label);
+        button.title = pending ? "\u8F93\u5165\u5B8C\u6210\u540E\u53EF\u5207\u6362\u8C31\u5F0F" : !choice.enabled && choice.message ? `${choice.label}\uFF1A${choice.message}` : choice.kind === "tablature" ? `${choice.label} \xB7 \u53EA\u8BFB` : choice.label;
+      });
+    }
+    ctx.onDispose(presentation.read.subscribe(refresh));
+    if (input) ctx.onDispose(input.subscribe(refresh));
+    element.append(group);
+    refresh();
+    return { dispose() {
+      group.remove();
+    } };
+  }
+
   // src/fixtures/core-score-plugin.js
   function createCoreScorePlugin({ score = null, snapshot = void 0, documentActions = null, clipboardPort = void 0 } = {}) {
-    let selection = null, input = null;
+    let selection = null, input = null, presentation = null;
     const keySignatures = typeof documentActions?.append === "function" && typeof documentActions?.setKeySignature === "function";
     const staffClefs = typeof documentActions?.append === "function" && typeof documentActions?.setStaffClef === "function";
     const metadata3 = typeof documentActions?.append === "function" && typeof documentActions?.setDocumentMetadata === "function";
@@ -15864,6 +16358,13 @@ ${problems.join("\n")}`);
           id: SCORE_INPUT_KEY_COMMAND,
           run: (payload) => input ? input.key(payload) : { ok: false, code: "score.input.not-ready" }
         },
+        { id: SCORE_PRESENTATION_COMMAND, run: (payload) => {
+          if (!presentation) return { ok: false, code: "score.presentation.not-ready" };
+          if (input?.read.snapshot().pending) return { ok: false, code: "score.presentation.input-pending" };
+          const result = presentation.select(payload);
+          if (result.ok && result.changed) selection?.cancelComposition();
+          return result;
+        } },
         { id: SCORE_INPUT_CHANGE_COMMAND, run: (payload) => input ? input.change(payload) : { ok: false, code: "score.input.not-ready" } },
         ...documentActions?.append ? [[SCORE_INPUT_TOOL_COMMAND, "tool"], [SCORE_INPUT_POINTER_COMMAND, "pointer"]].map(([id, method]) => ({ id, run: (payload) => input ? input[method](payload) : { ok: false, code: "score.input.not-ready" } })) : [],
         ...keySignatures ? [{
@@ -15946,8 +16447,19 @@ ${problems.join("\n")}`);
               controller2.dispose();
             });
           }
+          const display = createScorePresentation(source);
+          presentation = display;
+          ctx.onDispose(() => {
+            if (presentation === display) presentation = null;
+            display.dispose();
+          });
+          const controller = input;
+          let visible = true;
+          const updateInputVisibility = () => controller?.setVisible(visible && display.read.snapshot()?.kind === "staff");
+          ctx.onDispose(display.read.subscribe(updateInputVisibility));
+          updateInputVisibility();
           const view = createCoreScoreView({
-            score: source,
+            score: display.read,
             selection: owner.read,
             execute: ctx.execute,
             input: input?.read,
@@ -15959,11 +16471,25 @@ ${problems.join("\n")}`);
           });
           ctx.onDispose(() => view.dispose());
           const mounted2 = view.mount(element);
-          const controller = input;
           return { ...mounted2, setVisible(value) {
-            controller?.setVisible(value);
+            visible = value === true;
+            updateInputVisibility();
             mounted2.setVisible(value);
           } };
+        }
+      }, {
+        id: "notation.core.presentation",
+        kind: "slotItem",
+        title: "\u8C31\u5F0F",
+        slots: ["top"],
+        defaultSlot: "top",
+        order: -100,
+        minWidth: 76,
+        priority: 100,
+        permissions: { commands: [SCORE_PRESENTATION_COMMAND] },
+        mount(element, ctx) {
+          if (!presentation) throw new Error("\u8C31\u5F0F\u63A7\u4EF6\u9700\u8981\u6838\u5FC3\u8C31\u9762\u5B9E\u4F8B");
+          return mountScorePresentationControls(element, ctx, presentation, input?.read);
         }
       }]
     });
@@ -16027,13 +16553,49 @@ ${problems.join("\n")}`);
     }))) })))
   });
 
+  // src/fixtures/tablature-snapshot.js
+  var positions = Object.freeze({
+    "event-1-1": [5, 3],
+    "event-1-2": [4, 0],
+    "event-1-3": [4, 2],
+    "event-2-1": [4, 2],
+    "event-2-2": [4, 0],
+    "event-2-3": [5, 3],
+    "event-3-1": [3, 0],
+    "event-3-2": [3, 2],
+    "event-3-3": [2, 0],
+    "event-4-1": [2, 1],
+    "event-4-2": [2, 0],
+    "event-4-3": [3, 2]
+  });
+  var TABLATURE_FIXTURE = Object.freeze({
+    kind: "tablature",
+    partId: STAFF_FIXTURE.partId,
+    staffId: STAFF_FIXTURE.staffId,
+    stringCount: 6,
+    fretCount: 24,
+    capoFret: 0,
+    tempoBpm: STAFF_FIXTURE.tempoBpm,
+    measures: STAFF_FIXTURE.measures.map((measure) => ({
+      ...measure,
+      events: measure.events.map((event) => ({
+        ...event,
+        content: event.content.kind === "rest" ? event.content : {
+          kind: "note",
+          noteId: `fixture-note-${event.id}`,
+          position: { stringNumber: positions[event.id][0], fret: positions[event.id][1] }
+        }
+      }))
+    }))
+  });
+
   // src/score/document-staff-projection.js
   var freeze5 = (value) => Object.freeze(value);
   function readSessionIdentity(session) {
     if (!session || typeof session !== "object" || Array.isArray(session)) {
       throw new TypeError("\u6587\u6863\u8BFB\u53D6\u7ED3\u679C\u5FC5\u987B\u662F\u5BF9\u8C61");
     }
-    const { documentId, documentVersion, notation } = session;
+    const { documentId, documentVersion, notation, tablature } = session;
     if (typeof documentId !== "string" || !documentId || !Number.isSafeInteger(documentVersion) || documentVersion < 0) {
       throw new TypeError("\u6587\u6863\u8BFB\u53D6\u7ED3\u679C\u7F3A\u5C11\u6709\u6548\u7248\u672C\u8EAB\u4EFD");
     }
@@ -16043,7 +16605,7 @@ ${problems.join("\n")}`);
     if (notation.kind === "unsupported" && (typeof notation.message !== "string" || !notation.message.trim())) {
       throw new TypeError("\u4E0D\u652F\u6301\u7684\u8C31\u5F0F\u9700\u8981\u660E\u786E\u539F\u56E0");
     }
-    return { documentId, documentVersion, notation };
+    return { documentId, documentVersion, notation, tablature };
   }
   function createDocumentStaffProjection({ readSession, subscribe, retrySession } = {}) {
     if (typeof readSession !== "function") throw new TypeError("\u771F\u5B9E\u6587\u6863\u6295\u5F71\u9700\u8981 readSession");
@@ -16090,8 +16652,8 @@ ${problems.join("\n")}`);
         if (identity2 && current2.documentId === identity2.documentId && current2.documentVersion < identity2.documentVersion) {
           return { ok: false, code: "score.document-projection.stale", ...identity2 };
         }
-        const projected = current2.notation.kind === "staff" ? normalizeStaffSnapshot(current2.notation) : null;
-        staff.publish(projected);
+        const projected = current2.notation.kind === "staff" ? current2.notation : null;
+        staff.publish(projected, current2.tablature);
         identity2 = freeze5({ documentId: current2.documentId, documentVersion: current2.documentVersion });
         publishState({
           status: projected ? "ready" : "unsupported",
@@ -16129,7 +16691,17 @@ ${problems.join("\n")}`);
     return Object.freeze({
       read: freeze5({
         snapshot: staff.read.snapshot,
+        notation: staff.read.notation,
         status: () => state,
+        notationStatus(kind) {
+          if (["empty", "loading", "error"].includes(state.status)) return state;
+          const value = staff.read.notation(kind);
+          return freeze5({
+            ...state,
+            status: value && value.kind !== "unsupported" ? "ready" : "unsupported",
+            message: value?.kind === "unsupported" ? value.message : kind === "staff" ? state.message : void 0
+          });
+        },
         subscribe: (listener) => observe(() => listener(staff.read.snapshot())),
         async retry() {
           if (disposed) return { ok: false, code: "score.document-projection.disposed" };
@@ -16358,7 +16930,7 @@ ${problems.join("\n")}`);
         retrySession: documentSession.reload
       });
     }
-    return createStaffProjectionPort({ snapshot: fixture });
+    return createStaffProjectionPort({ snapshot: fixture, tablature: fixture === STAFF_FIXTURE ? TABLATURE_FIXTURE : void 0 });
   }
   function createBackupUiRuntime({
     root: root2,
@@ -18985,10 +19557,10 @@ ${problems.join("\n")}`);
      *
      * @since 2.0.0
      */
-    async setTheme(theme2) {
+    async setTheme(theme3) {
       return invoke("plugin:window|set_theme", {
         label: this.label,
-        value: theme2
+        value: theme3
       });
     }
     // Listeners
@@ -19253,28 +19825,28 @@ ${problems.join("\n")}`);
     EffectState2["Active"] = "active";
     EffectState2["Inactive"] = "inactive";
   })(EffectState || (EffectState = {}));
-  var record5 = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
+  var record6 = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
   var NOTE_BASES3 = [1, 2, 4, 8, 16];
   var PITCH_STEPS3 = ["C", "D", "E", "F", "G", "A", "B"];
   function equalEventProperties2(a, b) {
     return a.duration.base === b.duration.base && a.duration.dots === b.duration.dots && (a.content.kind === "rest" ? b.content.kind === "rest" : b.content.kind === "note" && a.content.pitch.step === b.content.pitch.step && a.content.pitch.octave === b.content.pitch.octave && a.content.pitch.alter === b.content.pitch.alter);
   }
-  var METER_DENOMINATORS2 = [1, 2, 4, 8, 16, 32, 64];
+  var METER_DENOMINATORS3 = [1, 2, 4, 8, 16, 32, 64];
   var STAFF_CLEFS2 = ["treble", "bass", "alto", "tenor"];
   function isInputDuration3(v) {
-    return record5(v) && NOTE_BASES3.includes(v.base) && (v.dots === 0 || v.dots === 1);
+    return record6(v) && NOTE_BASES3.includes(v.base) && (v.dots === 0 || v.dots === 1);
   }
   function isEventProperties3(v) {
-    return record5(v) && isInputContent3(v.content) && (isInputDuration3(v.duration) || v.content.kind === "rest" && record5(v.duration) && v.duration.base === 32 && v.duration.dots === 0);
+    return record6(v) && isInputContent3(v.content) && (isInputDuration3(v.duration) || v.content.kind === "rest" && record6(v.duration) && v.duration.base === 32 && v.duration.dots === 0);
   }
   function isInputContent3(v) {
-    if (!record5(v)) return false;
+    if (!record6(v)) return false;
     if (v.kind === "rest") return true;
     const p = v.pitch;
-    return v.kind === "note" && record5(p) && PITCH_STEPS3.includes(p.step) && typeof p.octave === "number" && Number.isInteger(p.octave) && p.octave >= 2 && p.octave <= 6 && [-1, 0, 1].includes(p.alter);
+    return v.kind === "note" && record6(p) && PITCH_STEPS3.includes(p.step) && typeof p.octave === "number" && Number.isInteger(p.octave) && p.octave >= 2 && p.octave <= 6 && [-1, 0, 1].includes(p.alter);
   }
-  function isMeterInput2(value) {
-    return record5(value) && typeof value.numerator === "number" && Number.isSafeInteger(value.numerator) && value.numerator >= 1 && value.numerator <= 32 && typeof value.denominator === "number" && METER_DENOMINATORS2.includes(value.denominator);
+  function isMeterInput3(value) {
+    return record6(value) && typeof value.numerator === "number" && Number.isSafeInteger(value.numerator) && value.numerator >= 1 && value.numerator <= 32 && typeof value.denominator === "number" && METER_DENOMINATORS3.includes(value.denominator);
   }
   var SCORE_CLIPBOARD_FORMAT2 = "brilliant-guitar.score-events";
   var SCORE_CLIPBOARD_VERSION2 = 1;
@@ -19327,21 +19899,36 @@ ${problems.join("\n")}`);
       return true;
     });
   }
-  function isTablatureProjection(value) {
-    return isTablatureView(value) || record23(value) && value.kind === "unsupported" && typeof value.message === "string" && value.message.length > 0;
+  function isTablatureProjection2(value) {
+    return isTablatureView2(value) || record23(value) && value.kind === "unsupported" && typeof value.message === "string" && value.message.length > 0;
+  }
+  function pairedNotationMatches2(staff, tab) {
+    return staff.partId === tab.partId && staff.staffId === tab.staffId && staff.tempoBpm === tab.tempoBpm && staff.measures.length === tab.measures.length && staff.measures.every((measure, index) => {
+      const other = tab.measures[index];
+      return measure.id === other.id && measure.voiceId === other.voiceId && measure.meter.numerator === other.meter.numerator && measure.meter.denominator === other.meter.denominator && measure.events.length === other.events.length && measure.events.every((event, i) => {
+        const item = other.events[i];
+        return event.id === item.id && event.duration.base === item.duration.base && event.duration.dots === item.duration.dots && event.content.kind === item.content.kind;
+      }) && measure.ruleWarnings.length === other.ruleWarnings.length && measure.ruleWarnings.every((warning, i) => {
+        const item = other.ruleWarnings[i];
+        return ["nominalDuration", "actualDuration", "overflow"].every((key) => {
+          const field = key;
+          return warning[field].numerator === item[field].numerator && warning[field].denominator === item[field].denominator;
+        });
+      });
+    });
   }
   var record23 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
-  function isFrettedDimensions2(value) {
+  function isFrettedDimensions3(value) {
     return record23(value) && typeof value.stringCount === "number" && Number.isSafeInteger(value.stringCount) && value.stringCount >= 1 && value.stringCount <= 32 && (value.fretCount === null || typeof value.fretCount === "number" && Number.isSafeInteger(value.fretCount) && value.fretCount >= 1) && typeof value.capoFret === "number" && Number.isSafeInteger(value.capoFret) && value.capoFret >= 0;
   }
-  function isFrettedPosition2(value, dimensions) {
-    return isFrettedDimensions2(dimensions) && record23(value) && typeof value.stringNumber === "number" && Number.isSafeInteger(value.stringNumber) && value.stringNumber >= 1 && value.stringNumber <= dimensions.stringCount && typeof value.fret === "number" && Number.isSafeInteger(value.fret) && value.fret >= 0 && value.fret <= Number.MAX_SAFE_INTEGER - dimensions.capoFret;
+  function isFrettedPosition3(value, dimensions) {
+    return isFrettedDimensions3(dimensions) && record23(value) && typeof value.stringNumber === "number" && Number.isSafeInteger(value.stringNumber) && value.stringNumber >= 1 && value.stringNumber <= dimensions.stringCount && typeof value.fret === "number" && Number.isSafeInteger(value.fret) && value.fret >= 0 && value.fret <= Number.MAX_SAFE_INTEGER - dimensions.capoFret;
   }
-  function isTablatureDuration(value, rest) {
+  function isTablatureDuration2(value, rest) {
     return isInputDuration3(value) || rest && record23(value) && value.base === 32 && value.dots === 0;
   }
-  function isTablatureView(value) {
-    if (!record23(value) || !isFrettedDimensions2(value) || value.kind !== "tablature" || typeof value.partId !== "string" || !value.partId || typeof value.staffId !== "string" || !value.staffId || typeof value.tempoBpm !== "number" || !Number.isFinite(value.tempoBpm) || value.tempoBpm <= 0 || !Array.isArray(value.measures) || !value.measures.length) return false;
+  function isTablatureView2(value) {
+    if (!record23(value) || !isFrettedDimensions3(value) || value.kind !== "tablature" || typeof value.partId !== "string" || !value.partId || typeof value.staffId !== "string" || !value.staffId || typeof value.tempoBpm !== "number" || !Number.isFinite(value.tempoBpm) || value.tempoBpm <= 0 || !Array.isArray(value.measures) || !value.measures.length) return false;
     const ids = /* @__PURE__ */ new Set([value.partId, value.staffId]);
     const unique = (id) => {
       if (typeof id !== "string" || !id || ids.has(id)) return false;
@@ -19349,12 +19936,12 @@ ${problems.join("\n")}`);
       return true;
     };
     return value.measures.every((raw) => {
-      if (!record23(raw) || !unique(raw.id) || !unique(raw.voiceId) || !isMeterInput2(raw.meter) || !Array.isArray(raw.events) || !Array.isArray(raw.ruleWarnings) || !raw.ruleWarnings.every((warning) => record23(warning) && warning.code === "rule.sequence-exceeds-measure" && isExactFraction2(warning.nominalDuration) && isExactFraction2(warning.actualDuration) && isExactFraction2(warning.overflow))) return false;
+      if (!record23(raw) || !unique(raw.id) || !unique(raw.voiceId) || !isMeterInput3(raw.meter) || !Array.isArray(raw.events) || !Array.isArray(raw.ruleWarnings) || !raw.ruleWarnings.every((warning) => record23(warning) && warning.code === "rule.sequence-exceeds-measure" && isExactFraction2(warning.nominalDuration) && isExactFraction2(warning.actualDuration) && isExactFraction2(warning.overflow))) return false;
       return raw.events.every((event) => {
         if (!record23(event) || !unique(event.id) || !record23(event.content)) return false;
         const content = event.content;
-        if (!isTablatureDuration(event.duration, content.kind === "rest")) return false;
-        return content.kind === "rest" || content.kind === "note" && unique(content.noteId) && isFrettedPosition2(content.position, value);
+        if (!isTablatureDuration2(event.duration, content.kind === "rest")) return false;
+        return content.kind === "rest" || content.kind === "note" && unique(content.noteId) && isFrettedPosition3(content.position, value);
       });
     });
   }
@@ -19374,7 +19961,7 @@ ${problems.join("\n")}`);
   function isScoreEditRequest(v) {
     if (!record33(v) || typeof v.requestId !== "string" || !/^[a-f0-9-]{36}$/i.test(v.requestId) || typeof v.documentId !== "string" || !v.documentId || typeof v.expectedVersion !== "number" || !Number.isSafeInteger(v.expectedVersion) || v.expectedVersion < 0 || !record33(v.action)) return false;
     const a = v.action;
-    return a.kind === "undo" || a.kind === "redo" || a.kind === "delete-event" && typeof a.eventId === "string" && !!a.eventId && (a.timePolicy === void 0 || a.timePolicy === "preserve" || a.timePolicy === "collapse") || a.kind === "delete-range" && isScoreEventRange(a.range) || a.kind === "paste-fragment" && typeof a.measureId === "string" && !!a.measureId && typeof a.voiceId === "string" && !!a.voiceId && isInputSequenceAnchor(a.anchor) && (a.offsetUnits === void 0 || typeof a.offsetUnits === "number" && Number.isSafeInteger(a.offsetUnits) && a.offsetUnits >= 0) && isScoreClipboardFragmentV12(a.fragment) || a.kind === "insert-measure" && typeof a.measureId === "string" && !!a.measureId && (a.position === "before" || a.position === "after") || a.kind === "remove-measure" && typeof a.measureId === "string" && !!a.measureId || a.kind === "set-measure-meter" && typeof a.measureId === "string" && !!a.measureId && isMeterInput2(a.meter) && (a.scope === "meter-run" || a.scope === "measure") || a.kind === "set-key-signature" && typeof a.partId === "string" && !!a.partId && typeof a.measureId === "string" && !!a.measureId && isKeySignatureChangeInput2(a.change) && Object.keys(a).every((key) => ["kind", "partId", "measureId", "change"].includes(key)) || a.kind === "set-staff-clef" && typeof a.staffId === "string" && !!a.staffId && STAFF_CLEFS2.includes(a.clef) && Object.keys(a).every((key) => ["kind", "staffId", "clef"].includes(key)) || a.kind === "set-event-properties" && typeof a.eventId === "string" && !!a.eventId && isEventProperties3(a.properties) || a.kind === "set-fretted-position" && typeof a.partId === "string" && !!a.partId && typeof a.eventId === "string" && !!a.eventId && isFrettedPosition2(a.position, { stringCount: 32, fretCount: null, capoFret: 0 }) && Object.keys(a.position).every((key) => ["stringNumber", "fret"].includes(key)) && Object.keys(a).every((key) => ["kind", "partId", "eventId", "position"].includes(key)) || a.kind === "set-document-metadata" && isDocumentMetadataInput2(a.metadata) && Object.keys(a).every((key) => ["kind", "metadata"].includes(key)) || a.kind === "set-title" && typeof a.title === "string" && a.title.trim().length <= 120 || a.kind === "append" && typeof a.measureId === "string" && !!a.measureId && isInputSequenceAnchor(a.anchor) && (a.offsetUnits === void 0 || typeof a.offsetUnits === "number" && Number.isSafeInteger(a.offsetUnits) && a.offsetUnits >= 0) && isInputDuration3(a.duration) && isInputContent3(a.content);
+    return a.kind === "undo" || a.kind === "redo" || a.kind === "delete-event" && typeof a.eventId === "string" && !!a.eventId && (a.timePolicy === void 0 || a.timePolicy === "preserve" || a.timePolicy === "collapse") || a.kind === "delete-range" && isScoreEventRange(a.range) || a.kind === "paste-fragment" && typeof a.measureId === "string" && !!a.measureId && typeof a.voiceId === "string" && !!a.voiceId && isInputSequenceAnchor(a.anchor) && (a.offsetUnits === void 0 || typeof a.offsetUnits === "number" && Number.isSafeInteger(a.offsetUnits) && a.offsetUnits >= 0) && isScoreClipboardFragmentV12(a.fragment) || a.kind === "insert-measure" && typeof a.measureId === "string" && !!a.measureId && (a.position === "before" || a.position === "after") || a.kind === "remove-measure" && typeof a.measureId === "string" && !!a.measureId || a.kind === "set-measure-meter" && typeof a.measureId === "string" && !!a.measureId && isMeterInput3(a.meter) && (a.scope === "meter-run" || a.scope === "measure") || a.kind === "set-key-signature" && typeof a.partId === "string" && !!a.partId && typeof a.measureId === "string" && !!a.measureId && isKeySignatureChangeInput2(a.change) && Object.keys(a).every((key) => ["kind", "partId", "measureId", "change"].includes(key)) || a.kind === "set-staff-clef" && typeof a.staffId === "string" && !!a.staffId && STAFF_CLEFS2.includes(a.clef) && Object.keys(a).every((key) => ["kind", "staffId", "clef"].includes(key)) || a.kind === "set-event-properties" && typeof a.eventId === "string" && !!a.eventId && isEventProperties3(a.properties) || a.kind === "set-fretted-position" && typeof a.partId === "string" && !!a.partId && typeof a.eventId === "string" && !!a.eventId && isFrettedPosition3(a.position, { stringCount: 32, fretCount: null, capoFret: 0 }) && Object.keys(a.position).every((key) => ["stringNumber", "fret"].includes(key)) && Object.keys(a).every((key) => ["kind", "partId", "eventId", "position"].includes(key)) || a.kind === "set-document-metadata" && isDocumentMetadataInput2(a.metadata) && Object.keys(a).every((key) => ["kind", "metadata"].includes(key)) || a.kind === "set-title" && typeof a.title === "string" && a.title.trim().length <= 120 || a.kind === "append" && typeof a.measureId === "string" && !!a.measureId && isInputSequenceAnchor(a.anchor) && (a.offsetUnits === void 0 || typeof a.offsetUnits === "number" && Number.isSafeInteger(a.offsetUnits) && a.offsetUnits >= 0) && isInputDuration3(a.duration) && isInputContent3(a.content);
   }
   function isKeySignatureChangeInput2(value) {
     if (!record33(value)) return false;
@@ -19492,7 +20079,7 @@ ${problems.join("\n")}`);
     agent: { enabled: false, providerSelection: null },
     shortcuts: DEFAULT_SHORTCUT_SETTINGS
   };
-  function record6(value) {
+  function record62(value) {
     return typeof value === "object" && value !== null && !Array.isArray(value) ? value : null;
   }
   function onlyKeys3(value, keys3) {
@@ -19500,15 +20087,15 @@ ${problems.join("\n")}`);
     return actual.length === keys3.length && actual.every((key) => keys3.includes(key));
   }
   function isApplicationSettingsV1(value) {
-    const root2 = record6(value);
-    const ui2 = record6(root2?.ui);
-    const editing = record6(root2?.editing);
-    const agent = record6(root2?.agent);
+    const root2 = record62(value);
+    const ui2 = record62(root2?.ui);
+    const editing = record62(root2?.editing);
+    const agent = record62(root2?.agent);
     return root2 !== null && onlyKeys3(root2, ["schemaVersion", "ui", "editing", "agent", "shortcuts"]) && root2.schemaVersion === 1 && ui2 !== null && onlyKeys3(ui2, ["animationsEnabled", "ruleWarningsVisible"]) && typeof ui2.animationsEnabled === "boolean" && typeof ui2.ruleWarningsVisible === "boolean" && editing !== null && onlyKeys3(editing, ["deleteTimePolicy", "noteInput"]) && (editing.deleteTimePolicy === "preserve" || editing.deleteTimePolicy === "collapse") && normalizeNoteInputPreferences(editing.noteInput) !== null && agent !== null && onlyKeys3(agent, ["enabled", "providerSelection"]) && typeof agent.enabled === "boolean" && (agent.providerSelection === null || isAgentProviderSelection(agent.providerSelection)) && normalizeShortcutSettings(root2.shortcuts) !== null;
   }
   function normalizedBase(root2) {
-    const ui2 = record6(root2.ui);
-    const editing = record6(root2.editing);
+    const ui2 = record62(root2.ui);
+    const editing = record62(root2.editing);
     const noteInput = editing?.noteInput === void 0 ? DEFAULT_NOTE_INPUT_PREFERENCES : normalizeNoteInputPreferences(editing.noteInput);
     if (root2.schemaVersion !== 1 || ui2 === null || !onlyKeys3(ui2, ["animationsEnabled", "ruleWarningsVisible"]) || typeof ui2.animationsEnabled !== "boolean" || typeof ui2.ruleWarningsVisible !== "boolean" || editing === null || !onlyKeys3(editing, editing.noteInput === void 0 ? ["deleteTimePolicy"] : ["deleteTimePolicy", "noteInput"]) || noteInput === null || editing.deleteTimePolicy !== "preserve" && editing.deleteTimePolicy !== "collapse") return null;
     return {
@@ -19518,18 +20105,18 @@ ${problems.join("\n")}`);
     };
   }
   function normalizeNoteInputPreferences(value) {
-    const preferences = record6(value);
+    const preferences = record62(value);
     if (preferences === null || !onlyKeys3(preferences, ["retention", "defaultDuration"]) || preferences.retention !== "rhythm" && preferences.retention !== "all" && preferences.retention !== "reset" || !isInputDuration3(preferences.defaultDuration)) return null;
     return { retention: preferences.retention, defaultDuration: preferences.defaultDuration };
   }
   function normalizeApplicationSettings(value) {
     if (isApplicationSettingsV1(value)) return value;
-    const root2 = record6(value);
+    const root2 = record62(value);
     if (root2 === null) return null;
     const base = normalizedBase(root2);
     if (base === null) return null;
     if (!Object.keys(root2).every((key) => ["schemaVersion", "ui", "editing", "agent", "shortcuts"].includes(key))) return null;
-    const agent = record6(root2.agent);
+    const agent = record62(root2.agent);
     let normalizedAgent;
     if (root2.agent === void 0) normalizedAgent = { enabled: false, providerSelection: null };
     else if (agent !== null && onlyKeys3(agent, ["enabled"]) && typeof agent.enabled === "boolean") {
@@ -19542,7 +20129,7 @@ ${problems.join("\n")}`);
     return { ...base, agent: normalizedAgent, shortcuts };
   }
   function normalizeApplicationSettingsSnapshot(value) {
-    const snapshot = record6(value);
+    const snapshot = record62(value);
     const settings = normalizeApplicationSettings(snapshot?.settings);
     if (snapshot === null || settings === null || !onlyKeys3(snapshot, ["settings", "persisted", "recoveredFromInvalid"]) || typeof snapshot.persisted !== "boolean" || typeof snapshot.recoveredFromInvalid !== "boolean") return null;
     return { settings, persisted: snapshot.persisted, recoveredFromInvalid: snapshot.recoveredFromInvalid };
@@ -19970,23 +20557,8 @@ ${problems.join("\n")}`);
     }
     const metadataValid = metadata3 === void 0 || typeof metadata3 === "object" && metadata3 !== null && !Array.isArray(metadata3) && typeof metadata3.title === "string" && metadata3.title === value.title && Array.isArray(metadata3.authors) && metadata3.authors.every((author) => typeof author === "string") && typeof metadata3.tempoBpm === "number" && Number.isFinite(metadata3.tempoBpm) && metadata3.tempoBpm > 0;
     const tablature = r.tablature;
-    const tabValid = tablature === void 0 || isTablatureProjection(tablature) && (tablature.kind === "unsupported" || tablature.measures.length === value.measureCount && (metadata3 === void 0 || tablature.tempoBpm === metadata3.tempoBpm) && (!isNotationView2(notation) || notation.kind === "unsupported" || pairedNotationMatches(notation, tablature)));
-    return metadataValid && tabValid && isNotationView2(notation) && isPlaybackSourceProjection(r.playbackSource) && (tablature === void 0 || !isTablatureProjection(tablature) || tablature.kind === "unsupported" || r.playbackSource.kind === "unsupported" || tablature.tempoBpm === r.playbackSource.bpm) && r.playbackSource.documentId === value.documentId && r.playbackSource.documentVersion === value.documentVersion && (metadata3 === void 0 || r.playbackSource.kind === "unsupported" || r.playbackSource.bpm === metadata3.tempoBpm) && (metadata3 === void 0 || notation.kind === "unsupported" || notation.tempoBpm === metadata3.tempoBpm) && (notation.kind === "unsupported" || notation.measures.length === value.measureCount);
-  }
-  function pairedNotationMatches(staff, tab) {
-    return staff.partId === tab.partId && staff.staffId === tab.staffId && staff.tempoBpm === tab.tempoBpm && staff.measures.length === tab.measures.length && staff.measures.every((measure, index) => {
-      const other = tab.measures[index];
-      return measure.id === other.id && measure.voiceId === other.voiceId && measure.meter.numerator === other.meter.numerator && measure.meter.denominator === other.meter.denominator && measure.events.length === other.events.length && measure.events.every((event, i) => {
-        const item = other.events[i];
-        return event.id === item.id && event.duration.base === item.duration.base && event.duration.dots === item.duration.dots && event.content.kind === item.content.kind;
-      }) && measure.ruleWarnings.length === other.ruleWarnings.length && measure.ruleWarnings.every((warning, i) => {
-        const item = other.ruleWarnings[i];
-        return ["nominalDuration", "actualDuration", "overflow"].every((key) => {
-          const field = key;
-          return warning[field].numerator === item[field].numerator && warning[field].denominator === item[field].denominator;
-        });
-      });
-    });
+    const tabValid = tablature === void 0 || isTablatureProjection2(tablature) && (tablature.kind === "unsupported" || tablature.measures.length === value.measureCount && (metadata3 === void 0 || tablature.tempoBpm === metadata3.tempoBpm) && (!isNotationView2(notation) || notation.kind === "unsupported" || pairedNotationMatches2(notation, tablature)));
+    return metadataValid && tabValid && isNotationView2(notation) && isPlaybackSourceProjection(r.playbackSource) && (tablature === void 0 || !isTablatureProjection2(tablature) || tablature.kind === "unsupported" || r.playbackSource.kind === "unsupported" || tablature.tempoBpm === r.playbackSource.bpm) && r.playbackSource.documentId === value.documentId && r.playbackSource.documentVersion === value.documentVersion && (metadata3 === void 0 || r.playbackSource.kind === "unsupported" || r.playbackSource.bpm === metadata3.tempoBpm) && (metadata3 === void 0 || notation.kind === "unsupported" || notation.tempoBpm === metadata3.tempoBpm) && (notation.kind === "unsupported" || notation.measures.length === value.measureCount);
   }
   var WORKSPACE_ID = /^[a-f0-9-]{36}$/i;
   function isWorkspaceId(value) {
@@ -21318,7 +21890,7 @@ ${problems.join("\n")}`);
         const tab = value.tablature;
         if (tab?.kind !== "tablature") return { ok: false, code: "document.tablature-unavailable", message: "\u5F53\u524D\u5BBF\u4E3B\u6216\u4F5C\u54C1\u5C1A\u4E0D\u80FD\u7F16\u8F91Tab" };
         if (action.partId !== tab.partId) return { ok: false, code: "document.part-stale", message: "\u76EE\u6807\u58F0\u90E8\u5DF2\u6539\u53D8\uFF0C\u8BF7\u91CD\u65B0\u9009\u62E9" };
-        if (!isFrettedPosition2(action.position, tab)) return { ok: false, code: "document.invalid-input", message: "\u5F26\u54C1\u8D85\u51FA\u5F53\u524D\u4E50\u5668\u8303\u56F4" };
+        if (!isFrettedPosition3(action.position, tab)) return { ok: false, code: "document.invalid-input", message: "\u5F26\u54C1\u8D85\u51FA\u5F53\u524D\u4E50\u5668\u8303\u56F4" };
         const event = tab.measures.flatMap((measure) => measure.events).find((event2) => event2.id === action.eventId);
         if (!event || event.content.kind !== "note") return { ok: false, code: "document.selection-stale", message: "\u8BF7\u91CD\u65B0\u9009\u62E9\u5355\u4E2A\u97F3\u7B26" };
         if (event.content.position.stringNumber === action.position.stringNumber && event.content.position.fret === action.position.fret) {

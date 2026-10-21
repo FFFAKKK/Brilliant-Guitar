@@ -1,11 +1,12 @@
 import { createWorkspaceRuntime } from "./host/workspace-runtime.js";
 import { createCoreScorePlugin } from "./fixtures/core-score-plugin.js";
 import { STAFF_FIXTURE } from "./fixtures/staff-snapshot.js";
+import { TABLATURE_FIXTURE } from "./fixtures/tablature-snapshot.js";
 import { createStaffProjectionPort } from "./score/staff-read-port.js";
 import { prepareBackupPlugin, createBackupFormalPlatform, configureBackupFormalPlatform } from "./host/formal-plugin-assembly.js";
 
 // The preview keeps the shell and the notation provider separate: the shell
-// owns layout, while this first-party plugin owns the shared read-only staff
+// owns layout, while this first-party plugin owns the shared read-only notation
 // view. No static score image is used as a second rendering path.
 const root = document.getElementById("app");
 const previewParams = new URLSearchParams(globalThis.location?.search ?? "");
@@ -14,7 +15,8 @@ let runtime = null;
 let scoreProjection = null;
 
 try {
-  scoreProjection = createStaffProjectionPort({ snapshot: STAFF_FIXTURE });
+  scoreProjection = createStaffProjectionPort({ snapshot: STAFF_FIXTURE, tablature: TABLATURE_FIXTURE });
+  root.dataset.scoreSource = "fixture"; root.setAttribute("aria-description", "谱面使用双谱式演示样本");
   runtime = createWorkspaceRuntime({
     root,
     plugins: [createCoreScorePlugin({ score: scoreProjection.read })],
