@@ -1,0 +1,149 @@
+{
+  "formatVersion": 1,
+  "observedAt": "2026-10-21T15:04:45.724009+08:00",
+  "repository": "E:/desktop/brilliant_ideas/brilliant_guitar",
+  "testedProductHead": "3f775837dc625e72b5d3199f65013c7107fcea78",
+  "worktrees": {
+    "initial": 67,
+    "replacementRegistrationsAdded": 2,
+    "originalRegistrationsRetired": 63,
+    "current": 6,
+    "netReduction": 61,
+    "currentOnC": 0,
+    "cWorktreeRootEmpty": true,
+    "retained": [
+      {
+        "path": "E:/desktop/brilliant_ideas/brilliant_guitar",
+        "head": "3f775837dc625e72b5d3199f65013c7107fcea78",
+        "disposition": "keep-main-integration",
+        "reason": "A/B/C123/C4 published at the verified prior checkpoint; 1A/maintenance/1B/1C/headless now locally committed. Preserve excluded metadata/evidence and finish remaining retirement/recovery gates."
+      },
+      {
+        "path": "E:/desktop/brilliant_ideas/brilliant_guitar/.worktrees/cvn-7-accepted-baseline",
+        "head": "38afdc3fd508dc67f7aa446fd323837a5d550b70",
+        "disposition": "retain-active-cvn7-benchmark-baseline",
+        "reason": "Active CVN-7 operator handoff and implementation commands still use this physical baseline checkout"
+      },
+      {
+        "path": "E:/desktop/brilliant_ideas/brilliant_guitar/.worktrees/cvn-7-core-vnext-final-qualification",
+        "head": "b21540fa3636e6c8e827ff24c2099f4ff331285d",
+        "disposition": "retain-active-owner-task",
+        "reason": "Main Trellis registry still records planning/in_progress owner task; clean ancestor HEAD is not task completion"
+      },
+      {
+        "path": "E:/desktop/brilliant_ideas/brilliant_guitar/.worktrees/rkp-4-history-snapshots-events-replay-planning",
+        "head": "902eacd50422994898eca2a0eaaab924595b8ab7",
+        "disposition": "retain-active-owner-task",
+        "reason": "Main Trellis registry still records planning/in_progress owner task; clean ancestor HEAD is not task completion"
+      },
+      {
+        "path": "E:/Codex/worktrees/4c4f/brilliant_guitar",
+        "head": "cda8f7dac54c0ebb4a0208de7917242a76a7122d",
+        "disposition": "retain-active-audit-on-E",
+        "reason": "Unfinished audit"
+      },
+      {
+        "path": "E:/Codex/worktrees/7b1c/brilliant_guitar",
+        "head": "064552ddfef5546406374ae4058ac5d60a2af81f",
+        "disposition": "retain-active-visual-on-E",
+        "reason": "Active visual source and unaccepted Tab/tooling proposals"
+      }
+    ]
+  },
+  "applicationCleanup": {
+    "archiveQueueEmpty": true,
+    "staleLiveAttachmentsRemoved": 9,
+    "emptyMarkerShellsRemoved": 16,
+    "historicalHumanChatsArchived": 24,
+    "historicalInternalRecordsPreserved": 177,
+    "validRecoveryAttachmentsPreserved": true,
+    "successfulOfflineRepairReplayed": false
+  },
+  "newWorktreeRoot": {
+    "target": "E:/Codex/worktrees",
+    "settingVerified": false,
+    "reason": "No supported settings-read/write tool exposed; current migrations do not establish the future default."
+  },
+  "nativeAcceptance": {
+    "status": "partial-5-of-6",
+    "testedHead": "3f775837dc625e72b5d3199f65013c7107fcea78",
+    "identifier": "com.brilliantguitar.consolidation.native20261021",
+    "checks": {
+      "unsavedDialogThreeButtons": true,
+      "cancelClosePreservesDocument": true,
+      "cancelSavePickerPreservesDocument": true,
+      "savePickerWritesFileAndExits": true,
+      "reopenSavedA4": true,
+      "discardUnsavedChangePreservesSavedFile": null
+    },
+    "discardState": "deferred-until-worktree-cleanup-complete",
+    "temporaryTestTitle": "TEMP-DISCARD-20261021",
+    "testProfileCleanup": "removed-after-complete-E-drive-preservation",
+    "testProfilePreservation": {
+      "comparedFiles": 297,
+      "sourceFileBytes": 75218462,
+      "cVolumeNetFreeDeltaBytes": 75599872,
+      "profileConsumersObserved": 0,
+      "savedScoreDirectlyUnchanged": true,
+      "dailyProfilesTouched": false
+    },
+    "sourceComparison": {
+      "exactFiles": 1283,
+      "gitTextNewlineEquivalentFiles": 42,
+      "missingFiles": 0,
+      "differentFiles": 0
+    }
+  },
+  "uiChangeReview": {
+    "status": "recorded-repair-deferred-until-worktree-cleanup",
+    "combinedPresentationAccepted": false,
+    "currentStage": "worktree-cleanup-only",
+    "productCodeChangedThisContinuation": false,
+    "sourceIntegrationCommit": "6c401a6879be384e9552487401cafe3ce4e47eb9",
+    "nativeCloseCommit": "379b6d7d3921d9878d1db6af1a595623bb0cefd4",
+    "adoptedHunkPaths": 33,
+    "retainedVisualProposalPaths": 12,
+    "totalComparedSourceDispositions": 120,
+    "recordedChanges": [
+      {"id": "UI-01", "change": "Engineering score editing controls retained instead of the complete visual presentation."},
+      {"id": "UI-02", "change": "Visual staff/Tab presentation switch not imported; confirmed in actual fixture previews."},
+      {"id": "UI-03", "change": "Explicit fit-to-width action and selected viewport/frame behavior adopted."},
+      {"id": "UI-04", "change": "Shared Tab engraving, rests, spacing and paper-flow hunks adopted."},
+      {"id": "UI-05", "change": "Guarded native Save/Don't Save/Cancel close handling added or fixed."}
+    ],
+    "localSourceRecord": ".trellis/tasks/10-19-worktree-main-consolidation/research/ui-change-provenance-20261021.md"
+  },
+  "maintenanceChecks": {
+    "regressionTestsPassed": 16,
+    "testRun": "This continuation, after adding native-result refresh coverage; 12 existing safety tests plus four native status tests.",
+    "refreshObservedNativeStatus": "partial-5-of-6"
+  },
+  "mainWorkingState": {
+    "observedAt": "2026-10-21T15:04:45.724009+08:00",
+    "trackedDirtyCount": 31,
+    "productTrackedDirtyCount": 30,
+    "protectedSpecDirty": true,
+    "indexEmpty": true
+  },
+  "publication": {
+    "localMain": "3f775837dc625e72b5d3199f65013c7107fcea78",
+    "lastVerifiedRemoteMain": "6c401a6879be384e9552487401cafe3ce4e47eb9",
+    "lastRemoteVerifiedAt": "2026-10-20T11:39:54.712011+08:00",
+    "localCommitsAfterLastVerifiedRemote": 5,
+    "pushThisRun": false
+  },
+  "localRecoveryDirectory": ".repo-archive/2026-10-19/worktree-main-consolidation",
+  "localEvidence": {
+    "worktreeLedger": "integration-evidence/worktree-dispositions-final-20261021.json",
+    "registration": "integration-evidence/worktree-registration-final-20261021.txt",
+    "retirementReceipt": "integration-evidence/final-retirement-20261021/removal-receipt.json",
+    "nativeReceipt": "integration-evidence/native-product-acceptance-20261021/results.json",
+    "queueRepairAcceptance": "queue-repair-20261020/post-reopen-acceptance.json",
+    "testProfilePreservation": "integration-evidence/native-product-acceptance-20261021/profile-retirement-20261021/preservation.json",
+    "testProfileRemoval": "integration-evidence/native-product-acceptance-20261021/profile-retirement-20261021/removal-receipt.json"
+  },
+  "taskStatus": "in_progress",
+  "maintenanceCommitApproved": true,
+  "newPush": false,
+  "shutdown": false
+}
