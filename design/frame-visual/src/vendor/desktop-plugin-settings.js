@@ -3987,6 +3987,7 @@ function createReadonlyScoreDocumentSession({ client, createId = () => crypto.ra
   let failure = null;
   let warnings = Object.freeze([]);
   let busy = false, disposed = false, epoch = 0;
+  let readChange = Object.freeze({ kind: "document-read-change", replacementGeneration: 0 });
   let initial = null;
   let unlistenClose;
   let closeRegistration = null;
@@ -4028,6 +4029,10 @@ function createReadonlyScoreDocumentSession({ client, createId = () => crypto.ra
     }
     current = value;
     failure = null;
+    if (replacement) readChange = Object.freeze({
+      kind: "document-read-change",
+      replacementGeneration: readChange.replacementGeneration + 1
+    });
     warnings = Object.freeze([
       ...replacement ? [] : warnings.filter((warning) => warning.code !== "file.recovery-unavailable"),
       ...value?.warnings ?? []
@@ -4242,7 +4247,11 @@ function createReadonlyScoreDocumentSession({ client, createId = () => crypto.ra
   }
   return Object.freeze({
     read: ensureLoaded,
-    subscribe: (listener) => subscribe(readListeners, listener),
+    subscribe(listener) {
+      if (disposed) throw new Error("\u4F5C\u54C1\u4F1A\u8BDD\u5DF2\u91CA\u653E");
+      if (typeof listener !== "function") throw new TypeError("\u4F5C\u54C1\u8BA2\u9605\u8005\u5FC5\u987B\u662F\u51FD\u6570");
+      return subscribe(readListeners, () => listener(readChange));
+    },
     snapshot,
     subscribeState: (listener) => subscribe(stateListeners, listener),
     canReplace: () => !disposed && !busy && !failure && current !== void 0 && !dirty(),

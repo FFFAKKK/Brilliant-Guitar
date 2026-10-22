@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <link rel="icon" href="data:,">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Brilliant Guitar · 同作品重开回归样本</title>
+  <link rel="stylesheet" href="../../styles/tokens.css">
+  <link rel="stylesheet" href="../../styles/base.css">
+  <link rel="stylesheet" href="../../styles/structure-preview.css">
+  <link rel="stylesheet" href="../../styles/score-view.css">
+  <link rel="stylesheet" href="../../styles/runtime-preview.css">
+  <link rel="stylesheet" href="../../styles/runtime-zoom.css">
+  <link rel="stylesheet" href="../../styles/framework-controls.css">
+  <link rel="stylesheet" href="../../styles/workspace-layout.css?v=20261007b">
+  <link rel="stylesheet" href="../../styles/command-menu.css">
+  <link rel="stylesheet" href="../../styles/command-dialog.css">
+  <link rel="stylesheet" href="../../styles/frame-accessibility.css">
+  <style>
+    /* Startup must remain visible even when an entry dependency cannot load. */
+    #preview-startup { position: fixed; inset: 0; display: grid; place-content: center; justify-items: center; gap: 12px; padding: 24px; background: #1c1d20; color: #f2f0eb; font: 14px "Segoe UI", sans-serif; text-align: center; }
+    #preview-startup-detail { max-width: min(760px, 90vw); white-space: pre-wrap; overflow-wrap: anywhere; color: #afb1b8; font-size: 12px; }
+    #preview-startup-retry { min-height: 32px; padding: 0 14px; border: 0; border-radius: 5px; background: #2d67bb; color: #fff; font: inherit; cursor: pointer; }
+    #preview-startup-retry:focus-visible { outline: 2px solid #79acff; outline-offset: 3px; }
+    #preview-startup [hidden] { display: none; }
+  </style>
+</head>
+<body>
+<div id="app" style="height:calc(100vh - 46px)"></div>
+<output id="reopen-proof" style="position:fixed;bottom:0;left:0;right:0;height:46px;box-sizing:border-box;padding:7px 16px;background:#172333;color:#e8f0ff;font:12px/16px Segoe UI,sans-serif;z-index:2000" aria-live="polite">正在加载独立回归样本</output>
+<script type="module" src="./preview.js"></script>
+</body></html>

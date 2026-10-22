@@ -53,6 +53,11 @@ export interface ReadonlyDocumentState {
   readonly message: string | null;
   readonly warnings: readonly WorkbenchIssue[];
 }
+/** Local accepted replacement lifetime; never persisted or inferred from UI commands. */
+export interface ReadonlyDocumentReadChange {
+  readonly kind: "document-read-change";
+  readonly replacementGeneration: number;
+}
 type Result = { readonly ok: true; readonly changed: boolean; readonly cancelled?: true }
   | { readonly ok: false; readonly code: string; readonly message: string };
 export type ReadonlyDocumentInitialization = "ensure-document" | "read-existing";
@@ -67,6 +72,7 @@ export function createReadonlyScoreDocumentSession({ client, createId = () => cr
   let failure: Error | null = null;
   let warnings: readonly WorkbenchIssue[] = Object.freeze([]);
   let busy = false, disposed = false, epoch = 0;
+  let readChange: ReadonlyDocumentReadChange = Object.freeze({ kind: "document-read-change", replacementGeneration: 0 });
   let initial: Promise<ScoreSessionRead | null> | null = null;
   let unlistenClose: (() => void) | undefined;
   let closeRegistration: Promise<void> | null = null;
@@ -96,6 +102,9 @@ export function createReadonlyScoreDocumentSession({ client, createId = () => cr
       throw new Error("作品读取版本已过期，请重新读取");
     }
     current = value; failure = null;
+    if (replacement) readChange = Object.freeze({
+      kind: "document-read-change", replacementGeneration: readChange.replacementGeneration + 1,
+    });
     // A fresh accepted read replaces observed recovery status. Unrelated
     // post-commit warnings still keep their existing retry lifecycle.
     warnings = Object.freeze([
@@ -287,7 +296,11 @@ export function createReadonlyScoreDocumentSession({ client, createId = () => cr
   }
   return Object.freeze({
     read: ensureLoaded,
-    subscribe: (listener: () => void) => subscribe(readListeners, listener),
+    subscribe(listener: (change?: ReadonlyDocumentReadChange) => void) {
+      if (disposed) throw new Error("作品会话已释放");
+      if (typeof listener !== "function") throw new TypeError("作品订阅者必须是函数");
+      return subscribe(readListeners, () => listener(readChange));
+    },
     snapshot,
     subscribeState: (listener: () => void) => subscribe(stateListeners, listener),
     canReplace: () => !disposed && !busy && !failure && current !== undefined && !dirty(),

@@ -352,6 +352,103 @@ test("an accepted guarded reopen may restore an earlier disk revision of the sam
   } finally {source.dispose();}
 });
 
+test("read notifications identify accepted replacement lifetimes, not ordinary operations or failed opens", async () => {
+  const f = fixture();
+  let rejectOpen = false;
+  const source = createReadonlyScoreDocumentSession({ client: {
+    ...f.client,
+    openNativeDocumentGuarded: async expected => {
+      if (rejectOpen) throw new Error("open failed before acceptance");
+      return f.client.openNativeDocumentGuarded(expected);
+    },
+    openRecentDocumentGuarded: async () => ({ session: score("recent"), name: "recent", savedVersion: 0 }),
+  } });
+  const changes: unknown[] = [];
+  let legacyCalls = 0;
+  source.subscribe((change?: unknown) => { changes.push(change); });
+  const stop = source.subscribe(() => { legacyCalls++; });
+  try {
+    await source.read();
+    assert.deepEqual(changes, [], "initialization does not fabricate a read-change event");
+    const expectGeneration = (generation: number) => {
+      assert.deepEqual(changes.at(-1), { kind: "document-read-change", replacementGeneration: generation });
+      assert.equal(Object.isFrozen(changes.at(-1)), true);
+    };
+    await source.reload(); expectGeneration(0);
+    await source.newScore(); expectGeneration(1);
+    await source.open(); expectGeneration(2);
+    const beforeCancel = changes.length;
+    f.cancelOpen();
+    assert.deepEqual(await source.open(), { ok: true, changed: false, cancelled: true });
+    assert.equal(changes.length, beforeCancel);
+    await source.openRecent("00000000-0000-4000-8000-000000000001"); expectGeneration(3);
+    assert.equal((await source.newScore({ title: "", measureCount: 0 })).ok, false);
+    assert.equal(changes.length, beforeCancel + 1);
+    f.setCurrent(score("recent"));
+    await source.reload(); expectGeneration(3);
+    f.fail(new Error("read failed"));
+    assert.equal((await source.reload()).ok, false); expectGeneration(3);
+    f.fail(null); await source.reload(); expectGeneration(3);
+    rejectOpen = true;
+    assert.equal((await source.open()).ok, false); expectGeneration(3);
+    await source.reload(); expectGeneration(3);
+    assert.equal((await source.openRecent("bad-record-id")).ok, false); expectGeneration(3);
+    assert.equal(legacyCalls, changes.length);
+    stop(); await source.reload(); expectGeneration(3);
+    assert.equal(legacyCalls, changes.length - 1);
+    assert.throws(() => Reflect.apply(source.subscribe, null, [null]), /必须是函数/);
+  } finally { source.dispose(); f.source.dispose(); }
+  assert.throws(() => source.subscribe(() => {}), /已释放/);
+  assert.throws(() => Reflect.apply(source.subscribe, null, [null]), /已释放/);
+});
+
+test("replacement metadata observers cannot veto acceptance by throwing, rejecting or mutating the notification", async () => {
+  const f = fixture();
+  const changes: unknown[] = [];
+  f.source.subscribe(() => { throw new Error("broken observer"); });
+  f.source.subscribe(async () => { throw new Error("rejected observer"); });
+  f.source.subscribe((change?: unknown) => { Reflect.set(change as object, "replacementGeneration", 999); });
+  f.source.subscribe((change?: unknown) => { changes.push(change); });
+  try {
+    await f.source.read();
+    assert.deepEqual(await f.source.open(), { ok: true, changed: true });
+    await new Promise(resolve => setImmediate(resolve));
+    assert.deepEqual(changes, [{ kind: "document-read-change", replacementGeneration: 1 }]);
+    assert.equal(f.source.snapshot().saved, true);
+  } finally { f.source.dispose(); }
+});
+
+test("editing, history and saving keep the same replacement generation", async () => {
+  let current = score();
+  const source = createReadonlyScoreDocumentSession({ client: {
+    usesNativeFiles: () => true, read: async () => current,
+    create: async () => current, createGuarded: async () => current,
+    openNativeDocumentGuarded: async () => ({ session: current, name: "piece", savedVersion: current.documentVersion }),
+    edit: async () => {
+      const next = score("one", current.documentVersion + 1);
+      if (next.notation.kind !== "staff") throw new Error("fixture");
+      current = { ...next, undoDepth: 1, redoDepth: 1,
+        notation: { ...next.notation, clef: "bass" } };
+      return current;
+    },
+    saveNativeDocumentGuarded: async () => ({ session: current, name: "piece", savedVersion: current.documentVersion }),
+  } });
+  const changes: unknown[] = [];
+  source.subscribe((change?: unknown) => { changes.push(change); });
+  try {
+    await source.read(); await source.open();
+    const edited = await source.setStaffClef({ requestId: "00000000-0000-4000-8000-000000000001", documentId: "one", expectedVersion: 0,
+      action: { kind: "set-staff-clef", staffId: "staff", clef: "bass" } });
+    assert.equal(edited.ok, true, JSON.stringify(edited));
+    assert.equal((await source.undo()).ok, true);
+    assert.equal((await source.redo()).ok, true);
+    assert.equal((await source.save()).ok, true);
+    assert.deepEqual(changes, Array.from({ length: 5 }, () => ({
+      kind: "document-read-change", replacementGeneration: 1,
+    })));
+  } finally { source.dispose(); }
+});
+
 test("synchronous state-observer disposal prevents not-yet-issued document and registration requests", async () => {
   for (const action of ["new", "open", "recent", "reload", "register"] as const) {
     const calls: string[] = [];

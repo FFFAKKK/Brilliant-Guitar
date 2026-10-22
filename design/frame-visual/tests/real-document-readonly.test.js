@@ -6,6 +6,7 @@ import { mountBackupPluginStartupPreview } from "../src/plugin-startup-preview.j
 import { createDocumentStaffProjection } from "../src/score/document-staff-projection.js";
 import { createCoreScoreView } from "../src/score/core-score-view.js";
 import { STAFF_FIXTURE } from "../src/fixtures/staff-snapshot.js";
+import { TABLATURE_FIXTURE } from "../src/fixtures/tablature-snapshot.js";
 import { withTestDocument } from "./support/dom-test-environment.js";
 import { createStartupTestShell } from "./support/plugin-startup-fixtures.js";
 const flush=()=>new Promise(resolve=>setImmediate(resolve));
@@ -65,6 +66,45 @@ test("the actual backup composition mounts an initially empty real read port, re
   assert.equal((await runtime.execute("notation.core.document.new")).ok,true);await flush();assert.equal(runtime.document.snapshot().documentId,"new");
   assert.equal(root.querySelector("[data-document-measures]").textContent,"1 小节");assert.equal(root.querySelector("[data-document-tempo]").textContent,"96");
   assert.deepEqual(f.calls,["read","open","open","read","read","new"]);runtime.dispose();f.source.dispose();assert.equal(root.querySelector(".core-score-view"),null);
+}));
+test("the original router reopens the same ID at a lower revision and updates both notations without host persistence metadata",()=>withTestDocument(async()=>{
+  let current=null, opens=0;
+  const read=(version,tempoBpm)=>({...session("same-file",version,"重开样本"),
+    measureCount:STAFF_FIXTURE.measures.length,
+    notation:{...structuredClone(STAFF_FIXTURE),tempoBpm},
+    tablature:{...structuredClone(TABLATURE_FIXTURE),tempoBpm}});
+  const owner=createReadonlyScoreDocumentSession({initialization:"read-existing",client:{
+    usesNativeFiles:()=>true,read:async()=>current,
+    openNativeDocumentGuarded:async expected=>{
+      assert.deepEqual(expected,current?{kind:"document",documentId:current.documentId,documentVersion:current.documentVersion}:{kind:"empty"});
+      current=opens++===0?read(7,96):read(0,132);
+      return {session:current,name:"same-file",savedVersion:current.documentVersion};
+    },
+  }});
+  const root=document.createElement("main");document.body.append(root);
+  const runtime=createBackupUiRuntime({root,documentSession:owner,documentActions:owner});
+  try {
+    await flush();
+    assert.equal((await runtime.execute("notation.core.document.open")).ok,true);await flush();
+    assert.equal(runtime.document.snapshot().documentVersion,7);
+    const paper=root.querySelector(".core-score-view");
+    assert.equal(runtime.execute("notation.core.presentation.select",{kind:"tablature"}).ok,true);await flush();
+    const tabButton=root.querySelector('[data-notation-choice="tablature"]');
+    assert.equal(tabButton.getAttribute("aria-pressed"),"true");
+    assert.equal((await runtime.execute("notation.core.document.open")).ok,true);await flush();
+    assert.equal(owner.snapshot().documentVersion,0);
+    assert.equal((await owner.read()).persistence,undefined,"the existing legacy-host contract remains sufficient");
+    assert.equal(runtime.document.snapshot().documentVersion,0);
+    assert.equal(runtime.score.snapshot().tempoBpm,132);
+    assert.equal(runtime.score.notation("tablature").tempoBpm,132);
+    assert.equal(root.querySelector("[data-document-tempo]").textContent,"132");
+    assert.equal(root.querySelector(".core-score-view"),paper);
+    assert.equal(tabButton.getAttribute("aria-pressed"),"true","replacement keeps the selected read-only presentation");
+    assert.equal((await runtime.execute("notation.core.document.reload")).ok,true);await flush();
+    assert.equal(runtime.document.snapshot().documentVersion,0);
+    assert.equal(runtime.execute("notation.core.presentation.select",{kind:"staff"}).ok,true);await flush();
+    assert.equal(root.querySelector('[data-notation-choice="staff"]').getAttribute("aria-pressed"),"true");
+  } finally {runtime.dispose();owner.dispose();root.remove();}
 }));
 test("process-mode startup and return keep the same document owner; final disposal ends its subscriptions",()=>withTestDocument(async()=>{
   const {root,workspaceRoot}=createStartupTestShell(document),f=documents();let creates=0;

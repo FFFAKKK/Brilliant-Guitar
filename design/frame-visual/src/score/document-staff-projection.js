@@ -32,6 +32,7 @@ export function createDocumentStaffProjection({ readSession, subscribe, retrySes
   if (retrySession !== undefined && typeof retrySession !== "function") throw new TypeError("文档重读必须是函数");
   const staff = createStaffProjectionPort();
   let identity = null;
+  let observedGeneration = 0, acceptedGeneration = 0;
   let disposed = false;
   let request = 0;
   let stop = null;
@@ -42,6 +43,12 @@ export function createDocumentStaffProjection({ readSession, subscribe, retrySes
   const publishState = next => {
     state = freeze(next);
     notifyObservers(listeners);
+  };
+  const publishFailure = error => {
+    const failure = { code: "score.document-projection.read-failed", message: error?.message ?? String(error) };
+    publishState({ status: "error", documentId: identity?.documentId ?? null,
+      documentVersion: identity?.documentVersion ?? null, ...failure });
+    return { ok: false, ...failure };
   };
   function observe(listener) {
     if (disposed) throw new Error("文档投影端口已经释放");
@@ -55,17 +62,20 @@ export function createDocumentStaffProjection({ readSession, subscribe, retrySes
   async function refresh() {
     if (disposed) return { ok: false, code: "score.document-projection.disposed" };
     const token = ++request;
+    const generation = observedGeneration;
     try {
       const session = await readSession();
       if (disposed || token !== request) return { ok: false, code: "score.document-projection.superseded" };
       if (session === null) {
-        identity = null;
         staff.publish(null);
+        identity = null;
+        acceptedGeneration = generation;
         publishState({ status: "empty", documentId: null, documentVersion: null });
         return { ok: true, changed: true };
       }
       const current = readSessionIdentity(session);
-      if (identity && current.documentId === identity.documentId && current.documentVersion < identity.documentVersion) {
+      if (identity && generation === acceptedGeneration && current.documentId === identity.documentId
+        && current.documentVersion < identity.documentVersion) {
         return { ok: false, code: "score.document-projection.stale", ...identity };
       }
       // Validate before advancing the accepted document version. Bad notation
@@ -73,15 +83,13 @@ export function createDocumentStaffProjection({ readSession, subscribe, retrySes
       const projected = current.notation.kind === "staff" ? current.notation : null;
       staff.publish(projected, current.tablature);
       identity = freeze({ documentId: current.documentId, documentVersion: current.documentVersion });
+      acceptedGeneration = generation;
       publishState({ status: projected ? "ready" : "unsupported", ...identity,
         ...(projected ? {} : { message: current.notation.message }) });
       return { ok: true, changed: true, status: state.status, ...identity };
     } catch (error) {
       if (disposed || token !== request) return { ok: false, code: "score.document-projection.superseded" };
-      const failure = { code: "score.document-projection.read-failed", message: error?.message ?? String(error) };
-      publishState({ status: "error", documentId: identity?.documentId ?? null,
-        documentVersion: identity?.documentVersion ?? null, ...failure });
-      return { ok: false, ...failure };
+      return publishFailure(error);
     }
   }
 
@@ -89,7 +97,21 @@ export function createDocumentStaffProjection({ readSession, subscribe, retrySes
     if (disposed) return { ok: false, code: "score.document-projection.disposed" };
     if (started) return { ok: true, changed: false };
     if (subscribe) {
-      const unsubscribe = subscribe(() => { void refresh(); });
+      const unsubscribe = subscribe(change => {
+        if (disposed) return;
+        // Legacy notifications only request a refresh. Only the original owner's
+        // explicit lifetime signal can relax the same-document version guard.
+        if (change?.kind === "document-read-change") {
+          const generation = change.replacementGeneration;
+          if (Array.isArray(change) || !Number.isSafeInteger(generation) || generation < observedGeneration) {
+            request += 1;
+            publishFailure(new TypeError("文档替换代次无效或已过期"));
+            return;
+          }
+          observedGeneration = generation;
+        }
+        void refresh();
+      });
       if (typeof unsubscribe !== "function") throw new TypeError("文档投影 subscribe 必须返回释放函数");
       stop = unsubscribe;
     }

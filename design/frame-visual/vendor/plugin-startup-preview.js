@@ -16613,6 +16613,7 @@ ${problems.join("\n")}`);
     if (retrySession !== void 0 && typeof retrySession !== "function") throw new TypeError("\u6587\u6863\u91CD\u8BFB\u5FC5\u987B\u662F\u51FD\u6570");
     const staff = createStaffProjectionPort();
     let identity2 = null;
+    let observedGeneration = 0, acceptedGeneration = 0;
     let disposed = false;
     let request2 = 0;
     let stop = null;
@@ -16622,6 +16623,16 @@ ${problems.join("\n")}`);
     const publishState = (next) => {
       state = freeze5(next);
       notifyObservers(listeners);
+    };
+    const publishFailure = (error) => {
+      const failure2 = { code: "score.document-projection.read-failed", message: error?.message ?? String(error) };
+      publishState({
+        status: "error",
+        documentId: identity2?.documentId ?? null,
+        documentVersion: identity2?.documentVersion ?? null,
+        ...failure2
+      });
+      return { ok: false, ...failure2 };
     };
     function observe(listener) {
       if (disposed) throw new Error("\u6587\u6863\u6295\u5F71\u7AEF\u53E3\u5DF2\u7ECF\u91CA\u653E");
@@ -16639,22 +16650,25 @@ ${problems.join("\n")}`);
     async function refresh() {
       if (disposed) return { ok: false, code: "score.document-projection.disposed" };
       const token = ++request2;
+      const generation = observedGeneration;
       try {
         const session = await readSession();
         if (disposed || token !== request2) return { ok: false, code: "score.document-projection.superseded" };
         if (session === null) {
-          identity2 = null;
           staff.publish(null);
+          identity2 = null;
+          acceptedGeneration = generation;
           publishState({ status: "empty", documentId: null, documentVersion: null });
           return { ok: true, changed: true };
         }
         const current2 = readSessionIdentity(session);
-        if (identity2 && current2.documentId === identity2.documentId && current2.documentVersion < identity2.documentVersion) {
+        if (identity2 && generation === acceptedGeneration && current2.documentId === identity2.documentId && current2.documentVersion < identity2.documentVersion) {
           return { ok: false, code: "score.document-projection.stale", ...identity2 };
         }
         const projected = current2.notation.kind === "staff" ? current2.notation : null;
         staff.publish(projected, current2.tablature);
         identity2 = freeze5({ documentId: current2.documentId, documentVersion: current2.documentVersion });
+        acceptedGeneration = generation;
         publishState({
           status: projected ? "ready" : "unsupported",
           ...identity2,
@@ -16663,21 +16677,24 @@ ${problems.join("\n")}`);
         return { ok: true, changed: true, status: state.status, ...identity2 };
       } catch (error) {
         if (disposed || token !== request2) return { ok: false, code: "score.document-projection.superseded" };
-        const failure2 = { code: "score.document-projection.read-failed", message: error?.message ?? String(error) };
-        publishState({
-          status: "error",
-          documentId: identity2?.documentId ?? null,
-          documentVersion: identity2?.documentVersion ?? null,
-          ...failure2
-        });
-        return { ok: false, ...failure2 };
+        return publishFailure(error);
       }
     }
     function start() {
       if (disposed) return { ok: false, code: "score.document-projection.disposed" };
       if (started) return { ok: true, changed: false };
       if (subscribe) {
-        const unsubscribe = subscribe(() => {
+        const unsubscribe = subscribe((change) => {
+          if (disposed) return;
+          if (change?.kind === "document-read-change") {
+            const generation = change.replacementGeneration;
+            if (Array.isArray(change) || !Number.isSafeInteger(generation) || generation < observedGeneration) {
+              request2 += 1;
+              publishFailure(new TypeError("\u6587\u6863\u66FF\u6362\u4EE3\u6B21\u65E0\u6548\u6216\u5DF2\u8FC7\u671F"));
+              return;
+            }
+            observedGeneration = generation;
+          }
           void refresh();
         });
         if (typeof unsubscribe !== "function") throw new TypeError("\u6587\u6863\u6295\u5F71 subscribe \u5FC5\u987B\u8FD4\u56DE\u91CA\u653E\u51FD\u6570");
@@ -21563,6 +21580,7 @@ ${problems.join("\n")}`);
     let failure2 = null;
     let warnings = Object.freeze([]);
     let busy = false, disposed = false, epoch = 0;
+    let readChange = Object.freeze({ kind: "document-read-change", replacementGeneration: 0 });
     let initial = null;
     let unlistenClose;
     let closeRegistration = null;
@@ -21604,6 +21622,10 @@ ${problems.join("\n")}`);
       }
       current2 = value;
       failure2 = null;
+      if (replacement) readChange = Object.freeze({
+        kind: "document-read-change",
+        replacementGeneration: readChange.replacementGeneration + 1
+      });
       warnings = Object.freeze([
         ...replacement ? [] : warnings.filter((warning) => warning.code !== "file.recovery-unavailable"),
         ...value?.warnings ?? []
@@ -21818,7 +21840,11 @@ ${problems.join("\n")}`);
     }
     return Object.freeze({
       read: ensureLoaded,
-      subscribe: (listener) => subscribe(readListeners, listener),
+      subscribe(listener) {
+        if (disposed) throw new Error("\u4F5C\u54C1\u4F1A\u8BDD\u5DF2\u91CA\u653E");
+        if (typeof listener !== "function") throw new TypeError("\u4F5C\u54C1\u8BA2\u9605\u8005\u5FC5\u987B\u662F\u51FD\u6570");
+        return subscribe(readListeners, () => listener(readChange));
+      },
       snapshot,
       subscribeState: (listener) => subscribe(stateListeners, listener),
       canReplace: () => !disposed && !busy && !failure2 && current2 !== void 0 && !dirty(),
